@@ -1,105 +1,94 @@
 /**
- * Netlify Function for Content Flow API
+ * Netlify Function for Content Flow API - Zero Dependencies
  * Handles all /api/* requests as serverless functions
+ * Uses native Node.js and browser APIs only
  */
 
-const axios = require('axios');
+// Configuration from environment variables
+const SERPER_API_KEY = process.env.SERPER_API_KEY;
+const SERPER_BASE_URL = process.env.SERPER_BASE_URL || 'https://google.serper.dev';
 
-// Configuration
-const config = {
-  serper: {
-    apiKey: process.env.SERPER_API_KEY,
-    baseUrl: process.env.SERPER_BASE_URL || 'https://google.serper.dev'
+// Utility functions
+const calculateDifficulty = (position) => {
+  if (position <= 3) return 'High';
+  if (position <= 6) return 'Medium';
+  return 'Low';
+};
+
+const determineIntent = (keyword) => {
+  if (!keyword) return 'Informational';
+
+  const commercial = ['buy', 'price', 'cost', 'cheap', 'discount', 'deal'];
+  const transactional = ['download', 'signup', 'register', 'subscribe'];
+  const navigational = ['login', 'website', 'official'];
+
+  const lower = keyword.toLowerCase();
+
+  if (commercial.some(word => lower.includes(word))) return 'Commercial';
+  if (transactional.some(word => lower.includes(word))) return 'Transactional';
+  if (navigational.some(word => lower.includes(word))) return 'Navigational';
+
+  return 'Informational';
+};
+
+// Serper API functions
+const callSerperAPI = async (query, location = 'us', language = 'en', num = 10) => {
+  try {
+    const requestData = {
+      q: query,
+      gl: location,
+      hl: language,
+      num: num
+    };
+
+    const startTime = Date.now();
+
+    const response = await fetch(`${SERPER_BASE_URL}/search`, {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': SERPER_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const responseTime = Date.now() - startTime;
+
+    return { data, responseTime, success: true };
+  } catch (error) {
+    throw new Error(`Serper API error: ${error.message}`);
   }
 };
 
-// Serper API Service
-class SerperAPIService {
-  constructor() {
-    this.client = axios.create({
-      baseURL: config.serper.baseUrl,
-      timeout: 30000,
-      headers: {
-        'X-API-KEY': config.serper.apiKey,
-        'Content-Type': 'application/json'
-      }
-    });
-  }
+const processKeywords = (searchData, responseTime) => {
+  const keywords = searchData.organic?.map((result, index) => ({
+    keyword: result.title || 'Unknown',
+    searchVolume: Math.floor(Math.random() * 10000) + 1000,
+    difficulty: calculateDifficulty(result.position || index + 1),
+    cpc: '$' + (Math.random() * 5 + 0.5).toFixed(2),
+    intent: determineIntent(result.title || ''),
+    opportunity: Math.floor(Math.random() * 100) + 1,
+    url: result.link,
+    snippet: result.snippet
+  })) || [];
 
-  async search(query, options = {}) {
-    try {
-      const requestData = {
-        q: query,
-        gl: options.location || 'us',
-        hl: options.language || 'en',
-        num: options.num || 10
-      };
+  return {
+    success: true,
+    keywords,
+    totalKeywords: keywords.length,
+    responseTime,
+    cached: false
+  };
+};
 
-      const startTime = Date.now();
-      const response = await this.client.post('/search', requestData);
-      const responseTime = Date.now() - startTime;
-
-      return {
-        success: true,
-        data: response.data,
-        responseTime,
-        cached: false
-      };
-    } catch (error) {
-      throw new Error(`Serper API error: ${error.message}`);
-    }
-  }
-
-  async getKeywords(keyword, options = {}) {
-    const searchResult = await this.search(keyword, options);
-
-    const keywords = searchResult.data.organic?.map((result, index) => ({
-      keyword: result.title,
-      searchVolume: Math.floor(Math.random() * 10000) + 1000,
-      difficulty: this.calculateDifficulty(result.position || index + 1),
-      cpc: '$' + (Math.random() * 5 + 0.5).toFixed(2),
-      intent: this.determineIntent(result.title || ''),
-      opportunity: Math.floor(Math.random() * 100) + 1,
-      url: result.link,
-      snippet: result.snippet
-    })) || [];
-
-    return {
-      ...searchResult,
-      keywords,
-      totalKeywords: keywords.length
-    };
-  }
-
-  calculateDifficulty(position) {
-    if (position <= 3) return 'High';
-    if (position <= 6) return 'Medium';
-    return 'Low';
-  }
-
-  determineIntent(keyword) {
-    const commercial = ['buy', 'price', 'cost', 'cheap', 'discount', 'deal'];
-    const transactional = ['download', 'signup', 'register', 'subscribe'];
-    const navigational = ['login', 'website', 'official'];
-
-    const lower = keyword.toLowerCase();
-
-    if (commercial.some(word => lower.includes(word))) return 'Commercial';
-    if (transactional.some(word => lower.includes(word))) return 'Transactional';
-    if (navigational.some(word => lower.includes(word))) return 'Navigational';
-
-    return 'Informational';
-  }
-}
-
-// Initialize service
-const serperService = new SerperAPIService();
-
-// Main handler
+// Main handler function
 exports.handler = async (event, context) => {
-  console.log('Function invoked:', event.path, event.httpMethod);
-
-  // Set CORS headers
+  // CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -109,11 +98,7 @@ exports.handler = async (event, context) => {
 
   // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ message: 'CORS preflight' })
-    };
+    return { statusCode: 200, headers, body: JSON.stringify({}) };
   }
 
   try {
@@ -121,12 +106,12 @@ exports.handler = async (event, context) => {
     const method = event.httpMethod;
     const body = event.body ? JSON.parse(event.body) : {};
 
-    console.log('Processing request:', { path, method, body });
+    console.log(`${method} ${path}`, body);
 
-    // Route handling
+    // API Status endpoint
     if (path === '/status' && method === 'GET') {
       try {
-        const testResult = await serperService.search('test', { num: 1 });
+        const result = await callSerperAPI('test', 'us', 'en', 1);
         return {
           statusCode: 200,
           headers,
@@ -134,7 +119,7 @@ exports.handler = async (event, context) => {
             status: 'operational',
             serperAPI: {
               status: 'connected',
-              responseTime: testResult.responseTime + 'ms'
+              responseTime: result.responseTime + 'ms'
             },
             timestamp: new Date().toISOString()
           })
@@ -155,6 +140,7 @@ exports.handler = async (event, context) => {
       }
     }
 
+    // Keywords endpoint
     if (path === '/keywords' && method === 'POST') {
       const { keyword, location = 'us', language = 'en', count = 10 } = body;
 
@@ -170,12 +156,10 @@ exports.handler = async (event, context) => {
       }
 
       try {
-        const result = await serperService.getKeywords(keyword, {
-          location,
-          language,
-          num: count
-        });
+        const result = await callSerperAPI(keyword, location, language, count);
+        const processedResult = processKeywords(result.data, result.responseTime);
 
+        // Cost analysis
         const serperCost = count * 0.0006;
         const dataforSEOCost = count * 0.02;
         const savings = ((dataforSEOCost - serperCost) / dataforSEOCost * 100).toFixed(1);
@@ -184,17 +168,13 @@ exports.handler = async (event, context) => {
           statusCode: 200,
           headers,
           body: JSON.stringify({
-            success: true,
-            keywords: result.keywords,
-            totalKeywords: result.totalKeywords,
-            responseTime: result.responseTime,
-            cached: result.cached,
+            ...processedResult,
             metadata: {
               query: keyword,
               location,
               language,
               requestedCount: count,
-              actualCount: result.totalKeywords,
+              actualCount: processedResult.totalKeywords,
               costAnalysis: {
                 serperCost: `$${serperCost.toFixed(4)}`,
                 dataforSEOEquivalent: `$${dataforSEOCost.toFixed(4)}`,
@@ -205,7 +185,6 @@ exports.handler = async (event, context) => {
           })
         };
       } catch (error) {
-        console.error('Keyword research error:', error);
         return {
           statusCode: 500,
           headers,
@@ -218,6 +197,7 @@ exports.handler = async (event, context) => {
       }
     }
 
+    // Search endpoint
     if (path === '/search' && method === 'POST') {
       const { query, location = 'us', language = 'en', num = 10 } = body;
 
@@ -233,11 +213,7 @@ exports.handler = async (event, context) => {
       }
 
       try {
-        const result = await serperService.search(query, {
-          location,
-          language,
-          num
-        });
+        const result = await callSerperAPI(query, location, language, num);
 
         return {
           statusCode: 200,
@@ -247,7 +223,7 @@ exports.handler = async (event, context) => {
             results: result.data.organic || [],
             relatedSearches: result.data.relatedSearches || [],
             responseTime: result.responseTime,
-            cached: result.cached,
+            cached: false,
             metadata: {
               query,
               location,
@@ -258,7 +234,6 @@ exports.handler = async (event, context) => {
           })
         };
       } catch (error) {
-        console.error('Search error:', error);
         return {
           statusCode: 500,
           headers,
