@@ -29,18 +29,18 @@ This document provides a master summary of the fully working SEO Wizard applicat
 - **Clean UI**: Professional design without background colors
 - **Mobile Responsive**: Works on all devices
 
-## 🔑 CRITICAL API CREDENTIALS
+## 🔑 API CREDENTIALS CONFIGURATION
 
 ### DataforSEO API
 ```
-Login: info@getseowizard.com
-API Key: 380e0892107eaca7
+Login: [REMOVED FOR SECURITY - SET IN ENVIRONMENT VARIABLES]
+API Key: [REMOVED FOR SECURITY - SET IN ENVIRONMENT VARIABLES]
 Endpoint: https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_suggestions/live
 ```
 
 ### OpenRouter API
 ```
-API Key: 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
+API Key: [REMOVED FOR SECURITY - SET IN ENVIRONMENT VARIABLES]
 Endpoint: https://openrouter.ai/api/v1/chat/completions
 ```
 

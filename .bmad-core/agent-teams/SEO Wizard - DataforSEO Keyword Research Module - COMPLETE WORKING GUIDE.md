@@ -3,10 +3,10 @@
 ## 📋 OVERVIEW
 This document contains the complete, working implementation of the DataforSEO Keyword Research module for SEO Wizard. This module successfully retrieves 25 real keywords with accurate search volumes, CPC data, and competition metrics from the DataforSEO API.
 
-## 🔑 API CREDENTIALS (WORKING)
+## 🔑 API CREDENTIALS CONFIGURATION
 ```
-Login: info@getseowizard.com
-API Key: 380e0892107eaca7
+Login: [REMOVED FOR SECURITY - SET IN ENVIRONMENT VARIABLES]
+API Key: [REMOVED FOR SECURITY - SET IN ENVIRONMENT VARIABLES]
 Endpoint: https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_suggestions/live
 ```
 
@@ -266,8 +266,8 @@ async analyzeKeywords() {
 
 ### Problem: API returns 401 Unauthorized
 **Solution:** Verify credentials are correct:
-- Login: info@getseowizard.com
-- API Key: 380e0892107eaca7
+- Login: [SET IN ENVIRONMENT VARIABLES]
+- API Key: [SET IN ENVIRONMENT VARIABLES]
 
 ### Problem: API returns 402 Payment Required
 **Solution:** Check DataforSEO account balance
