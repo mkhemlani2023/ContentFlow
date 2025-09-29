@@ -1,0 +1,49 @@
+[build]
+  # Build command - skip TypeScript compilation for now, use JavaScript directly
+  command = "npm install && npm run build:js"
+
+  # Directory to publish
+  publish = "dist"
+
+  # Functions directory for serverless functions
+  functions = "netlify/functions"
+
+[build.environment]
+  # Node.js version
+  NODE_VERSION = "18"
+
+  # Production environment
+  NODE_ENV = "production"
+
+# Redirect all API calls to serverless functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# SPA fallback for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://google.serper.dev;"
+
+# Environment-specific settings
+[context.production]
+  command = "npm install && npm run build:production"
+
+[context.deploy-preview]
+  command = "npm install && npm run build:preview"
+
+# Branch deploys
+[context.branch-deploy]
+  command = "npm install && npm run build:js"
