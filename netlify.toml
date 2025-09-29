@@ -1,6 +1,6 @@
 [build]
   # Build command - ensure public directory exists and copy files
-  command = "mkdir -p public && cp index.html public/ && npm install"
+  command = "mkdir -p public && cp index.html public/"
 
   # Directory to publish - serve static files from public
   publish = "public"
@@ -37,13 +37,5 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://google.serper.dev;"
 
-# Environment-specific settings
-[context.production]
-  command = "npm install && npm run build:production"
-
-[context.deploy-preview]
-  command = "npm install && npm run build:preview"
-
-# Branch deploys
-[context.branch-deploy]
-  command = "npm install && npm run build:js"
+# Environment-specific settings removed for simplicity
+# Using single build command for all contexts
