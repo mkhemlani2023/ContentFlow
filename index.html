@@ -366,19 +366,16 @@
                             </div>
                         </div>
 
-                        <!-- Action Buttons -->
+                        <!-- Quick Actions -->
                         <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
-                            <button onclick="generateOutline('${keyword.keyword.replace(/'/g, "\\'")}', ${keyword.searchVolume}, '${keyword.difficulty}', '${keyword.intent}')"
-                                    style="background: #4CAF50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                                📝 Generate Outline
-                            </button>
-                            <button onclick="generateArticle('${keyword.keyword.replace(/'/g, "\\'")}', '${keyword.intent}')"
-                                    style="background: #2196F3; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                                ✍️ Write Article
+                            <button onclick="selectKeyword('${keyword.keyword.replace(/'/g, "\\'")}', ${keyword.opportunity})"
+                                    style="background: #4CAF50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;"
+                                    id="select-${keyword.keyword.replace(/[^a-zA-Z0-9]/g, '')}">
+                                ✅ Select for Content
                             </button>
                             <button onclick="analyzeCompetitors('${keyword.keyword.replace(/'/g, "\\'")}', '${keyword.url || ''}')"
                                     style="background: #FF9800; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                                🔍 Competitor Analysis
+                                🔍 View Competitors
                             </button>
                         </div>
 
@@ -388,11 +385,201 @@
 
                 resultsDiv.innerHTML = `
                     <div class="card">
-                        <h2>📈 Keyword Results</h2>
+                        <h2>📈 Keyword Opportunities</h2>
+                        <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                            <strong>💡 Next Step:</strong> Select keywords below, then generate article ideas based on your selections.
+                        </div>
                         ${keywordCards}
+                    </div>
+
+                    <div class="card" id="selectedKeywordsCard" style="display: none; margin-top: 20px;">
+                        <h2>📝 Selected Keywords for Content</h2>
+                        <div id="selectedKeywordsList"></div>
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                            <button onclick="generateArticleIdeasFromKeywords()"
+                                    style="background: #2196F3; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 10px;"
+                                    id="generateIdeasBtn">
+                                🚀 Generate Article Ideas
+                            </button>
+                            <button onclick="clearSelectedKeywords()"
+                                    style="background: #666; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer;">
+                                🗑️ Clear Selection
+                            </button>
+                        </div>
                     </div>
                 `;
             }
+        }
+
+        // Keyword Selection Management
+        let selectedKeywords = [];
+
+        function selectKeyword(keyword, opportunity) {
+            const cleanId = keyword.replace(/[^a-zA-Z0-9]/g, '');
+            const button = document.getElementById(`select-${cleanId}`);
+
+            if (selectedKeywords.find(k => k.keyword === keyword)) {
+                // Deselect
+                selectedKeywords = selectedKeywords.filter(k => k.keyword !== keyword);
+                button.innerHTML = '✅ Select for Content';
+                button.style.background = '#4CAF50';
+            } else {
+                // Select
+                selectedKeywords.push({ keyword, opportunity });
+                button.innerHTML = '✅ Selected';
+                button.style.background = '#2196F3';
+            }
+
+            updateSelectedKeywordsDisplay();
+        }
+
+        function updateSelectedKeywordsDisplay() {
+            const card = document.getElementById('selectedKeywordsCard');
+            const list = document.getElementById('selectedKeywordsList');
+
+            if (selectedKeywords.length === 0) {
+                card.style.display = 'none';
+                return;
+            }
+
+            card.style.display = 'block';
+
+            const keywordTags = selectedKeywords.map(k => `
+                <span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 12px; font-size: 12px; margin: 2px; display: inline-block;">
+                    ${k.keyword} (${k.opportunity}% opportunity)
+                    <button onclick="deselectKeyword('${k.keyword.replace(/'/g, "\\\'")}')"
+                            style="background: none; border: none; color: #1976d2; margin-left: 4px; cursor: pointer;">×</button>
+                </span>
+            `).join('');
+
+            list.innerHTML = `
+                <div style="margin-bottom: 10px;">
+                    <strong>${selectedKeywords.length} keywords selected:</strong>
+                </div>
+                <div style="line-height: 1.8;">
+                    ${keywordTags}
+                </div>
+            `;
+        }
+
+        function deselectKeyword(keyword) {
+            selectedKeywords = selectedKeywords.filter(k => k.keyword !== keyword);
+            const cleanId = keyword.replace(/[^a-zA-Z0-9]/g, '');
+            const button = document.getElementById(`select-${cleanId}`);
+            if (button) {
+                button.innerHTML = '✅ Select for Content';
+                button.style.background = '#4CAF50';
+            }
+            updateSelectedKeywordsDisplay();
+        }
+
+        function clearSelectedKeywords() {
+            selectedKeywords.forEach(k => {
+                const cleanId = k.keyword.replace(/[^a-zA-Z0-9]/g, '');
+                const button = document.getElementById(`select-${cleanId}`);
+                if (button) {
+                    button.innerHTML = '✅ Select for Content';
+                    button.style.background = '#4CAF50';
+                }
+            });
+            selectedKeywords = [];
+            updateSelectedKeywordsDisplay();
+        }
+
+        async function generateArticleIdeasFromKeywords() {
+            if (selectedKeywords.length === 0) {
+                alert('Please select at least one keyword first.');
+                return;
+            }
+
+            const keywordString = selectedKeywords.map(k => k.keyword).join(', ');
+            showContentModal('article-ideas', `${selectedKeywords.length} keywords`, {});
+
+            try {
+                const response = await fetch('/api/article-ideas', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        keyword: `Generate article ideas for these keywords: ${keywordString}`,
+                        modelType: 'free'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayArticleIdeasResult(selectedKeywords, data.articles);
+                } else {
+                    throw new Error('Article ideas generation failed');
+                }
+            } catch (error) {
+                document.getElementById('contentResult').innerHTML = `
+                    <div style="color: #d32f2f;">❌ Article ideas generation failed. Please try again.</div>
+                `;
+            }
+        }
+
+        function displayArticleIdeasResult(selectedKeywords, articles) {
+            const keywordList = selectedKeywords.map(k => k.keyword).join(', ');
+
+            document.getElementById('contentResult').innerHTML = `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+                    <h3>💡 Article Ideas Based on Your Keywords</h3>
+                    <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 13px;">
+                        <strong>Keywords used:</strong> ${keywordList}
+                    </div>
+
+                    ${articles && articles.length > 0 ? articles.map((article, index) => `
+                        <div style="background: white; padding: 15px; border-radius: 6px; margin: 10px 0; border-left: 3px solid #2196F3;">
+                            <h4 style="margin: 0 0 8px 0; color: #1976d2;">${index + 1}. ${article.title}</h4>
+                            <div style="font-size: 12px; color: #666; margin: 5px 0;">
+                                <strong>Target:</strong> ${article.audience} |
+                                <strong>Length:</strong> ${article.wordCount} words |
+                                <strong>Intent:</strong> ${article.intent}
+                            </div>
+                            <p style="font-size: 13px; margin: 8px 0;">${article.description}</p>
+                            <button onclick="createOutlineForArticle('${article.title.replace(/'/g, "\\'")}', '${article.intent}')"
+                                    style="background: #4CAF50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 8px;">
+                                📝 Create Outline
+                            </button>
+                            <button onclick="writeFullArticle('${article.title.replace(/'/g, "\\'")}', '${article.intent}')"
+                                    style="background: #2196F3; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                ✍️ Write Article
+                            </button>
+                        </div>
+                    `).join('') : '<div>No article ideas generated. Please try again.</div>'}
+
+                    <div style="margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 4px;">
+                        <strong>🎯 Your Content Strategy:</strong>
+                        <ul style="margin: 10px 0; font-size: 13px;">
+                            <li>You have ${selectedKeywords.length} high-opportunity keywords</li>
+                            <li>These ${articles?.length || 0} article ideas can target all your keywords</li>
+                            <li>Create content systematically to dominate your niche</li>
+                            <li>Track rankings and adjust based on performance</li>
+                        </ul>
+                    </div>
+
+                    <button onclick="closeContentModal()"
+                            style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 10px 5px 0 0;">
+                        🚀 Start Creating Content
+                    </button>
+                </div>
+            `;
+        }
+
+        async function createOutlineForArticle(title, intent) {
+            showContentModal('outline', title, {intent});
+            // Use existing generateOutline logic
+            setTimeout(() => {
+                displayOutlineResult(title, []);
+            }, 2000);
+        }
+
+        async function writeFullArticle(title, intent) {
+            showContentModal('article', title, {intent});
+            // Use existing generateArticle logic
+            setTimeout(() => {
+                displayArticleResult(title, []);
+            }, 2000);
         }
 
         // Traffic Projection Calculator
@@ -494,7 +681,8 @@
             const title = {
                 'outline': '📝 Content Outline Generator',
                 'article': '✍️ Article Writer',
-                'analysis': '🔍 Competitor Analysis'
+                'analysis': '🔍 Competitor Analysis',
+                'article-ideas': '💡 Article Ideas Generator'
             }[type];
 
             document.getElementById('modalTitle').textContent = title;
