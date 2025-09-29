@@ -204,14 +204,28 @@
 
             try {
                 const response = await fetch('/api/status');
+                console.log('Status response:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Expected JSON, got ${contentType || 'unknown'}. Response: ${text.substring(0, 200)}`);
+                }
+
                 const data = await response.json();
 
                 if (data.status === 'operational') {
+                    const services = data.services || {};
                     statusDiv.innerHTML = `
                         <div class="status success">
                             <strong>✅ API Operational</strong><br>
-                            Serper API: ${data.serperAPI.status}<br>
-                            Response Time: ${data.serperAPI.responseTime}
+                            Serper API: ${services.serperAPI?.status || 'unknown'}<br>
+                            ${services.serperAPI?.responseTime ? `Response Time: ${services.serperAPI.responseTime}` : ''}<br>
+                            OpenRouter: ${services.openRouterAPI?.configured ? 'Configured' : 'Not Configured'}
                         </div>
                     `;
                 } else {
@@ -219,15 +233,17 @@
                         <div class="status error">
                             <strong>⚠️ API Issues</strong><br>
                             Status: ${data.status}<br>
-                            Error: ${data.serperAPI.error || 'Unknown'}
+                            Services: ${JSON.stringify(data.services || {}, null, 2)}
                         </div>
                     `;
                 }
             } catch (error) {
+                console.error('API Status error:', error);
                 statusDiv.innerHTML = `
                     <div class="status error">
                         <strong>❌ API Unavailable</strong><br>
-                        Error: ${error.message}
+                        Error: ${error.message}<br>
+                        <small>Check browser console for details</small>
                     </div>
                 `;
             }
