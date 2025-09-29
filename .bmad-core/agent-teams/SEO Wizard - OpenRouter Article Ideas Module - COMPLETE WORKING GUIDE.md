@@ -3,9 +3,9 @@
 ## 📋 OVERVIEW
 This document contains the complete, working implementation of the OpenRouter Article Ideas module for SEO Wizard. This module successfully generates 10 high-quality, AI-powered article ideas using real OpenRouter API integration with multiple AI models.
 
-## 🔑 API CREDENTIALS (WORKING)
+## 🔑 API CREDENTIALS
 ```
-OpenRouter API Key: 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
+OpenRouter API Key: [REMOVED FOR SECURITY - SET IN ENVIRONMENT VARIABLES]
 Endpoint: https://openrouter.ai/api/v1/chat/completions
 ```
 

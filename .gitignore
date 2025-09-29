@@ -100,3 +100,13 @@ Thumbs.db
 # Local test files
 test-serper.js
 comprehensive-test.js
+
+# Security - prevent API keys and sensitive data
+**/API*KEY*
+**/api*key*
+**/*secret*
+**/*credential*
+**/*password*
+**/*token*
+**/sk-*
+**/pk-*
