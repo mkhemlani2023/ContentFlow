@@ -1,6 +1,6 @@
 [build]
-  # Build command - copy files to public directory
-  command = "cp index.html public/ && npm install"
+  # Build command - ensure public directory exists and copy files
+  command = "mkdir -p public && cp index.html public/ && npm install"
 
   # Directory to publish - serve static files from public
   publish = "public"
