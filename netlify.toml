@@ -2,7 +2,7 @@
   # Build command - simple install, public directory already exists
   command = "npm install"
 
-  # Directory to publish - serve static files
+  # Directory to publish - serve static files from root
   publish = "."
 
   # Functions directory for serverless functions
