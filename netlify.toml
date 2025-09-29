@@ -1,9 +1,9 @@
 [build]
-  # Build command - skip TypeScript compilation for now, use JavaScript directly
-  command = "npm install && npm run build:js"
+  # Build command - use production JavaScript server
+  command = "npm install"
 
-  # Directory to publish
-  publish = "dist"
+  # Directory to publish - serve static files and server
+  publish = "public"
 
   # Functions directory for serverless functions
   functions = "netlify/functions"

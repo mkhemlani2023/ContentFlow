@@ -2,7 +2,7 @@
   "name": "content-flow",
   "version": "1.0.0",
   "description": "Automated content generation and multi-platform posting tool with Serper API integration",
-  "main": "dist/index.js",
+  "main": "server.js",
   "scripts": {
     "build": "tsc",
     "build:js": "mkdir -p dist && cp -r src/* dist/ && find dist -name '*.ts' -delete",
