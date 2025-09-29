@@ -7,6 +7,8 @@
 // Configuration from environment variables
 const SERPER_API_KEY = process.env.SERPER_API_KEY;
 const SERPER_BASE_URL = process.env.SERPER_BASE_URL || 'https://google.serper.dev';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 
 // Utility functions
 const calculateDifficulty = (position) => {
@@ -86,6 +88,105 @@ const processKeywords = (searchData, responseTime) => {
   };
 };
 
+// OpenRouter API functions
+const getModelConfig = (modelType) => {
+  const modelMap = {
+    'free': 'cognitivecomputations/dolphin-mistral-7b:free',
+    'budget': 'openai/gpt-4o-mini',
+    'premium': 'anthropic/claude-3.5-sonnet',
+    'enterprise': 'anthropic/claude-3-opus'
+  };
+
+  const creditCosts = {
+    'free': 5,
+    'budget': 10,
+    'premium': 25,
+    'enterprise': 100
+  };
+
+  return {
+    model: modelMap[modelType] || modelMap.free,
+    cost: creditCosts[modelType] || creditCosts.free
+  };
+};
+
+const callOpenRouterAPI = async (keyword, modelType = 'free') => {
+  try {
+    const { model } = getModelConfig(modelType);
+
+    const prompt = `Generate 10 high-quality article ideas for the keyword "${keyword}". Each article should:
+
+1. Address real user questions and pain points
+2. Be SEO-optimized and engaging
+3. Target different user intents (informational, commercial, etc.)
+4. Include diverse content types (guides, tutorials, comparisons, etc.)
+
+For each article idea, provide:
+- Title (compelling and SEO-friendly, must include the keyword "${keyword}")
+- Target audience (specific demographic)
+- Word count estimate (realistic)
+- Content intent (informational, commercial, educational, etc.)
+- Brief description (1-2 sentences about what the article covers)
+
+Format as JSON array with objects containing: title, audience, wordCount, intent, description`;
+
+    const startTime = Date.now();
+
+    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://content-flow.netlify.app',
+        'X-Title': 'Content Flow - SEO Wizard'
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const responseTime = Date.now() - startTime;
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid response format from OpenRouter API');
+    }
+
+    const content = data.choices[0].message.content;
+
+    // Handle markdown code blocks properly
+    let cleanContent = content;
+    if (content.includes('```json')) {
+      cleanContent = content.replace(/```json\s*/, '').replace(/\s*```$/, '');
+    } else if (content.includes('```')) {
+      cleanContent = content.replace(/```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    const articles = JSON.parse(cleanContent);
+
+    if (!Array.isArray(articles) || articles.length === 0) {
+      throw new Error('Invalid article format in API response');
+    }
+
+    return { articles, responseTime, success: true };
+
+  } catch (error) {
+    throw new Error(`OpenRouter API error: ${error.message}`);
+  }
+};
+
 // Main handler function
 exports.handler = async (event, context) => {
   // CORS headers
@@ -110,34 +211,48 @@ exports.handler = async (event, context) => {
 
     // API Status endpoint
     if (path === '/status' && method === 'GET') {
+      const services = {
+        serperAPI: { status: 'unknown', responseTime: null },
+        openRouterAPI: { status: 'unknown', configured: false }
+      };
+
+      // Check Serper API
       try {
         const result = await callSerperAPI('test', 'us', 'en', 1);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            status: 'operational',
-            serperAPI: {
-              status: 'connected',
-              responseTime: result.responseTime + 'ms'
-            },
-            timestamp: new Date().toISOString()
-          })
+        services.serperAPI = {
+          status: 'connected',
+          responseTime: result.responseTime + 'ms'
         };
       } catch (error) {
-        return {
-          statusCode: 503,
-          headers,
-          body: JSON.stringify({
-            status: 'degraded',
-            serperAPI: {
-              status: 'error',
-              error: error.message
-            },
-            timestamp: new Date().toISOString()
-          })
+        services.serperAPI = {
+          status: 'error',
+          error: error.message
         };
       }
+
+      // Check OpenRouter API configuration
+      services.openRouterAPI = {
+        status: OPENROUTER_API_KEY ? 'configured' : 'not_configured',
+        configured: !!OPENROUTER_API_KEY
+      };
+
+      const overallStatus = services.serperAPI.status === 'connected' ? 'operational' : 'degraded';
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          status: overallStatus,
+          services,
+          availableEndpoints: [
+            'GET /api/status',
+            'POST /api/keywords (Serper)',
+            'POST /api/search (Serper)',
+            'POST /api/article-ideas (OpenRouter)'
+          ],
+          timestamp: new Date().toISOString()
+        })
+      };
     }
 
     // Keywords endpoint
@@ -246,6 +361,69 @@ exports.handler = async (event, context) => {
       }
     }
 
+    // Article Ideas endpoint (OpenRouter)
+    if (path === '/article-ideas' && method === 'POST') {
+      const { keyword, modelType = 'free' } = body;
+
+      if (!keyword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Keyword is required',
+            code: 'MISSING_KEYWORD'
+          })
+        };
+      }
+
+      if (!OPENROUTER_API_KEY) {
+        return {
+          statusCode: 503,
+          headers,
+          body: JSON.stringify({
+            error: 'OpenRouter API not configured',
+            code: 'OPENROUTER_NOT_CONFIGURED'
+          })
+        };
+      }
+
+      try {
+        const { articles, responseTime } = await callOpenRouterAPI(keyword, modelType);
+        const { cost } = getModelConfig(modelType);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            articles,
+            totalArticles: articles.length,
+            responseTime,
+            cached: false,
+            metadata: {
+              keyword,
+              modelType,
+              model: getModelConfig(modelType).model,
+              creditCost: cost,
+              requestedCount: 10,
+              actualCount: articles.length
+            },
+            timestamp: new Date().toISOString()
+          })
+        };
+      } catch (error) {
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error: 'Failed to generate article ideas',
+            message: error.message,
+            code: 'ARTICLE_GENERATION_FAILED'
+          })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
@@ -257,7 +435,8 @@ exports.handler = async (event, context) => {
         availableEndpoints: [
           'GET /api/status',
           'POST /api/keywords',
-          'POST /api/search'
+          'POST /api/search',
+          'POST /api/article-ideas'
         ]
       })
     };
