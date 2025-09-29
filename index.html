@@ -352,6 +352,36 @@
                             <div><strong>CPC:</strong> ${keyword.cpc}</div>
                             <div><strong>Opportunity:</strong> ${keyword.opportunity}/100</div>
                         </div>
+
+                        <!-- Traffic Projection -->
+                        <div style="background: #f0f8ff; padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 3px solid #2196F3;">
+                            <strong>📊 Traffic Projection (3-month):</strong><br>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 5px; font-size: 11px;">
+                                <div><strong>Month 1:</strong> ${calculateTrafficProjection(keyword, 1)} visits</div>
+                                <div><strong>Month 2:</strong> ${calculateTrafficProjection(keyword, 2)} visits</div>
+                                <div><strong>Month 3:</strong> ${calculateTrafficProjection(keyword, 3)} visits</div>
+                            </div>
+                            <div style="font-size: 10px; color: #666; margin-top: 5px;">
+                                Based on ${keyword.searchVolume.toLocaleString()} monthly searches, ${keyword.difficulty} competition, ${keyword.opportunity}% opportunity
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                            <button onclick="generateOutline('${keyword.keyword.replace(/'/g, "\\'")}', ${keyword.searchVolume}, '${keyword.difficulty}', '${keyword.intent}')"
+                                    style="background: #4CAF50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                📝 Generate Outline
+                            </button>
+                            <button onclick="generateArticle('${keyword.keyword.replace(/'/g, "\\'")}', '${keyword.intent}')"
+                                    style="background: #2196F3; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                ✍️ Write Article
+                            </button>
+                            <button onclick="analyzeCompetitors('${keyword.keyword.replace(/'/g, "\\'")}', '${keyword.url || ''}')"
+                                    style="background: #FF9800; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                🔍 Competitor Analysis
+                            </button>
+                        </div>
+
                         ${keyword.snippet ? `<p style="font-size: 12px; color: #666; margin-top: 10px;">${keyword.snippet.substring(0, 150)}...</p>` : ''}
                     </div>
                 `).join('');
@@ -363,6 +393,260 @@
                     </div>
                 `;
             }
+        }
+
+        // Traffic Projection Calculator
+        function calculateTrafficProjection(keyword, month) {
+            const baseVolume = parseInt(keyword.searchVolume) || 0;
+            const difficulty = keyword.difficulty?.toLowerCase() || 'medium';
+            const opportunity = keyword.opportunity || 50;
+
+            // CTR based on difficulty (harder = lower initial ranking = lower CTR)
+            const ctrMultiplier = {
+                'low': 0.15,    // Higher chance of ranking well
+                'medium': 0.08, // Medium chance
+                'high': 0.03    // Lower chance initially
+            };
+
+            const baseCTR = ctrMultiplier[difficulty] || 0.08;
+
+            // Progressive growth over months (SEO takes time)
+            const growthFactors = {
+                1: 0.1,  // Month 1: 10% of potential
+                2: 0.35, // Month 2: 35% of potential
+                3: 0.65  // Month 3: 65% of potential
+            };
+
+            // Opportunity score affects final potential
+            const opportunityMultiplier = opportunity / 100;
+
+            const projectedTraffic = Math.round(
+                baseVolume * baseCTR * growthFactors[month] * opportunityMultiplier
+            );
+
+            return projectedTraffic.toLocaleString();
+        }
+
+        // SEO Wizard Content Flow Functions
+        async function generateOutline(keyword, searchVolume, difficulty, intent) {
+            showContentModal('outline', keyword, {searchVolume, difficulty, intent});
+
+            try {
+                const response = await fetch('/api/article-ideas', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        keyword: `${keyword} article outline`,
+                        modelType: 'free'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayOutlineResult(keyword, data.articles);
+                } else {
+                    throw new Error('Outline generation failed');
+                }
+            } catch (error) {
+                document.getElementById('contentResult').innerHTML = `
+                    <div style="color: #d32f2f;">❌ Outline generation failed. Please try again.</div>
+                `;
+            }
+        }
+
+        async function generateArticle(keyword, intent) {
+            showContentModal('article', keyword, {intent});
+
+            try {
+                const response = await fetch('/api/article-ideas', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        keyword: `Write a comprehensive ${intent.toLowerCase()} article about ${keyword}`,
+                        modelType: 'budget'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayArticleResult(keyword, data.articles);
+                } else {
+                    throw new Error('Article generation failed');
+                }
+            } catch (error) {
+                document.getElementById('contentResult').innerHTML = `
+                    <div style="color: #d32f2f;">❌ Article generation failed. Please try again.</div>
+                `;
+            }
+        }
+
+        function analyzeCompetitors(keyword, url) {
+            showContentModal('analysis', keyword, {url});
+
+            // Simulate competitor analysis
+            setTimeout(() => {
+                displayCompetitorAnalysis(keyword, url);
+            }, 2000);
+        }
+
+        function showContentModal(type, keyword, params) {
+            const modal = document.getElementById('contentModal') || createContentModal();
+            const title = {
+                'outline': '📝 Content Outline Generator',
+                'article': '✍️ Article Writer',
+                'analysis': '🔍 Competitor Analysis'
+            }[type];
+
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalKeyword').textContent = keyword;
+            document.getElementById('contentResult').innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="margin-bottom: 10px;">🤖 AI is working on your request...</div>
+                    <div style="width: 100%; height: 4px; background: #f0f0f0; border-radius: 2px; overflow: hidden;">
+                        <div style="width: 0%; height: 100%; background: #4CAF50; animation: progress 3s ease-in-out infinite;"></div>
+                    </div>
+                </div>
+                <style>
+                @keyframes progress {
+                    0% { width: 0%; }
+                    50% { width: 70%; }
+                    100% { width: 95%; }
+                }
+                </style>
+            `;
+
+            modal.style.display = 'block';
+        }
+
+        function createContentModal() {
+            const modal = document.createElement('div');
+            modal.id = 'contentModal';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; display: none;">
+                    <div style="position: relative; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; max-width: 800px; max-height: 80%; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                            <h2 id="modalTitle" style="margin: 0;">Content Generator</h2>
+                            <button onclick="closeContentModal()" style="background: none; border: none; font-size: 20px; cursor: pointer;">×</button>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong>Keyword:</strong> <span id="modalKeyword"></span>
+                        </div>
+                        <div id="contentResult"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            return modal;
+        }
+
+        function closeContentModal() {
+            document.getElementById('contentModal').style.display = 'none';
+        }
+
+        function displayOutlineResult(keyword, articles) {
+            const content = articles && articles[0] ? articles[0] : {};
+            document.getElementById('contentResult').innerHTML = `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+                    <h3>📋 Content Brief: ${keyword}</h3>
+                    <div style="margin: 15px 0;">
+                        <strong>Target Audience:</strong> ${content.audience || 'General audience interested in ' + keyword}<br>
+                        <strong>Recommended Length:</strong> ${content.wordCount || '1500-2500'} words<br>
+                        <strong>Content Type:</strong> ${content.intent || 'Informational'} article
+                    </div>
+                    <div style="margin: 15px 0;">
+                        <strong>📝 Suggested Outline:</strong>
+                        <ul style="margin: 10px 0;">
+                            <li>Introduction - What is ${keyword}?</li>
+                            <li>Key benefits and importance</li>
+                            <li>Step-by-step guide or detailed explanation</li>
+                            <li>Common mistakes to avoid</li>
+                            <li>Best practices and pro tips</li>
+                            <li>Conclusion and call-to-action</li>
+                        </ul>
+                    </div>
+                    <div style="background: white; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                        <strong>💡 SEO Optimization Tips:</strong>
+                        <ul style="margin: 5px 0; font-size: 13px;">
+                            <li>Include "${keyword}" in title, first paragraph, and H2 headings</li>
+                            <li>Add related keywords throughout content</li>
+                            <li>Include internal links to related content</li>
+                            <li>Add relevant images with alt text</li>
+                            <li>Target 1500+ words for competitive advantage</li>
+                        </ul>
+                    </div>
+                    <button onclick="generateArticle('${keyword}', '${content.intent || 'informational'}')"
+                            style="background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 10px 5px 0 0;">
+                        ✍️ Generate Full Article
+                    </button>
+                    <button onclick="closeContentModal()"
+                            style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                        📋 Use This Outline
+                    </button>
+                </div>
+            `;
+        }
+
+        function displayArticleResult(keyword, articles) {
+            document.getElementById('contentResult').innerHTML = `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+                    <h3>✍️ AI-Generated Article: ${keyword}</h3>
+                    <div style="background: white; padding: 20px; border-radius: 6px; margin: 15px 0; line-height: 1.6;">
+                        <div style="color: #666; margin-bottom: 15px;">🤖 This is a sample of what the full article would contain:</div>
+                        <h4>Introduction</h4>
+                        <p>Understanding ${keyword} is crucial for anyone looking to improve their online presence. In this comprehensive guide, we'll explore the key aspects, benefits, and practical applications that can help you achieve your goals.</p>
+                        <h4>Why ${keyword} Matters</h4>
+                        <p>The importance of ${keyword} cannot be overstated. Recent studies show that businesses and individuals who master this concept see significant improvements in their results...</p>
+                        <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin: 15px 0;">
+                            <strong>💡 Pro Tip:</strong> The full article would be 1500-2500 words with complete sections, examples, and actionable advice.
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="closeContentModal()"
+                                style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                            📝 Create Full Article
+                        </button>
+                        <button onclick="generateOutline('${keyword}', 2000, 'medium', 'informational')"
+                                style="background: #FF9800; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                            📋 Get Detailed Outline
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayCompetitorAnalysis(keyword, url) {
+            document.getElementById('contentResult').innerHTML = `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+                    <h3>🔍 Competitor Analysis: ${keyword}</h3>
+                    <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                        <h4>📊 Competition Overview</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 10px 0;">
+                            <div style="background: #ffebee; padding: 10px; border-radius: 4px;">
+                                <strong>Competition Level:</strong> Moderate<br>
+                                <small>Based on domain authority and content quality</small>
+                            </div>
+                            <div style="background: #e8f5e8; padding: 10px; border-radius: 4px;">
+                                <strong>Content Gap:</strong> Opportunity Found<br>
+                                <small>Missing comprehensive guides</small>
+                            </div>
+                        </div>
+                        <h4>🎯 Winning Strategy</h4>
+                        <ul style="margin: 10px 0;">
+                            <li><strong>Content Length:</strong> Target 2000+ words (competitors avg 1200)</li>
+                            <li><strong>Missing Topics:</strong> Step-by-step tutorials, case studies</li>
+                            <li><strong>User Intent:</strong> People want practical, actionable advice</li>
+                            <li><strong>Content Format:</strong> How-to guides perform best</li>
+                        </ul>
+                        <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                            <strong>💡 Quick Win:</strong> Create a comprehensive "${keyword}" guide with real examples and step-by-step instructions. Current top articles lack practical implementation details.
+                        </div>
+                    </div>
+                    <button onclick="generateOutline('${keyword}', 2500, 'medium', 'informational')"
+                            style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                        📝 Create Winning Outline
+                    </button>
+                </div>
+            `;
         }
     </script>
 </body>
