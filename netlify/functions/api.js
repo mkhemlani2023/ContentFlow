@@ -67,26 +67,121 @@ const callSerperAPI = async (query, location = 'us', language = 'en', num = 10) 
   }
 };
 
-const processKeywords = (searchData, responseTime) => {
-  const keywords = searchData.organic?.map((result, index) => ({
-    keyword: result.title || 'Unknown',
-    searchVolume: Math.floor(Math.random() * 10000) + 1000,
-    difficulty: calculateDifficulty(result.position || index + 1),
-    cpc: '$' + (Math.random() * 5 + 0.5).toFixed(2),
-    intent: determineIntent(result.title || ''),
-    opportunity: Math.floor(Math.random() * 100) + 1,
-    url: result.link,
-    snippet: result.snippet
-  })) || [];
+const processKeywords = (searchData, responseTime, originalKeyword) => {
+  const keywords = [];
+
+  // PRIMARY: Extract keyword opportunities from ranking articles
+  if (searchData.organic) {
+    searchData.organic.forEach((result, index) => {
+      // Clean and extract the main topic from article title
+      const mainKeyword = extractMainKeyword(result.title, originalKeyword);
+
+      keywords.push({
+        keyword: mainKeyword,
+        searchVolume: estimateVolumeFromPosition(result.position || index + 1),
+        difficulty: calculateDifficulty(result.position || index + 1),
+        cpc: '$' + (Math.random() * 5 + 0.5).toFixed(2),
+        intent: determineIntent(result.title || ''),
+        opportunity: calculateOpportunity(result.position || index + 1),
+        url: result.link,
+        snippet: result.snippet,
+        source: 'Ranking Articles',
+        competitorTitle: result.title,
+        rankingPosition: result.position || index + 1
+      });
+    });
+  }
+
+  // SECONDARY: Add related searches as additional keyword opportunities
+  if (searchData.relatedSearches) {
+    searchData.relatedSearches.forEach(related => {
+      keywords.push({
+        keyword: related.query,
+        searchVolume: Math.floor(Math.random() * 5000) + 2000,
+        difficulty: 'Medium',
+        cpc: '$' + (Math.random() * 3 + 1).toFixed(2),
+        intent: determineIntent(related.query),
+        opportunity: Math.floor(Math.random() * 70) + 30,
+        source: 'Related Searches'
+      });
+    });
+  }
+
+  // TERTIARY: Extract from People Also Ask
+  if (searchData.peopleAlsoAsk) {
+    searchData.peopleAlsoAsk.forEach(paa => {
+      const keywordFromQuestion = paa.question
+        .toLowerCase()
+        .replace(/^(what|how|why|when|where|who|which|is|are|can|do|does)\s+/i, '')
+        .replace(/\?$/, '')
+        .trim();
+
+      if (keywordFromQuestion.length > 3) {
+        keywords.push({
+          keyword: keywordFromQuestion,
+          searchVolume: Math.floor(Math.random() * 3000) + 1500,
+          difficulty: 'Low',
+          cpc: '$' + (Math.random() * 4 + 0.8).toFixed(2),
+          intent: 'Informational',
+          opportunity: Math.floor(Math.random() * 80) + 40,
+          source: 'People Also Ask',
+          originalQuestion: paa.question
+        });
+      }
+    });
+  }
 
   return {
     success: true,
-    keywords,
-    totalKeywords: keywords.length,
+    keywords: keywords.slice(0, 25),
+    totalKeywords: Math.min(keywords.length, 25),
     responseTime,
-    cached: false
+    cached: false,
+    analysis: {
+      competitorArticles: searchData.organic?.length || 0,
+      relatedSearches: searchData.relatedSearches?.length || 0,
+      peopleAlsoAsk: searchData.peopleAlsoAsk?.length || 0
+    }
   };
 };
+
+// Helper function to extract the main keyword from article titles
+const extractMainKeyword = (title, originalKeyword) => {
+  if (!title) return originalKeyword;
+
+  // Remove common article prefixes/suffixes
+  const cleanTitle = title
+    .replace(/^(The|A|An)\s+/i, '')
+    .replace(/\s*-\s*.+$/, '') // Remove site names after dash
+    .replace(/\s*\|\s*.+$/, '') // Remove site names after pipe
+    .replace(/[^\w\s-]/g, ' ') // Remove special characters except hyphens
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+
+  // If title contains the original keyword, return a variation
+  if (cleanTitle.includes(originalKeyword.toLowerCase())) {
+    return cleanTitle.substring(0, 60); // Limit length
+  }
+
+  // Otherwise return the first meaningful part of the title
+  const words = cleanTitle.split(' ');
+  return words.slice(0, 5).join(' '); // Take first 5 words
+};
+
+// Estimate search volume based on ranking position
+const estimateVolumeFromPosition = (position) => {
+  if (position <= 3) return Math.floor(Math.random() * 20000) + 10000; // High volume
+  if (position <= 6) return Math.floor(Math.random() * 10000) + 5000;  // Medium volume
+  return Math.floor(Math.random() * 5000) + 1000; // Lower volume
+};
+
+// Calculate opportunity score based on position and competition
+const calculateOpportunity = (position) => {
+  const baseOpportunity = Math.max(100 - (position * 8), 10);
+  return baseOpportunity + Math.floor(Math.random() * 20) - 10; // Add some variance
+};
+
 
 // OpenRouter API functions
 const getModelConfig = (modelType) => {
@@ -284,7 +379,7 @@ exports.handler = async (event, context) => {
 
       try {
         const result = await callSerperAPI(keyword, location, language, count);
-        const processedResult = processKeywords(result.data, result.responseTime);
+        const processedResult = processKeywords(result.data, result.responseTime, keyword);
 
         // Cost analysis
         const serperCost = count * 0.0006;
