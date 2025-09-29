@@ -1,9 +1,9 @@
 [build]
-  # Build command - simple install, public directory already exists
-  command = "npm install"
+  # Build command - copy files to public directory
+  command = "cp index.html public/ && npm install"
 
-  # Directory to publish - serve static files from root
-  publish = "."
+  # Directory to publish - serve static files from public
+  publish = "public"
 
   # Functions directory for serverless functions
   functions = "netlify/functions"
