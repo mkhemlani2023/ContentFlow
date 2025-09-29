@@ -136,20 +136,20 @@
 </head>
 <body>
     <div class="header">
-        <h1>🚀 Content Flow</h1>
-        <p>Serper API Integration - Production Test Environment</p>
-        <p><strong>97% Cost Reduction vs DataforSEO</strong></p>
+        <h1>🚀 SEO Wizard</h1>
+        <p>AI-Powered Content Research & Strategy Platform</p>
+        <p><strong>Discover High-Impact Keywords & Generate Winning Content Ideas</strong></p>
     </div>
 
     <div id="status"></div>
 
     <div class="container">
         <div class="card">
-            <h2>🔍 Keyword Research</h2>
+            <h2>🔍 Competitor Keyword Analysis</h2>
             <form id="keywordForm">
                 <div class="form-group">
-                    <label for="keyword">Keyword:</label>
-                    <input type="text" id="keyword" placeholder="e.g., digital marketing tools" required>
+                    <label for="keyword">Topic or Keyword:</label>
+                    <input type="text" id="keyword" placeholder="e.g., weight loss tips, social media marketing" required>
                 </div>
                 <div class="form-group">
                     <label for="location">Location:</label>
@@ -174,9 +174,9 @@
         </div>
 
         <div class="card">
-            <h2>📊 API Status</h2>
+            <h2>📊 Platform Status</h2>
             <div id="apiStatus">
-                <button onclick="checkStatus()">Check API Status</button>
+                <button onclick="checkStatus()">Check System Status</button>
             </div>
         </div>
     </div>
@@ -303,25 +303,25 @@
 
         function displayStats(data, totalTime) {
             const statsDiv = document.getElementById('stats');
-            const cost = data.metadata.costAnalysis;
+            const businessValue = data.metadata.businessValue;
 
             statsDiv.style.display = 'grid';
             statsDiv.innerHTML = `
                 <div class="stat-card">
                     <div class="stat-number">${data.totalKeywords}</div>
-                    <div class="stat-label">Keywords Found</div>
+                    <div class="stat-label">Content Opportunities</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">${totalTime}ms</div>
-                    <div class="stat-label">Total Response Time</div>
+                    <div class="stat-number">${Math.round(totalTime/100)/10}s</div>
+                    <div class="stat-label">Analysis Time</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">${cost.savings}</div>
-                    <div class="stat-label">Cost Savings</div>
+                    <div class="stat-number">${data.analysis?.competitorArticles || 0}</div>
+                    <div class="stat-label">Competitors Analyzed</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">${cost.serperCost}</div>
-                    <div class="stat-label">Actual Cost</div>
+                    <div class="stat-number">${businessValue?.highOpportunityKeywords || 0}</div>
+                    <div class="stat-label">High-Opportunity Keywords</div>
                 </div>
             `;
         }
@@ -332,10 +332,10 @@
 
             statusDiv.innerHTML = `
                 <div class="status success">
-                    <strong>✅ Search Successful</strong><br>
-                    Found ${data.totalKeywords} keywords in ${totalTime}ms<br>
-                    Cost: ${data.metadata.costAnalysis.serperCost} (vs ${data.metadata.costAnalysis.dataforSEOEquivalent} DataforSEO)<br>
-                    Savings: ${data.metadata.costAnalysis.savings}
+                    <strong>✅ Analysis Complete</strong><br>
+                    Discovered ${data.totalKeywords} content opportunities in ${Math.round(totalTime/100)/10} seconds<br>
+                    Found ${data.analysis?.competitorArticles || 0} competing articles and ${data.analysis?.relatedSearches || 0} related topics<br>
+                    Ready to dominate your niche with data-driven content strategy
                 </div>
             `;
 

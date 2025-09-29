@@ -381,10 +381,11 @@ exports.handler = async (event, context) => {
         const result = await callSerperAPI(keyword, location, language, count);
         const processedResult = processKeywords(result.data, result.responseTime, keyword);
 
-        // Cost analysis
-        const serperCost = count * 0.0006;
-        const dataforSEOCost = count * 0.02;
-        const savings = ((dataforSEOCost - serperCost) / dataforSEOCost * 100).toFixed(1);
+        // Business value metrics
+        const avgOpportunity = Math.round(
+          processedResult.keywords.reduce((sum, kw) => sum + kw.opportunity, 0) / processedResult.keywords.length
+        );
+        const highOpportunityCount = processedResult.keywords.filter(kw => kw.opportunity >= 70).length;
 
         return {
           statusCode: 200,
@@ -397,10 +398,11 @@ exports.handler = async (event, context) => {
               language,
               requestedCount: count,
               actualCount: processedResult.totalKeywords,
-              costAnalysis: {
-                serperCost: `$${serperCost.toFixed(4)}`,
-                dataforSEOEquivalent: `$${dataforSEOCost.toFixed(4)}`,
-                savings: `${savings}%`
+              businessValue: {
+                avgOpportunity: avgOpportunity,
+                highOpportunityKeywords: highOpportunityCount,
+                competitiveLandscape: `${processedResult.analysis?.competitorArticles || 0} competitors analyzed`,
+                marketInsights: `${processedResult.analysis?.relatedSearches || 0} related search trends identified`
               }
             },
             timestamp: new Date().toISOString()
