@@ -203,7 +203,19 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const path = event.path.replace('/.netlify/functions/api', '');
+    // Handle both direct function calls and redirected API calls
+    let path = event.path || '';
+    if (path.startsWith('/.netlify/functions/api')) {
+      path = path.replace('/.netlify/functions/api', '');
+    } else if (path.startsWith('/api')) {
+      path = path.replace('/api', '');
+    }
+
+    // Default to status if no path
+    if (!path || path === '/') {
+      path = '/status';
+    }
+
     const method = event.httpMethod;
     const body = event.body ? JSON.parse(event.body) : {};
 
