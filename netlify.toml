@@ -15,17 +15,18 @@
   # Production environment
   NODE_ENV = "production"
 
-# Redirect all API calls to serverless functions
+# Redirect all API calls to the api serverless function
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  to = "/.netlify/functions/api"
   status = 200
 
-# SPA fallback for client-side routing
+# SPA fallback for client-side routing (except API calls)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
 
 # Headers for security and performance
 [[headers]]
