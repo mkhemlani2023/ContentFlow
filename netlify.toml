@@ -1,9 +1,9 @@
 [build]
-  # Build command - use production JavaScript server
+  # Build command - simple install, public directory already exists
   command = "npm install"
 
-  # Directory to publish - serve static files and server
-  publish = "public"
+  # Directory to publish - serve static files
+  publish = "."
 
   # Functions directory for serverless functions
   functions = "netlify/functions"
