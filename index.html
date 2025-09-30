@@ -1028,60 +1028,126 @@
 
         // Content generation functions for inline workflow
         async function generateOutlineForKeyword(keyword, wordCount, difficulty, intent) {
-            const cleanId = keyword.replace(/[^a-zA-Z0-9]/g, '');
-            const outputDiv = document.getElementById(`content-output-${cleanId}`);
+            // Create a unique container for this outline
+            const timestamp = Date.now();
+            const containerId = `outline-${keyword.replace(/[^a-zA-Z0-9]/g, '')}-${timestamp}`;
 
-            outputDiv.innerHTML = `
-                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                        <div style="font-size: 16px;">🔄</div>
-                        <div style="font-weight: 500; color: #1e293b;">Generating Article Outline...</div>
+            // Create and append a new container to the suggestions output area
+            const parentContainer = document.querySelector('.results') || document.body;
+            const outlineContainer = document.createElement('div');
+            outlineContainer.id = containerId;
+            outlineContainer.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;';
+
+            outlineContainer.innerHTML = `
+                <div style="background: white; border-radius: 12px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative;">
+                    <div style="padding: 20px;">
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="font-size: 16px;">🔄</div>
+                                <div style="font-weight: 500; color: #1e293b;">Generating Article Outline...</div>
+                            </div>
+                            <p style="margin: 0; color: #64748b; font-size: 14px;">Creating a structured outline for "${keyword}" (${wordCount} words)</p>
+                        </div>
                     </div>
-                    <p style="margin: 0; color: #64748b; font-size: 14px;">Creating a structured outline optimized for "${keyword}"</p>
+                    <button onclick="document.getElementById('${containerId}').remove()" style="position: absolute; top: 10px; right: 10px; background: #64748b; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 16px;">×</button>
                 </div>
             `;
 
-            try {
-                // Call the existing generateOutline function
-                await generateOutline(keyword, wordCount, difficulty, intent);
+            parentContainer.appendChild(outlineContainer);
 
-                // The generateOutline function will update the contentResult div
-                // We need to move that content to our inline output div
+            try {
+                // Generate outline structure directly
+                const outline = generateOutlineStructure(keyword, wordCount, difficulty, intent);
+
+                // Display the generated outline after a short delay
                 setTimeout(() => {
-                    const contentResult = document.getElementById('contentResult');
-                    if (contentResult && contentResult.innerHTML.trim()) {
-                        outputDiv.innerHTML = contentResult.innerHTML;
-                        // Mark keyword as processed
-                        window.processedKeywords.add(keyword);
-                        // Add back button to generated content
-                        outputDiv.innerHTML += `
-                            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0; text-align: center;">
-                                <button onclick="hideKeywordDetails()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 10px;">
-                                    ← Back to Keywords
-                                </button>
-                                <button onclick="generateFullArticle('${keyword.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}')" style="background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">
-                                    📄 Generate Full Article
-                                </button>
+                    const contentDiv = outlineContainer.querySelector('div[style*="padding: 20px"]');
+                    contentDiv.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #4CAF50;">
+                            <div style="font-size: 24px;">📝</div>
+                            <h2 style="color: #1e293b; margin: 0; font-size: 20px;">Article Outline: ${keyword}</h2>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 18px; font-weight: bold; color: #4CAF50;">${wordCount}</div>
+                                    <div style="font-size: 12px; color: #64748b;">Target Words</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 18px; font-weight: bold; color: #667eea; text-transform: capitalize;">${difficulty}</div>
+                                    <div style="font-size: 12px; color: #64748b;">Difficulty</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 18px; font-weight: bold; color: #f59e0b; text-transform: capitalize;">${intent}</div>
+                                    <div style="font-size: 12px; color: #64748b;">Search Intent</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 18px; font-weight: bold; color: #10b981;">${outline.sections.length}</div>
+                                    <div style="font-size: 12px; color: #64748b;">Sections</div>
+                                </div>
                             </div>
-                        `;
-                        // Clear the original result to avoid duplication
-                        contentResult.innerHTML = '';
-                    }
-                }, 1000);
+                        </div>
+
+                        ${outline.sections.map((section, index) => `
+                            <div style="margin-bottom: 24px; padding: 20px; background: #f9fafb; border-radius: 8px; border-left: 4px solid ${index === 0 ? '#4CAF50' : '#e2e8f0'};">
+                                <h3 style="color: #1e293b; margin: 0 0 12px 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                                    <span style="background: #667eea; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">${index + 1}</span>
+                                    ${section.title}
+                                    <span style="background: #f3f4f6; color: #64748b; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 500;">${section.wordCount} words</span>
+                                </h3>
+
+                                ${section.subsections && section.subsections.length > 0 ? `
+                                    <ul style="margin: 12px 0 0 0; padding-left: 24px; color: #4b5563;">
+                                        ${section.subsections.map(sub => `
+                                            <li style="margin-bottom: 8px; line-height: 1.5;">
+                                                <strong>${sub.title}</strong>
+                                                ${sub.description ? `<br><span style="color: #64748b; font-size: 13px;">${sub.description}</span>` : ''}
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                ` : `
+                                    <p style="margin: 8px 0 0 0; color: #64748b; font-size: 14px; line-height: 1.5;">${section.description}</p>
+                                `}
+                            </div>
+                        `).join('')}
+
+                        <div style="background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%); padding: 20px; border-radius: 8px; margin-top: 24px;">
+                            <h4 style="color: #1e293b; margin: 0 0 12px 0; font-size: 16px;">💡 SEO Optimization Tips</h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px; line-height: 1.6;">
+                                <li>Include "${keyword}" naturally in your H1 and at least 2 H2 headings</li>
+                                <li>Target keyword density of 1-2% throughout the content</li>
+                                <li>Add related keywords: ${outline.relatedKeywords.join(', ')}</li>
+                                <li>Include internal links to related articles and external authority links</li>
+                                <li>Use structured data markup for better SERP appearance</li>
+                                <li>Optimize meta description with primary keyword and clear value proposition</li>
+                            </ul>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                            <button onclick="document.getElementById('${containerId}').remove()" style="background: #64748b; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 10px;">
+                                Close Outline
+                            </button>
+                        </div>
+                    `;
+                }, 1500);
 
             } catch (error) {
                 console.error('Outline generation error:', error);
-                outputDiv.innerHTML = `
-                    <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #dc2626;">
-                        <div style="font-weight: 500; color: #991b1b;">Generation Failed</div>
-                        <p style="margin: 8px 0 0 0; color: #b91c1c; font-size: 14px;">${error.message}</p>
-                        <div style="margin-top: 15px;">
-                            <button onclick="hideKeywordDetails()" style="background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
-                                ← Back to Keywords
-                            </button>
+                setTimeout(() => {
+                    const contentDiv = outlineContainer.querySelector('div[style*="padding: 20px"]');
+                    contentDiv.innerHTML = `
+                        <div style="background: #fee2e2; padding: 20px; border-radius: 12px; border-left: 4px solid #dc2626;">
+                            <div style="font-weight: 600; color: #991b1b; font-size: 16px;">Outline Generation Failed</div>
+                            <p style="margin: 8px 0 0 0; color: #b91c1c; font-size: 14px;">${error.message}</p>
+                            <div style="text-align: center; margin-top: 15px;">
+                                <button onclick="document.getElementById('${containerId}').remove()" style="background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                                    Close
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }, 500);
             }
         }
 
@@ -1488,6 +1554,7 @@
 
         async function generateArticleIdeasFromAutocomplete(keyword, suggestions) {
             // Create article ideas based on the main keyword and autocomplete suggestions
+            const currentYear = new Date().getFullYear();
             const articleIdeas = [];
 
             // Main keyword articles
@@ -1500,7 +1567,7 @@
             });
 
             articleIdeas.push({
-                title: `${keyword}: Everything You Need to Know in 2024`,
+                title: `${keyword}: Everything You Need to Know in ${currentYear}`,
                 type: 'Ultimate Guide',
                 intent: 'Informational',
                 estimatedWords: 3000,
@@ -2295,7 +2362,7 @@
 
         function displayInlineCompetitorAnalysis(keyword, data, cleanId) {
             const { competitors, analysis, recommendations } = data;
-            const resultsDiv = document.getElementById(`competitor-results-${cleanId}`);
+            const resultsDiv = document.getElementById(`competitor-results-inline-${cleanId}`);
 
             // Generate ranking articles list
             const rankingArticles = competitors.slice(0, 5).map((comp, index) => `
