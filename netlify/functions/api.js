@@ -393,21 +393,58 @@ const callOpenRouterAPI = async (keyword, modelType = 'free') => {
   try {
     const { model } = getModelConfig(modelType);
 
-    const prompt = `Generate 10 high-quality article ideas for the keyword "${keyword}". Each article should:
+    // Create context-aware, intelligent prompt based on keyword analysis
+    const currentYear = new Date().getFullYear();
 
-1. Address real user questions and pain points
-2. Be SEO-optimized and engaging
-3. Target different user intents (informational, commercial, etc.)
-4. Include diverse content types (guides, tutorials, comparisons, etc.)
+    const prompt = `You are an expert SEO content strategist. Analyze the keyword "${keyword}" and generate 10 highly relevant, contextually appropriate article ideas that real users would actually search for.
 
+STEP 1 - KEYWORD ANALYSIS:
+First, determine what "${keyword}" represents:
+- What industry/category does it belong to?
+- What type of user typically searches for this?
+- What problems/needs does this keyword address?
+- What's the typical search intent and user journey stage?
+
+STEP 2 - CONTEXT-AWARE ARTICLE GENERATION:
+Create article ideas that:
+✅ Directly address user problems related to "${keyword}"
+✅ Reflect natural search behavior patterns for this topic
+✅ Match appropriate content depth and user expertise level
+✅ Include relevant subtopics and related questions
+✅ Consider ${currentYear} trends and current relevance
+✅ Provide genuine value to the target audience
+
+❌ AVOID THESE MISTAKES:
+- Generic templates that could work for any keyword
+- Forcing unrelated topics together (like "fermented foods for business")
+- Outdated year references (always use ${currentYear})
+- Commercial angles where they don't naturally fit
+- Overly broad or vague titles
+- Topics that don't match user search intent
+
+ARTICLE TYPES TO CONSIDER (where naturally relevant):
+- How-to guides and tutorials
+- Problem-solving articles
+- Comparison and review content
+- Educational/informational pieces
+- Best practices and tips
+- Troubleshooting guides
+- Industry insights and trends
+- Case studies and examples
+- Tools and resource lists
+- FAQ and Q&A formats
+
+OUTPUT REQUIREMENTS:
 For each article idea, provide:
-- Title (compelling and SEO-friendly, must include the keyword "${keyword}")
-- Target audience (specific demographic)
-- Word count estimate (realistic)
-- Content intent (informational, commercial, educational, etc.)
-- Brief description (1-2 sentences about what the article covers)
+- title: Compelling, specific, naturally includes "${keyword}", addresses real user need
+- audience: Specific demographic who would genuinely search for this
+- wordCount: Realistic length based on topic complexity (800-2500 words)
+- intent: Actual search intent (informational, commercial, navigational, transactional)
+- description: Clear explanation of what problem this solves or value it provides
 
-Format as JSON array with objects containing: title, audience, wordCount, intent, description`;
+Format as clean JSON array: [{title, audience, wordCount, intent, description}, ...]
+
+Generate ideas that users would actually find valuable when searching for "${keyword}".`;
 
     const startTime = Date.now();
 
