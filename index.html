@@ -694,10 +694,10 @@
                                 <span style="background: ${getOpportunityColor(keyword.opportunity)}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">${keyword.opportunity}% opportunity</span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; color: #64748b;">
-                                <span>🔍 ${keyword.searchVolume.toLocaleString()}</span>
-                                <span style="color: ${getDifficultyColor(keyword.difficulty)}">⚡ ${keyword.difficulty}</span>
-                                <span>💰 ${keyword.cpc}</span>
-                                ${statusIndicator}
+                                <span style="width: 90px; text-align: left;">🔍 ${keyword.searchVolume.toLocaleString()}</span>
+                                <span style="width: 70px; text-align: left; color: ${getDifficultyColor(keyword.difficulty)}">⚡ ${keyword.difficulty}</span>
+                                <span style="width: 60px; text-align: left;">💰 ${keyword.cpc}</span>
+                                <span style="margin-right: 20px;">${statusIndicator}</span>
                             </div>
                         </div>
                     `;
@@ -864,9 +864,11 @@
                             Generate Article Ideas
                             <span style="font-size: 10px; background: #f59e0b; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">5 credits</span>
                         </button>
-                        <button class="action-btn secondary" onclick="toggleInlineCompetitorAnalysis('${keywordData.keyword.replace(/'/g, "\\'")}', '${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')">
+                        <button class="action-btn secondary" onclick="toggleInlineCompetitorAnalysisWithCredits('${keywordData.keyword.replace(/'/g, "\\'")}', '${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')"
+                                title="Analyzes top 10 competitors in search results, providing domain authority, backlink counts, content length analysis, and strategic insights for outranking them.">
                             <span class="btn-icon">🔍</span>
                             <span id="toggle-text-inline-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">Analyze Competitors</span>
+                            <span style="font-size: 10px; background: #8b5cf6; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">10 credits</span>
                         </button>
                     </div>
 
@@ -930,6 +932,32 @@
                 contentSection.style.display = 'none';
                 suggestionsSection.style.display = 'none';
             }
+        }
+
+        // Credit-based competitor analysis wrapper
+        async function toggleInlineCompetitorAnalysisWithCredits(keyword, cleanId) {
+            const CREDIT_COST = 10; // Cost for competitor analysis
+
+            // Check if user has sufficient credits
+            if (!window.seoWizard || window.seoWizard.credits < CREDIT_COST) {
+                alert(`Insufficient credits. You need ${CREDIT_COST} credits for competitor analysis.`);
+                return;
+            }
+
+            // Deduct credits
+            window.seoWizard.credits -= CREDIT_COST;
+
+            // Update credits display if it exists
+            const creditsDisplay = document.querySelector('.credits-display');
+            if (creditsDisplay) {
+                creditsDisplay.textContent = window.seoWizard.credits;
+            }
+
+            // Save updated credits to localStorage
+            localStorage.setItem('seoWizardCredits', window.seoWizard.credits.toString());
+
+            // Call the original function
+            await toggleInlineCompetitorAnalysis(keyword, cleanId);
         }
 
         // Inline competitor analysis function
@@ -1331,6 +1359,7 @@
         // Helper function to generate outline structure
         function generateOutlineStructure(keyword, wordCount, difficulty, intent) {
             const wordsPerSection = Math.floor(wordCount / 8); // Roughly 8 sections
+            const currentYear = new Date().getFullYear();
 
             // Generate related keywords
             const relatedKeywords = [
@@ -1429,7 +1458,7 @@
             } else if (intent === 'commercial' || intent === 'transactional') {
                 sections = [
                     {
-                        title: `Best ${keyword} Solutions in 2024`,
+                        title: `Best ${keyword} Solutions in ${currentYear}`,
                         wordCount: wordsPerSection * 1.2,
                         description: `Comprehensive comparison of top options available.`
                     },
@@ -1610,9 +1639,10 @@
 
         async function generateFallbackArticleIdeas(keyword) {
             // Fallback article ideas if autocomplete fails
+            const currentYear = new Date().getFullYear();
             return [
                 {
-                    title: `The Ultimate ${keyword} Guide for 2024`,
+                    title: `The Ultimate ${keyword} Guide for ${currentYear}`,
                     type: 'Guide',
                     intent: 'Informational',
                     estimatedWords: 2500,
@@ -1670,8 +1700,10 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #64748b;">
                             <span>📝 ~${suggestion.estimatedWords.toLocaleString()} words</span>
                             <button onclick="generateOutlineForKeyword('${suggestion.title.replace(/'/g, "\\'")}', ${suggestion.estimatedWords}, '${suggestion.difficulty.toLowerCase()}', '${suggestion.intent.toLowerCase()}')"
-                                    style="background: #4CAF50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                    style="background: #4CAF50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; position: relative;"
+                                    title="Generate a comprehensive SEO-optimized article outline with sections, subsections, and optimization tips. Completely free to encourage content planning.">
                                 📋 Generate Outline
+                                <span style="font-size: 9px; background: #10b981; color: white; padding: 1px 4px; border-radius: 6px; margin-left: 4px; font-weight: 600;">FREE</span>
                             </button>
                         </div>
                     </div>
