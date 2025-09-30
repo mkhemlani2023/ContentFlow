@@ -1908,7 +1908,55 @@
 
         // Generate simple article ideas directly from Google Autocomplete suggestions
         function generateGoogleAutocompleteIdeas(keyword, suggestions) {
-            return suggestions.slice(0, 5).map(suggestion => ({
+            console.log('Raw Google Autocomplete suggestions received:', suggestions);
+
+            // Filter out nonsensical combinations
+            const filteredSuggestions = suggestions.filter(suggestion => {
+                if (!suggestion || typeof suggestion !== 'string') return false;
+
+                const suggestionLower = suggestion.toLowerCase();
+                const keywordLower = keyword.toLowerCase();
+
+                // Filter out obviously nonsensical business combinations
+                const nonsensicalPatterns = [
+                    'for business',
+                    'for agencies',
+                    'for small business',
+                    'for enterprises',
+                    'for companies',
+                    'for marketing'
+                ];
+
+                // Check if this is a health/food topic being forced into business context
+                const isHealthFood = keywordLower.includes('health') || keywordLower.includes('food') ||
+                                   keywordLower.includes('microbiome') || keywordLower.includes('nutrition') ||
+                                   keywordLower.includes('diet') || keywordLower.includes('wellness');
+
+                if (isHealthFood) {
+                    const hasBusinessPattern = nonsensicalPatterns.some(pattern => suggestionLower.includes(pattern));
+                    if (hasBusinessPattern) {
+                        console.warn('Filtered out nonsensical business combination:', suggestion);
+                        return false;
+                    }
+                }
+
+                // Filter out completely unrelated suggestions
+                const keywordWords = keywordLower.split(' ');
+                const hasKeywordRelevance = keywordWords.some(word =>
+                    word.length > 2 && suggestionLower.includes(word)
+                );
+
+                if (!hasKeywordRelevance) {
+                    console.warn('Filtered out unrelated suggestion:', suggestion);
+                    return false;
+                }
+
+                return true;
+            });
+
+            console.log('Filtered Google Autocomplete suggestions:', filteredSuggestions);
+
+            return filteredSuggestions.slice(0, 5).map(suggestion => ({
                 title: suggestion,
                 type: 'Autocomplete',
                 intent: 'Informational',
