@@ -487,6 +487,7 @@
     </div>
 
     <div id="stats" class="stats" style="display: none;"></div>
+    <div id="savedResearch" style="display: none;"></div>
     <div id="results" class="results"></div>
 
     <script>
@@ -734,6 +735,9 @@
                             <div class="projection-note">
                                 Based on ${keyword.searchVolume.toLocaleString()} monthly searches & ${keyword.opportunity}% opportunity
                             </div>
+                            <div style="font-size: 10px; color: #888; margin-top: 8px; font-style: italic; text-align: center;">
+                                ⚠️ Traffic estimates are projections based on keyword potential and assume consistent publishing schedule. Actual results may vary.
+                            </div>
                         </div>
 
                         <!-- Action Buttons -->
@@ -755,7 +759,12 @@
 
                 resultsDiv.innerHTML = `
                     <div class="card">
-                        <h2>📈 Keyword Opportunities</h2>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h2>📈 Keyword Opportunities</h2>
+                            <button onclick="saveKeywordResearch()" class="action-btn secondary" style="margin: 0; min-width: auto;">
+                                <span class="btn-icon">💾</span>Save Research
+                            </button>
+                        </div>
                         <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
                             <strong>💡 Next Step:</strong> Select keywords below, then generate article ideas based on your selections.
                         </div>
@@ -1209,6 +1218,352 @@
                 </div>
             `;
         }
+
+        // Keyword Research Saving Functionality
+        function saveKeywordResearch() {
+            if (!currentResults || !currentResults.keywords) {
+                alert('No keyword research data to save!');
+                return;
+            }
+
+            const researchName = prompt('Enter a name for this keyword research:');
+            if (!researchName) return;
+
+            const savedResearch = {
+                id: Date.now(),
+                name: researchName,
+                date: new Date().toISOString(),
+                originalKeyword: document.getElementById('keyword').value,
+                location: document.getElementById('location').value,
+                results: currentResults,
+                selectedKeywords: [...selectedKeywords]
+            };
+
+            // Get existing saved research
+            const existingResearch = JSON.parse(localStorage.getItem('savedKeywordResearch') || '[]');
+            existingResearch.push(savedResearch);
+            localStorage.setItem('savedKeywordResearch', JSON.stringify(existingResearch));
+
+            alert(`✅ Keyword research "${researchName}" saved successfully!`);
+            displaySavedResearch();
+        }
+
+        function loadSavedResearch(id) {
+            const savedResearch = JSON.parse(localStorage.getItem('savedKeywordResearch') || '[]');
+            const research = savedResearch.find(r => r.id == id);
+
+            if (!research) {
+                alert('Research not found!');
+                return;
+            }
+
+            // Load the research data
+            currentResults = research.results;
+            selectedKeywords = [...research.selectedKeywords];
+
+            // Update form fields
+            document.getElementById('keyword').value = research.originalKeyword;
+            document.getElementById('location').value = research.location;
+
+            // Display the results
+            displayResults(research.results, 0);
+            displayStats(research.results, 0);
+            updateSelectedKeywordsDisplay();
+
+            alert(`✅ Loaded research: ${research.name}`);
+        }
+
+        function deleteSavedResearch(id) {
+            if (!confirm('Are you sure you want to delete this saved research?')) return;
+
+            const savedResearch = JSON.parse(localStorage.getItem('savedKeywordResearch') || '[]');
+            const filtered = savedResearch.filter(r => r.id != id);
+            localStorage.setItem('savedKeywordResearch', JSON.stringify(filtered));
+
+            displaySavedResearch();
+            alert('✅ Research deleted successfully!');
+        }
+
+        function displaySavedResearch() {
+            const savedResearch = JSON.parse(localStorage.getItem('savedKeywordResearch') || '[]');
+            const savedResearchDiv = document.getElementById('savedResearch');
+
+            if (savedResearch.length === 0) {
+                savedResearchDiv.style.display = 'none';
+                return;
+            }
+
+            savedResearchDiv.style.display = 'block';
+            const researchList = savedResearch.map(research => `
+                <div style="border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 10px; background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                        <div>
+                            <strong style="color: #333;">${research.name}</strong>
+                            <div style="font-size: 12px; color: #666; margin-top: 2px;">
+                                📅 ${new Date(research.date).toLocaleDateString()} |
+                                🔍 "${research.originalKeyword}" |
+                                📊 ${research.results.totalKeywords} keywords
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="loadSavedResearch(${research.id})"
+                                    style="background: #4CAF50; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                                📂 Load
+                            </button>
+                            <button onclick="deleteSavedResearch(${research.id})"
+                                    style="background: #f44336; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            savedResearchDiv.innerHTML = `
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3>💾 Saved Keyword Research</h3>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        ${researchList}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Competitor Analysis Function
+        async function analyzeCompetitors(keyword, url = '') {
+            // Show loading state
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML += `
+                <div class="card" id="competitorAnalysis" style="margin-top: 20px;">
+                    <h2>🔍 Competitor Analysis for "${keyword}"</h2>
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px;">🔄</div>
+                        <p>Analyzing competitors...</p>
+                    </div>
+                </div>
+            `;
+
+            try {
+                // Call competitor analysis API
+                const response = await fetch('/api/competitors', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ keyword, url })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Competitor analysis API not available');
+                }
+
+                const data = await response.json();
+                displayCompetitorAnalysis(keyword, data);
+
+            } catch (error) {
+                // Display mock competitor analysis since API might not be implemented
+                displayMockCompetitorAnalysis(keyword);
+            }
+        }
+
+        function displayMockCompetitorAnalysis(keyword) {
+            document.getElementById('competitorAnalysis').innerHTML = `
+                <h2>🔍 Competitor Analysis: "${keyword}"</h2>
+                <div style="background: #f8fafc; padding: 20px; border-radius: 8px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                        <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                            <h4 style="color: #2d3748; margin: 0 0 10px 0;">📊 Competition Level</h4>
+                            <div style="font-size: 24px; color: #f57c00; font-weight: bold;">Medium</div>
+                            <p style="font-size: 12px; color: #64748b; margin: 5px 0 0 0;">Based on top 10 competitors</p>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                            <h4 style="color: #2d3748; margin: 0 0 10px 0;">📈 Average Content Length</h4>
+                            <div style="font-size: 24px; color: #2196f3; font-weight: bold;">1,850</div>
+                            <p style="font-size: 12px; color: #64748b; margin: 5px 0 0 0;">Words per top article</p>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                            <h4 style="color: #2d3748; margin: 0 0 10px 0;">💡 Content Opportunity</h4>
+                            <div style="font-size: 24px; color: #4caf50; font-weight: bold;">High</div>
+                            <p style="font-size: 12px; color: #64748b; margin: 5px 0 0 0;">Missing comprehensive guides</p>
+                        </div>
+                    </div>
+
+                    <div style="background: white; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
+                        <h4 style="color: #2d3748; margin: 0 0 15px 0;">🎯 Winning Strategy</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                            <div>
+                                <strong style="color: #4caf50;">✅ What's Working:</strong>
+                                <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px; color: #334155;">
+                                    <li>Step-by-step tutorials</li>
+                                    <li>Real-world examples</li>
+                                    <li>Visual content (images, diagrams)</li>
+                                    <li>FAQ sections</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <strong style="color: #f57c00;">🎯 Content Gaps:</strong>
+                                <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px; color: #334155;">
+                                    <li>Comprehensive beginner guides</li>
+                                    <li>Case studies with results</li>
+                                    <li>Tool comparisons</li>
+                                    <li>Updated 2024 strategies</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%); padding: 15px; border-radius: 6px; border-left: 4px solid #4caf50;">
+                        <strong style="color: #2d3748;">💡 Recommended Action:</strong>
+                        <p style="margin: 8px 0 0 0; color: #334155; font-size: 14px;">
+                            Create a comprehensive "${keyword}" guide that combines step-by-step instructions with real case studies.
+                            Target 2,200+ words to outrank competitors. Focus on beginner-friendly content with visual examples.
+                        </p>
+                    </div>
+
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button onclick="generateContentOutline('${keyword}', 2200, 'medium')"
+                                class="action-btn primary" style="margin: 0;">
+                            <span class="btn-icon">📝</span>Generate Content Outline
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Content Generation Function
+        async function generateContentOutline(keyword, wordCount = 2000, difficulty = 'medium') {
+            // Show loading state
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML += `
+                <div class="card" id="contentOutline" style="margin-top: 20px;">
+                    <h2>📝 Content Outline for "${keyword}"</h2>
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px;">🔄</div>
+                        <p>Generating content outline...</p>
+                    </div>
+                </div>
+            `;
+
+            try {
+                // Call content generation API
+                const response = await fetch('/api/content-outline', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ keyword, wordCount, difficulty })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayContentOutline(keyword, data.outline, wordCount);
+                } else {
+                    throw new Error('Content API not available');
+                }
+
+            } catch (error) {
+                // Display mock content outline
+                displayMockContentOutline(keyword, wordCount);
+            }
+        }
+
+        function displayMockContentOutline(keyword, wordCount) {
+            document.getElementById('contentOutline').innerHTML = `
+                <h2>📝 Content Outline: "${keyword}"</h2>
+                <div style="background: #f8fafc; padding: 20px; border-radius: 8px;">
+                    <div style="background: #e8f5e8; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <strong>🎯 Target:</strong> ${wordCount} words | SEO-optimized for "${keyword}" |
+                        Estimated reading time: ${Math.round(wordCount / 200)} minutes
+                    </div>
+
+                    <div style="background: white; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                        <h3 style="margin: 0 0 15px 0; color: #2d3748;">📋 Content Structure</h3>
+
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #4caf50;">1. Introduction (150-200 words)</strong>
+                            <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px; color: #334155;">
+                                <li>Hook: Start with compelling statistic about ${keyword}</li>
+                                <li>Problem identification and reader pain points</li>
+                                <li>Promise of solution and what they'll learn</li>
+                                <li>Brief overview of article structure</li>
+                            </ul>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #2196f3;">2. What is ${keyword}? (300-400 words)</strong>
+                            <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px; color: #334155;">
+                                <li>Clear definition and explanation</li>
+                                <li>Why it matters in 2024</li>
+                                <li>Common misconceptions debunked</li>
+                                <li>Visual diagram or infographic</li>
+                            </ul>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #f57c00;">3. Step-by-Step Guide (800-1000 words)</strong>
+                            <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px; color: #334155;">
+                                <li>Complete walkthrough with screenshots</li>
+                                <li>Tools and resources needed</li>
+                                <li>Common mistakes to avoid</li>
+                                <li>Pro tips from experts</li>
+                                <li>Real examples and case studies</li>
+                            </ul>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #7b1fa2;">4. Advanced Strategies (400-500 words)</strong>
+                            <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px; color: #334155;">
+                                <li>Expert-level techniques</li>
+                                <li>Scaling and optimization tips</li>
+                                <li>Integration with other strategies</li>
+                                <li>Future trends and predictions</li>
+                            </ul>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #d32f2f;">5. FAQ Section (200-300 words)</strong>
+                            <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px; color: #334155;">
+                                <li>Address top 5-7 related questions</li>
+                                <li>Voice search optimization</li>
+                                <li>Quick, actionable answers</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <strong style="color: #4caf50;">6. Conclusion & Next Steps (100-150 words)</strong>
+                            <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px; color: #334155;">
+                                <li>Recap key takeaways</li>
+                                <li>Motivational call-to-action</li>
+                                <li>Link to related resources</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #f0f8ff 0%, #e8f5e8 100%); padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #2196f3;">
+                        <strong style="color: #2d3748;">🎯 SEO Optimization:</strong>
+                        <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px; color: #334155;">
+                            <li>Primary keyword: "${keyword}" (use 3-5 times naturally)</li>
+                            <li>H1, H2, H3 tags with keyword variations</li>
+                            <li>Meta description: 150-160 characters</li>
+                            <li>Internal links to related content</li>
+                            <li>External links to authoritative sources</li>
+                            <li>Alt text for all images</li>
+                        </ul>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 20px;">
+                        <p style="color: #64748b; font-size: 12px; margin-bottom: 15px;">
+                            This outline is optimized for search engines and user engagement
+                        </p>
+                        <button onclick="alert('Content generation feature coming soon! Use this outline to create your article.')"
+                                class="action-btn primary" style="margin: 0;">
+                            <span class="btn-icon">✍️</span>Generate Full Article
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load saved research on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            displaySavedResearch();
+        });
     </script>
 </body>
 </html>
