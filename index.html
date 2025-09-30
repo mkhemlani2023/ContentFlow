@@ -1391,17 +1391,87 @@
 
             } catch (error) {
                 console.error('Competitor analysis error:', error);
-                // Display error message
+                // Display error with retry option
                 resultsDiv.innerHTML = `
                     <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 15px; color: #dc2626;">
-                        <strong>⚠️ Analysis Unavailable</strong><br>
-                        Unable to load competitor data. API may be temporarily unavailable.
+                        <strong>⚠️ Analysis Temporarily Unavailable</strong><br>
+                        ${error.message || 'Unable to load competitor data'}<br>
+                        <button onclick="loadCompetitorAnalysis('${keyword}', '${cleanId}')"
+                                style="background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 3px; margin-top: 8px; cursor: pointer;">
+                            🔄 Retry Analysis
+                        </button>
                     </div>
                 `;
             } finally {
                 loadingDiv.style.display = 'none';
                 resultsDiv.style.display = 'block';
             }
+        }
+
+        function generateMockCompetitorData(keyword) {
+            // Generate realistic mock competitor data
+            const competitors = [];
+            const baseDomains = ['hubspot.com', 'moz.com', 'semrush.com', 'ahrefs.com', 'neilpatel.com',
+                               'backlinko.com', 'searchengineland.com', 'contentmarketinginstitute.com'];
+
+            for (let i = 0; i < 5; i++) {
+                const domain = baseDomains[i] || `example${i+1}.com`;
+                const da = Math.floor(Math.random() * 30) + 40; // 40-70 range
+                const backlinks = Math.floor(Math.random() * 50000) + 5000; // 5k-55k range
+                const contentLength = Math.floor(Math.random() * 2000) + 1200; // 1200-3200 words
+
+                competitors.push({
+                    position: i + 1,
+                    title: `The Complete Guide to ${keyword} - ${domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1)}`,
+                    url: `https://${domain}/${keyword.replace(/ /g, '-').toLowerCase()}-guide`,
+                    domain: domain,
+                    snippet: `Learn everything about ${keyword} with this comprehensive guide. Discover proven strategies, best practices, and expert tips...`,
+                    domainAuthority: da,
+                    estimatedBacklinks: backlinks,
+                    contentLength: contentLength,
+                    publishDate: 'Recently published'
+                });
+            }
+
+            const avgDA = competitors.reduce((sum, c) => sum + c.domainAuthority, 0) / competitors.length;
+            const avgBacklinks = competitors.reduce((sum, c) => sum + c.estimatedBacklinks, 0) / competitors.length;
+            const avgContentLength = competitors.reduce((sum, c) => sum + c.contentLength, 0) / competitors.length;
+
+            let competitionLevel = 'Low';
+            if (avgDA > 55 && avgBacklinks > 25000) competitionLevel = 'High';
+            else if (avgDA > 45 && avgBacklinks > 15000) competitionLevel = 'Medium';
+
+            return {
+                success: true,
+                keyword,
+                competitors,
+                analysis: {
+                    competitionLevel,
+                    averageDomainAuthority: Math.round(avgDA),
+                    averageBacklinks: Math.round(avgBacklinks),
+                    averageContentLength: Math.round(avgContentLength),
+                    totalCompetitors: competitors.length,
+                    contentGaps: [
+                        'Missing step-by-step tutorials',
+                        'Lack of 2024 updated strategies',
+                        'No comprehensive beginner guides',
+                        'Limited visual content and infographics',
+                        'Few real-world case studies'
+                    ],
+                    winningStrategies: [
+                        'Create comprehensive guides (2000+ words)',
+                        'Include visual elements and screenshots',
+                        'Add FAQ sections for voice search',
+                        'Update with latest industry trends',
+                        'Include real-world case studies'
+                    ]
+                },
+                recommendations: {
+                    targetWordCount: Math.round(avgContentLength * 1.2),
+                    requiredBacklinks: Math.round(avgBacklinks * 0.3),
+                    minDomainAuthority: Math.round(avgDA * 0.7)
+                }
+            };
         }
 
         function displayInlineCompetitorAnalysis(keyword, data, cleanId) {
@@ -1668,49 +1738,34 @@
             `;
         }
 
-        // Enhanced Content Generation Function with Inline Display
-        async function generateContentOutline(keyword, wordCount = 2000, difficulty = 'medium', cleanId = null) {
-            const targetDiv = cleanId ?
-                document.getElementById(`competitor-results-${cleanId}`) :
-                document.getElementById('results');
-
-            if (cleanId) {
-                // Inline mode - show loading in the same area
-                document.getElementById(`competitor-results-${cleanId}`).innerHTML += `
-                    <div id="outline-loading-${cleanId}" style="background: #f0f8ff; border-radius: 6px; padding: 20px; margin-top: 15px; text-align: center;">
-                        <div style="font-size: 20px;">📝</div>
-                        <p style="margin: 5px 0; color: #2d3748;">Generating SEO-optimized content outline...</p>
-                        <div style="font-size: 12px; color: #64748b;">Word target: ${wordCount.toLocaleString()} words</div>
-                    </div>
-                `;
-            } else {
-                // Legacy mode - append to results
-                targetDiv.innerHTML += `
-                    <div class="card" id="contentOutline" style="margin-top: 20px;">
-                        <h2>📝 Content Outline for "${keyword}"</h2>
-                        <div style="text-align: center; padding: 40px;">
-                            <div style="font-size: 24px;">🔄</div>
-                            <p>Generating content outline...</p>
-                        </div>
-                    </div>
-                `;
+        // Enhanced Content Generation Function with Always Inline Display
+        async function generateContentOutline(keyword, wordCount = 2000, difficulty = 'medium', cleanId) {
+            // Always use inline display within the keyword card
+            if (!cleanId) {
+                console.error('generateContentOutline called without cleanId');
+                return;
             }
+
+            const targetDiv = document.getElementById(`competitor-results-${cleanId}`);
+
+            // Show loading in the same area
+            targetDiv.innerHTML += `
+                <div id="outline-loading-${cleanId}" style="background: #f0f8ff; border-radius: 6px; padding: 20px; margin-top: 15px; text-align: center;">
+                    <div style="font-size: 20px;">📝</div>
+                    <p style="margin: 5px 0; color: #2d3748;">Generating SEO-optimized content outline...</p>
+                    <div style="font-size: 12px; color: #64748b;">Word target: ${wordCount.toLocaleString()} words</div>
+                </div>
+            `;
 
             try {
                 // Call content generation API (placeholder for now)
                 await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
 
-                if (cleanId) {
-                    displayInlineContentOutline(keyword, wordCount, difficulty, cleanId);
-                } else {
-                    displayMockContentOutline(keyword, wordCount);
-                }
+                // Always use inline display
+                displayInlineContentOutline(keyword, wordCount, difficulty, cleanId);
 
             } catch (error) {
-                const errorDiv = cleanId ?
-                    document.getElementById(`outline-loading-${cleanId}`) :
-                    document.getElementById('contentOutline');
-
+                const errorDiv = document.getElementById(`outline-loading-${cleanId}`);
                 errorDiv.innerHTML = `
                     <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 15px; color: #dc2626;">
                         <strong>❌ Outline Generation Failed</strong><br>
@@ -1764,10 +1819,18 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 8px; justify-content: center; margin-top: 15px;">
+                    <div style="display: flex; gap: 8px; justify-content: center; margin-top: 15px; flex-wrap: wrap;">
                         <button onclick="generateFullArticle('${keyword}', ${wordCount}, '${cleanId}')"
                                 class="action-btn primary" style="margin: 0; font-size: 11px; padding: 6px 12px;">
                             <span class="btn-icon">✍️</span>Generate Article
+                        </button>
+                        <button onclick="findRoyaltyFreeImages('${keyword}', '${cleanId}')"
+                                class="action-btn secondary" style="margin: 0; font-size: 11px; padding: 6px 12px;">
+                            <span class="btn-icon">🖼️</span>Add Images
+                        </button>
+                        <button onclick="showImageGeneration('${keyword}', '${cleanId}')"
+                                class="action-btn secondary" style="margin: 0; font-size: 11px; padding: 6px 12px; background: #7b1fa2;">
+                            <span class="btn-icon">🎨</span>AI Images
                         </button>
                         <button onclick="scheduleContent('${keyword}', '${cleanId}')"
                                 class="action-btn secondary" style="margin: 0; font-size: 11px; padding: 6px 12px;">
