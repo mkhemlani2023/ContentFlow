@@ -718,7 +718,7 @@ exports.handler = async (event, context) => {
     }
 
     // Competitor Analysis endpoint
-    if (path === '/competitors' && method === 'POST') {
+    if (path === '/api/competitors' && method === 'POST') {
       const { keyword, url = '' } = body;
 
       if (!keyword) {

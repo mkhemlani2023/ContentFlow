@@ -495,6 +495,7 @@
     <div id="savedResearch" style="display: none;"></div>
     <div id="blogManagement" style="display: none;"></div>
     <div id="results" class="results"></div>
+    <div id="contentResult" class="results" style="display: none;"></div>
 
     <script>
         let currentResults = null;
@@ -708,6 +709,18 @@
                         <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                             <strong>💡 Next Step:</strong> Click on any keyword below to see detailed analysis and content generation options.
                         </div>
+
+                        <!-- Column Headers -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; margin-bottom: 8px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; color: #374151; font-size: 14px;">
+                            <div style="flex: 1;">Keyword & Opportunity</div>
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <span>Search Volume</span>
+                                <span>Difficulty</span>
+                                <span>CPC</span>
+                                <span style="margin-right: 20px;">Action</span>
+                            </div>
+                        </div>
+
                         <div id="keywordSimpleList">
                             ${keywordList}
                         </div>
@@ -839,14 +852,19 @@
 
                     <!-- Action Buttons -->
                     <div class="keyword-actions">
-                        <button class="action-btn primary" onclick="selectKeywordInline('${keywordData.keyword.replace(/'/g, "\\'")}', ${keywordData.opportunity})"
-                                id="select-inline-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">
-                            <span class="btn-icon">✅</span>
-                            Select for Content
+                        <button class="action-btn primary" onclick="generateOutlineForKeyword('${keywordData.keyword.replace(/'/g, "\\'")}', 2000, 'medium', '${keywordData.intent.toLowerCase()}')"
+                                id="outline-btn-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">
+                            <span class="btn-icon">📋</span>
+                            Generate Outline
                         </button>
                         <button class="action-btn secondary" onclick="toggleInlineCompetitorAnalysis('${keywordData.keyword.replace(/'/g, "\\'")}', '${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')">
                             <span class="btn-icon">🔍</span>
                             <span id="toggle-text-inline-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">Competitor Analysis</span>
+                        </button>
+                        <button class="action-btn secondary" onclick="generateArticleSuggestions('${keywordData.keyword.replace(/'/g, "\\'")}', '${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')"
+                                id="ideas-btn-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">
+                            <span class="btn-icon">💡</span>
+                            Article Ideas
                         </button>
                     </div>
 
@@ -858,6 +876,9 @@
                         </div>
                         <div id="competitor-results-inline-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="display: none;"></div>
                     </div>
+
+                    <!-- Content Output Section (inline) -->
+                    <div id="content-output-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin-top: 20px;"></div>
 
                     <!-- Article Suggestions Section (inline) -->
                     <div id="article-suggestions-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
@@ -873,24 +894,6 @@
                         <div id="suggestions-output-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin-top: 15px;"></div>
                     </div>
 
-                    <!-- Content Generation Section (inline) -->
-                    <div id="content-generation-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
-                        <h4 style="color: #1e293b; margin-bottom: 15px;">📝 Content Generation</h4>
-                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                            <p style="margin: 0; color: #64748b; font-size: 14px;">Generate high-quality content optimized for this keyword</p>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <button onclick="generateOutlineForKeyword('${keywordData.keyword.replace(/'/g, "\\'")}', 2000, 'medium', '${keywordData.intent.toLowerCase()}')"
-                                    style="background: #4CAF50; color: white; border: none; padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                                📋 Generate Outline
-                            </button>
-                            <button onclick="generateFullArticle('${keywordData.keyword.replace(/'/g, "\\'")}', 2000, 'medium', '${keywordData.intent.toLowerCase()}')"
-                                    style="background: #2196F3; color: white; border: none; padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                                ✍️ Generate Article
-                            </button>
-                        </div>
-                        <div id="content-output-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin-top: 20px;"></div>
-                    </div>
 
                     ${keywordData.snippet ? `<div class="keyword-snippet">${keywordData.snippet.substring(0, 150)}...</div>` : ''}
                 </div>
@@ -1157,10 +1160,253 @@
             }
         }
 
+        // Generate Outline function (missing implementation restored)
+        async function generateOutline(keyword, wordCount = 2000, difficulty = 'medium', intent = 'informational') {
+            const contentResult = document.getElementById('contentResult');
+
+            try {
+                // Show loading state
+                contentResult.style.display = 'block';
+                contentResult.innerHTML = `
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 4px solid #4CAF50; margin: 20px 0;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                            <div style="font-size: 20px;">🔄</div>
+                            <div style="font-weight: 600; color: #1e293b; font-size: 18px;">Generating Article Outline</div>
+                        </div>
+                        <p style="margin: 0; color: #64748b; font-size: 14px;">Creating a comprehensive outline for "${keyword}" (${wordCount} words, ${difficulty} difficulty)</p>
+                    </div>
+                `;
+
+                // Generate outline based on keyword intent and difficulty
+                const outline = generateOutlineStructure(keyword, wordCount, difficulty, intent);
+
+                // Display the generated outline
+                setTimeout(() => {
+                    contentResult.innerHTML = `
+                        <div style="background: white; border-radius: 12px; padding: 24px; margin: 20px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #4CAF50;">
+                                <div style="font-size: 24px;">📝</div>
+                                <h2 style="color: #1e293b; margin: 0; font-size: 20px;">Article Outline: ${keyword}</h2>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 18px; font-weight: bold; color: #4CAF50;">${wordCount}</div>
+                                        <div style="font-size: 12px; color: #64748b;">Target Words</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 18px; font-weight: bold; color: #667eea; text-transform: capitalize;">${difficulty}</div>
+                                        <div style="font-size: 12px; color: #64748b;">Difficulty</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 18px; font-weight: bold; color: #f59e0b; text-transform: capitalize;">${intent}</div>
+                                        <div style="font-size: 12px; color: #64748b;">Search Intent</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 18px; font-weight: bold; color: #10b981;">${outline.sections.length}</div>
+                                        <div style="font-size: 12px; color: #64748b;">Sections</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${outline.sections.map((section, index) => `
+                                <div style="margin-bottom: 24px; padding: 20px; background: #f9fafb; border-radius: 8px; border-left: 4px solid ${index === 0 ? '#4CAF50' : '#e2e8f0'};">
+                                    <h3 style="color: #1e293b; margin: 0 0 12px 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                                        <span style="background: #667eea; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">${index + 1}</span>
+                                        ${section.title}
+                                        <span style="background: #f3f4f6; color: #64748b; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 500;">${section.wordCount} words</span>
+                                    </h3>
+
+                                    ${section.subsections && section.subsections.length > 0 ? `
+                                        <ul style="margin: 12px 0 0 0; padding-left: 24px; color: #4b5563;">
+                                            ${section.subsections.map(sub => `
+                                                <li style="margin-bottom: 8px; line-height: 1.5;">
+                                                    <strong>${sub.title}</strong>
+                                                    ${sub.description ? `<br><span style="color: #64748b; font-size: 13px;">${sub.description}</span>` : ''}
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    ` : `
+                                        <p style="margin: 8px 0 0 0; color: #64748b; font-size: 14px; line-height: 1.5;">${section.description}</p>
+                                    `}
+                                </div>
+                            `).join('')}
+
+                            <div style="background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%); padding: 20px; border-radius: 8px; margin-top: 24px;">
+                                <h4 style="color: #1e293b; margin: 0 0 12px 0; font-size: 16px;">💡 SEO Optimization Tips</h4>
+                                <ul style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px; line-height: 1.6;">
+                                    <li>Include "${keyword}" naturally in your H1 and at least 2 H2 headings</li>
+                                    <li>Target keyword density of 1-2% throughout the content</li>
+                                    <li>Add related keywords: ${outline.relatedKeywords.join(', ')}</li>
+                                    <li>Include internal links to related articles and external authority links</li>
+                                    <li>Use structured data markup for better SERP appearance</li>
+                                    <li>Optimize meta description with primary keyword and clear value proposition</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                }, 1500);
+
+            } catch (error) {
+                console.error('Outline generation error:', error);
+                contentResult.innerHTML = `
+                    <div style="background: #fee2e2; padding: 20px; border-radius: 12px; border-left: 4px solid #dc2626; margin: 20px 0;">
+                        <div style="font-weight: 600; color: #991b1b; font-size: 16px;">Outline Generation Failed</div>
+                        <p style="margin: 8px 0 0 0; color: #b91c1c; font-size: 14px;">${error.message}</p>
+                    </div>
+                `;
+                throw error;
+            }
+        }
+
+        // Helper function to generate outline structure
+        function generateOutlineStructure(keyword, wordCount, difficulty, intent) {
+            const wordsPerSection = Math.floor(wordCount / 8); // Roughly 8 sections
+
+            // Generate related keywords
+            const relatedKeywords = [
+                `${keyword} guide`,
+                `best ${keyword}`,
+                `${keyword} tips`,
+                `${keyword} examples`,
+                `${keyword} benefits`
+            ];
+
+            // Base outline structure
+            let sections = [];
+
+            if (intent === 'informational') {
+                sections = [
+                    {
+                        title: `What is ${keyword}? (Complete Guide)`,
+                        wordCount: wordsPerSection * 1.2,
+                        description: `Comprehensive introduction covering definition, importance, and basic concepts.`,
+                        subsections: [
+                            { title: 'Definition and Core Concepts', description: 'Clear, beginner-friendly explanation' },
+                            { title: 'Why It Matters', description: 'Importance and relevance in today\'s context' },
+                            { title: 'Common Misconceptions', description: 'Addressing myths and misunderstandings' }
+                        ]
+                    },
+                    {
+                        title: `Key Benefits of ${keyword}`,
+                        wordCount: wordsPerSection,
+                        description: `Detailed analysis of advantages and positive impacts.`,
+                        subsections: [
+                            { title: 'Primary Benefits', description: 'Main advantages and value propositions' },
+                            { title: 'Long-term Impact', description: 'Future benefits and sustainability' },
+                            { title: 'Real-world Applications', description: 'Practical use cases and examples' }
+                        ]
+                    },
+                    {
+                        title: `Types and Categories of ${keyword}`,
+                        wordCount: wordsPerSection * 0.8,
+                        description: `Classification and different approaches or variations.`,
+                        subsections: [
+                            { title: 'Main Categories', description: 'Primary classifications and distinctions' },
+                            { title: 'Choosing the Right Type', description: 'Decision factors and considerations' }
+                        ]
+                    },
+                    {
+                        title: `How to Get Started with ${keyword}`,
+                        wordCount: wordsPerSection * 1.3,
+                        description: `Step-by-step beginner guide and implementation strategies.`,
+                        subsections: [
+                            { title: 'Prerequisites and Preparation', description: 'What you need before starting' },
+                            { title: 'Step-by-Step Process', description: 'Detailed implementation guide' },
+                            { title: 'Common Beginner Mistakes', description: 'Pitfalls to avoid when starting' }
+                        ]
+                    },
+                    {
+                        title: `Best Practices for ${keyword}`,
+                        wordCount: wordsPerSection,
+                        description: `Expert tips, proven strategies, and optimization techniques.`,
+                        subsections: [
+                            { title: 'Industry Standards', description: 'Accepted best practices and guidelines' },
+                            { title: 'Advanced Techniques', description: 'Professional-level optimization methods' },
+                            { title: 'Tools and Resources', description: 'Recommended tools and helpful resources' }
+                        ]
+                    },
+                    {
+                        title: `Common Challenges and Solutions`,
+                        wordCount: wordsPerSection,
+                        description: `Problem identification and practical solutions.`,
+                        subsections: [
+                            { title: 'Typical Problems', description: 'Most common issues and obstacles' },
+                            { title: 'Troubleshooting Guide', description: 'Step-by-step problem resolution' },
+                            { title: 'Prevention Strategies', description: 'How to avoid issues before they occur' }
+                        ]
+                    },
+                    {
+                        title: `Future Trends and Developments in ${keyword}`,
+                        wordCount: wordsPerSection * 0.9,
+                        description: `Industry outlook and emerging trends.`,
+                        subsections: [
+                            { title: 'Current Market Trends', description: 'What\'s happening now in the industry' },
+                            { title: 'Future Predictions', description: 'Expected developments and changes' },
+                            { title: 'Preparing for Changes', description: 'How to stay ahead of trends' }
+                        ]
+                    },
+                    {
+                        title: 'Conclusion and Key Takeaways',
+                        wordCount: wordsPerSection * 0.7,
+                        description: `Summary of main points and actionable next steps.`,
+                        subsections: [
+                            { title: 'Summary of Benefits', description: 'Recap of main advantages discussed' },
+                            { title: 'Action Steps', description: 'What readers should do next' },
+                            { title: 'Additional Resources', description: 'Further reading and learning materials' }
+                        ]
+                    }
+                ];
+            } else if (intent === 'commercial' || intent === 'transactional') {
+                sections = [
+                    {
+                        title: `Best ${keyword} Solutions in 2024`,
+                        wordCount: wordsPerSection * 1.2,
+                        description: `Comprehensive comparison of top options available.`
+                    },
+                    {
+                        title: `Buyer's Guide: How to Choose ${keyword}`,
+                        wordCount: wordsPerSection * 1.1,
+                        description: `Decision framework and evaluation criteria.`
+                    },
+                    {
+                        title: `Top Features to Look For`,
+                        wordCount: wordsPerSection,
+                        description: `Essential features and capabilities analysis.`
+                    },
+                    {
+                        title: `Pricing and Value Comparison`,
+                        wordCount: wordsPerSection,
+                        description: `Cost analysis and ROI considerations.`
+                    },
+                    {
+                        title: `Implementation and Setup Guide`,
+                        wordCount: wordsPerSection * 1.2,
+                        description: `Step-by-step deployment instructions.`
+                    }
+                ];
+            }
+
+            return {
+                keyword,
+                wordCount,
+                difficulty,
+                intent,
+                sections,
+                relatedKeywords,
+                estimatedReadTime: Math.ceil(wordCount / 250) // Assume 250 words per minute reading speed
+            };
+        }
+
         // Article suggestions function using Google Autocomplete
         async function generateArticleSuggestions(keyword, cleanId) {
+            const suggestionsSection = document.getElementById(`article-suggestions-${cleanId}`);
             const outputDiv = document.getElementById(`suggestions-output-${cleanId}`);
             const button = document.getElementById(`suggestions-btn-${cleanId}`);
+
+            // Show the suggestions section
+            suggestionsSection.style.display = 'block';
 
             // Show loading state
             button.innerHTML = '🔄 Generating Suggestions...';
