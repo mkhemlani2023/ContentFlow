@@ -1724,13 +1724,17 @@
                 const autocompleteData = await autocompleteResponse.json();
 
                 if (autocompleteData.success) {
-                    // Generate article suggestions using the autocomplete data
-                    const suggestions = await generateArticleIdeasFromAutocomplete(keyword, autocompleteData.suggestions || []);
-                    displayArticleSuggestions(outputDiv, suggestions);
+                    // Generate BOTH Google Autocomplete ideas AND AI-generated ideas
+                    const autocompleteIdeas = generateGoogleAutocompleteIdeas(keyword, autocompleteData.suggestions || []);
+                    const aiGeneratedIdeas = await generateArticleIdeasFromAutocomplete(keyword, autocompleteData.suggestions || []);
+
+                    // Combine both with proper labeling
+                    const allSuggestions = [...autocompleteIdeas, ...aiGeneratedIdeas];
+                    displayCombinedArticleSuggestions(outputDiv, autocompleteIdeas, aiGeneratedIdeas);
                 } else {
-                    // Fallback to manual suggestions if autocomplete fails
-                    const fallbackSuggestions = await generateFallbackArticleIdeas(keyword);
-                    displayArticleSuggestions(outputDiv, fallbackSuggestions);
+                    // Fallback to AI suggestions only if autocomplete fails
+                    const aiSuggestions = await generateFallbackArticleIdeas(keyword);
+                    displayCombinedArticleSuggestions(outputDiv, [], aiSuggestions);
                 }
 
             } catch (error) {
@@ -1900,6 +1904,97 @@
                     difficulty: 'Medium'
                 }
             ];
+        }
+
+        // Generate simple article ideas directly from Google Autocomplete suggestions
+        function generateGoogleAutocompleteIdeas(keyword, suggestions) {
+            return suggestions.slice(0, 5).map(suggestion => ({
+                title: suggestion,
+                type: 'Autocomplete',
+                intent: 'Informational',
+                estimatedWords: 1200,
+                difficulty: 'Low',
+                source: 'Google Autocomplete'
+            }));
+        }
+
+        // Display both Google Autocomplete and AI-generated ideas with clear labeling
+        function displayCombinedArticleSuggestions(container, autocompleteIdeas, aiIdeas) {
+            const autocompleteSection = autocompleteIdeas.length > 0 ? `
+                <div style="margin-bottom: 25px;">
+                    <h5 style="color: #1e293b; margin: 0 0 12px 0; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        <span style="background: #1f2937; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">📊 GOOGLE AUTOCOMPLETE</span>
+                        Real User Search Queries
+                    </h5>
+                    <div style="font-size: 12px; color: #64748b; margin-bottom: 15px;">
+                        These are actual search terms people use, ensuring high user intent and search volume potential.
+                    </div>
+                    ${displayArticleCards(autocompleteIdeas)}
+                </div>
+            ` : '';
+
+            const aiSection = aiIdeas.length > 0 ? `
+                <div style="margin-bottom: 25px;">
+                    <h5 style="color: #1e293b; margin: 0 0 12px 0; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        <span style="background: #7c3aed; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">🤖 AI GENERATED</span>
+                        Context-Aware Content Ideas
+                    </h5>
+                    <div style="font-size: 12px; color: #64748b; margin-bottom: 15px;">
+                        AI-analyzed suggestions based on search patterns, user intent, and content gaps in the market.
+                    </div>
+                    ${displayArticleCards(aiIdeas)}
+                </div>
+            ` : '';
+
+            container.innerHTML = autocompleteSection + aiSection;
+        }
+
+        function displayArticleCards(suggestions) {
+            return suggestions.map((suggestion, index) => {
+                const difficultyColor = suggestion.difficulty === 'Low' ? '#10b981' : suggestion.difficulty === 'Medium' ? '#f59e0b' : '#ef4444';
+                const intentColor = suggestion.intent === 'Informational' ? '#6366f1' : suggestion.intent === 'Commercial' ? '#8b5cf6' : '#06b6d4';
+                const sourceColor = suggestion.source === 'Google Autocomplete' ? '#1f2937' : '#7c3aed';
+
+                return `
+                    <div class="article-suggestion-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #1e293b; margin-bottom: 6px;">
+                                    ${suggestion.title}
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                                    <span style="background: ${sourceColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">
+                                        ${suggestion.source || 'AI Generated'}
+                                    </span>
+                                    <span style="background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px;">
+                                        ${suggestion.type}
+                                    </span>
+                                    <span style="background: ${intentColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">
+                                        ${suggestion.intent}
+                                    </span>
+                                    <span style="background: ${difficultyColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">
+                                        ${suggestion.difficulty}
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="text-align: right; color: #64748b; font-size: 12px;">
+                                ~${suggestion.estimatedWords} words
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button onclick="generateOutlineForKeyword('${suggestion.title.replace(/'/g, "\\'")}', ${suggestion.estimatedWords}, '${suggestion.difficulty}', '${suggestion.intent}')"
+                                    style="background: #f59e0b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500;">
+                                📋 Generate Outline
+                            </button>
+                            <button onclick="showArticleGenerationOptions('${suggestion.title.replace(/'/g, "\\'")}', ${suggestion.estimatedWords}, '${suggestion.difficulty}', '${suggestion.intent}')"
+                                    style="background: #2196F3; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500;">
+                                ✍️ Generate Article
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function displayArticleSuggestions(container, suggestions) {
