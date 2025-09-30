@@ -500,6 +500,11 @@
     <script>
         let currentResults = null;
 
+        // Initialize SEO Wizard credit system
+        window.seoWizard = {
+            credits: parseInt(localStorage.getItem('seoWizardCredits') || '1000')
+        };
+
         // Check API status on page load
         document.addEventListener('DOMContentLoaded', () => {
             checkStatus();
@@ -852,19 +857,16 @@
 
                     <!-- Action Buttons -->
                     <div class="keyword-actions">
-                        <button class="action-btn primary" onclick="generateOutlineForKeyword('${keywordData.keyword.replace(/'/g, "\\'")}', 2000, 'medium', '${keywordData.intent.toLowerCase()}')"
-                                id="outline-btn-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">
-                            <span class="btn-icon">📋</span>
-                            Generate Outline
+                        <button class="action-btn primary" onclick="generateArticleIdeasWithCredits('${keywordData.keyword.replace(/'/g, "\\'")}', '${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')"
+                                id="ideas-btn-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}"
+                                title="Uses Google Autocomplete API to generate relevant article ideas based on real search data. This provides authentic topics that people are actually searching for, ensuring better content performance and SEO potential.">
+                            <span class="btn-icon">💡</span>
+                            Generate Article Ideas
+                            <span style="font-size: 10px; background: #f59e0b; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">5 credits</span>
                         </button>
                         <button class="action-btn secondary" onclick="toggleInlineCompetitorAnalysis('${keywordData.keyword.replace(/'/g, "\\'")}', '${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')">
                             <span class="btn-icon">🔍</span>
-                            <span id="toggle-text-inline-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">Competitor Analysis</span>
-                        </button>
-                        <button class="action-btn secondary" onclick="generateArticleSuggestions('${keywordData.keyword.replace(/'/g, "\\'")}', '${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')"
-                                id="ideas-btn-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">
-                            <span class="btn-icon">💡</span>
-                            Article Ideas
+                            <span id="toggle-text-inline-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">Analyze Competitors</span>
                         </button>
                     </div>
 
@@ -956,7 +958,7 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        displayInlineCompetitorResults(resultsDiv, data);
+                        displayInlineCompetitorAnalysis(keyword, data, cleanId);
                         loadingDiv.style.display = 'none';
                         resultsDiv.style.display = 'block';
                     } else {
@@ -1397,6 +1399,32 @@
                 relatedKeywords,
                 estimatedReadTime: Math.ceil(wordCount / 250) // Assume 250 words per minute reading speed
             };
+        }
+
+        // Credit-based article ideas generator
+        async function generateArticleIdeasWithCredits(keyword, cleanId) {
+            const CREDIT_COST = 5; // Cost for Google Autocomplete usage
+
+            // Check if user has sufficient credits
+            if (!window.seoWizard || window.seoWizard.credits < CREDIT_COST) {
+                alert(`Insufficient credits. You need ${CREDIT_COST} credits to generate article ideas using Google Autocomplete.`);
+                return;
+            }
+
+            // Deduct credits
+            window.seoWizard.credits -= CREDIT_COST;
+
+            // Update credits display if it exists
+            const creditsDisplay = document.querySelector('.credits-display');
+            if (creditsDisplay) {
+                creditsDisplay.textContent = window.seoWizard.credits;
+            }
+
+            // Save updated credits to localStorage
+            localStorage.setItem('seoWizardCredits', window.seoWizard.credits.toString());
+
+            // Call the original function
+            await generateArticleSuggestions(keyword, cleanId);
         }
 
         // Article suggestions function using Google Autocomplete
