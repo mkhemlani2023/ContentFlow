@@ -887,14 +887,6 @@
                     <!-- Article Suggestions Section (inline) -->
                     <div id="article-suggestions-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
                         <h4 style="color: #1e293b; margin-bottom: 15px;">💡 Article Suggestions</h4>
-                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                            <p style="margin: 0; color: #64748b; font-size: 14px;">AI-powered article ideas based on Google Autocomplete and related searches</p>
-                        </div>
-                        <button onclick="generateArticleSuggestions('${keywordData.keyword.replace(/'/g, "\\'")}', '${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')"
-                                style="background: #7c3aed; color: white; border: none; padding: 12px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; width: 100%; margin-bottom: 15px;"
-                                id="suggestions-btn-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">
-                            ✨ Generate Article Suggestions
-                        </button>
                         <div id="suggestions-output-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin-top: 15px;"></div>
                     </div>
 
@@ -2011,9 +2003,6 @@
                                     ${suggestion.title}
                                 </div>
                                 <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                                    <span style="background: ${sourceColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">
-                                        ${suggestion.source || 'AI Generated'}
-                                    </span>
                                     <span style="background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px;">
                                         ${suggestion.type}
                                     </span>
@@ -2377,19 +2366,19 @@
             document.getElementById('modalKeyword').textContent = keyword;
             document.getElementById('contentResult').innerHTML = `
                 <div style="text-align: center; padding: 20px;">
-                    <div style="margin-bottom: 10px;">🤖 AI is working on your request...</div>
-                    <div style="width: 100%; height: 4px; background: #f0f0f0; border-radius: 2px; overflow: hidden;">
-                        <div style="width: 0%; height: 100%; background: #4CAF50; animation: progress 3s ease-in-out infinite;"></div>
+                    <div id="progressStage" style="margin-bottom: 10px; font-weight: 500;">🤖 Initializing request...</div>
+                    <div style="width: 100%; height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
+                        <div id="progressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4CAF50, #2196F3); transition: width 0.5s ease;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
+                        <span id="progressPercent">0%</span>
+                        <span id="progressTime">Estimated: 10-15 seconds</span>
                     </div>
                 </div>
-                <style>
-                @keyframes progress {
-                    0% { width: 0%; }
-                    50% { width: 70%; }
-                    100% { width: 95%; }
-                }
-                </style>
             `;
+
+            // Start percentage-based progress simulation
+            startProgressSimulation(type);
 
             modal.style.display = 'block';
         }
@@ -2417,6 +2406,279 @@
 
         function closeContentModal() {
             document.getElementById('contentModal').style.display = 'none';
+        }
+
+        function startProgressSimulation(type) {
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            const progressStage = document.getElementById('progressStage');
+            const progressTime = document.getElementById('progressTime');
+
+            if (!progressBar) return; // Safety check
+
+            const stages = {
+                'outline': [
+                    { percent: 15, stage: '📝 Analyzing keyword...', time: '8-12 seconds' },
+                    { percent: 35, stage: '🔍 Researching topics...', time: '6-8 seconds' },
+                    { percent: 60, stage: '📋 Structuring outline...', time: '4-6 seconds' },
+                    { percent: 85, stage: '✨ Optimizing for SEO...', time: '2-3 seconds' },
+                    { percent: 100, stage: '✅ Outline ready!', time: 'Complete' }
+                ],
+                'article': [
+                    { percent: 10, stage: '🧠 Understanding context...', time: '15-20 seconds' },
+                    { percent: 25, stage: '📚 Gathering information...', time: '12-15 seconds' },
+                    { percent: 45, stage: '✍️ Writing introduction...', time: '8-12 seconds' },
+                    { percent: 65, stage: '📝 Creating main content...', time: '6-8 seconds' },
+                    { percent: 85, stage: '🎯 Adding SEO optimization...', time: '3-5 seconds' },
+                    { percent: 100, stage: '✅ Article complete!', time: 'Complete' }
+                ],
+                'article-ideas': [
+                    { percent: 20, stage: '🔍 Analyzing search trends...', time: '8-10 seconds' },
+                    { percent: 45, stage: '💡 Generating ideas...', time: '5-7 seconds' },
+                    { percent: 70, stage: '🎯 Scoring relevance...', time: '3-5 seconds' },
+                    { percent: 90, stage: '📊 Ranking suggestions...', time: '2-3 seconds' },
+                    { percent: 100, stage: '✅ Ideas ready!', time: 'Complete' }
+                ],
+                'analysis': [
+                    { percent: 25, stage: '🔍 Scanning competitors...', time: '6-8 seconds' },
+                    { percent: 50, stage: '📊 Analyzing metrics...', time: '4-6 seconds' },
+                    { percent: 75, stage: '🎯 Finding opportunities...', time: '2-4 seconds' },
+                    { percent: 100, stage: '✅ Analysis complete!', time: 'Complete' }
+                ]
+            };
+
+            const currentStages = stages[type] || stages['outline'];
+            let currentIndex = 0;
+
+            function updateProgress() {
+                if (currentIndex < currentStages.length) {
+                    const stage = currentStages[currentIndex];
+
+                    progressBar.style.width = stage.percent + '%';
+                    progressPercent.textContent = stage.percent + '%';
+                    progressStage.textContent = stage.stage;
+                    progressTime.textContent = stage.time;
+
+                    // Color transition based on progress
+                    if (stage.percent < 50) {
+                        progressBar.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
+                    } else if (stage.percent < 80) {
+                        progressBar.style.background = 'linear-gradient(90deg, #2196F3, #03A9F4)';
+                    } else {
+                        progressBar.style.background = 'linear-gradient(90deg, #FF9800, #4CAF50)';
+                    }
+
+                    currentIndex++;
+
+                    // Realistic timing intervals
+                    const nextDelay = currentIndex === 1 ? 2000 :
+                                     currentIndex === 2 ? 1500 :
+                                     currentIndex === 3 ? 1200 :
+                                     currentIndex === 4 ? 1000 : 800;
+
+                    setTimeout(updateProgress, nextDelay);
+                }
+            }
+
+            // Start after a brief delay
+            setTimeout(updateProgress, 500);
+        }
+
+        function showArticleGenerationOptions(title, wordCount, difficulty, intent) {
+            // Create modal overlay for article generation options
+            const modal = document.createElement('div');
+            modal.id = 'articleGenerationModal';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0;">
+                            <h3 style="margin: 0; color: #1e293b; font-size: 20px;">✍️ Generate Article: ${title}</h3>
+                            <button onclick="closeArticleGenerationModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">×</button>
+                        </div>
+
+                        <div style="margin-bottom: 25px; padding: 15px; background: #f8fafc; border-radius: 8px;">
+                            <div style="font-weight: 600; color: #374151; margin-bottom: 8px;">📊 Article Details</div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; font-size: 13px; color: #64748b;">
+                                <div><strong>Word Count:</strong> ~${wordCount.toLocaleString()}</div>
+                                <div><strong>Difficulty:</strong> ${difficulty}</div>
+                                <div><strong>Intent:</strong> ${intent}</div>
+                                <div><strong>Est. Time:</strong> ${Math.ceil(wordCount/200)} min read</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="color: #1e293b; margin-bottom: 15px;">🤖 Choose AI Model & Pricing</h4>
+
+                            <div style="display: grid; gap: 12px;">
+                                <div class="model-option" onclick="selectModel('basic', 25)" style="padding: 15px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <div style="font-weight: 600; color: #1e293b;">🥉 Basic Model (GPT-3.5)</div>
+                                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Good quality, fast generation</div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: 600; color: #2563eb;">25 credits</div>
+                                            <div style="font-size: 11px; color: #64748b;">~$0.25</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="model-option" onclick="selectModel('premium', 50)" style="padding: 15px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <div style="font-weight: 600; color: #1e293b;">🥈 Premium Model (GPT-4)</div>
+                                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">High quality, detailed content</div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: 600; color: #7c3aed;">50 credits</div>
+                                            <div style="font-size: 11px; color: #64748b;">~$0.50</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="model-option" onclick="selectModel('enterprise', 85)" style="padding: 15px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <div style="font-weight: 600; color: #1e293b;">🥇 Enterprise Model (Claude 3.5 Sonnet)</div>
+                                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Highest quality, expert-level writing</div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: 600; color: #dc2626;">85 credits</div>
+                                            <div style="font-size: 11px; color: #64748b;">~$0.85</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="color: #1e293b; margin-bottom: 15px;">🖼️ Add Images (Optional)</h4>
+                            <div style="display: grid; gap: 12px;">
+                                <label style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 6px;">
+                                    <input type="checkbox" id="featuredImage" style="transform: scale(1.2);">
+                                    <div>
+                                        <div style="font-weight: 500;">Featured Image</div>
+                                        <div style="font-size: 12px; color: #64748b;">AI-generated hero image (+10 credits)</div>
+                                    </div>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 6px;">
+                                    <input type="checkbox" id="additionalImages" style="transform: scale(1.2);">
+                                    <div>
+                                        <div style="font-weight: 500;">Additional Images</div>
+                                        <div style="font-size: 12px; color: #64748b;">3-5 section images (+20 credits)</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <button onclick="closeArticleGenerationModal()" style="padding: 12px 24px; background: #64748b; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                Cancel
+                            </button>
+                            <button id="generateArticleBtn" onclick="startArticleGeneration('${title.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}')"
+                                    style="padding: 12px 24px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;" disabled>
+                                Select Model First
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Add hover effects for model options
+            const modelOptions = modal.querySelectorAll('.model-option');
+            modelOptions.forEach(option => {
+                option.addEventListener('mouseenter', () => {
+                    option.style.borderColor = '#3b82f6';
+                    option.style.backgroundColor = '#f8fafc';
+                });
+                option.addEventListener('mouseleave', () => {
+                    if (!option.classList.contains('selected')) {
+                        option.style.borderColor = '#e2e8f0';
+                        option.style.backgroundColor = 'white';
+                    }
+                });
+            });
+
+            // Store for later use
+            window.selectedModel = null;
+            window.selectedCredits = 0;
+        }
+
+        function selectModel(modelType, credits) {
+            // Remove previous selection
+            document.querySelectorAll('.model-option').forEach(option => {
+                option.style.borderColor = '#e2e8f0';
+                option.style.backgroundColor = 'white';
+                option.classList.remove('selected');
+            });
+
+            // Select current option
+            event.currentTarget.style.borderColor = '#2563eb';
+            event.currentTarget.style.backgroundColor = '#eff6ff';
+            event.currentTarget.classList.add('selected');
+
+            // Update button
+            const btn = document.getElementById('generateArticleBtn');
+            btn.disabled = false;
+            btn.textContent = `Generate Article (${credits} credits)`;
+
+            // Store selection
+            window.selectedModel = modelType;
+            window.selectedCredits = credits;
+        }
+
+        function closeArticleGenerationModal() {
+            const modal = document.getElementById('articleGenerationModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function startArticleGeneration(title, wordCount, difficulty, intent) {
+            if (!window.selectedModel) {
+                alert('Please select a model first');
+                return;
+            }
+
+            let totalCredits = window.selectedCredits;
+
+            // Add image credits
+            if (document.getElementById('featuredImage').checked) {
+                totalCredits += 10;
+            }
+            if (document.getElementById('additionalImages').checked) {
+                totalCredits += 20;
+            }
+
+            // Check if user has sufficient credits (you'd implement this based on your credit system)
+            // if (userCredits < totalCredits) {
+            //     alert(`Insufficient credits. You need ${totalCredits} credits.`);
+            //     return;
+            // }
+
+            closeArticleGenerationModal();
+
+            // Show progress modal
+            showContentModal('article', title, {intent});
+
+            // Here you'd implement the actual article generation API call
+            console.log('Generating article:', {
+                title,
+                wordCount,
+                difficulty,
+                intent,
+                model: window.selectedModel,
+                totalCredits,
+                featuredImage: document.getElementById('featuredImage').checked,
+                additionalImages: document.getElementById('additionalImages').checked
+            });
+
+            // Simulate article generation completion
+            setTimeout(() => {
+                displayArticleResult(title, [{title, intent, wordCount}]);
+            }, 8000);
         }
 
         function displayOutlineResult(keyword, articles) {
