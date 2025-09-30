@@ -127,9 +127,314 @@
             font-size: 12px;
             text-transform: uppercase;
         }
+        /* Enhanced Keyword Card Styles */
+        .keyword-card {
+            background: white;
+            border: 1px solid #e0e6ed;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .keyword-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            border-color: #667eea;
+        }
+
+        .keyword-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .keyword-title-section {
+            flex: 1;
+        }
+
+        .keyword-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin: 0 0 8px 0;
+            line-height: 1.3;
+        }
+
+        .keyword-intent {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .keyword-intent.informational {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .keyword-intent.commercial {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .keyword-intent.transactional {
+            background-color: #e8f5e8;
+            color: #388e3c;
+        }
+
+        .keyword-intent.navigational {
+            background-color: #fff3e0;
+            color: #f57c00;
+        }
+
+        .keyword-opportunity-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .keyword-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .metric-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .metric-icon {
+            font-size: 20px;
+            width: 32px;
+            text-align: center;
+        }
+
+        .metric-content {
+            flex: 1;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .metric-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .difficulty-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .opportunity-score {
+            margin-bottom: 20px;
+        }
+
+        .score-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .score-bar-container {
+            background: #f1f5f9;
+            height: 8px;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .score-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .traffic-projection {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .projection-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .projection-icon {
+            font-size: 16px;
+        }
+
+        .projection-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .projection-timeline {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .timeline-item {
+            text-align: center;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .timeline-month {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .timeline-visits {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .projection-note {
+            font-size: 11px;
+            color: #64748b;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .keyword-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            flex: 1;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .action-btn.primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .action-btn.primary:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+        }
+
+        .action-btn.secondary {
+            background: #f8fafc;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+
+        .action-btn.secondary:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        .btn-icon {
+            font-size: 14px;
+        }
+
+        .keyword-snippet {
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.4;
+            font-style: italic;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border-left: 3px solid #e2e8f0;
+        }
+
         @media (max-width: 768px) {
             .container {
                 grid-template-columns: 1fr;
+            }
+
+            .keyword-metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .projection-timeline {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .keyword-actions {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                flex: none;
             }
         }
     </style>
@@ -220,20 +525,23 @@
 
                 if (data.status === 'operational') {
                     const services = data.services || {};
+                    const responseTime = services.serperAPI?.responseTime || '';
+                    const aiConfigured = services.openRouterAPI?.configured;
+
                     statusDiv.innerHTML = `
                         <div class="status success">
-                            <strong>✅ API Operational</strong><br>
-                            Serper API: ${services.serperAPI?.status || 'unknown'}<br>
-                            ${services.serperAPI?.responseTime ? `Response Time: ${services.serperAPI.responseTime}` : ''}<br>
-                            OpenRouter: ${services.openRouterAPI?.configured ? 'Configured' : 'Not Configured'}
+                            <strong>✅ All Systems Online</strong><br>
+                            Keyword Research: Available ${responseTime ? `(${responseTime})` : ''}<br>
+                            AI Content Generation: ${aiConfigured ? 'Available' : 'Setup Required'}<br>
+                            <small style="color: #666;">Platform ready for content strategy</small>
                         </div>
                     `;
                 } else {
                     statusDiv.innerHTML = `
                         <div class="status error">
-                            <strong>⚠️ API Issues</strong><br>
-                            Status: ${data.status}<br>
-                            Services: ${JSON.stringify(data.services || {}, null, 2)}
+                            <strong>⚠️ System Maintenance</strong><br>
+                            Some features may be temporarily unavailable<br>
+                            <small style="color: #666;">Please try again in a few minutes</small>
                         </div>
                     `;
                 }
@@ -241,9 +549,9 @@
                 console.error('API Status error:', error);
                 statusDiv.innerHTML = `
                     <div class="status error">
-                        <strong>❌ API Unavailable</strong><br>
-                        Error: ${error.message}<br>
-                        <small>Check browser console for details</small>
+                        <strong>❌ Connection Issue</strong><br>
+                        Unable to check system status<br>
+                        <small style="color: #666;">Please refresh the page or try again later</small>
                     </div>
                 `;
             }
@@ -340,46 +648,108 @@
             `;
 
             if (data.keywords && data.keywords.length > 0) {
+                const getDifficultyColor = (difficulty) => {
+                    switch(difficulty.toLowerCase()) {
+                        case 'low': return '#4CAF50';
+                        case 'medium': return '#FF9800';
+                        case 'high': return '#f44336';
+                        default: return '#666';
+                    }
+                };
+
+                const getOpportunityColor = (opportunity) => {
+                    if (opportunity >= 70) return '#4CAF50';
+                    if (opportunity >= 40) return '#FF9800';
+                    return '#f44336';
+                };
+
                 const keywordCards = data.keywords.map(keyword => `
-                    <div class="keyword-item">
-                        <div class="keyword-header">
-                            <div class="keyword-title">${keyword.keyword}</div>
-                            <div style="font-size: 12px; color: #666;">${keyword.intent}</div>
+                    <div class="keyword-card" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div class="keyword-card-header">
+                            <div class="keyword-title-section">
+                                <h3 class="keyword-title">${keyword.keyword}</h3>
+                                <span class="keyword-intent ${keyword.intent.toLowerCase()}">${keyword.intent}</span>
+                            </div>
+                            <div class="keyword-opportunity-badge" style="background-color: ${getOpportunityColor(keyword.opportunity)}">
+                                ${keyword.opportunity}%
+                            </div>
                         </div>
-                        <div class="keyword-meta">
-                            <div><strong>Volume:</strong> ${keyword.searchVolume.toLocaleString()}</div>
-                            <div><strong>Difficulty:</strong> ${keyword.difficulty}</div>
-                            <div><strong>CPC:</strong> ${keyword.cpc}</div>
-                            <div><strong>Opportunity:</strong> ${keyword.opportunity}/100</div>
+
+                        <div class="keyword-metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-icon">🔍</div>
+                                <div class="metric-content">
+                                    <div class="metric-label">Search Volume</div>
+                                    <div class="metric-value">${keyword.searchVolume.toLocaleString()}</div>
+                                </div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-icon">⚡</div>
+                                <div class="metric-content">
+                                    <div class="metric-label">Difficulty</div>
+                                    <div class="metric-value" style="color: ${getDifficultyColor(keyword.difficulty)}">
+                                        <span class="difficulty-dot" style="background-color: ${getDifficultyColor(keyword.difficulty)}"></span>
+                                        ${keyword.difficulty}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-icon">💰</div>
+                                <div class="metric-content">
+                                    <div class="metric-label">Cost Per Click</div>
+                                    <div class="metric-value">${keyword.cpc}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opportunity Score Bar -->
+                        <div class="opportunity-score">
+                            <div class="score-label">Opportunity Score</div>
+                            <div class="score-bar-container">
+                                <div class="score-bar" style="width: ${keyword.opportunity}%; background-color: ${getOpportunityColor(keyword.opportunity)}"></div>
+                            </div>
+                            <div class="score-text">${keyword.opportunity}/100</div>
                         </div>
 
                         <!-- Traffic Projection -->
-                        <div style="background: #f0f8ff; padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 3px solid #2196F3;">
-                            <strong>📊 Traffic Projection (3-month):</strong><br>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 5px; font-size: 11px;">
-                                <div><strong>Month 1:</strong> ${calculateTrafficProjection(keyword, 1)} visits</div>
-                                <div><strong>Month 2:</strong> ${calculateTrafficProjection(keyword, 2)} visits</div>
-                                <div><strong>Month 3:</strong> ${calculateTrafficProjection(keyword, 3)} visits</div>
+                        <div class="traffic-projection">
+                            <div class="projection-header">
+                                <span class="projection-icon">📊</span>
+                                <span class="projection-title">3-Month Traffic Forecast</span>
                             </div>
-                            <div style="font-size: 10px; color: #666; margin-top: 5px;">
-                                Based on ${keyword.searchVolume.toLocaleString()} monthly searches, ${keyword.difficulty} competition, ${keyword.opportunity}% opportunity
+                            <div class="projection-timeline">
+                                <div class="timeline-item">
+                                    <div class="timeline-month">Month 1</div>
+                                    <div class="timeline-visits">${calculateTrafficProjection(keyword, 1)} visits</div>
+                                </div>
+                                <div class="timeline-item">
+                                    <div class="timeline-month">Month 2</div>
+                                    <div class="timeline-visits">${calculateTrafficProjection(keyword, 2)} visits</div>
+                                </div>
+                                <div class="timeline-item">
+                                    <div class="timeline-month">Month 3</div>
+                                    <div class="timeline-visits">${calculateTrafficProjection(keyword, 3)} visits</div>
+                                </div>
+                            </div>
+                            <div class="projection-note">
+                                Based on ${keyword.searchVolume.toLocaleString()} monthly searches & ${keyword.opportunity}% opportunity
                             </div>
                         </div>
 
-                        <!-- Quick Actions -->
-                        <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
-                            <button onclick="selectKeyword('${keyword.keyword.replace(/'/g, "\\'")}', ${keyword.opportunity})"
-                                    style="background: #4CAF50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;"
+                        <!-- Action Buttons -->
+                        <div class="keyword-actions">
+                            <button class="action-btn primary" onclick="selectKeyword('${keyword.keyword.replace(/'/g, "\\'")}', ${keyword.opportunity})"
                                     id="select-${keyword.keyword.replace(/[^a-zA-Z0-9]/g, '')}">
-                                ✅ Select for Content
+                                <span class="btn-icon">✅</span>
+                                Select for Content
                             </button>
-                            <button onclick="analyzeCompetitors('${keyword.keyword.replace(/'/g, "\\'")}', '${keyword.url || ''}')"
-                                    style="background: #FF9800; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                                🔍 View Competitors
+                            <button class="action-btn secondary" onclick="analyzeCompetitors('${keyword.keyword.replace(/'/g, "\\'")}', '${keyword.url || ''}')">
+                                <span class="btn-icon">🔍</span>
+                                Analyze Competition
                             </button>
                         </div>
 
-                        ${keyword.snippet ? `<p style="font-size: 12px; color: #666; margin-top: 10px;">${keyword.snippet.substring(0, 150)}...</p>` : ''}
+                        ${keyword.snippet ? `<div class="keyword-snippet">${keyword.snippet.substring(0, 150)}...</div>` : ''}
                     </div>
                 `).join('');
 
@@ -421,12 +791,13 @@
             if (selectedKeywords.find(k => k.keyword === keyword)) {
                 // Deselect
                 selectedKeywords = selectedKeywords.filter(k => k.keyword !== keyword);
-                button.innerHTML = '✅ Select for Content';
-                button.style.background = '#4CAF50';
+                button.innerHTML = '<span class="btn-icon">✅</span>Select for Content';
+                button.className = 'action-btn primary';
             } else {
                 // Select
                 selectedKeywords.push({ keyword, opportunity });
-                button.innerHTML = '✅ Selected';
+                button.innerHTML = '<span class="btn-icon">✅</span>Selected';
+                button.className = 'action-btn primary selected';
                 button.style.background = '#2196F3';
             }
 
@@ -467,8 +838,9 @@
             const cleanId = keyword.replace(/[^a-zA-Z0-9]/g, '');
             const button = document.getElementById(`select-${cleanId}`);
             if (button) {
-                button.innerHTML = '✅ Select for Content';
-                button.style.background = '#4CAF50';
+                button.innerHTML = '<span class="btn-icon">✅</span>Select for Content';
+                button.className = 'action-btn primary';
+                button.style.background = '';
             }
             updateSelectedKeywordsDisplay();
         }
@@ -478,8 +850,9 @@
                 const cleanId = k.keyword.replace(/[^a-zA-Z0-9]/g, '');
                 const button = document.getElementById(`select-${cleanId}`);
                 if (button) {
-                    button.innerHTML = '✅ Select for Content';
-                    button.style.background = '#4CAF50';
+                    button.innerHTML = '<span class="btn-icon">✅</span>Select for Content';
+                    button.className = 'action-btn primary';
+                    button.style.background = '';
                 }
             });
             selectedKeywords = [];
