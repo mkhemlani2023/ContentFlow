@@ -962,12 +962,34 @@
 
         // Inline competitor analysis function
         async function toggleInlineCompetitorAnalysis(keyword, cleanId) {
+            console.log('toggleInlineCompetitorAnalysis called with:', keyword, cleanId);
+
             const analysisSection = document.getElementById(`analysis-inline-${cleanId}`);
             const toggleText = document.getElementById(`toggle-text-inline-${cleanId}`);
             const loadingDiv = document.getElementById(`competitor-loading-inline-${cleanId}`);
             const resultsDiv = document.getElementById(`competitor-results-inline-${cleanId}`);
 
-            if (analysisSection.style.display === 'none') {
+            // Debug DOM elements
+            console.log('DOM elements found:', {
+                analysisSection: !!analysisSection,
+                toggleText: !!toggleText,
+                loadingDiv: !!loadingDiv,
+                resultsDiv: !!resultsDiv
+            });
+
+            if (!analysisSection || !toggleText || !loadingDiv || !resultsDiv) {
+                console.error('Missing required DOM elements for competitor analysis');
+                console.log('Looking for elements with IDs:', {
+                    analysisSection: `analysis-inline-${cleanId}`,
+                    toggleText: `toggle-text-inline-${cleanId}`,
+                    loadingDiv: `competitor-loading-inline-${cleanId}`,
+                    resultsDiv: `competitor-results-inline-${cleanId}`
+                });
+                alert('Error: Could not find competitor analysis elements. Please refresh and try again.');
+                return;
+            }
+
+            if (analysisSection.style.display === 'none' || !analysisSection.style.display) {
                 // Show analysis and fetch data
                 analysisSection.style.display = 'block';
                 loadingDiv.style.display = 'block';
@@ -985,14 +1007,29 @@
                     });
 
                     console.log('Competitor response status:', response.status);
+                    console.log('Competitor response headers:', response.headers);
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('API error response:', errorText);
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                    }
+
                     const data = await response.json();
                     console.log('Competitor response data:', data);
 
-                    if (data.success && data.competitors) {
+                    if (data.success && data.competitors && data.competitors.length > 0) {
+                        console.log('Displaying competitor analysis with', data.competitors.length, 'competitors');
                         displayInlineCompetitorAnalysis(keyword, data, cleanId);
                         loadingDiv.style.display = 'none';
                         resultsDiv.style.display = 'block';
+                        console.log('Competitor analysis display completed');
                     } else {
+                        console.warn('Competitor data validation failed:', {
+                            success: data.success,
+                            hasCompetitors: !!(data.competitors),
+                            competitorCount: data.competitors ? data.competitors.length : 0
+                        });
                         throw new Error(data.message || data.error || 'No competitor data found');
                     }
                 } catch (error) {
