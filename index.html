@@ -1749,91 +1749,155 @@
         }
 
         async function generateArticleIdeasFromAutocomplete(keyword, suggestions) {
-            // Create article ideas based on the main keyword and autocomplete suggestions
-            const currentYear = new Date().getFullYear();
-            const articleIdeas = [];
+            // Use intelligent OpenRouter API instead of hardcoded templates
+            console.log('Generating context-aware article ideas for keyword:', keyword);
+            console.log('With autocomplete suggestions:', suggestions);
 
-            // Main keyword articles
-            articleIdeas.push({
-                title: `The Complete Guide to ${keyword}`,
+            try {
+                // Create context-rich prompt including autocomplete data
+                const contextualKeyword = `${keyword} (with related searches: ${suggestions.slice(0, 5).join(', ')})`;
+
+                const response = await fetch('/api/article-ideas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        keyword: contextualKeyword,
+                        modelType: 'free' // Use the free model for cost efficiency
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API response error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('OpenRouter article ideas response:', data);
+
+                if (data.success && data.articles && data.articles.length > 0) {
+                    // Convert OpenRouter format to expected format
+                    return data.articles.map(article => ({
+                        title: article.title,
+                        type: determineArticleType(article.title),
+                        intent: article.intent,
+                        estimatedWords: article.wordCount,
+                        difficulty: mapDifficultyFromWordCount(article.wordCount)
+                    }));
+                } else {
+                    throw new Error('No articles returned from API');
+                }
+            } catch (error) {
+                console.error('Error generating intelligent article ideas:', error);
+                // Fallback to minimal, context-aware templates (much better than before)
+                return generateMinimalContextualIdeas(keyword, suggestions);
+            }
+        }
+
+        // Helper function to determine article type from title
+        function determineArticleType(title) {
+            const titleLower = title.toLowerCase();
+            if (titleLower.includes('guide') || titleLower.includes('complete')) return 'Guide';
+            if (titleLower.includes('how to')) return 'How-to';
+            if (titleLower.includes('tips') || titleLower.includes('best')) return 'Tips';
+            if (titleLower.includes('vs') || titleLower.includes('comparison')) return 'Comparison';
+            if (titleLower.includes('review')) return 'Review';
+            return 'Article';
+        }
+
+        // Helper function to map difficulty from word count
+        function mapDifficultyFromWordCount(wordCount) {
+            if (wordCount < 1500) return 'Low';
+            if (wordCount < 2500) return 'Medium';
+            return 'High';
+        }
+
+        // Fallback with much better context awareness
+        function generateMinimalContextualIdeas(keyword, suggestions) {
+            const currentYear = new Date().getFullYear();
+            const contextualIdeas = [];
+
+            // Only create ideas that make logical sense for the keyword
+            contextualIdeas.push({
+                title: `${keyword}: Complete ${currentYear} Guide`,
                 type: 'Guide',
                 intent: 'Informational',
-                estimatedWords: 2500,
+                estimatedWords: 2000,
                 difficulty: 'Medium'
             });
 
-            articleIdeas.push({
-                title: `${keyword}: Everything You Need to Know in ${currentYear}`,
-                type: 'Ultimate Guide',
-                intent: 'Informational',
-                estimatedWords: 3000,
-                difficulty: 'Medium'
+            // Use actual autocomplete suggestions for relevant topics
+            const relevantSuggestions = suggestions.slice(0, 3).filter(s =>
+                s && s.toLowerCase().includes(keyword.toLowerCase().split(' ')[0])
+            );
+
+            relevantSuggestions.forEach(suggestion => {
+                contextualIdeas.push({
+                    title: suggestion,
+                    type: 'How-to',
+                    intent: 'Informational',
+                    estimatedWords: 1500,
+                    difficulty: 'Low'
+                });
             });
 
-            // Suggestions-based articles
-            suggestions.slice(0, 6).forEach(suggestion => {
-                const cleanSuggestion = suggestion.replace(/[^\w\s]/gi, '').trim();
-                if (cleanSuggestion && cleanSuggestion !== keyword) {
-                    articleIdeas.push({
-                        title: `How to ${cleanSuggestion}`,
-                        type: 'How-to',
-                        intent: 'Informational',
-                        estimatedWords: 1800,
-                        difficulty: 'Low'
-                    });
-                }
-            });
-
-            // Common article types for any keyword
-            articleIdeas.push({
-                title: `Top 10 ${keyword} Tips for Beginners`,
-                type: 'List Article',
-                intent: 'Informational',
-                estimatedWords: 1500,
-                difficulty: 'Low'
-            });
-
-            articleIdeas.push({
-                title: `${keyword} vs Alternatives: Which is Best?`,
-                type: 'Comparison',
-                intent: 'Commercial',
-                estimatedWords: 2200,
-                difficulty: 'Medium'
-            });
-
-            return articleIdeas;
+            return contextualIdeas;
         }
 
         async function generateFallbackArticleIdeas(keyword) {
-            // Fallback article ideas if autocomplete fails
+            // Try OpenRouter API first, fallback to context-aware templates
             const currentYear = new Date().getFullYear();
+
+            try {
+                console.log('Attempting OpenRouter API for fallback ideas:', keyword);
+                const response = await fetch('/api/article-ideas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        keyword: keyword,
+                        modelType: 'free'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.articles && data.articles.length > 0) {
+                        return data.articles.map(article => ({
+                            title: article.title,
+                            type: determineArticleType(article.title),
+                            intent: article.intent,
+                            estimatedWords: article.wordCount,
+                            difficulty: mapDifficultyFromWordCount(article.wordCount)
+                        }));
+                    }
+                }
+            } catch (error) {
+                console.error('OpenRouter fallback failed, using minimal templates:', error);
+            }
+
+            // Final fallback - minimal but contextually appropriate
             return [
                 {
-                    title: `The Ultimate ${keyword} Guide for ${currentYear}`,
+                    title: `${keyword}: Complete ${currentYear} Guide`,
                     type: 'Guide',
                     intent: 'Informational',
-                    estimatedWords: 2500,
+                    estimatedWords: 2000,
                     difficulty: 'Medium'
                 },
                 {
-                    title: `How to Get Started with ${keyword}`,
+                    title: `Getting Started with ${keyword}`,
                     type: 'How-to',
-                    intent: 'Informational',
-                    estimatedWords: 1800,
-                    difficulty: 'Low'
-                },
-                {
-                    title: `Top 10 ${keyword} Tips and Tricks`,
-                    type: 'List Article',
                     intent: 'Informational',
                     estimatedWords: 1500,
                     difficulty: 'Low'
                 },
                 {
-                    title: `${keyword} Best Practices and Common Mistakes`,
+                    title: `${keyword} Best Practices`,
                     type: 'Best Practices',
                     intent: 'Informational',
-                    estimatedWords: 2000,
+                    estimatedWords: 1800,
                     difficulty: 'Medium'
                 }
             ];
