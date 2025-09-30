@@ -898,6 +898,143 @@ exports.handler = async (event, context) => {
       }
     }
 
+    // OpenRouter Article Generation
+    if (path === '/api/openrouter-generate' && method === 'POST') {
+      try {
+        const { model, prompt, temperature, max_tokens } = JSON.parse(body);
+
+        if (!OPENROUTER_API_KEY) {
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'OpenRouter API key not configured'
+            })
+          };
+        }
+
+        if (!model || !prompt) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'Model and prompt are required'
+            })
+          };
+        }
+
+        console.log('Making OpenRouter API call with model:', model);
+
+        // Make OpenRouter API request
+        const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'X-Title': 'SEO Wizard Content Generator'
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: temperature || 0.7,
+            max_tokens: max_tokens || 4000
+          })
+        });
+
+        console.log('OpenRouter response status:', response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('OpenRouter API error:', errorText);
+          throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('OpenRouter response received');
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            ...data
+          })
+        };
+
+      } catch (error) {
+        console.error('OpenRouter API Error:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Article generation failed',
+            error: error.message
+          })
+        };
+      }
+    }
+
+    // Image Generation (Placeholder - can be extended with DALL-E, Stable Diffusion, etc.)
+    if (path === '/api/generate-images' && method === 'POST') {
+      try {
+        const { keyword, imageType, count } = JSON.parse(body);
+
+        if (!keyword) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'Keyword is required for image generation'
+            })
+          };
+        }
+
+        // Mock image generation for now - replace with actual image API
+        const mockImages = [];
+        for (let i = 0; i < (count || 1); i++) {
+          mockImages.push({
+            url: `https://picsum.photos/800/600?random=${Date.now()}-${i}`,
+            alt: `${imageType || 'Featured'} image for ${keyword}`,
+            type: imageType || 'featured',
+            prompt: `High-quality ${imageType || 'featured'} image for ${keyword}`,
+            style: 'photographic'
+          });
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            keyword: keyword,
+            images: mockImages,
+            timestamp: new Date().toISOString()
+          })
+        };
+
+      } catch (error) {
+        console.error('Image Generation Error:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Image generation failed',
+            error: error.message
+          })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
@@ -912,7 +1049,9 @@ exports.handler = async (event, context) => {
           'POST /api/search',
           'POST /api/article-ideas',
           'POST /api/competitors',
-          'POST /api/autocomplete'
+          'POST /api/autocomplete',
+          'POST /api/openrouter-generate',
+          'POST /api/generate-images'
         ]
       })
     };
