@@ -523,9 +523,8 @@ exports.handler = async (event, context) => {
     let path = event.path || '';
     if (path.startsWith('/.netlify/functions/api')) {
       path = path.replace('/.netlify/functions/api', '');
-    } else if (path.startsWith('/api')) {
-      path = path.replace('/api', '');
     }
+    // Don't strip /api prefix - endpoints expect it
 
     // Default to status if no path
     if (!path || path === '/') {
