@@ -753,10 +753,19 @@
                                 <span class="btn-icon">✅</span>
                                 Select for Content
                             </button>
-                            <button class="action-btn secondary" onclick="analyzeCompetitors('${keyword.keyword.replace(/'/g, "\\'")}', '${keyword.url || ''}')">
+                            <button class="action-btn secondary" onclick="toggleKeywordAnalysis('${keyword.keyword.replace(/'/g, "\\'")}', '${keyword.keyword.replace(/[^a-zA-Z0-9]/g, '')}')">
                                 <span class="btn-icon">🔍</span>
-                                Analyze Competition
+                                <span id="toggle-text-${keyword.keyword.replace(/[^a-zA-Z0-9]/g, '')}">Show Analysis</span>
                             </button>
+                        </div>
+
+                        <!-- Expandable Analysis Section -->
+                        <div id="analysis-${keyword.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                            <div id="competitor-loading-${keyword.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="display: none; text-align: center; padding: 20px; color: #64748b;">
+                                <div style="font-size: 20px;">🔄</div>
+                                <p>Analyzing competitors and ranking articles...</p>
+                            </div>
+                            <div id="competitor-results-${keyword.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="display: none;"></div>
                         </div>
 
                         ${keyword.snippet ? `<div class="keyword-snippet">${keyword.snippet.substring(0, 150)}...</div>` : ''}
@@ -1335,26 +1344,42 @@
             `;
         }
 
-        // Competitor Analysis Function
-        async function analyzeCompetitors(keyword, url = '') {
-            // Show loading state
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML += `
-                <div class="card" id="competitorAnalysis" style="margin-top: 20px;">
-                    <h2>🔍 Competitor Analysis for "${keyword}"</h2>
-                    <div style="text-align: center; padding: 40px;">
-                        <div style="font-size: 24px;">🔄</div>
-                        <p>Analyzing top ranking articles...</p>
-                    </div>
-                </div>
-            `;
+        // Keyword Analysis Toggle Function
+        async function toggleKeywordAnalysis(keyword, cleanId) {
+            const analysisDiv = document.getElementById(`analysis-${cleanId}`);
+            const toggleText = document.getElementById(`toggle-text-${cleanId}`);
+            const loadingDiv = document.getElementById(`competitor-loading-${cleanId}`);
+            const resultsDiv = document.getElementById(`competitor-results-${cleanId}`);
+
+            if (analysisDiv.style.display === 'none') {
+                // Show analysis
+                analysisDiv.style.display = 'block';
+                toggleText.textContent = 'Hide Analysis';
+
+                // Check if we already have results
+                if (resultsDiv.innerHTML === '') {
+                    // Load competitor data
+                    loadingDiv.style.display = 'block';
+                    await loadCompetitorAnalysis(keyword, cleanId);
+                }
+            } else {
+                // Hide analysis
+                analysisDiv.style.display = 'none';
+                toggleText.textContent = 'Show Analysis';
+            }
+        }
+
+        // Load Competitor Analysis for Individual Keywords
+        async function loadCompetitorAnalysis(keyword, cleanId) {
+            const loadingDiv = document.getElementById(`competitor-loading-${cleanId}`);
+            const resultsDiv = document.getElementById(`competitor-results-${cleanId}`);
 
             try {
                 // Call competitor analysis API
                 const response = await fetch('/api/competitors', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ keyword, url })
+                    body: JSON.stringify({ keyword })
                 });
 
                 if (!response.ok) {
@@ -1362,13 +1387,104 @@
                 }
 
                 const data = await response.json();
-                displayRealCompetitorAnalysis(keyword, data);
+                displayInlineCompetitorAnalysis(keyword, data, cleanId);
 
             } catch (error) {
                 console.error('Competitor analysis error:', error);
-                // Display mock competitor analysis since API might not be implemented
-                displayMockCompetitorAnalysis(keyword);
+                // Display error message
+                resultsDiv.innerHTML = `
+                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 15px; color: #dc2626;">
+                        <strong>⚠️ Analysis Unavailable</strong><br>
+                        Unable to load competitor data. API may be temporarily unavailable.
+                    </div>
+                `;
+            } finally {
+                loadingDiv.style.display = 'none';
+                resultsDiv.style.display = 'block';
             }
+        }
+
+        function displayInlineCompetitorAnalysis(keyword, data, cleanId) {
+            const { competitors, analysis, recommendations } = data;
+            const resultsDiv = document.getElementById(`competitor-results-${cleanId}`);
+
+            // Generate ranking articles list
+            const rankingArticles = competitors.slice(0, 5).map((comp, index) => `
+                <div style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+                    <div style="width: 30px; text-align: center; font-weight: bold; color: #667eea;">#${comp.position}</div>
+                    <div style="flex: 1; margin-left: 10px;">
+                        <div style="font-weight: 600; font-size: 13px; color: #2d3748; margin-bottom: 2px;">
+                            <a href="${comp.url}" target="_blank" style="text-decoration: none; color: #2d3748;">${comp.title.substring(0, 80)}...</a>
+                        </div>
+                        <div style="font-size: 11px; color: #64748b;">
+                            📍 ${comp.domain} | 📊 DA: ${comp.domainAuthority} | 🔗 ${comp.estimatedBacklinks.toLocaleString()}
+                        </div>
+                    </div>
+                    <div style="text-align: right; font-size: 11px; color: #64748b;">
+                        ${comp.contentLength.toLocaleString()} words
+                    </div>
+                </div>
+            `).join('');
+
+            resultsDiv.innerHTML = `
+                <div style="background: #f8fafc; border-radius: 6px; padding: 15px;">
+                    <!-- Competition Overview -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 15px;">
+                        <div style="text-align: center; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 16px; font-weight: bold; color: ${analysis.competitionLevel === 'High' ? '#f56565' : analysis.competitionLevel === 'Medium' ? '#ed8936' : '#48bb78'};">
+                                ${analysis.competitionLevel}
+                            </div>
+                            <div style="font-size: 10px; color: #64748b;">Competition</div>
+                        </div>
+                        <div style="text-align: center; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 14px; font-weight: bold; color: #2d3748;">${analysis.averageDomainAuthority}</div>
+                            <div style="font-size: 10px; color: #64748b;">Avg. DA</div>
+                        </div>
+                        <div style="text-align: center; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 12px; font-weight: bold; color: #2d3748;">${analysis.averageBacklinks.toLocaleString()}</div>
+                            <div style="font-size: 10px; color: #64748b;">Avg. Links</div>
+                        </div>
+                        <div style="text-align: center; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 12px; font-weight: bold; color: #2d3748;">${analysis.averageContentLength}</div>
+                            <div style="font-size: 10px; color: #64748b;">Avg. Words</div>
+                        </div>
+                    </div>
+
+                    <!-- Top Ranking Articles -->
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 10px 0; color: #2d3748; font-size: 14px;">📊 Top 5 Ranking Articles</h4>
+                        <div style="background: white; border-radius: 4px; border: 1px solid #e2e8f0; padding: 8px;">
+                            ${rankingArticles}
+                        </div>
+                    </div>
+
+                    <!-- Quick Recommendations -->
+                    <div style="background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%); padding: 12px; border-radius: 4px; margin-bottom: 15px;">
+                        <div style="font-size: 12px; font-weight: 600; color: #2d3748; margin-bottom: 8px;">💡 Quick Win Strategy</div>
+                        <div style="font-size: 11px; color: #2d3748; line-height: 1.4;">
+                            Target <strong>${recommendations.targetWordCount.toLocaleString()}</strong> words
+                            (${Math.round((recommendations.targetWordCount/analysis.averageContentLength - 1) * 100)}% longer than competitors).
+                            Build <strong>${recommendations.requiredBacklinks.toLocaleString()}</strong> quality backlinks to compete.
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button onclick="generateContentOutline('${keyword}', ${recommendations.targetWordCount}, '${analysis.competitionLevel.toLowerCase()}', '${cleanId}')"
+                                class="action-btn primary" style="margin: 0; font-size: 11px; padding: 6px 12px;">
+                            <span class="btn-icon">📝</span>Generate Outline
+                        </button>
+                        <button onclick="findRoyaltyFreeImages('${keyword}', '${cleanId}')"
+                                class="action-btn secondary" style="margin: 0; font-size: 11px; padding: 6px 12px;">
+                            <span class="btn-icon">🖼️</span>Find Images
+                        </button>
+                        <button onclick="showImageGeneration('${keyword}', '${cleanId}')"
+                                class="action-btn secondary" style="margin: 0; font-size: 11px; padding: 6px 12px; background: #7b1fa2;">
+                            <span class="btn-icon">🎨</span>AI Images
+                        </button>
+                    </div>
+                </div>
+            `;
         }
 
         function displayRealCompetitorAnalysis(keyword, data) {
@@ -1552,8 +1668,237 @@
             `;
         }
 
-        // Content Generation Function
-        async function generateContentOutline(keyword, wordCount = 2000, difficulty = 'medium') {
+        // Enhanced Content Generation Function with Inline Display
+        async function generateContentOutline(keyword, wordCount = 2000, difficulty = 'medium', cleanId = null) {
+            const targetDiv = cleanId ?
+                document.getElementById(`competitor-results-${cleanId}`) :
+                document.getElementById('results');
+
+            if (cleanId) {
+                // Inline mode - show loading in the same area
+                document.getElementById(`competitor-results-${cleanId}`).innerHTML += `
+                    <div id="outline-loading-${cleanId}" style="background: #f0f8ff; border-radius: 6px; padding: 20px; margin-top: 15px; text-align: center;">
+                        <div style="font-size: 20px;">📝</div>
+                        <p style="margin: 5px 0; color: #2d3748;">Generating SEO-optimized content outline...</p>
+                        <div style="font-size: 12px; color: #64748b;">Word target: ${wordCount.toLocaleString()} words</div>
+                    </div>
+                `;
+            } else {
+                // Legacy mode - append to results
+                targetDiv.innerHTML += `
+                    <div class="card" id="contentOutline" style="margin-top: 20px;">
+                        <h2>📝 Content Outline for "${keyword}"</h2>
+                        <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 24px;">🔄</div>
+                            <p>Generating content outline...</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            try {
+                // Call content generation API (placeholder for now)
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+
+                if (cleanId) {
+                    displayInlineContentOutline(keyword, wordCount, difficulty, cleanId);
+                } else {
+                    displayMockContentOutline(keyword, wordCount);
+                }
+
+            } catch (error) {
+                const errorDiv = cleanId ?
+                    document.getElementById(`outline-loading-${cleanId}`) :
+                    document.getElementById('contentOutline');
+
+                errorDiv.innerHTML = `
+                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 15px; color: #dc2626;">
+                        <strong>❌ Outline Generation Failed</strong><br>
+                        Unable to generate content outline. Please try again.
+                    </div>
+                `;
+            }
+        }
+
+        function displayInlineContentOutline(keyword, wordCount, difficulty, cleanId) {
+            const loadingDiv = document.getElementById(`outline-loading-${cleanId}`);
+
+            loadingDiv.innerHTML = `
+                <div style="background: #f0f8ff; border-radius: 6px; padding: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: #2d3748;">📝 SEO Content Outline</h4>
+                    <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 12px;">
+                        <strong>🎯 Target:</strong> ${wordCount.toLocaleString()} words |
+                        <strong>Difficulty:</strong> ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} |
+                        <strong>Reading Time:</strong> ~${Math.round(wordCount / 200)} min
+                    </div>
+
+                    <div style="background: white; border-radius: 4px; padding: 12px; margin-bottom: 15px; font-size: 12px;">
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #4caf50;">1. Introduction (150-200 words)</strong>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Hook with "${keyword}" statistic, problem identification, article preview</div>
+                        </div>
+
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #2196f3;">2. What is ${keyword}? (300-400 words)</strong>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Clear definition, 2024 relevance, common misconceptions</div>
+                        </div>
+
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #f57c00;">3. Complete ${keyword} Guide (${Math.round(wordCount * 0.4)}-${Math.round(wordCount * 0.5)} words)</strong>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Step-by-step walkthrough, tools needed, expert tips, examples</div>
+                        </div>
+
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #7b1fa2;">4. Advanced Strategies (400-500 words)</strong>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Expert techniques, scaling tips, future trends</div>
+                        </div>
+
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #d32f2f;">5. FAQ Section (200-300 words)</strong>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Top questions, voice search optimization</div>
+                        </div>
+
+                        <div>
+                            <strong style="color: #4caf50;">6. Conclusion & Next Steps (100-150 words)</strong>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Key takeaways, call-to-action, related resources</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; justify-content: center; margin-top: 15px;">
+                        <button onclick="generateFullArticle('${keyword}', ${wordCount}, '${cleanId}')"
+                                class="action-btn primary" style="margin: 0; font-size: 11px; padding: 6px 12px;">
+                            <span class="btn-icon">✍️</span>Generate Article
+                        </button>
+                        <button onclick="scheduleContent('${keyword}', '${cleanId}')"
+                                class="action-btn secondary" style="margin: 0; font-size: 11px; padding: 6px 12px;">
+                            <span class="btn-icon">📅</span>Schedule Post
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Image Functions
+        async function findRoyaltyFreeImages(keyword, cleanId) {
+            const resultsDiv = document.getElementById(`competitor-results-${cleanId}`);
+
+            resultsDiv.innerHTML += `
+                <div id="image-results-${cleanId}" style="background: #fff5f5; border-radius: 6px; padding: 15px; margin-top: 15px;">
+                    <h4 style="margin: 0 0 15px 0; color: #2d3748;">🖼️ Royalty-Free Images for "${keyword}"</h4>
+
+                    <!-- Image Sources -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px;">
+                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px;">
+                            <strong style="color: #2d3748; font-size: 12px;">Unsplash</strong>
+                            <div style="font-size: 11px; color: #64748b; margin: 5px 0;">High-quality free photos</div>
+                            <a href="https://unsplash.com/s/photos/${encodeURIComponent(keyword)}" target="_blank"
+                               style="background: #000; color: white; padding: 4px 8px; border-radius: 3px; text-decoration: none; font-size: 10px; display: inline-block;">
+                                Search Unsplash
+                            </a>
+                        </div>
+
+                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px;">
+                            <strong style="color: #2d3748; font-size: 12px;">Pexels</strong>
+                            <div style="font-size: 11px; color: #64748b; margin: 5px 0;">Free stock photography</div>
+                            <a href="https://www.pexels.com/search/${encodeURIComponent(keyword)}/" target="_blank"
+                               style="background: #05a081; color: white; padding: 4px 8px; border-radius: 3px; text-decoration: none; font-size: 10px; display: inline-block;">
+                                Search Pexels
+                            </a>
+                        </div>
+
+                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px;">
+                            <strong style="color: #2d3748; font-size: 12px;">Pixabay</strong>
+                            <div style="font-size: 11px; color: #64748b; margin: 5px 0;">Free images & vectors</div>
+                            <a href="https://pixabay.com/images/search/${encodeURIComponent(keyword)}/" target="_blank"
+                               style="background: #2ec66d; color: white; padding: 4px 8px; border-radius: 3px; text-decoration: none; font-size: 10px; display: inline-block;">
+                                Search Pixabay
+                            </a>
+                        </div>
+                    </div>
+
+                    <div style="background: #e0f2fe; padding: 10px; border-radius: 4px; font-size: 11px; color: #01579b;">
+                        💡 <strong>Tip:</strong> Use specific keywords like "${keyword} tutorial", "${keyword} infographic", or "${keyword} workspace" for better results.
+                    </div>
+                </div>
+            `;
+        }
+
+        async function showImageGeneration(keyword, cleanId) {
+            const resultsDiv = document.getElementById(`competitor-results-${cleanId}`);
+
+            resultsDiv.innerHTML += `
+                <div id="ai-image-${cleanId}" style="background: linear-gradient(135deg, #7b1fa2 0%, #9c27b0 100%); color: white; border-radius: 6px; padding: 15px; margin-top: 15px;">
+                    <h4 style="margin: 0 0 15px 0;">🎨 AI Image Generation</h4>
+
+                    <!-- Model Selection -->
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px; font-size: 12px; font-weight: 500;">Choose AI Model & Quality:</label>
+                        <select id="imageModel-${cleanId}" style="width: 100%; padding: 8px; border: none; border-radius: 4px; color: #333;">
+                            <option value="dall-e-2" data-cost="10">DALL-E 2 - Good Quality (10 credits)</option>
+                            <option value="dall-e-3" data-cost="25">DALL-E 3 - Premium Quality (25 credits)</option>
+                            <option value="stable-diffusion" data-cost="5">Stable Diffusion - Budget (5 credits)</option>
+                            <option value="midjourney" data-cost="20">Midjourney Style - High Quality (20 credits)</option>
+                        </select>
+                    </div>
+
+                    <!-- Image Prompt -->
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 12px;">Image Description:</label>
+                        <textarea id="imagePrompt-${cleanId}" placeholder="Professional ${keyword} illustration, modern style, clean background, high quality"
+                                  style="width: 100%; height: 60px; padding: 8px; border: none; border-radius: 4px; resize: vertical; color: #333;">Professional ${keyword} illustration, modern style, clean background, high quality</textarea>
+                    </div>
+
+                    <!-- Image Size -->
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 12px;">Image Size:</label>
+                        <select id="imageSize-${cleanId}" style="width: 100%; padding: 8px; border: none; border-radius: 4px; color: #333;">
+                            <option value="1024x1024">Square (1024x1024) - Blog Featured</option>
+                            <option value="1792x1024">Landscape (1792x1024) - Hero Banner</option>
+                            <option value="1024x1792">Portrait (1024x1792) - Social Media</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button onclick="generateAIImage('${keyword}', '${cleanId}')"
+                                style="background: white; color: #7b1fa2; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 500; cursor: pointer; flex: 1;">
+                            🎨 Generate Image
+                        </button>
+                        <div style="font-size: 11px; opacity: 0.9;">
+                            <span id="imageCost-${cleanId}">10 credits</span>
+                        </div>
+                    </div>
+
+                    <div id="generatedImage-${cleanId}" style="margin-top: 15px; display: none;">
+                        <!-- Generated images will appear here -->
+                    </div>
+                </div>
+            `;
+
+            // Add cost updater
+            document.getElementById(`imageModel-${cleanId}`).addEventListener('change', function() {
+                const cost = this.selectedOptions[0].dataset.cost;
+                document.getElementById(`imageCost-${cleanId}`).textContent = `${cost} credits`;
+            });
+        }
+
+        // Placeholder functions for new features
+        async function generateFullArticle(keyword, wordCount, cleanId) {
+            alert(`🚧 Coming Soon!\n\nFull article generation for "${keyword}" (${wordCount.toLocaleString()} words) will be available in the next update. This will use advanced AI models to create complete SEO-optimized articles.`);
+        }
+
+        async function scheduleContent(keyword, cleanId) {
+            alert(`📅 Content Scheduler\n\nScheduling "${keyword}" content across your managed blogs will be available soon. This will integrate with the blog management system.`);
+        }
+
+        async function generateAIImage(keyword, cleanId) {
+            const model = document.getElementById(`imageModel-${cleanId}`).value;
+            const prompt = document.getElementById(`imagePrompt-${cleanId}`).value;
+            const size = document.getElementById(`imageSize-${cleanId}`).value;
+
+            alert(`🎨 AI Image Generation\n\nModel: ${model}\nPrompt: ${prompt}\nSize: ${size}\n\nThis feature will integrate with OpenRouter's image generation models in the next update.`);
+        }
+
+        // Original Content Generation Function
             // Show loading state
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML += `
