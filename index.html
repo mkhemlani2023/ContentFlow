@@ -2728,7 +2728,7 @@
             }
         }
 
-        function confirmArticleGeneration(title, wordCount, difficulty, intent) {
+        async function confirmArticleGeneration(title, wordCount, difficulty, intent) {
             const totalCredits = window.selectedCredits + window.selectedImageCredits;
 
             // Check if user has sufficient credits (you'd implement this based on your credit system)
@@ -2745,22 +2745,243 @@
             // Show progress modal
             showContentModal('article', title, {intent});
 
-            // Here you'd implement the actual article generation API call
-            console.log('Generating article:', {
-                title,
-                wordCount,
-                difficulty,
-                intent,
-                model: window.selectedModel,
-                totalCredits,
-                imageType: window.selectedImageType,
-                imageCredits: window.selectedImageCredits
-            });
+            try {
+                console.log('Generating article:', {
+                    title,
+                    wordCount,
+                    difficulty,
+                    intent,
+                    model: window.selectedModel,
+                    totalCredits,
+                    imageType: window.selectedImageType,
+                    imageCredits: window.selectedImageCredits
+                });
 
-            // Simulate article generation completion
-            setTimeout(() => {
-                displayArticleResult(title, [{title, intent, wordCount}]);
-            }, 8000);
+                // Call the real article generation API
+                const response = await fetch('/api/generate-article', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        wordCount: wordCount,
+                        difficulty: difficulty,
+                        intent: intent,
+                        model: window.selectedModel,
+                        imageType: window.selectedImageType
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('Article generation response:', data);
+
+                if (data.success && data.article) {
+                    displayRealArticleResult(data.article);
+                } else {
+                    throw new Error(data.message || 'Article generation failed');
+                }
+
+            } catch (error) {
+                console.error('Article generation error:', error);
+                displayArticleError(error.message);
+            }
+        }
+
+        function displayRealArticleResult(article) {
+            document.getElementById('contentResult').innerHTML = `
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; max-height: 600px; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e9ecef;">
+                        <div>
+                            <h3 style="margin: 0 0 8px 0; color: #1e293b; font-size: 20px;">✅ Article Generated Successfully!</h3>
+                            <div style="font-size: 14px; color: #64748b;">
+                                ${article.metadata.wordCount} words • ${article.metadata.readingTime} • ${article.metadata.difficulty} difficulty
+                            </div>
+                        </div>
+                        <div style="text-align: right; font-size: 12px; color: #64748b;">
+                            <div><strong>Model:</strong> ${article.metadata.modelUsed}</div>
+                            <div><strong>Cost:</strong> ${article.metadata.creditCost} credits</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #374151; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                            📋 Table of Contents
+                        </h4>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            ${article.tableOfContents.length > 0 ?
+                                article.tableOfContents.map(item => `
+                                    <div style="margin-bottom: 4px; padding-left: ${(item.level - 1) * 20}px;">
+                                        <a href="#${item.anchor}" style="color: #3b82f6; text-decoration: none; font-size: 13px;">
+                                            ${item.text}
+                                        </a>
+                                    </div>
+                                `).join('') :
+                                '<div style="color: #64748b; font-size: 13px;">Table of contents will be extracted from article headings.</div>'
+                            }
+                        </div>
+                    </div>
+
+                    ${article.images && article.images.length > 0 ? `
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: #374151; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                                🖼️ Generated Images (${article.images.length})
+                            </h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                                ${article.images.map(img => `
+                                    <div style="background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+                                        <img src="${img.url}" alt="${img.alt}" style="width: 100%; height: 120px; object-fit: cover;">
+                                        <div style="padding: 8px; font-size: 11px; color: #64748b;">
+                                            <div style="font-weight: 500; text-transform: capitalize;">${img.type} Image</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #374151; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                            📝 Article Content Preview
+                        </h4>
+                        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; max-height: 300px; overflow-y: auto; line-height: 1.6; font-size: 14px;">
+                            ${formatArticlePreview(article.content)}
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #374151; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                            🎯 SEO Information
+                        </h4>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <div style="margin-bottom: 10px;">
+                                <strong style="color: #374151;">Meta Description:</strong>
+                                <div style="color: #64748b; font-size: 13px; margin-top: 4px; font-style: italic;">
+                                    "${article.seo.metaDescription}"
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <strong style="color: #374151;">Keywords:</strong>
+                                <div style="margin-top: 4px;">
+                                    ${article.seo.keywords.slice(0, 8).map(keyword =>
+                                        `<span style="background: #eff6ff; color: #2563eb; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 6px; margin-bottom: 4px; display: inline-block;">${keyword}</span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                            <div>
+                                <strong style="color: #374151;">Readability:</strong>
+                                <span style="color: #64748b; font-size: 13px;">${article.seo.readabilityScore}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                        <button onclick="copyArticleToClipboard('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
+                                style="background: #10b981; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                            📋 Copy Article
+                        </button>
+                        <button onclick="downloadArticle('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
+                                style="background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                            📥 Download
+                        </button>
+                        <button onclick="closeContentModal()"
+                                style="background: #64748b; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                            ✅ Done
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayArticleError(errorMessage) {
+            document.getElementById('contentResult').innerHTML = `
+                <div style="background: #fee2e2; padding: 20px; border-radius: 12px; border-left: 4px solid #dc2626;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="font-size: 24px;">❌</div>
+                        <div>
+                            <h3 style="margin: 0; color: #991b1b; font-size: 18px;">Article Generation Failed</h3>
+                            <p style="margin: 4px 0 0 0; color: #b91c1c; font-size: 14px;">${errorMessage}</p>
+                        </div>
+                    </div>
+
+                    <div style="background: #fef2f2; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                        <div style="font-size: 14px; color: #991b1b;">
+                            <strong>Possible causes:</strong>
+                            <ul style="margin: 8px 0 0 20px; padding: 0;">
+                                <li>OpenRouter API is temporarily unavailable</li>
+                                <li>Selected model is currently overloaded</li>
+                                <li>Network connectivity issues</li>
+                                <li>API rate limits exceeded</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="retryArticleGeneration()"
+                                style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                            🔄 Try Again
+                        </button>
+                        <button onclick="closeContentModal()"
+                                style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatArticlePreview(content) {
+            // Convert markdown to basic HTML for preview
+            return content
+                .substring(0, 1000) + (content.length > 1000 ? '...' : '')
+                .replace(/^# (.+)$/gm, '<h1 style="color: #1e293b; margin: 20px 0 10px 0;">$1</h1>')
+                .replace(/^## (.+)$/gm, '<h2 style="color: #374151; margin: 16px 0 8px 0;">$1</h2>')
+                .replace(/^### (.+)$/gm, '<h3 style="color: #4b5563; margin: 14px 0 6px 0;">$1</h3>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/^- (.+)$/gm, '<li style="margin: 4px 0;">$1</li>')
+                .replace(/\n\n/g, '</p><p style="margin: 12px 0;">')
+                .replace(/^(?!<[h|l])/gm, '<p style="margin: 12px 0;">')
+                .replace(/<p[^>]*>$/, '');
+        }
+
+        function copyArticleToClipboard(title, content) {
+            navigator.clipboard.writeText(content).then(() => {
+                // Show temporary success message
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                btn.style.background = '#10b981';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#10b981';
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy to clipboard: ' + err.message);
+            });
+        }
+
+        function downloadArticle(title, content) {
+            const blob = new Blob([content], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-').toLowerCase()}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function retryArticleGeneration() {
+            // Close the modal and re-show the article generation options
+            closeContentModal();
+            // You could store the last parameters and retry, or let user re-select
+            alert('Please try generating the article again with different settings or try again later.');
         }
 
         function displayOutlineResult(keyword, articles) {

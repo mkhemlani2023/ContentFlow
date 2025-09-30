@@ -503,6 +503,154 @@ Generate ideas that users would actually find valuable when searching for "${key
   }
 };
 
+const generateFullArticle = async (title, wordCount = 2000, difficulty = 'medium', intent = 'informational', modelType = 'basic') => {
+  try {
+    const { model } = getModelConfig(modelType);
+    const currentYear = new Date().getFullYear();
+
+    // Create intelligent, human-like prompt for high-ranking content
+    const prompt = `As a seasoned content strategist with 15+ years of experience in ${title.toLowerCase().includes('digital') || title.toLowerCase().includes('marketing') || title.toLowerCase().includes('business') ? 'digital marketing and business strategy' : title.toLowerCase().includes('health') || title.toLowerCase().includes('wellness') ? 'health and wellness journalism' : title.toLowerCase().includes('tech') || title.toLowerCase().includes('software') ? 'technology and software development' : 'industry expertise'}, write an authoritative, research-backed article that genuinely helps readers while naturally achieving top search rankings.
+
+TOPIC: "${title}"
+
+STRATEGIC APPROACH:
+• Target ${intent} search intent with ${wordCount}-word comprehensive coverage
+• Write for ${difficulty} understanding level with depth that satisfies both beginners and experts
+• Establish genuine expertise through specific, actionable insights
+• Create content worthy of citations and natural backlinks
+• Address real user questions and pain points comprehensively
+
+CONTENT REQUIREMENTS:
+
+1. OPENING AUTHORITY (200-250 words)
+Begin with a compelling hook that immediately demonstrates expertise. Share a specific insight, recent development, or counterintuitive truth about the topic. Establish credibility naturally without claims - show through knowledge depth. Preview the unique value readers will gain.
+
+2. CORE EXPERTISE SECTIONS (4-6 sections, 300-500 words each)
+Structure around user questions and natural information hierarchy. Each section should:
+- Lead with the most valuable insight first
+- Include specific examples, case studies, or data points
+- Provide actionable steps readers can implement immediately
+- Address common misconceptions or advanced considerations
+- Use natural, conversational transitions between ideas
+
+3. PRACTICAL APPLICATION (250-350 words)
+Provide a clear implementation framework or step-by-step process. Include realistic timelines, potential challenges, and success metrics. Make it immediately actionable for your target audience.
+
+4. EXPERT INSIGHTS & FUTURE OUTLOOK (200-300 words)
+Share industry trends, emerging best practices, or evolving strategies. Position yourself as forward-thinking while grounding advice in current reality.
+
+5. CONCLUSION & NEXT STEPS (150-200 words)
+Synthesize key learnings into 3-4 memorable takeaways. Provide clear next actions for different reader segments (beginners vs. experienced).
+
+HUMAN-LIKE WRITING PRINCIPLES:
+• Vary sentence length dramatically (8-35 words)
+• Use specific details over generic statements
+• Include personal observations or industry anecdotes
+• Write like explaining to an intelligent colleague
+• Use contractions naturally but not excessively
+• Include occasional parenthetical thoughts or brief tangents
+• Mix complex and simple sentence structures
+• Use industry terminology confidently but explain when needed
+
+SEO INTEGRATION (Natural & Invisible):
+• Semantic keyword clusters around main topic
+• Answer related questions users actually search
+• Include long-tail variations organically
+• Structure for featured snippets through clear definitions and lists
+• Create linkable assets through comprehensive coverage
+
+CREDIBILITY MARKERS:
+• Specific statistics with context (avoid obvious rounded numbers)
+• Reference to industry developments or recent changes
+• Nuanced perspectives that acknowledge complexity
+• Practical limitations or caveats where relevant
+• Industry-specific terminology used appropriately
+
+OUTPUT FORMAT:
+{
+  "title": "${title}",
+  "content": "Complete article with proper HTML formatting (h2, h3, strong, em, ul, ol tags)",
+  "wordCount": [actual count],
+  "readingTime": [minutes],
+  "metaDescription": "Compelling 155-character description focusing on user benefit",
+  "keyTakeaways": ["specific actionable insight 1", "specific actionable insight 2", "specific actionable insight 3"],
+  "suggestedInternalLinks": ["naturally related topic 1", "logical follow-up topic 2", "complementary resource 3"],
+  "targetAudience": "Specific persona description",
+  "publishDate": "${new Date().toISOString().split('T')[0]}"
+}
+
+Create content that passes human review, provides genuine value, and naturally earns top rankings through expertise and usefulness.`;
+
+    const startTime = Date.now();
+
+    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://content-flow.netlify.app',
+        'X-Title': 'Content Flow - Full Article Generator'
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: modelType === 'enterprise' ? 8000 : modelType === 'premium' ? 6000 : 4000,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const responseTime = Date.now() - startTime;
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid response format from OpenRouter API');
+    }
+
+    const content = data.choices[0].message.content;
+
+    // Handle markdown code blocks properly
+    let cleanContent = content;
+    if (content.includes('```json')) {
+      cleanContent = content.replace(/```json\s*/, '').replace(/\s*```$/, '');
+    } else if (content.includes('```')) {
+      cleanContent = content.replace(/```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    let article;
+    try {
+      article = JSON.parse(cleanContent);
+    } catch (parseError) {
+      // If JSON parsing fails, create a structured article from the raw content
+      const wordCount = content.split(/\s+/).length;
+      article = {
+        title: title,
+        content: content,
+        wordCount: wordCount,
+        readingTime: Math.ceil(wordCount / 250),
+        metaDescription: `Comprehensive guide about ${title.split(':')[0]}. Learn everything you need to know with practical tips and expert insights.`,
+        keyTakeaways: ["Expert insights provided", "Comprehensive coverage", "Actionable advice included"],
+        suggestedInternalLinks: [`${title.split(' ')[0]} basics`, `Advanced ${title.split(' ')[0]} strategies`, `${title.split(' ')[0]} tools`],
+        targetAudience: `People interested in ${title.split(':')[0]}`,
+        publishDate: new Date().toISOString().split('T')[0]
+      };
+    }
+
+    return { articles: [article], responseTime, success: true };
+
+  } catch (error) {
+    throw new Error(`Article generation error: ${error.message}`);
+  }
+};
+
 // Main handler function
 exports.handler = async (event, context) => {
   // CORS headers
@@ -575,7 +723,8 @@ exports.handler = async (event, context) => {
             'GET /api/status',
             'POST /api/keywords (Serper)',
             'POST /api/search (Serper)',
-            'POST /api/article-ideas (OpenRouter)'
+            'POST /api/article-ideas (OpenRouter)',
+            'POST /api/generate-article (OpenRouter)'
           ],
           timestamp: new Date().toISOString()
         })
@@ -1018,6 +1167,108 @@ exports.handler = async (event, context) => {
       }
     }
 
+    // Helper functions for article generation
+    const extractKeywordsFromContent = (title, content) => {
+      const words = (title + ' ' + content)
+        .toLowerCase()
+        .replace(/[^\w\s]/g, ' ')
+        .split(/\s+/)
+        .filter(word => word.length > 3);
+
+      const wordFreq = {};
+      words.forEach(word => {
+        wordFreq[word] = (wordFreq[word] || 0) + 1;
+      });
+
+      return Object.entries(wordFreq)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 10)
+        .map(([word]) => word);
+    };
+
+    const calculateSimpleReadabilityScore = (content) => {
+      const sentences = content.split(/[.!?]+/).length;
+      const words = content.split(/\s+/).length;
+      const avgWordsPerSentence = sentences > 0 ? words / sentences : 0;
+
+      // Simple readability score (lower is easier to read)
+      if (avgWordsPerSentence < 15) return 'Easy';
+      if (avgWordsPerSentence < 20) return 'Medium';
+      return 'Difficult';
+    };
+
+    // Full Article Generation endpoint
+    if (path === '/api/generate-article' && method === 'POST') {
+      const { title, wordCount, difficulty, intent, model = 'basic', imageType = 'none' } = body;
+
+      if (!title) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Article title is required',
+            code: 'MISSING_TITLE'
+          })
+        };
+      }
+
+      if (!OPENROUTER_API_KEY) {
+        return {
+          statusCode: 503,
+          headers,
+          body: JSON.stringify({
+            error: 'OpenRouter API not configured',
+            code: 'OPENROUTER_NOT_CONFIGURED'
+          })
+        };
+      }
+
+      try {
+        const { articles, responseTime } = await generateFullArticle(title, wordCount, difficulty, intent, modelType);
+        const { cost } = getModelConfig(modelType);
+
+        // Calculate image credits
+        let imageCredits = 0;
+        if (imageType === 'featured') imageCredits = 10;
+        else if (imageType === 'full') imageCredits = 30;
+
+        const totalCredits = cost + imageCredits;
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            article: articles[0], // Return the full article
+            responseTime,
+            cached: false,
+            metadata: {
+              title,
+              wordCount,
+              difficulty,
+              intent,
+              modelType,
+              model: getModelConfig(modelType).model,
+              creditCost: totalCredits,
+              imageType,
+              imageCredits
+            },
+            timestamp: new Date().toISOString()
+          })
+        };
+      } catch (error) {
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error: 'Failed to generate article',
+            message: error.message,
+            code: 'ARTICLE_GENERATION_FAILED'
+          })
+        };
+      }
+    }
+
     // Image Generation (Placeholder - can be extended with DALL-E, Stable Diffusion, etc.)
     if (path === '/api/generate-images' && method === 'POST') {
       try {
@@ -1071,6 +1322,191 @@ exports.handler = async (event, context) => {
       }
     }
 
+    // Full Article Generation endpoint
+    if (path === '/api/generate-article' && method === 'POST') {
+      const { title, wordCount, difficulty, intent, model, imageType } = body;
+
+      if (!title) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Article title is required',
+            code: 'MISSING_TITLE'
+          })
+        };
+      }
+
+      if (!OPENROUTER_API_KEY) {
+        return {
+          statusCode: 503,
+          headers,
+          body: JSON.stringify({
+            error: 'OpenRouter API not configured',
+            code: 'OPENROUTER_NOT_CONFIGURED'
+          })
+        };
+      }
+
+      try {
+        // Model configurations
+        const modelConfigs = {
+          'basic': { model: 'openai/gpt-3.5-turbo', credits: 25 },
+          'premium': { model: 'openai/gpt-4', credits: 50 },
+          'enterprise': { model: 'anthropic/claude-3.5-sonnet', credits: 85 }
+        };
+
+        const selectedModel = modelConfigs[model] || modelConfigs['basic'];
+        const currentYear = new Date().getFullYear();
+
+        // Create comprehensive article prompt
+        const articlePrompt = `You are a professional SEO content writer. Write a complete, comprehensive ${wordCount || 2000}-word article on the topic: "${title}"
+
+ARTICLE REQUIREMENTS:
+- Word count: ${wordCount || 2000} words (approximate)
+- Intent: ${intent || 'Informational'}
+- Difficulty level: ${difficulty || 'Medium'}
+- Year: ${currentYear}
+- SEO optimized with proper heading structure (H1, H2, H3)
+- Include a compelling introduction and strong conclusion
+- Use natural keyword integration throughout
+- Add actionable insights and practical examples
+- Include relevant statistics and data points
+- Write in a conversational yet professional tone
+
+STRUCTURE:
+1. Compelling H1 title (already provided: "${title}")
+2. Introduction (2-3 paragraphs)
+3. Table of Contents (list main sections)
+4. 6-8 main sections with H2 headings
+5. Relevant H3 subheadings within sections
+6. Conclusion with key takeaways
+7. FAQ section (5-7 questions)
+
+FORMAT:
+- Use proper markdown formatting
+- Include **bold** for emphasis on key points
+- Use bullet points and numbered lists where appropriate
+- Add > blockquotes for important insights
+- Include [internal link placeholders] where relevant
+
+CONTENT QUALITY:
+- Write original, unique content
+- Avoid fluff and filler content
+- Focus on providing genuine value
+- Include actionable advice
+- Use examples and case studies where relevant
+- Maintain consistency in tone throughout
+
+Write the complete article now:`;
+
+        console.log('Generating article with model:', selectedModel.model);
+
+        // Make OpenRouter API request
+        const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'X-Title': 'SEO Wizard Article Generator'
+          },
+          body: JSON.stringify({
+            model: selectedModel.model,
+            messages: [{
+              role: 'user',
+              content: articlePrompt
+            }],
+            temperature: 0.7,
+            max_tokens: Math.min(8000, Math.floor((wordCount || 2000) * 1.5)) // Allow for comprehensive content
+          })
+        });
+
+        console.log('OpenRouter response status:', response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('OpenRouter API error:', errorText);
+          throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const articleContent = data.choices[0]?.message?.content || '';
+
+        // Generate images if requested
+        let images = [];
+        if (imageType && imageType !== 'none') {
+          const imageCount = imageType === 'featured' ? 1 : imageType === 'full' ? 4 : 0;
+
+          for (let i = 0; i < imageCount; i++) {
+            images.push({
+              url: `https://picsum.photos/800/600?random=${Date.now()}-${i}`,
+              alt: i === 0 ? `Featured image for ${title}` : `Section image ${i} for ${title}`,
+              type: i === 0 ? 'featured' : 'section',
+              prompt: `Professional image related to ${title}`,
+              style: 'photographic'
+            });
+          }
+        }
+
+        // Calculate reading time and metadata
+        const wordCountActual = articleContent.split(/\s+/).length;
+        const readingTime = Math.ceil(wordCountActual / 250); // 250 words per minute average
+
+        // Extract headings for table of contents
+        const headingMatches = articleContent.match(/^#{1,3}\s+(.+)$/gm) || [];
+        const tableOfContents = headingMatches.slice(0, 10).map(heading => {
+          const level = (heading.match(/^#+/) || [''])[0].length;
+          const text = heading.replace(/^#+\s+/, '');
+          return { level, text, anchor: text.toLowerCase().replace(/[^a-z0-9]+/g, '-') };
+        });
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            article: {
+              title,
+              content: articleContent,
+              metadata: {
+                wordCount: wordCountActual,
+                targetWordCount: wordCount || 2000,
+                readingTime: `${readingTime} min`,
+                difficulty,
+                intent,
+                modelUsed: selectedModel.model,
+                creditCost: selectedModel.credits,
+                imageType: imageType || 'none',
+                generatedAt: new Date().toISOString()
+              },
+              tableOfContents,
+              images,
+              seo: {
+                title: title,
+                metaDescription: articleContent.substring(0, 160).replace(/[#*\[\]]/g, ''),
+                keywords: extractKeywordsFromContent(title, articleContent),
+                readabilityScore: calculateSimpleReadabilityScore(articleContent)
+              }
+            },
+            responseTime: Date.now(),
+            timestamp: new Date().toISOString()
+          })
+        };
+
+      } catch (error) {
+        console.error('Article generation error:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error: 'Failed to generate article',
+            message: error.message,
+            code: 'ARTICLE_GENERATION_FAILED'
+          })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
@@ -1087,7 +1523,8 @@ exports.handler = async (event, context) => {
           'POST /api/competitors',
           'POST /api/autocomplete',
           'POST /api/openrouter-generate',
-          'POST /api/generate-images'
+          'POST /api/generate-images',
+          'POST /api/generate-article'
         ]
       })
     };
