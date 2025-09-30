@@ -2508,74 +2508,45 @@
 
                         <div style="margin-bottom: 25px;">
                             <h4 style="color: #1e293b; margin-bottom: 15px;">🤖 Choose AI Model & Pricing</h4>
-
-                            <div style="display: grid; gap: 12px;">
-                                <div class="model-option" onclick="selectModel('basic', 25)" style="padding: 15px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <div>
-                                            <div style="font-weight: 600; color: #1e293b;">🥉 Basic Model (GPT-3.5)</div>
-                                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Good quality, fast generation</div>
-                                        </div>
-                                        <div style="text-align: right;">
-                                            <div style="font-weight: 600; color: #2563eb;">25 credits</div>
-                                            <div style="font-size: 11px; color: #64748b;">~$0.25</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="model-option" onclick="selectModel('premium', 50)" style="padding: 15px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <div>
-                                            <div style="font-weight: 600; color: #1e293b;">🥈 Premium Model (GPT-4)</div>
-                                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">High quality, detailed content</div>
-                                        </div>
-                                        <div style="text-align: right;">
-                                            <div style="font-weight: 600; color: #7c3aed;">50 credits</div>
-                                            <div style="font-size: 11px; color: #64748b;">~$0.50</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="model-option" onclick="selectModel('enterprise', 85)" style="padding: 15px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <div>
-                                            <div style="font-weight: 600; color: #1e293b;">🥇 Enterprise Model (Claude 3.5 Sonnet)</div>
-                                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Highest quality, expert-level writing</div>
-                                        </div>
-                                        <div style="text-align: right;">
-                                            <div style="font-weight: 600; color: #dc2626;">85 credits</div>
-                                            <div style="font-size: 11px; color: #64748b;">~$0.85</div>
-                                        </div>
-                                    </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Model:</label>
+                                <select id="modelSelect" onchange="updateModelSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
+                                    <option value="">Choose a model...</option>
+                                    <option value="basic|25">🥉 Basic Model (GPT-3.5) - 25 credits (~$0.25)</option>
+                                    <option value="premium|50">🥈 Premium Model (GPT-4) - 50 credits (~$0.50)</option>
+                                    <option value="enterprise|85">🥇 Enterprise Model (Claude 3.5 Sonnet) - 85 credits (~$0.85)</option>
+                                </select>
+                                <div style="font-size: 12px; color: #64748b; margin-top: 6px; font-style: italic;">
+                                    Higher tier models provide better quality, more detailed content, and advanced reasoning capabilities.
                                 </div>
                             </div>
                         </div>
 
                         <div style="margin-bottom: 25px;">
                             <h4 style="color: #1e293b; margin-bottom: 15px;">🖼️ Add Images (Optional)</h4>
-                            <div style="display: grid; gap: 12px;">
-                                <label style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 6px;">
-                                    <input type="checkbox" id="featuredImage" style="transform: scale(1.2);">
-                                    <div>
-                                        <div style="font-weight: 500;">Featured Image</div>
-                                        <div style="font-size: 12px; color: #64748b;">AI-generated hero image (+10 credits)</div>
-                                    </div>
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 6px;">
-                                    <input type="checkbox" id="additionalImages" style="transform: scale(1.2);">
-                                    <div>
-                                        <div style="font-weight: 500;">Additional Images</div>
-                                        <div style="font-size: 12px; color: #64748b;">3-5 section images (+20 credits)</div>
-                                    </div>
-                                </label>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Image Generation:</label>
+                                <select id="imageSelect" onchange="updateImageSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
+                                    <option value="none|0">No Images - 0 credits</option>
+                                    <option value="featured|10">Featured Image Only - 10 credits (~$0.10)</option>
+                                    <option value="full|30">Featured + Section Images - 30 credits (~$0.30)</option>
+                                </select>
+                                <div style="font-size: 12px; color: #64748b; margin-top: 6px; font-style: italic;">
+                                    Images are AI-generated and optimized for your content topic and SEO.
+                                </div>
                             </div>
+                        </div>
+
+                        <div id="costSummary" style="display: none; background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
+                            <div style="font-weight: 600; color: #1e40af; margin-bottom: 8px;">💰 Cost Summary</div>
+                            <div id="costBreakdown" style="font-size: 14px; color: #1e40af;"></div>
                         </div>
 
                         <div style="display: flex; gap: 12px; justify-content: flex-end;">
                             <button onclick="closeArticleGenerationModal()" style="padding: 12px 24px; background: #64748b; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
                                 Cancel
                             </button>
-                            <button id="generateArticleBtn" onclick="startArticleGeneration('${title.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}')"
+                            <button id="generateArticleBtn" onclick="showGenerationConfirmation('${title.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}')"
                                     style="padding: 12px 24px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;" disabled>
                                 Select Model First
                             </button>
@@ -2586,47 +2557,77 @@
 
             document.body.appendChild(modal);
 
-            // Add hover effects for model options
-            const modelOptions = modal.querySelectorAll('.model-option');
-            modelOptions.forEach(option => {
-                option.addEventListener('mouseenter', () => {
-                    option.style.borderColor = '#3b82f6';
-                    option.style.backgroundColor = '#f8fafc';
-                });
-                option.addEventListener('mouseleave', () => {
-                    if (!option.classList.contains('selected')) {
-                        option.style.borderColor = '#e2e8f0';
-                        option.style.backgroundColor = 'white';
-                    }
-                });
-            });
-
-            // Store for later use
+            // Initialize selection tracking
             window.selectedModel = null;
             window.selectedCredits = 0;
+            window.selectedImageCredits = 0;
         }
 
-        function selectModel(modelType, credits) {
-            // Remove previous selection
-            document.querySelectorAll('.model-option').forEach(option => {
-                option.style.borderColor = '#e2e8f0';
-                option.style.backgroundColor = 'white';
-                option.classList.remove('selected');
-            });
+        function updateModelSelection() {
+            const modelSelect = document.getElementById('modelSelect');
+            const [modelType, credits] = modelSelect.value.split('|');
 
-            // Select current option
-            event.currentTarget.style.borderColor = '#2563eb';
-            event.currentTarget.style.backgroundColor = '#eff6ff';
-            event.currentTarget.classList.add('selected');
+            if (modelType && credits) {
+                window.selectedModel = modelType;
+                window.selectedCredits = parseInt(credits);
+            } else {
+                window.selectedModel = null;
+                window.selectedCredits = 0;
+            }
 
-            // Update button
+            updateCostSummary();
+            updateGenerateButton();
+        }
+
+        function updateImageSelection() {
+            const imageSelect = document.getElementById('imageSelect');
+            const [imageType, credits] = imageSelect.value.split('|');
+
+            window.selectedImageType = imageType;
+            window.selectedImageCredits = parseInt(credits);
+
+            updateCostSummary();
+            updateGenerateButton();
+        }
+
+        function updateCostSummary() {
+            const costSummary = document.getElementById('costSummary');
+            const costBreakdown = document.getElementById('costBreakdown');
+
+            const totalCredits = window.selectedCredits + window.selectedImageCredits;
+            const totalCost = (totalCredits * 0.01).toFixed(2);
+
+            if (totalCredits > 0) {
+                costSummary.style.display = 'block';
+
+                let breakdown = `<strong>Article Generation:</strong> ${window.selectedCredits} credits<br>`;
+
+                if (window.selectedImageCredits > 0) {
+                    const imageType = window.selectedImageType === 'featured' ? 'Featured Image' : 'Featured + Section Images';
+                    breakdown += `<strong>${imageType}:</strong> ${window.selectedImageCredits} credits<br>`;
+                }
+
+                breakdown += `<div style="border-top: 1px solid #3b82f6; padding-top: 8px; margin-top: 8px; font-size: 16px;"><strong>Total: ${totalCredits} credits (~$${totalCost})</strong></div>`;
+
+                costBreakdown.innerHTML = breakdown;
+            } else {
+                costSummary.style.display = 'none';
+            }
+        }
+
+        function updateGenerateButton() {
             const btn = document.getElementById('generateArticleBtn');
-            btn.disabled = false;
-            btn.textContent = `Generate Article (${credits} credits)`;
+            const totalCredits = window.selectedCredits + window.selectedImageCredits;
 
-            // Store selection
-            window.selectedModel = modelType;
-            window.selectedCredits = credits;
+            if (window.selectedModel && totalCredits > 0) {
+                btn.disabled = false;
+                btn.textContent = `Generate Article (${totalCredits} credits)`;
+                btn.style.background = '#2563eb';
+            } else {
+                btn.disabled = true;
+                btn.textContent = 'Select Model First';
+                btn.style.background = '#9ca3af';
+            }
         }
 
         function closeArticleGenerationModal() {
@@ -2636,28 +2637,109 @@
             }
         }
 
-        function startArticleGeneration(title, wordCount, difficulty, intent) {
+        function showGenerationConfirmation(title, wordCount, difficulty, intent) {
             if (!window.selectedModel) {
                 alert('Please select a model first');
                 return;
             }
 
-            let totalCredits = window.selectedCredits;
+            const totalCredits = window.selectedCredits + window.selectedImageCredits;
+            const totalCost = (totalCredits * 0.01).toFixed(2);
 
-            // Add image credits
-            if (document.getElementById('featuredImage').checked) {
-                totalCredits += 10;
+            // Get model and image details
+            const modelNames = {
+                'basic': 'Basic Model (GPT-3.5)',
+                'premium': 'Premium Model (GPT-4)',
+                'enterprise': 'Enterprise Model (Claude 3.5 Sonnet)'
+            };
+
+            const imageNames = {
+                'none': 'No Images',
+                'featured': 'Featured Image Only',
+                'full': 'Featured + Section Images'
+            };
+
+            // Create confirmation dialog
+            const confirmModal = document.createElement('div');
+            confirmModal.id = 'confirmationModal';
+            confirmModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                        <div style="text-align: center; margin-bottom: 25px;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+                            <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 24px;">Confirm Article Generation</h3>
+                            <p style="margin: 0; color: #64748b; font-size: 14px;">You're about to generate an article. Please review the details below.</p>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                            <div style="margin-bottom: 15px;">
+                                <strong style="color: #374151;">📝 Article:</strong>
+                                <div style="color: #64748b; font-size: 14px; margin-top: 4px;">${title}</div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <strong style="color: #374151;">🤖 AI Model:</strong>
+                                    <div style="color: #64748b; font-size: 14px;">${modelNames[window.selectedModel]}</div>
+                                </div>
+                                <div>
+                                    <strong style="color: #374151;">🖼️ Images:</strong>
+                                    <div style="color: #64748b; font-size: 14px;">${imageNames[window.selectedImageType]}</div>
+                                </div>
+                            </div>
+
+                            <div style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <strong style="color: #1e40af; font-size: 18px;">💰 Total Cost:</strong>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 20px; font-weight: bold; color: #1e40af;">${totalCredits} credits</div>
+                                        <div style="font-size: 14px; color: #64748b;">~$${totalCost}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #f59e0b;">
+                            <div style="font-size: 14px; color: #92400e;">
+                                <strong>📋 Note:</strong> Credits will be deducted immediately when you proceed. The article generation process typically takes 8-15 seconds depending on the selected model.
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; justify-content: center;">
+                            <button onclick="closeConfirmationModal()" style="padding: 12px 24px; background: #64748b; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; min-width: 120px;">
+                                Cancel
+                            </button>
+                            <button onclick="confirmArticleGeneration('${title.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}')"
+                                    style="padding: 12px 24px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; min-width: 120px;">
+                                Confirm & Generate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(confirmModal);
+        }
+
+        function closeConfirmationModal() {
+            const modal = document.getElementById('confirmationModal');
+            if (modal) {
+                modal.remove();
             }
-            if (document.getElementById('additionalImages').checked) {
-                totalCredits += 20;
-            }
+        }
+
+        function confirmArticleGeneration(title, wordCount, difficulty, intent) {
+            const totalCredits = window.selectedCredits + window.selectedImageCredits;
 
             // Check if user has sufficient credits (you'd implement this based on your credit system)
+            // const userCredits = getCurrentUserCredits(); // Implement this function
             // if (userCredits < totalCredits) {
-            //     alert(`Insufficient credits. You need ${totalCredits} credits.`);
+            //     alert(`Insufficient credits. You need ${totalCredits} credits but only have ${userCredits} available.`);
             //     return;
             // }
 
+            // Close both modals
+            closeConfirmationModal();
             closeArticleGenerationModal();
 
             // Show progress modal
@@ -2671,8 +2753,8 @@
                 intent,
                 model: window.selectedModel,
                 totalCredits,
-                featuredImage: document.getElementById('featuredImage').checked,
-                additionalImages: document.getElementById('additionalImages').checked
+                imageType: window.selectedImageType,
+                imageCredits: window.selectedImageCredits
             });
 
             // Simulate article generation completion
