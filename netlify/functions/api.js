@@ -528,7 +528,7 @@ exports.handler = async (event, context) => {
 
     // Default to status if no path
     if (!path || path === '/') {
-      path = '/status';
+      path = '/api/status';
     }
 
     const method = event.httpMethod;
@@ -537,7 +537,7 @@ exports.handler = async (event, context) => {
     console.log(`${method} ${path}`, body);
 
     // API Status endpoint
-    if (path === '/status' && method === 'GET') {
+    if (path === '/api/status' && method === 'GET') {
       const services = {
         serperAPI: { status: 'unknown', responseTime: null },
         openRouterAPI: { status: 'unknown', configured: false }
@@ -583,7 +583,7 @@ exports.handler = async (event, context) => {
     }
 
     // Keywords endpoint
-    if (path === '/keywords' && method === 'POST') {
+    if (path === '/api/keywords' && method === 'POST') {
       const { keyword, location = 'us', language = 'en', count = 10 } = body;
 
       if (!keyword) {
@@ -642,7 +642,7 @@ exports.handler = async (event, context) => {
     }
 
     // Search endpoint
-    if (path === '/search' && method === 'POST') {
+    if (path === '/api/search' && method === 'POST') {
       const { query, location = 'us', language = 'en', num = 10 } = body;
 
       if (!query) {
@@ -691,7 +691,7 @@ exports.handler = async (event, context) => {
     }
 
     // Article Ideas endpoint (OpenRouter)
-    if (path === '/article-ideas' && method === 'POST') {
+    if (path === '/api/article-ideas' && method === 'POST') {
       const { keyword, modelType = 'free' } = body;
 
       if (!keyword) {
