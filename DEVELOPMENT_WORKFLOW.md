@@ -36,10 +36,16 @@
 - **`PROJECT_CONTEXT.md`** - Complete project overview and architecture
 - **`.bmad-core/tasks/session-continuity-protocol.md`** - Comprehensive continuity protocol
 
-### 4. Session Documentation
-- **Update CURRENT_STATUS.md** when you discover new issues
-- **Log progress in SESSION_LOG.md** throughout the session
-- **Use TodoWrite consistently** - never work without active todos
+### 4. Session Documentation - MANDATORY AFTER EVERY MOVE
+⚠️ **CRITICAL RULE: Update context files after EVERY feature/task completion**
+
+**After EVERY completed task, ALWAYS:**
+1. **Update CURRENT_STATUS.md** with new progress
+2. **Log the change in SESSION_LOG.md**
+3. **Commit changes to Git** immediately
+4. **Update timestamps** to current session time
+
+**Never proceed to next task without updating context files first**
 
 ## 📋 BMAD System Integration
 

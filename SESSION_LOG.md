@@ -91,6 +91,14 @@ Track all development sessions to maintain context continuity.
 2. **Test article ideas**: Should generate without CSP errors
 3. **Verify improvements**: No more inappropriate "for agencies" suggestions
 
+### Context Update Protocol Established (13:45 EST)
+**CRITICAL WORKFLOW RULE IMPLEMENTED:**
+- **Rule**: "You must update the context file every time we move forward with another feature"
+- **Documentation**: Added to DEVELOPMENT_WORKFLOW.md, CODING_PRINCIPLES.md, and mandatory-context-updates.md
+- **Implementation**: Every completed task now requires immediate context file updates + Git commit
+- **Purpose**: Prevents context loss and ensures perfect session continuity
+- **Status**: MANDATORY for all future development work
+
 ---
 
 ## Template for Future Sessions

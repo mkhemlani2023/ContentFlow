@@ -66,3 +66,16 @@ This principle applies to:
 - Any user-facing data generation
 
 **Remember: Real data builds trust. Templates destroy it.**
+
+## ⚠️ MANDATORY CONTEXT UPDATE RULE
+
+### Critical Workflow Requirement
+**"You must update the context file every time we move forward with another feature"**
+
+After EVERY completed task:
+1. Update CURRENT_STATUS.md with progress
+2. Log change in SESSION_LOG.md
+3. Commit to Git immediately
+4. Update timestamps
+
+This prevents context loss and ensures perfect continuity between sessions. NO EXCEPTIONS.
