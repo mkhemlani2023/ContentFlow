@@ -93,6 +93,95 @@ const determineIntent = (keyword) => {
   return 'Informational';
 };
 
+// Article content analysis functions
+const extractKeywordsFromContent = (title, content) => {
+  if (!title || !content) return [];
+
+  // Extract the main keyword from the title (first meaningful word/phrase)
+  const titleWords = title.toLowerCase().split(' ').filter(word =>
+    word.length > 2 && !['the', 'and', 'for', 'with', 'how', 'to', 'what', 'why', 'when', 'where', 'best', 'guide', 'complete'].includes(word)
+  );
+
+  // Use the first 1-3 meaningful words as the main keyword
+  const mainKeyword = titleWords.slice(0, Math.min(3, titleWords.length)).join(' ');
+
+  // Extract related keywords from content
+  const words = content.toLowerCase().match(/\b\w{4,}\b/g) || [];
+  const wordFreq = {};
+
+  words.forEach(word => {
+    if (word && !['this', 'that', 'with', 'from', 'they', 'were', 'been', 'have', 'their', 'said', 'each', 'which', 'them', 'many', 'some', 'time', 'very', 'when', 'much', 'more', 'most', 'other', 'such', 'make', 'like', 'into', 'only', 'over', 'think', 'also', 'back', 'after', 'first', 'well', 'should', 'could', 'would'].includes(word)) {
+      wordFreq[word] = (wordFreq[word] || 0) + 1;
+    }
+  });
+
+  // Get top keywords by frequency
+  const topKeywords = Object.entries(wordFreq)
+    .filter(([word, freq]) => freq >= 2)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 10)
+    .map(([word]) => word);
+
+  // Combine main keyword with related keywords
+  const allKeywords = [mainKeyword, ...topKeywords].filter(Boolean);
+
+  return [...new Set(allKeywords)].slice(0, 12);
+};
+
+const calculateSimpleReadabilityScore = (content) => {
+  if (!content) return 'Unknown';
+
+  const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const words = content.split(/\s+/).filter(w => w.length > 0);
+
+  if (sentences.length === 0 || words.length === 0) return 'Unknown';
+
+  const avgWordsPerSentence = words.length / sentences.length;
+
+  if (avgWordsPerSentence <= 15) return 'Very Easy';
+  if (avgWordsPerSentence <= 20) return 'Easy';
+  if (avgWordsPerSentence <= 25) return 'Good';
+  if (avgWordsPerSentence <= 30) return 'Difficult';
+  return 'Very Difficult';
+};
+
+const createMetaDescription = (title, content, focusKeyword) => {
+  if (!content) return `Learn about ${title}. Comprehensive guide with expert insights.`;
+
+  // Find the first meaningful paragraph (skip headings and short lines)
+  const paragraphs = content.split('\n\n').filter(p =>
+    p.trim().length > 100 &&
+    !p.startsWith('#') &&
+    !p.startsWith('##') &&
+    !p.startsWith('Table of Contents') &&
+    !p.startsWith('FAQ') &&
+    !p.includes('Frequently Asked Questions')
+  );
+
+  if (paragraphs.length === 0) {
+    return `Complete guide to ${focusKeyword}. Learn everything you need to know with practical tips and expert insights.`;
+  }
+
+  // Clean the first paragraph and create meta description
+  let metaDesc = paragraphs[0]
+    .replace(/[#*\[\]]/g, '') // Remove markdown
+    .replace(/\n/g, ' ') // Replace newlines with spaces
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+
+  // Ensure it includes the focus keyword if not already present
+  if (!metaDesc.toLowerCase().includes(focusKeyword.toLowerCase())) {
+    metaDesc = `${focusKeyword}: ${metaDesc}`;
+  }
+
+  // Truncate to appropriate length (150-160 characters)
+  if (metaDesc.length > 160) {
+    metaDesc = metaDesc.substring(0, 157) + '...';
+  }
+
+  return metaDesc;
+};
+
 const generateAutocompleteSuggestions = (keyword) => {
   // Use the same contextual intelligence as keyword generation
   // This ensures autocomplete suggestions are meaningful and relevant
@@ -1458,46 +1547,76 @@ exports.handler = async (event, context) => {
         const selectedModel = modelConfigs[model] || modelConfigs['basic'];
         const currentYear = new Date().getFullYear();
 
-        // Create comprehensive article prompt
-        const articlePrompt = `You are a professional SEO content writer. Write a complete, comprehensive ${wordCount || 2000}-word article on the topic: "${title}"
+        // Extract the main focus keyword from the title for better SEO
+        const focusKeyword = title.toLowerCase().split(' ').filter(word =>
+          word.length > 2 && !['the', 'and', 'for', 'with', 'how', 'to', 'what', 'why', 'when', 'where', 'best', 'guide', 'complete', 'ultimate'].includes(word)
+        ).slice(0, 3).join(' ');
+
+        // Create comprehensive article prompt with better instructions
+        const articlePrompt = `You are a professional SEO content writer and subject matter expert. Write a comprehensive, high-quality ${wordCount || 2000}-word article on: "${title}"
+
+FOCUS KEYWORD: "${focusKeyword}"
+This keyword should appear naturally 5-8 times throughout the article, including in headings.
 
 ARTICLE REQUIREMENTS:
-- Word count: ${wordCount || 2000} words (approximate)
+- Target word count: ${wordCount || 2000} words (write substantial, detailed content)
 - Intent: ${intent || 'Informational'}
 - Difficulty level: ${difficulty || 'Medium'}
-- Year: ${currentYear}
-- SEO optimized with proper heading structure (H1, H2, H3)
-- Include a compelling introduction and strong conclusion
-- Use natural keyword integration throughout
-- Add actionable insights and practical examples
-- Include relevant statistics and data points
-- Write in a conversational yet professional tone
+- Current year: ${currentYear} (include recent data and trends)
+- Write for humans first, SEO second
+- Each section should be 300-500 words minimum
+- Include specific examples, case studies, and actionable insights
+- Use data and statistics where relevant
+- Write in an engaging, conversational yet professional tone
 
-STRUCTURE:
-1. Compelling H1 title (already provided: "${title}")
-2. Introduction (2-3 paragraphs)
-3. Table of Contents (list main sections)
-4. 6-8 main sections with H2 headings
-5. Relevant H3 subheadings within sections
-6. Conclusion with key takeaways
-7. FAQ section (5-7 questions)
+STRUCTURE REQUIREMENTS:
+1. **Introduction** (200-300 words)
+   - Hook with compelling statistic or question
+   - Clearly define the topic and its importance
+   - Preview what readers will learn
+   - Include focus keyword naturally
 
-FORMAT:
-- Use proper markdown formatting
-- Include **bold** for emphasis on key points
-- Use bullet points and numbered lists where appropriate
-- Add > blockquotes for important insights
-- Include [internal link placeholders] where relevant
+2. **DO NOT include a separate Table of Contents section in the article body**
+   (The table will be auto-generated from your headings)
 
-CONTENT QUALITY:
-- Write original, unique content
-- Avoid fluff and filler content
-- Focus on providing genuine value
-- Include actionable advice
-- Use examples and case studies where relevant
-- Maintain consistency in tone throughout
+3. **Main Content Sections** (4-6 sections, each 400-600 words)
+   - Use H2 headings that include variations of the focus keyword
+   - Include 2-3 H3 subheadings within each section
+   - Write comprehensive, detailed content for each subsection
+   - Include practical examples and step-by-step guidance
+   - Use bullet points and numbered lists for clarity
 
-Write the complete article now:`;
+4. **FAQ Section** (300-400 words)
+   - Create 6-8 relevant questions with detailed answers
+   - Format as: ## Frequently Asked Questions
+   - Then: ### Question 1: [Full question]
+   - Followed by comprehensive 2-3 sentence answers
+   - Include focus keyword variations in questions
+
+5. **Conclusion** (150-200 words)
+   - Summarize key takeaways
+   - Include a call-to-action
+   - Reinforce the main benefits
+
+FORMATTING REQUIREMENTS:
+- Use proper markdown: # for H1, ## for H2, ### for H3
+- **Bold** important terms and key phrases
+- Use > blockquotes for expert tips or important insights
+- Include bullet points (-) and numbered lists (1.) where appropriate
+- Add [internal link placeholder: related topic] where relevant
+- Never include a table of contents in the article body
+- Ensure proper paragraph spacing (double line breaks)
+
+CONTENT QUALITY STANDARDS:
+- Write original, valuable content that serves the reader
+- Include specific, actionable advice
+- Use real-world examples and case studies
+- Include current industry insights and trends
+- Maintain consistent expert tone throughout
+- Focus on solving the reader's problems
+- Each section should provide substantial value
+
+Write the complete, detailed article now:`;
 
         console.log('Generating article with model:', selectedModel.model);
 
@@ -1531,18 +1650,28 @@ Write the complete article now:`;
         const data = await response.json();
         const articleContent = data.choices[0]?.message?.content || '';
 
-        // Generate images if requested
+        // Generate contextually relevant images if requested
         let images = [];
         if (imageType && imageType !== 'none') {
           const imageCount = imageType === 'featured' ? 1 : imageType === 'full' ? 4 : 0;
 
+          // Create contextually relevant image descriptions based on the focus keyword
+          const imageContexts = [
+            `Professional ${focusKeyword} concept illustration`,
+            `${focusKeyword} workflow diagram or infographic`,
+            `${focusKeyword} tools and resources layout`,
+            `${focusKeyword} results or outcomes visualization`
+          ];
+
           for (let i = 0; i < imageCount; i++) {
+            const context = imageContexts[i] || `${focusKeyword} related concept`;
             images.push({
               url: `https://picsum.photos/800/600?random=${Date.now()}-${i}`,
-              alt: i === 0 ? `Featured image for ${title}` : `Section image ${i} for ${title}`,
+              alt: `${context} - ${title}`,
               type: i === 0 ? 'featured' : 'section',
-              prompt: `Professional image related to ${title}`,
-              style: 'photographic'
+              prompt: context,
+              style: 'professional',
+              context: focusKeyword
             });
           }
         }
@@ -1582,9 +1711,10 @@ Write the complete article now:`;
               images,
               seo: {
                 title: title,
-                metaDescription: articleContent.substring(0, 160).replace(/[#*\[\]]/g, ''),
+                metaDescription: createMetaDescription(title, articleContent, focusKeyword),
                 keywords: extractKeywordsFromContent(title, articleContent),
-                readabilityScore: calculateSimpleReadabilityScore(articleContent)
+                readabilityScore: calculateSimpleReadabilityScore(articleContent),
+                focusKeyword: focusKeyword
               }
             },
             responseTime: Date.now(),
