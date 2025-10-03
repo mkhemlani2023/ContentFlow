@@ -441,8 +441,21 @@
 </head>
 <body>
     <div class="header">
-        <h1>🚀 SEO Wizard</h1>
-        <p>AI-Powered Content Research & Strategy Platform</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h1>🚀 SEO Wizard</h1>
+                <p>AI-Powered Content Research & Strategy Platform</p>
+            </div>
+            <div class="credit-display" style="text-align: right;">
+                <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.3);">
+                    <div style="font-size: 14px; margin-bottom: 5px; opacity: 0.9;">Your Credits</div>
+                    <div id="creditBalance" style="font-size: 28px; font-weight: bold; margin-bottom: 8px;">-</div>
+                    <button onclick="showCreditPurchase()" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                        💳 Buy Credits
+                    </button>
+                </div>
+            </div>
+        </div>
         <p><strong>Discover High-Impact Keywords & Generate Winning Content Ideas</strong></p>
     </div>
 
@@ -474,7 +487,14 @@
                         <option value="20">20</option>
                     </select>
                 </div>
-                <button type="submit" id="searchBtn">Search Keywords</button>
+                <div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <div style="font-size: 14px; color: #64748b;">
+                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">Credit Cost: 5 credits</div>
+                        <div style="font-size: 12px;">Basic keyword research with competitor analysis</div>
+                    </div>
+                    <div style="font-size: 12px; color: #667eea; font-weight: 500;">~$0.145 value</div>
+                </div>
+                <button type="submit" id="searchBtn">🔍 Search Keywords (5 credits)</button>
             </form>
         </div>
 
@@ -484,6 +504,9 @@
                 <button onclick="checkStatus()">Check System Status</button>
             </div>
             <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                <button onclick="showCreditDashboard()" style="background: #4CAF50; width: 100%; margin-bottom: 10px;">
+                    💰 Credit Dashboard
+                </button>
                 <button onclick="showBlogManagement()" style="background: #7b1fa2; width: 100%;">
                     🚀 Manage Blogs & Auto-Posting
                 </button>
@@ -493,9 +516,121 @@
 
     <div id="stats" class="stats" style="display: none;"></div>
     <div id="savedResearch" style="display: none;"></div>
+    <div id="creditDashboard" style="display: none;"></div>
     <div id="blogManagement" style="display: none;"></div>
     <div id="results" class="results"></div>
     <div id="contentResult" class="results" style="display: none;"></div>
+
+    <!-- Credit Purchase Modal -->
+    <div id="creditPurchaseModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 30px; border-radius: 12px; max-width: 900px; max-height: 80vh; overflow-y: auto; position: relative;">
+            <button onclick="hideCreditPurchase()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="margin: 0 0 10px 0; color: #1e293b;">💳 Purchase Credits</h2>
+                <p style="color: #64748b; margin: 0;">Choose the perfect credit package for your content needs</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                <!-- Starter Package -->
+                <div class="credit-package" style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 25px; text-align: center; position: relative; transition: all 0.3s ease;" onmouseover="this.style.borderColor='#667eea'" onmouseout="this.style.borderColor='#e2e8f0'">
+                    <div style="background: #f8fafc; color: #64748b; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 15px;">STARTER</div>
+                    <div style="font-size: 36px; font-weight: bold; color: #1e293b; margin-bottom: 5px;">1,000</div>
+                    <div style="color: #64748b; margin-bottom: 15px;">credits</div>
+                    <div style="font-size: 28px; font-weight: bold; color: #667eea; margin-bottom: 5px;">$29</div>
+                    <div style="color: #64748b; font-size: 14px; margin-bottom: 20px;">$0.029 per credit</div>
+
+                    <div style="text-align: left; margin-bottom: 25px; color: #4b5563; font-size: 14px;">
+                        <div style="margin-bottom: 8px;">✅ 15 keyword searches</div>
+                        <div style="margin-bottom: 8px;">✅ 25 short articles</div>
+                        <div style="margin-bottom: 8px;">✅ 10 featured images</div>
+                        <div style="margin-bottom: 8px;">✅ Basic content generation</div>
+                        <div>✅ Perfect for individual creators</div>
+                    </div>
+
+                    <button onclick="purchaseCredits(1000, 29, 'starter')" style="width: 100%; background: #667eea; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 16px;">
+                        Choose Starter
+                    </button>
+                </div>
+
+                <!-- Professional Package (Popular) -->
+                <div class="credit-package" style="border: 2px solid #667eea; border-radius: 12px; padding: 25px; text-align: center; position: relative; background: linear-gradient(135deg, #f8fafc 0%, #e8f2ff 100%);">
+                    <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #4CAF50; color: white; font-size: 12px; font-weight: 600; padding: 6px 20px; border-radius: 20px;">POPULAR</div>
+                    <div style="background: #667eea; color: white; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 15px;">PROFESSIONAL</div>
+                    <div style="font-size: 36px; font-weight: bold; color: #1e293b; margin-bottom: 5px;">3,000</div>
+                    <div style="color: #64748b; margin-bottom: 15px;">credits</div>
+                    <div style="font-size: 28px; font-weight: bold; color: #667eea; margin-bottom: 5px;">$79</div>
+                    <div style="color: #64748b; font-size: 14px; margin-bottom: 5px;">$0.026 per credit</div>
+                    <div style="color: #4CAF50; font-size: 12px; font-weight: 600; margin-bottom: 20px;">SAVE 10%</div>
+
+                    <div style="text-align: left; margin-bottom: 25px; color: #4b5563; font-size: 14px;">
+                        <div style="margin-bottom: 8px;">✅ 50 keyword searches</div>
+                        <div style="margin-bottom: 8px;">✅ 40 medium articles</div>
+                        <div style="margin-bottom: 8px;">✅ 30 image packs</div>
+                        <div style="margin-bottom: 8px;">✅ Advanced AI models</div>
+                        <div>✅ Perfect for small agencies</div>
+                    </div>
+
+                    <button onclick="purchaseCredits(3000, 79, 'professional')" style="width: 100%; background: #667eea; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 16px;">
+                        Choose Professional
+                    </button>
+                </div>
+
+                <!-- Business Package -->
+                <div class="credit-package" style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 25px; text-align: center; position: relative; transition: all 0.3s ease;" onmouseover="this.style.borderColor='#667eea'" onmouseout="this.style.borderColor='#e2e8f0'">
+                    <div style="background: #f59e0b; color: white; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 15px;">BUSINESS</div>
+                    <div style="font-size: 36px; font-weight: bold; color: #1e293b; margin-bottom: 5px;">7,500</div>
+                    <div style="color: #64748b; margin-bottom: 15px;">credits</div>
+                    <div style="font-size: 28px; font-weight: bold; color: #667eea; margin-bottom: 5px;">$179</div>
+                    <div style="color: #64748b; font-size: 14px; margin-bottom: 5px;">$0.024 per credit</div>
+                    <div style="color: #4CAF50; font-size: 12px; font-weight: 600; margin-bottom: 20px;">SAVE 17%</div>
+
+                    <div style="text-align: left; margin-bottom: 25px; color: #4b5563; font-size: 14px;">
+                        <div style="margin-bottom: 8px;">✅ 125 keyword searches</div>
+                        <div style="margin-bottom: 8px;">✅ 100 articles (mixed)</div>
+                        <div style="margin-bottom: 8px;">✅ Multi-website management</div>
+                        <div style="margin-bottom: 8px;">✅ Premium AI models</div>
+                        <div>✅ Perfect for medium agencies</div>
+                    </div>
+
+                    <button onclick="purchaseCredits(7500, 179, 'business')" style="width: 100%; background: #667eea; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 16px;">
+                        Choose Business
+                    </button>
+                </div>
+
+                <!-- Enterprise Package -->
+                <div class="credit-package" style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 25px; text-align: center; position: relative; transition: all 0.3s ease;" onmouseover="this.style.borderColor='#667eea'" onmouseout="this.style.borderColor='#e2e8f0'">
+                    <div style="background: #7c3aed; color: white; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 15px;">ENTERPRISE</div>
+                    <div style="font-size: 36px; font-weight: bold; color: #1e293b; margin-bottom: 5px;">20,000</div>
+                    <div style="color: #64748b; margin-bottom: 15px;">credits</div>
+                    <div style="font-size: 28px; font-weight: bold; color: #667eea; margin-bottom: 5px;">$399</div>
+                    <div style="color: #64748b; font-size: 14px; margin-bottom: 5px;">$0.020 per credit</div>
+                    <div style="color: #4CAF50; font-size: 12px; font-weight: 600; margin-bottom: 20px;">SAVE 31%</div>
+
+                    <div style="text-align: left; margin-bottom: 25px; color: #4b5563; font-size: 14px;">
+                        <div style="margin-bottom: 8px;">✅ 400 keyword searches</div>
+                        <div style="margin-bottom: 8px;">✅ 250+ premium articles</div>
+                        <div style="margin-bottom: 8px;">✅ Unlimited websites</div>
+                        <div style="margin-bottom: 8px;">✅ Enterprise AI models</div>
+                        <div>✅ Perfect for large agencies</div>
+                    </div>
+
+                    <button onclick="purchaseCredits(20000, 399, 'enterprise')" style="width: 100%; background: #667eea; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 16px;">
+                        Choose Enterprise
+                    </button>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; padding-top: 25px; border-top: 1px solid #e2e8f0;">
+                <div style="color: #64748b; font-size: 14px; margin-bottom: 15px;">
+                    🔒 Secure payment powered by Stripe • Credits never expire • No monthly commitments
+                </div>
+                <div style="color: #667eea; font-size: 14px;">
+                    Need more than 20,000 credits? <a href="#" style="color: #667eea; text-decoration: underline;">Contact us</a> for custom pricing.
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         let currentResults = null;
@@ -505,9 +640,209 @@
             credits: parseInt(localStorage.getItem('seoWizardCredits') || '1000')
         };
 
+        // Credit System Functions
+        function updateCreditDisplay() {
+            const creditBalance = document.getElementById('creditBalance');
+            if (creditBalance) {
+                creditBalance.textContent = window.seoWizard.credits.toLocaleString();
+            }
+        }
+
+        function deductCredits(amount) {
+            if (window.seoWizard.credits >= amount) {
+                window.seoWizard.credits -= amount;
+                localStorage.setItem('seoWizardCredits', window.seoWizard.credits);
+                updateCreditDisplay();
+                return true;
+            }
+            return false;
+        }
+
+        function addCredits(amount) {
+            window.seoWizard.credits += amount;
+            localStorage.setItem('seoWizardCredits', window.seoWizard.credits);
+            updateCreditDisplay();
+        }
+
+        function showCreditPurchase() {
+            document.getElementById('creditPurchaseModal').style.display = 'flex';
+        }
+
+        function hideCreditPurchase() {
+            document.getElementById('creditPurchaseModal').style.display = 'none';
+        }
+
+        function purchaseCredits(credits, price, packageName) {
+            // This will integrate with PayPal later
+            alert(`PayPal integration coming soon!\n\nPackage: ${packageName.toUpperCase()}\nCredits: ${credits.toLocaleString()}\nPrice: $${price}\n\nFor now, we'll add ${credits} credits to your account for testing.`);
+
+            // Temporary: Add credits for testing
+            addCredits(credits);
+            hideCreditPurchase();
+
+            // Show success message
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `
+                <div class="status success">
+                    <strong>🎉 Credits Added Successfully!</strong><br>
+                    You now have ${window.seoWizard.credits.toLocaleString()} credits in your account.<br>
+                    PayPal payment integration coming soon!
+                </div>
+            `;
+
+            // Clear message after 5 seconds
+            setTimeout(() => {
+                if (statusDiv.innerHTML.includes('Credits Added Successfully')) {
+                    statusDiv.innerHTML = '';
+                }
+            }, 5000);
+        }
+
+        function checkCreditRequirement(actionName, requiredCredits) {
+            if (window.seoWizard.credits < requiredCredits) {
+                const statusDiv = document.getElementById('status');
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ Insufficient Credits</strong><br>
+                        You need ${requiredCredits} credits for ${actionName}, but you only have ${window.seoWizard.credits}.<br>
+                        <button onclick="showCreditPurchase()" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px; cursor: pointer;">
+                            💳 Buy More Credits
+                        </button>
+                    </div>
+                `;
+                return false;
+            }
+            return true;
+        }
+
+        function showCreditDashboard() {
+            const creditDashboard = document.getElementById('creditDashboard');
+            const blogManagement = document.getElementById('blogManagement');
+            const results = document.getElementById('results');
+
+            // Hide other sections
+            blogManagement.style.display = 'none';
+            results.innerHTML = '';
+
+            // Calculate usage statistics
+            const totalCreditsEver = parseInt(localStorage.getItem('seoWizardTotalCreditsEver') || '1000');
+            const creditsUsed = totalCreditsEver - window.seoWizard.credits;
+            const usageRate = ((creditsUsed / totalCreditsEver) * 100).toFixed(1);
+
+            creditDashboard.innerHTML = `
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <h2>💰 Credit Dashboard</h2>
+                        <button onclick="hideCreditDashboard()" style="background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                            ← Back
+                        </button>
+                    </div>
+
+                    <!-- Credit Balance Overview -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                        <div style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 16px; margin-bottom: 8px; opacity: 0.9;">Current Balance</div>
+                            <div style="font-size: 32px; font-weight: bold;">${window.seoWizard.credits.toLocaleString()}</div>
+                            <div style="font-size: 14px; opacity: 0.8;">credits available</div>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, #667eea, #5a6fd8); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 16px; margin-bottom: 8px; opacity: 0.9;">Credits Used</div>
+                            <div style="font-size: 32px; font-weight: bold;">${creditsUsed.toLocaleString()}</div>
+                            <div style="font-size: 14px; opacity: 0.8;">${usageRate}% of total</div>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 16px; margin-bottom: 8px; opacity: 0.9;">Estimated Value</div>
+                            <div style="font-size: 32px; font-weight: bold;">$${(window.seoWizard.credits * 0.029).toFixed(0)}</div>
+                            <div style="font-size: 14px; opacity: 0.8;">at starter rate</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+                        <h3 style="margin: 0 0 15px 0; color: #1e293b;">Quick Actions</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <button onclick="showCreditPurchase()" style="background: #4CAF50; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                💳 Buy More Credits
+                            </button>
+                            <button onclick="resetCreditDemo()" style="background: #667eea; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                🔄 Reset Demo (1000 credits)
+                            </button>
+                            <button onclick="showCreditHistory()" style="background: #64748b; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                📊 Usage History
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Credit Cost Reference -->
+                    <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 25px;">
+                        <h3 style="margin: 0 0 20px 0; color: #1e293b;">💡 Credit Cost Reference</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                            <div style="padding: 15px; background: #f8fafc; border-radius: 8px;">
+                                <div style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">🔍 Keyword Research</div>
+                                <div style="color: #64748b; font-size: 14px; margin-bottom: 4px;">Basic search (10 results): <strong>5 credits</strong></div>
+                                <div style="color: #64748b; font-size: 14px; margin-bottom: 4px;">Extended search (20 results): <strong>8 credits</strong></div>
+                                <div style="color: #64748b; font-size: 14px;">Bulk research (50 results): <strong>18 credits</strong></div>
+                            </div>
+
+                            <div style="padding: 15px; background: #f8fafc; border-radius: 8px;">
+                                <div style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">📝 Content Generation</div>
+                                <div style="color: #64748b; font-size: 14px; margin-bottom: 4px;">Short article (500-800 words): <strong>15-35 credits</strong></div>
+                                <div style="color: #64748b; font-size: 14px; margin-bottom: 4px;">Medium article (800-1500): <strong>25-70 credits</strong></div>
+                                <div style="color: #64748b; font-size: 14px;">Long article (1500-2500): <strong>40-110 credits</strong></div>
+                            </div>
+
+                            <div style="padding: 15px; background: #f8fafc; border-radius: 8px;">
+                                <div style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">🎨 Image Generation</div>
+                                <div style="color: #64748b; font-size: 14px; margin-bottom: 4px;">Single featured image: <strong>20 credits</strong></div>
+                                <div style="color: #64748b; font-size: 14px; margin-bottom: 4px;">Image pack (3 images): <strong>50 credits</strong></div>
+                                <div style="color: #64748b; font-size: 14px;">Premium image set: <strong>85 credits</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            creditDashboard.style.display = 'block';
+        }
+
+        function hideCreditDashboard() {
+            document.getElementById('creditDashboard').style.display = 'none';
+        }
+
+        function resetCreditDemo() {
+            if (confirm('Reset your credit balance to 1000 credits for demo purposes?')) {
+                window.seoWizard.credits = 1000;
+                localStorage.setItem('seoWizardCredits', '1000');
+                localStorage.setItem('seoWizardTotalCreditsEver', '1000');
+                updateCreditDisplay();
+                showCreditDashboard(); // Refresh the dashboard
+
+                const statusDiv = document.getElementById('status');
+                statusDiv.innerHTML = `
+                    <div class="status success">
+                        <strong>✅ Demo Reset Complete</strong><br>
+                        Your credit balance has been reset to 1,000 credits for testing.
+                    </div>
+                `;
+
+                setTimeout(() => {
+                    if (statusDiv.innerHTML.includes('Demo Reset Complete')) {
+                        statusDiv.innerHTML = '';
+                    }
+                }, 3000);
+            }
+        }
+
+        function showCreditHistory() {
+            alert('Credit usage history coming soon! This will show detailed logs of all credit transactions and feature usage.');
+        }
+
         // Check API status on page load
         document.addEventListener('DOMContentLoaded', () => {
             checkStatus();
+            updateCreditDisplay();
         });
 
         // Keyword form submission
@@ -578,11 +913,35 @@
             const resultsDiv = document.getElementById('results');
             const statusDiv = document.getElementById('status');
 
+            // Check credit requirement (5 credits for basic keyword search)
+            const requiredCredits = 5;
+            if (!checkCreditRequirement('Keyword Research', requiredCredits)) {
+                return; // Exit if insufficient credits
+            }
+
+            // Deduct credits before proceeding
+            if (!deductCredits(requiredCredits)) {
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ Credit Deduction Failed</strong><br>
+                        Unable to process credit transaction. Please try again.
+                    </div>
+                `;
+                return;
+            }
+
+            // Show credit deduction confirmation
+            statusDiv.innerHTML = `
+                <div class="status success">
+                    <strong>✅ Credits Deducted</strong><br>
+                    Used ${requiredCredits} credits for keyword research. Remaining: ${window.seoWizard.credits}
+                </div>
+            `;
+
             // Update UI
             searchBtn.disabled = true;
             searchBtn.textContent = '🔍 Searching...';
             resultsDiv.innerHTML = '';
-            statusDiv.innerHTML = '';
 
             try {
                 const startTime = Date.now();
@@ -618,7 +977,7 @@
                 `;
             } finally {
                 searchBtn.disabled = false;
-                searchBtn.textContent = 'Search Keywords';
+                searchBtn.textContent = '🔍 Search Keywords (5 credits)';
             }
         }
 
