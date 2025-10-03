@@ -6907,6 +6907,563 @@ ${item.answer}
             });
         }
 
+        // Inline article generation functions
+        function showInlineArticleOptions(cleanId, index, title, wordCount, intent) {
+            const optionsDiv = document.getElementById(`article-options-${cleanId}-${index}`);
+            const generateBtn = document.getElementById(`generate-btn-${cleanId}-${index}`);
+
+            if (optionsDiv) {
+                optionsDiv.style.display = 'block';
+
+                // Update credit cost calculation
+                updateCreditCost(cleanId, index);
+
+                // Add event listeners for cost calculation
+                const modelSelect = document.getElementById(`model-select-${cleanId}-${index}`);
+                const imageSelect = document.getElementById(`image-select-${cleanId}-${index}`);
+
+                if (modelSelect) {
+                    modelSelect.addEventListener('change', () => updateCreditCost(cleanId, index));
+                }
+                if (imageSelect) {
+                    imageSelect.addEventListener('change', () => updateCreditCost(cleanId, index));
+                }
+            }
+
+            // Update the main generate button to show it's expanded
+            if (generateBtn) {
+                generateBtn.style.background = '#059669';
+                generateBtn.innerHTML = '<span>⚙️</span>Configure Options';
+            }
+        }
+
+        function hideInlineArticleOptions(cleanId, index) {
+            const optionsDiv = document.getElementById(`article-options-${cleanId}-${index}`);
+            const generateBtn = document.getElementById(`generate-btn-${cleanId}-${index}`);
+
+            if (optionsDiv) {
+                optionsDiv.style.display = 'none';
+            }
+
+            // Reset the main generate button
+            if (generateBtn) {
+                generateBtn.style.background = '#4CAF50';
+                generateBtn.innerHTML = '<span>✍️</span>Generate Full Article';
+            }
+        }
+
+        function updateCreditCost(cleanId, index) {
+            const modelSelect = document.getElementById(`model-select-${cleanId}-${index}`);
+            const imageSelect = document.getElementById(`image-select-${cleanId}-${index}`);
+            const costDiv = document.getElementById(`credit-cost-${cleanId}-${index}`);
+
+            if (!modelSelect || !imageSelect || !costDiv) return;
+
+            let modelCost = 25; // default basic
+            switch(modelSelect.value) {
+                case 'basic': modelCost = 25; break;
+                case 'premium': modelCost = 50; break;
+                case 'enterprise': modelCost = 85; break;
+            }
+
+            let imageCost = 0;
+            switch(imageSelect.value) {
+                case 'none': imageCost = 0; break;
+                case 'featured': imageCost = 20; break;
+                case 'full': imageCost = 50; break;
+            }
+
+            const totalCost = modelCost + imageCost;
+            costDiv.innerHTML = `Total: ${totalCost} credits`;
+        }
+
+        async function generateInlineArticle(cleanId, index, title, wordCount, intent) {
+            const modelSelect = document.getElementById(`model-select-${cleanId}-${index}`);
+            const imageSelect = document.getElementById(`image-select-${cleanId}-${index}`);
+            const generateBtn = document.getElementById(`generate-final-btn-${cleanId}-${index}`);
+            const optionsDiv = document.getElementById(`article-options-${cleanId}-${index}`);
+            const resultDiv = document.getElementById(`generated-article-${cleanId}-${index}`);
+
+            if (!modelSelect || !imageSelect || !generateBtn) {
+                alert('Error: Missing form elements');
+                return;
+            }
+
+            const model = modelSelect.value;
+            const images = imageSelect.value;
+
+            // Calculate total credit cost
+            let modelCost = model === 'basic' ? 25 : model === 'premium' ? 50 : 85;
+            let imageCost = images === 'none' ? 0 : images === 'featured' ? 20 : 50;
+            const totalCost = modelCost + imageCost;
+
+            // Check and deduct credits
+            if (!checkCreditRequirement('Article Generation', totalCost)) {
+                return;
+            }
+
+            if (!deductCredits(totalCost)) {
+                alert('Unable to deduct credits. Please try again.');
+                return;
+            }
+
+            // Update UI to show generation in progress
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<span>⏳</span>Generating...';
+
+            // Show loading in result area
+            if (resultDiv) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 30px; background: #f8fafc; border-radius: 8px;">
+                        <div style="text-align: center; color: #6b7280;">
+                            <div style="font-size: 24px; margin-bottom: 10px;">🤖</div>
+                            <div style="font-weight: 600; margin-bottom: 5px;">AI is generating your article...</div>
+                            <div style="font-size: 13px;">"${title}" (~${wordCount.toLocaleString()} words)</div>
+                            <div style="margin-top: 15px;">
+                                <div style="width: 200px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                                    <div style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 2px; animation: progress 30s ease-out forwards;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            try {
+                // Call the article generation API
+                console.log('Generating inline article:', { title, model, images, wordCount, intent });
+
+                const response = await fetch('/api/generate-article', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        wordCount: wordCount,
+                        intent: intent,
+                        model: model,
+                        includeImages: images !== 'none',
+                        imageType: images
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Article generation API error:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const articleData = await response.json();
+                console.log('Article generation response:', articleData);
+
+                if (articleData.success && articleData.article) {
+                    displayInlineGeneratedArticle(cleanId, index, articleData.article, model, totalCost);
+
+                    // Hide the options section
+                    if (optionsDiv) {
+                        optionsDiv.style.display = 'none';
+                    }
+                } else {
+                    throw new Error(articleData.message || 'Failed to generate article');
+                }
+
+            } catch (error) {
+                console.error('Article generation error:', error);
+
+                // Refund credits on error
+                const currentCredits = parseInt(localStorage.getItem('credits') || '1000');
+                localStorage.setItem('credits', (currentCredits + totalCost).toString());
+                updateCreditDisplay();
+
+                if (resultDiv) {
+                    resultDiv.innerHTML = `
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 15px; color: #dc2626;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">❌ Generation Failed</div>
+                            <div style="font-size: 13px;">${error.message}</div>
+                            <div style="font-size: 12px; color: #7f1d1d; margin-top: 8px;">Credits have been refunded (${totalCost} credits)</div>
+                        </div>
+                    `;
+                }
+            } finally {
+                // Reset generate button
+                if (generateBtn) {
+                    generateBtn.disabled = false;
+                    generateBtn.innerHTML = '<span>🚀</span>Generate Article';
+                }
+            }
+        }
+
+        function displayInlineGeneratedArticle(cleanId, index, articleData, modelTier, totalCredits) {
+            const resultDiv = document.getElementById(`generated-article-${cleanId}-${index}`);
+
+            if (!resultDiv || !articleData) return;
+
+            // Handle the actual API response structure
+            const { metadata, tableOfContents, content, images, seo } = articleData;
+            const articleTitle = articleData.title || content || 'Generated Article';
+
+            // Parse content if it's markdown/raw text
+            let contentPreview = '';
+            let sectionCount = 0;
+            if (typeof content === 'string') {
+                // Extract first paragraph as introduction
+                const paragraphs = content.split('\n\n').filter(p => p.trim() && !p.startsWith('#'));
+                contentPreview = paragraphs[0] ? paragraphs[0].substring(0, 200) : content.substring(0, 200);
+
+                // Count sections (H2 headers)
+                const h2Matches = content.match(/^#{2}\s/gm) || [];
+                sectionCount = h2Matches.length;
+            } else if (content && content.sections) {
+                contentPreview = content.introduction ? content.introduction.substring(0, 200) : '';
+                sectionCount = content.sections.length;
+            }
+
+            // Store the article data for actions
+            window[`inlineArticle_${cleanId}_${index}`] = articleData;
+
+            resultDiv.innerHTML = `
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                        <h6 style="margin: 0; color: #059669; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                            <span>✅</span>
+                            Article Generated Successfully
+                        </h6>
+                        <div style="font-size: 12px; color: #059669; background: #dcfce7; padding: 4px 8px; border-radius: 4px;">
+                            ${modelTier} Model • ${totalCredits} credits used
+                        </div>
+                    </div>
+
+                    <!-- Article Preview -->
+                    <div style="background: white; border-radius: 6px; padding: 15px; margin-bottom: 15px; max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0;">
+                        <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 18px; line-height: 1.3;">
+                            ${articleTitle}
+                        </h4>
+
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 4px; margin-bottom: 15px; font-size: 13px;">
+                            <div style="margin-bottom: 8px;"><strong>SEO Title:</strong> ${seo ? seo.title : articleTitle}</div>
+                            <div style="margin-bottom: 8px;"><strong>Meta Description:</strong> ${seo ? seo.metaDescription : 'SEO optimized article about ' + articleTitle}</div>
+                            <div><strong>Keywords:</strong> ${seo && seo.keywords ? (Array.isArray(seo.keywords) ? seo.keywords.join(', ') : seo.keywords) : 'Related keywords included'}</div>
+                        </div>
+
+                        <div style="font-size: 14px; line-height: 1.6; color: #374151;">
+                            <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e5e7eb;">
+                                <strong>Content Preview:</strong>
+                                <div style="margin-top: 8px;">${contentPreview}...</div>
+                            </div>
+
+                            ${sectionCount > 0 ? `
+                            <div style="margin-bottom: 15px;">
+                                <strong>Article Structure (${sectionCount} main sections):</strong>
+                                ${tableOfContents && tableOfContents.length > 0 ? `
+                                <ul style="margin: 8px 0 0 20px; padding: 0;">
+                                    ${tableOfContents.slice(0, 4).map(item => `
+                                        <li style="margin: 4px 0; color: #6b7280; font-size: 13px;">${item.text}</li>
+                                    `).join('')}
+                                    ${tableOfContents.length > 4 ? `<li style="margin: 4px 0; color: #6b7280; font-size: 13px;">...and ${tableOfContents.length - 4} more sections</li>` : ''}
+                                </ul>
+                                ` : `<div style="color: #6b7280; font-size: 13px; margin-top: 8px;">Well-structured article with ${sectionCount} main sections</div>`}
+                            </div>
+                            ` : ''}
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; font-size: 12px; color: #6b7280; background: #f9fafb; padding: 10px; border-radius: 4px;">
+                                <div><strong>Word Count:</strong> ${metadata ? metadata.wordCount : 'N/A'}</div>
+                                <div><strong>Reading Time:</strong> ${metadata ? metadata.readingTime : 'N/A'}</div>
+                                ${images && images.length > 0 ? `<div><strong>Images:</strong> ${images.length}</div>` : ''}
+                                <div><strong>Quality:</strong> SEO Optimized</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="viewFullInlineArticle('${cleanId}', ${index})"
+                                style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                            <span>👁️</span>
+                            View Full Article
+                        </button>
+                        <button onclick="editInlineArticle('${cleanId}', ${index})"
+                                style="background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                            <span>✏️</span>
+                            Edit Article
+                        </button>
+                        <button onclick="copyGeneratedArticle('${cleanId}', ${index})"
+                                style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                            <span>📋</span>
+                            Copy HTML
+                        </button>
+                        <button onclick="downloadGeneratedArticle('${cleanId}', ${index}, '${articleTitle.replace(/'/g, "\\\'")}')"
+                                style="background: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                            <span>💾</span>
+                            Save Article
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Scroll to the generated article
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function viewFullInlineArticle(cleanId, index) {
+            const articleData = window[`inlineArticle_${cleanId}_${index}`];
+            if (!articleData) {
+                alert('Article data not found');
+                return;
+            }
+
+            // Adapt API response to match displayGeneratedArticle expectations
+            const adaptedArticleData = {
+                metadata: {
+                    ...articleData.metadata,
+                    seoTitle: articleData.seo ? articleData.seo.title : articleData.title,
+                    metaDescription: articleData.seo ? articleData.seo.metaDescription : 'SEO optimized article',
+                    focusKeyword: articleData.title.split(' ')[0], // Extract first word as focus keyword
+                    relatedKeywords: articleData.seo && articleData.seo.keywords
+                        ? (Array.isArray(articleData.seo.keywords) ? articleData.seo.keywords : [articleData.seo.keywords])
+                        : ['related', 'keywords'],
+                    featuredImageAlt: articleData.images && articleData.images[0] ? articleData.images[0].alt : `Featured image for ${articleData.title}`
+                },
+                content: {
+                    title: articleData.title,
+                    introduction: extractIntroduction(articleData.content),
+                    sections: parseContentToSections(articleData.content),
+                    conclusion: extractConclusion(articleData.content),
+                    faq: extractFAQ(articleData.content)
+                },
+                tableOfContents: articleData.tableOfContents || [],
+                images: articleData.images || []
+            };
+
+            // Use the existing full article display function
+            window.currentGeneratedArticle = adaptedArticleData;
+
+            if (adaptedArticleData.images && adaptedArticleData.images.length > 0) {
+                displayGeneratedArticleWithImages(adaptedArticleData, 'Inline Generated', 0);
+            } else {
+                displayGeneratedArticle(adaptedArticleData, 'Inline Generated');
+            }
+        }
+
+        // Helper functions to parse API content
+        function extractIntroduction(content) {
+            if (typeof content !== 'string') return 'Generated article introduction.';
+
+            const lines = content.split('\n').filter(line => line.trim());
+            let introText = '';
+
+            for (let line of lines) {
+                // Skip titles and headers
+                if (line.startsWith('#')) continue;
+
+                // Take first substantial paragraph
+                if (line.trim().length > 50) {
+                    introText = line.trim();
+                    break;
+                }
+            }
+
+            return introText || 'This article provides comprehensive information on the topic.';
+        }
+
+        function parseContentToSections(content) {
+            if (typeof content !== 'string') return [];
+
+            const sections = [];
+            const lines = content.split('\n');
+            let currentSection = null;
+
+            for (let line of lines) {
+                if (line.startsWith('## ')) {
+                    // New H2 section
+                    if (currentSection) sections.push(currentSection);
+                    currentSection = {
+                        title: line.replace('## ', '').trim(),
+                        content: '',
+                        anchor: '#section-' + sections.length,
+                        subsections: []
+                    };
+                } else if (line.startsWith('### ') && currentSection) {
+                    // H3 subsection
+                    const subsection = {
+                        title: line.replace('### ', '').trim(),
+                        content: '',
+                        anchor: '#subsection-' + currentSection.subsections.length
+                    };
+                    currentSection.subsections.push(subsection);
+                } else if (line.trim() && currentSection && !line.startsWith('#')) {
+                    // Regular content
+                    if (currentSection.subsections.length > 0) {
+                        currentSection.subsections[currentSection.subsections.length - 1].content += line + ' ';
+                    } else {
+                        currentSection.content += line + ' ';
+                    }
+                }
+            }
+
+            if (currentSection) sections.push(currentSection);
+            return sections;
+        }
+
+        function extractConclusion(content) {
+            if (typeof content !== 'string') return 'In conclusion, this article covers important aspects of the topic.';
+
+            const lines = content.split('\n').reverse();
+            let conclusionText = '';
+
+            for (let line of lines) {
+                if (line.toLowerCase().includes('conclusion') || line.toLowerCase().includes('summary')) {
+                    // Find content after conclusion header
+                    const conclusionIndex = content.toLowerCase().lastIndexOf(line.toLowerCase());
+                    const afterConclusion = content.substring(conclusionIndex + line.length);
+                    const paragraphs = afterConclusion.split('\n').filter(p => p.trim() && !p.startsWith('#'));
+                    if (paragraphs.length > 0) {
+                        conclusionText = paragraphs[0].trim();
+                        break;
+                    }
+                }
+            }
+
+            return conclusionText || 'This article provides valuable insights and practical information on the topic.';
+        }
+
+        function extractFAQ(content) {
+            if (typeof content !== 'string') return [];
+
+            const faqSection = [];
+            const lines = content.split('\n');
+            let inFAQ = false;
+            let currentQuestion = null;
+
+            for (let line of lines) {
+                if (line.toLowerCase().includes('faq') || line.toLowerCase().includes('frequently asked')) {
+                    inFAQ = true;
+                    continue;
+                }
+
+                if (inFAQ && line.startsWith('###')) {
+                    if (currentQuestion) faqSection.push(currentQuestion);
+                    currentQuestion = {
+                        question: line.replace('### ', '').trim(),
+                        answer: ''
+                    };
+                } else if (inFAQ && currentQuestion && line.trim() && !line.startsWith('#')) {
+                    currentQuestion.answer += line + ' ';
+                }
+            }
+
+            if (currentQuestion) faqSection.push(currentQuestion);
+            return faqSection;
+        }
+
+        function editInlineArticle(cleanId, index) {
+            const articleData = window[`inlineArticle_${cleanId}_${index}`];
+            if (!articleData) {
+                alert('Article data not found');
+                return;
+            }
+
+            // Set as current article and open edit mode
+            window.currentGeneratedArticle = articleData;
+            enterEditMode();
+        }
+
+        function copyGeneratedArticle(cleanId, index) {
+            const articleData = window[`inlineArticle_${cleanId}_${index}`];
+            if (!articleData) {
+                alert('Article data not found');
+                return;
+            }
+
+            // Generate simple HTML from article data
+            const title = articleData.title;
+            const content = articleData.content || '';
+            const seo = articleData.seo || {};
+
+            // Convert markdown content to basic HTML
+            let htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${seo.title || title}</title>
+    <meta name="description" content="${seo.metaDescription || 'SEO optimized article'}">
+    <meta name="keywords" content="${seo.keywords ? (Array.isArray(seo.keywords) ? seo.keywords.join(', ') : seo.keywords) : ''}">
+</head>
+<body>
+    <article>
+        ${content.replace(/^# /gm, '<h1>').replace(/^## /gm, '<h2>').replace(/^### /gm, '<h3>')
+                   .replace(/\n\n/g, '</p><p>').replace(/^\s*([^<].*?)$/gm, '<p>$1</p>')
+                   .replace(/<p><h/g, '<h').replace(/<\/h([123])><\/p>/g, '</h$1>')
+                   .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                   .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                   .replace(/<p>\s*<\/p>/g, '')}
+    </article>
+</body>
+</html>`;
+
+            navigator.clipboard.writeText(htmlContent).then(() => {
+                alert('✅ Article HTML copied to clipboard!');
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                alert('❌ Failed to copy to clipboard');
+            });
+        }
+
+        function downloadGeneratedArticle(cleanId, index, title) {
+            const articleData = window[`inlineArticle_${cleanId}_${index}`];
+            if (!articleData) {
+                alert('Article data not found');
+                return;
+            }
+
+            const markdown = generateArticleMarkdown(articleData);
+            const blob = new Blob([markdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title.replace(/[^a-zA-Z0-9]/g, '_')}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Helper function to generate markdown from article data
+        function generateArticleMarkdown(article) {
+            const { metadata, content } = article;
+            let markdown = `# ${content.title}\n\n`;
+            markdown += `**SEO Title:** ${metadata.seoTitle}\n`;
+            markdown += `**Meta Description:** ${metadata.metaDescription}\n`;
+            markdown += `**Keywords:** ${metadata.relatedKeywords.join(', ')}\n\n`;
+            markdown += `## Introduction\n\n${content.introduction}\n\n`;
+
+            content.sections.forEach(section => {
+                markdown += `## ${section.title}\n\n`;
+                markdown += `${section.content}\n\n`;
+
+                if (section.subsections) {
+                    section.subsections.forEach(sub => {
+                        markdown += `### ${sub.title}\n\n`;
+                        markdown += `${sub.content}\n\n`;
+                    });
+                }
+            });
+
+            markdown += `## Conclusion\n\n${content.conclusion}\n\n`;
+
+            if (content.faq && content.faq.length > 0) {
+                markdown += `## FAQ\n\n`;
+                content.faq.forEach(item => {
+                    markdown += `### ${item.question}\n\n${item.answer}\n\n`;
+                });
+            }
+
+            return markdown;
+        }
+
         // Article editing functions
         function enterEditMode() {
             const article = window.currentGeneratedArticle;
