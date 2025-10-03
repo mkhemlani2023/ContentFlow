@@ -169,11 +169,11 @@ const callSerperAPI = async (query, location = 'us', language = 'en', num = 10) 
 const processKeywords = (searchData, responseTime, originalKeyword) => {
   const keywords = [];
 
-  // Generate actual keyword variations with proper SEO metrics
-  const keywordVariations = generateKeywordVariations(originalKeyword);
+  // Extract real keywords from Serper API search data
+  const realKeywords = extractRealKeywordsFromSearchData(searchData, originalKeyword);
 
-  // Add each variation with calculated SEO metrics
-  keywordVariations.forEach((keyword, index) => {
+  // Add each real keyword with calculated SEO metrics
+  realKeywords.forEach((keyword, index) => {
     const searchVolume = calculateSearchVolume(keyword, originalKeyword);
     const difficulty = calculateKeywordDifficulty(keyword, index);
     const cpc = calculateCPC(keyword);
@@ -252,7 +252,207 @@ const processKeywords = (searchData, responseTime, originalKeyword) => {
   };
 };
 
-// Generate actual keyword variations
+// Extract real keywords from Serper API search data instead of using templates
+const extractRealKeywordsFromSearchData = (searchData, originalKeyword) => {
+  const realKeywords = [originalKeyword]; // Start with original keyword
+  const seenKeywords = new Set([originalKeyword.toLowerCase()]);
+
+  try {
+    // Extract keywords from organic search results (titles and snippets)
+    if (searchData.organic) {
+      searchData.organic.forEach(result => {
+        if (result.title) {
+          // Extract meaningful phrases from titles
+          const titleKeywords = extractKeywordsFromText(result.title, originalKeyword);
+          titleKeywords.forEach(kw => {
+            if (!seenKeywords.has(kw.toLowerCase()) && kw.length > 3) {
+              realKeywords.push(kw);
+              seenKeywords.add(kw.toLowerCase());
+            }
+          });
+        }
+
+        if (result.snippet) {
+          // Extract meaningful phrases from snippets
+          const snippetKeywords = extractKeywordsFromText(result.snippet, originalKeyword);
+          snippetKeywords.forEach(kw => {
+            if (!seenKeywords.has(kw.toLowerCase()) && kw.length > 3) {
+              realKeywords.push(kw);
+              seenKeywords.add(kw.toLowerCase());
+            }
+          });
+        }
+      });
+    }
+
+    // Extract from "People also ask" questions
+    if (searchData.peopleAlsoAsk) {
+      searchData.peopleAlsoAsk.forEach(question => {
+        if (question.question) {
+          const questionKeywords = extractKeywordsFromText(question.question, originalKeyword);
+          questionKeywords.forEach(kw => {
+            if (!seenKeywords.has(kw.toLowerCase()) && kw.length > 3) {
+              realKeywords.push(kw);
+              seenKeywords.add(kw.toLowerCase());
+            }
+          });
+        }
+      });
+    }
+
+    // Extract from related searches
+    if (searchData.relatedSearches) {
+      searchData.relatedSearches.forEach(search => {
+        if (search.query && !seenKeywords.has(search.query.toLowerCase())) {
+          realKeywords.push(search.query);
+          seenKeywords.add(search.query.toLowerCase());
+        }
+      });
+    }
+
+    // If we don't have enough real keywords, add some contextually relevant ones
+    if (realKeywords.length < 10) {
+      const contextualKeywords = generateContextualKeywords(originalKeyword);
+      contextualKeywords.forEach(kw => {
+        if (!seenKeywords.has(kw.toLowerCase()) && realKeywords.length < 15) {
+          realKeywords.push(kw);
+          seenKeywords.add(kw.toLowerCase());
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('Error extracting real keywords:', error);
+    // Fallback to contextual keywords if extraction fails
+    return generateContextualKeywords(originalKeyword);
+  }
+
+  return realKeywords.slice(0, 20); // Limit to 20 keywords
+};
+
+// Extract meaningful keyword phrases from text
+const extractKeywordsFromText = (text, originalKeyword) => {
+  if (!text) return [];
+
+  const keywords = [];
+  const words = originalKeyword.toLowerCase().split(' ');
+  const mainTopic = words[0]; // Get the main topic (e.g., "brain" from "brain plasticity")
+
+  // Split text into phrases and filter for relevant ones
+  const phrases = text.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 2);
+
+  // Look for phrases that contain the main topic or related concepts
+  for (let i = 0; i < phrases.length - 1; i++) {
+    const phrase2 = phrases[i] + ' ' + phrases[i + 1];
+    const phrase3 = i < phrases.length - 2 ? phrase2 + ' ' + phrases[i + 2] : '';
+
+    // Check 2-word phrases
+    if (phrase2.includes(mainTopic) || isRelatedToKeyword(phrase2, originalKeyword)) {
+      keywords.push(phrase2);
+    }
+
+    // Check 3-word phrases
+    if (phrase3 && (phrase3.includes(mainTopic) || isRelatedToKeyword(phrase3, originalKeyword))) {
+      keywords.push(phrase3);
+    }
+  }
+
+  return [...new Set(keywords)]; // Remove duplicates
+};
+
+// Generate contextually relevant keywords based on keyword analysis
+const generateContextualKeywords = (originalKeyword) => {
+  const contextual = [originalKeyword];
+  const lowerKeyword = originalKeyword.toLowerCase();
+  const words = lowerKeyword.split(' ');
+  const mainTopic = words[0];
+
+  // Medical/Scientific keywords
+  if (isScientificTopic(lowerKeyword)) {
+    contextual.push(
+      `${originalKeyword} research`,
+      `${originalKeyword} studies`,
+      `${originalKeyword} mechanisms`,
+      `${originalKeyword} benefits`,
+      `${originalKeyword} examples`,
+      `${originalKeyword} definition`,
+      `${originalKeyword} explained`,
+      `how ${originalKeyword} works`,
+      `${originalKeyword} applications`
+    );
+  }
+  // Business keywords
+  else if (isBusinessTopic(lowerKeyword)) {
+    contextual.push(
+      `${originalKeyword} strategy`,
+      `${originalKeyword} tools`,
+      `${originalKeyword} best practices`,
+      `${originalKeyword} examples`,
+      `${originalKeyword} guide`,
+      `${originalKeyword} tips`,
+      `how to ${originalKeyword}`,
+      `${originalKeyword} benefits`,
+      `${originalKeyword} methods`
+    );
+  }
+  // Technology keywords
+  else if (isTechTopic(lowerKeyword)) {
+    contextual.push(
+      `${originalKeyword} tutorial`,
+      `${originalKeyword} guide`,
+      `${originalKeyword} examples`,
+      `${originalKeyword} tools`,
+      `${originalKeyword} features`,
+      `best ${originalKeyword}`,
+      `${originalKeyword} comparison`,
+      `${originalKeyword} review`,
+      `${originalKeyword} alternatives`
+    );
+  }
+  // General keywords
+  else {
+    contextual.push(
+      `${originalKeyword} guide`,
+      `${originalKeyword} tips`,
+      `${originalKeyword} benefits`,
+      `${originalKeyword} examples`,
+      `how to ${originalKeyword}`,
+      `${originalKeyword} explained`,
+      `${originalKeyword} basics`,
+      `${originalKeyword} overview`,
+      `${originalKeyword} information`
+    );
+  }
+
+  return contextual.slice(0, 15);
+};
+
+// Helper function to check if phrase is related to the main keyword
+const isRelatedToKeyword = (phrase, originalKeyword) => {
+  const keywords = originalKeyword.toLowerCase().split(' ');
+  return keywords.some(word => phrase.includes(word));
+};
+
+// Helper functions to determine topic type
+const isScientificTopic = (keyword) => {
+  const scientificTerms = ['brain', 'neural', 'neuron', 'plasticity', 'cognitive', 'psychology', 'biology', 'research', 'study', 'medical', 'health'];
+  return scientificTerms.some(term => keyword.includes(term));
+};
+
+const isBusinessTopic = (keyword) => {
+  const businessTerms = ['marketing', 'business', 'strategy', 'management', 'sales', 'finance', 'entrepreneur', 'startup', 'company', 'corporate'];
+  return businessTerms.some(term => keyword.includes(term));
+};
+
+const isTechTopic = (keyword) => {
+  const techTerms = ['software', 'app', 'technology', 'digital', 'programming', 'code', 'development', 'tech', 'computer', 'algorithm'];
+  return techTerms.some(term => keyword.includes(term));
+};
+
+// DEPRECATED: Old template-based function - keeping for fallback only
 const generateKeywordVariations = (originalKeyword) => {
   const variations = [originalKeyword]; // Start with original
 
