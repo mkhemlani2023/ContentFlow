@@ -13,6 +13,7 @@ BMAD-METHOD™ (Breakthrough Method of Agile AI-driven Development) is a framewo
 - **Dual Environment Support**: Optimized for both web UIs and IDEs
 - **Reusable Resources**: Portable templates, tasks, and checklists
 - **Slash Command Integration**: Quick agent switching and control
+- **Real Data Standards**: Strict enforcement of API-based data over templates
 
 ### When to Use BMad
 
@@ -21,6 +22,11 @@ BMAD-METHOD™ (Breakthrough Method of Agile AI-driven Development) is a framewo
 - **Team Collaboration**: Multiple roles working together
 - **Quality Assurance**: Structured testing and validation
 - **Documentation**: Professional PRDs, architecture docs, user stories
+
+### Critical Development Standards
+
+**⚠️ NO TEMPLATES OR FAKE DATA RULE**
+All BMAD agents must follow the fundamental principle: **Never use template-based approaches for data generation. Always use real, accurate data from APIs.** This ensures data integrity, user trust, and contextually appropriate results. Templates create inappropriate suggestions and users will complain. See `coding-standards.md` for detailed guidelines.
 
 ## How BMad Works
 
