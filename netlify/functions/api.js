@@ -146,7 +146,7 @@ const calculateSimpleReadabilityScore = (content) => {
 };
 
 const createMetaDescription = (title, content, focusKeyword) => {
-  if (!content) return `Learn about ${title}. Comprehensive guide with expert insights.`;
+  if (!content) return `Learn about ${focusKeyword}. Comprehensive guide with expert insights and practical tips.`;
 
   // Find the first meaningful paragraph (skip headings and short lines)
   const paragraphs = content.split('\n\n').filter(p =>
@@ -155,7 +155,8 @@ const createMetaDescription = (title, content, focusKeyword) => {
     !p.startsWith('##') &&
     !p.startsWith('Table of Contents') &&
     !p.startsWith('FAQ') &&
-    !p.includes('Frequently Asked Questions')
+    !p.includes('Frequently Asked Questions') &&
+    !p.includes('**') // Skip heavily formatted sections
   );
 
   if (paragraphs.length === 0) {
@@ -174,12 +175,25 @@ const createMetaDescription = (title, content, focusKeyword) => {
     metaDesc = `${focusKeyword}: ${metaDesc}`;
   }
 
-  // Truncate to appropriate length (150-160 characters)
+  // Smart truncation to avoid cutting off mid-word or mid-sentence
   if (metaDesc.length > 160) {
-    metaDesc = metaDesc.substring(0, 157) + '...';
+    let truncated = metaDesc.substring(0, 157);
+
+    // Find the last complete word before the cutoff
+    const lastSpaceIndex = truncated.lastIndexOf(' ');
+    if (lastSpaceIndex > 140) { // Only if we have a reasonable amount of text
+      truncated = truncated.substring(0, lastSpaceIndex);
+    }
+
+    metaDesc = truncated + '...';
   }
 
-  return metaDesc;
+  // Final validation - ensure minimum length
+  if (metaDesc.length < 120) {
+    metaDesc = `${focusKeyword}: ${metaDesc}. Expert insights and practical guidance included.`;
+  }
+
+  return metaDesc.substring(0, 160); // Hard limit at 160 chars
 };
 
 const generateAutocompleteSuggestions = (keyword) => {
@@ -1548,26 +1562,51 @@ exports.handler = async (event, context) => {
         const currentYear = new Date().getFullYear();
 
         // Extract the main focus keyword from the title for better SEO
-        const focusKeyword = title.toLowerCase().split(' ').filter(word =>
-          word.length > 2 && !['the', 'and', 'for', 'with', 'how', 'to', 'what', 'why', 'when', 'where', 'best', 'guide', 'complete', 'ultimate'].includes(word)
-        ).slice(0, 3).join(' ');
+        const stopWords = ['the', 'and', 'for', 'with', 'how', 'to', 'what', 'why', 'when', 'where', 'best', 'guide', 'complete', 'ultimate', 'beginner', 'comprehensive', 'behind', 'science', 'a', 'an', 'of', 'in', 'on', 'at', 'by', 'from'];
+        const titleWords = title.toLowerCase().split(' ').filter(word =>
+          word.length > 2 && !stopWords.includes(word) && word !== ':'
+        );
+
+        // For scientific/technical titles, prioritize the main subject matter
+        let focusKeyword;
+        if (titleWords.length >= 2) {
+          // Take 2-3 most meaningful words, prioritizing nouns over adjectives
+          focusKeyword = titleWords.slice(0, Math.min(3, titleWords.length)).join(' ');
+        } else if (titleWords.length === 1) {
+          focusKeyword = titleWords[0];
+        } else {
+          // Fallback: use first meaningful word from original title
+          focusKeyword = title.split(' ').find(word => word.length > 3) || title.split(' ')[0];
+        }
+
+        console.log('Extracted focus keyword:', focusKeyword, 'from title:', title);
 
         // Create comprehensive article prompt with better instructions
-        const articlePrompt = `You are a professional SEO content writer and subject matter expert. Write a comprehensive, high-quality ${wordCount || 2000}-word article on: "${title}"
+        const toneMap = {
+          'professional': 'professional and authoritative',
+          'conversational': 'conversational and engaging',
+          'academic': 'academic and scholarly',
+          'beginner': 'beginner-friendly and accessible',
+          'expert': 'expert-level and technical'
+        };
 
-FOCUS KEYWORD: "${focusKeyword}"
-This keyword should appear naturally 5-8 times throughout the article, including in headings.
+        const selectedTone = toneMap[difficulty?.toLowerCase()] || toneMap[intent?.toLowerCase()] || 'professional and engaging';
 
-ARTICLE REQUIREMENTS:
-- Target word count: ${wordCount || 2000} words (write substantial, detailed content)
+        const articlePrompt = `You are a professional SEO content writer and subject matter expert. Write a comprehensive, high-quality article on: "${title}"
+
+CRITICAL REQUIREMENTS:
+- FOCUS KEYWORD: "${focusKeyword}" - Use this EXACT phrase naturally 6-10 times throughout the article
+- TARGET WORD COUNT: ${wordCount || 2000} words MINIMUM (write comprehensive, detailed content)
+- WRITING TONE: ${selectedTone}
 - Intent: ${intent || 'Informational'}
 - Difficulty level: ${difficulty || 'Medium'}
-- Current year: ${currentYear} (include recent data and trends)
-- Write for humans first, SEO second
-- Each section should be 300-500 words minimum
-- Include specific examples, case studies, and actionable insights
-- Use data and statistics where relevant
-- Write in an engaging, conversational yet professional tone
+- Current year: ${currentYear}
+
+CONTENT STRUCTURE REQUIREMENTS:
+- Each main section MUST be 400-600 words minimum
+- Write 4-6 comprehensive main sections only (fewer sections, more depth)
+- Include specific examples, case studies, statistics, and actionable insights
+- Use current ${currentYear} data and recent research when relevant
 
 STRUCTURE REQUIREMENTS:
 1. **Introduction** (200-300 words)
@@ -1655,23 +1694,64 @@ Write the complete, detailed article now:`;
         if (imageType && imageType !== 'none') {
           const imageCount = imageType === 'featured' ? 1 : imageType === 'full' ? 4 : 0;
 
-          // Create contextually relevant image descriptions based on the focus keyword
+          // Create topic-specific Unsplash URLs for relevant images
+          const getTopicImage = (keyword, index = 0) => {
+            // Map focus keywords to relevant Unsplash search terms
+            const imageKeywordMap = {
+              'neural plasticity': 'brain-neurons',
+              'brain science': 'neuroscience-brain',
+              'digital marketing': 'marketing-analytics',
+              'machine learning': 'artificial-intelligence',
+              'data science': 'data-visualization',
+              'web development': 'programming-code',
+              'seo optimization': 'analytics-chart',
+              'content marketing': 'content-creation',
+              'social media': 'social-network',
+              'artificial intelligence': 'ai-technology',
+              'cybersecurity': 'computer-security',
+              'cloud computing': 'cloud-technology',
+              'project management': 'team-collaboration',
+              'financial planning': 'finance-chart',
+              'health wellness': 'health-lifestyle'
+            };
+
+            // Find the most relevant image keyword
+            let imageKeyword = focusKeyword.toLowerCase();
+            for (const [key, value] of Object.entries(imageKeywordMap)) {
+              if (focusKeyword.toLowerCase().includes(key) || key.includes(focusKeyword.toLowerCase())) {
+                imageKeyword = value;
+                break;
+              }
+            }
+
+            // Fallback to generic but professional images
+            if (imageKeyword === focusKeyword) {
+              const cleanKeyword = focusKeyword.replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, '-');
+              imageKeyword = cleanKeyword || 'business-professional';
+            }
+
+            // Use Unsplash Source API for consistent, high-quality images
+            return `https://source.unsplash.com/800x600/?${imageKeyword}&${index + 1}`;
+          };
+
+          // Create contextually relevant image descriptions
           const imageContexts = [
-            `Professional ${focusKeyword} concept illustration`,
-            `${focusKeyword} workflow diagram or infographic`,
-            `${focusKeyword} tools and resources layout`,
-            `${focusKeyword} results or outcomes visualization`
+            `${focusKeyword} concept visualization`,
+            `${focusKeyword} practical application`,
+            `${focusKeyword} research and analysis`,
+            `${focusKeyword} tools and methodology`
           ];
 
           for (let i = 0; i < imageCount; i++) {
             const context = imageContexts[i] || `${focusKeyword} related concept`;
             images.push({
-              url: `https://picsum.photos/800/600?random=${Date.now()}-${i}`,
+              url: getTopicImage(focusKeyword, i),
               alt: `${context} - ${title}`,
               type: i === 0 ? 'featured' : 'section',
               prompt: context,
               style: 'professional',
-              context: focusKeyword
+              context: focusKeyword,
+              source: 'unsplash'
             });
           }
         }
@@ -1680,13 +1760,34 @@ Write the complete, detailed article now:`;
         const wordCountActual = articleContent.split(/\s+/).length;
         const readingTime = Math.ceil(wordCountActual / 250); // 250 words per minute average
 
-        // Extract headings for table of contents
+        // Extract headings for table of contents with better error handling
         const headingMatches = articleContent.match(/^#{1,3}\s+(.+)$/gm) || [];
-        const tableOfContents = headingMatches.slice(0, 10).map(heading => {
-          const level = (heading.match(/^#+/) || [''])[0].length;
-          const text = heading.replace(/^#+\s+/, '');
-          return { level, text, anchor: text.toLowerCase().replace(/[^a-z0-9]+/g, '-') };
-        });
+        const tableOfContents = headingMatches
+          .filter(heading => heading && heading.trim().length > 0)
+          .slice(0, 10)
+          .map((heading, index) => {
+            try {
+              const level = (heading.match(/^#+/) || [''])[0].length;
+              const text = heading.replace(/^#+\s+/, '').trim();
+
+              if (!text || text.length === 0) {
+                return { level: 2, text: `Section ${index + 1}`, anchor: `section-${index + 1}` };
+              }
+
+              return {
+                level,
+                text,
+                anchor: text.toLowerCase()
+                  .replace(/[^a-z0-9\s]/g, '')
+                  .replace(/\s+/g, '-')
+                  .substring(0, 50)
+              };
+            } catch (error) {
+              console.error('Error processing heading:', heading, error);
+              return { level: 2, text: `Section ${index + 1}`, anchor: `section-${index + 1}` };
+            }
+          })
+          .filter(toc => toc && toc.text && toc.text !== 'undefined');
 
         return {
           statusCode: 200,
