@@ -504,10 +504,10 @@ const calculateOpportunityScore = (searchVolume, difficulty) => {
 // OpenRouter API functions
 const getModelConfig = (modelType) => {
   const modelMap = {
-    'free': 'cognitivecomputations/dolphin-mistral-7b:free',
+    'free': 'meta-llama/llama-3.2-3b-instruct:free',
     'budget': 'openai/gpt-4o-mini',
-    'premium': 'anthropic/claude-3.5-sonnet',
-    'enterprise': 'anthropic/claude-3-opus'
+    'premium': 'anthropic/claude-3-5-sonnet-20241022',
+    'enterprise': 'anthropic/claude-3-5-sonnet-20241022'
   };
 
   const creditCosts = {
