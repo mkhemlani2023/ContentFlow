@@ -94,42 +94,15 @@ const determineIntent = (keyword) => {
 };
 
 const generateAutocompleteSuggestions = (keyword) => {
-  // Common autocomplete patterns based on real Google suggestions
-  const patterns = [
-    `${keyword} tips`,
-    `${keyword} guide`,
-    `${keyword} tutorial`,
-    `${keyword} best practices`,
-    `${keyword} for beginners`,
-    `${keyword} vs`,
-    `${keyword} examples`,
-    `${keyword} tools`,
-    `${keyword} strategies`,
-    `${keyword} mistakes`,
-    `how to ${keyword}`,
-    `what is ${keyword}`,
-    `${keyword} benefits`,
-    `${keyword} course`,
-    `${keyword} training`,
-    `${keyword} certification`,
-    `${keyword} software`,
-    `${keyword} services`,
-    `${keyword} checklist`,
-    `${keyword} template`,
-    `${keyword} free`,
-    `${keyword} online`,
-    `${keyword} 2024`,
-    `best ${keyword}`,
-    `${keyword} comparison`
-  ];
+  // Use the same contextual intelligence as keyword generation
+  // This ensures autocomplete suggestions are meaningful and relevant
+  const contextualSuggestions = generateContextualKeywords(keyword);
 
-  // Return a realistic subset based on keyword context
-  const suggestions = patterns
+  // Return 8-12 contextually relevant suggestions
+  return contextualSuggestions
     .filter(suggestion => suggestion !== keyword)
-    .slice(0, Math.floor(Math.random() * 5) + 8) // 8-12 suggestions
+    .slice(0, Math.floor(Math.random() * 5) + 8)
     .map(suggestion => suggestion.toLowerCase());
-
-  return suggestions;
 };
 
 // Serper API functions
@@ -452,45 +425,6 @@ const isTechTopic = (keyword) => {
   return techTerms.some(term => keyword.includes(term));
 };
 
-// DEPRECATED: Old template-based function - keeping for fallback only
-const generateKeywordVariations = (originalKeyword) => {
-  const variations = [originalKeyword]; // Start with original
-
-  const modifiers = [
-    'best', 'top', 'how to', 'what is', 'benefits of', 'guide to',
-    'tips for', 'complete', 'ultimate', 'beginner', 'advanced',
-    'free', 'online', 'cheap', 'affordable', 'professional'
-  ];
-
-  const suffixes = [
-    'tips', 'guide', 'benefits', 'review', 'comparison', 'tutorial',
-    'examples', 'tools', 'strategies', 'techniques', 'methods',
-    'cost', 'price', 'service', 'software', 'app'
-  ];
-
-  const related = [
-    'for beginners', 'for small business', 'for professionals', 'for agencies',
-    'vs alternatives', 'step by step', 'made easy', 'explained',
-    'best practices', 'mistakes to avoid', 'pros and cons'
-  ];
-
-  // Add modifier variations
-  modifiers.slice(0, 8).forEach(modifier => {
-    variations.push(`${modifier} ${originalKeyword}`);
-  });
-
-  // Add suffix variations
-  suffixes.slice(0, 8).forEach(suffix => {
-    variations.push(`${originalKeyword} ${suffix}`);
-  });
-
-  // Add related variations
-  related.slice(0, 6).forEach(phrase => {
-    variations.push(`${originalKeyword} ${phrase}`);
-  });
-
-  return variations.filter((v, i, arr) => arr.indexOf(v) === i); // Remove duplicates
-};
 
 // Calculate realistic search volume based on keyword type
 const calculateSearchVolume = (keyword, originalKeyword) => {
