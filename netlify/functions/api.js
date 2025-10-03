@@ -1393,8 +1393,8 @@ exports.handler = async (event, context) => {
       }
 
       try {
-        const { articles, responseTime } = await generateFullArticle(title, wordCount, difficulty, intent, modelType);
-        const { cost } = getModelConfig(modelType);
+        const { articles, responseTime } = await generateFullArticle(title, wordCount, difficulty, intent, model);
+        const { cost } = getModelConfig(model);
 
         // Calculate image credits
         let imageCredits = 0;
@@ -1416,8 +1416,8 @@ exports.handler = async (event, context) => {
               wordCount,
               difficulty,
               intent,
-              modelType,
-              model: getModelConfig(modelType).model,
+              modelType: model,
+              model: getModelConfig(model).model,
               creditCost: totalCredits,
               imageType,
               imageCredits
