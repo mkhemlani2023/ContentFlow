@@ -3225,6 +3225,10 @@
                     </div>
 
                     <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                        <button id="editArticleBtn" onclick="enableArticleEditing('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, '${article.seo.metaDescription.replace(/'/g, "\\'")}', ${JSON.stringify(article.seo.keywords).replace(/"/g, '&quot;')})"
+                                style="background: #f59e0b; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                            ✏️ Edit Article
+                        </button>
                         <button onclick="copyArticleToClipboard('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
                                 style="background: #10b981; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             📋 Copy Article
@@ -3232,6 +3236,10 @@
                         <button onclick="downloadArticle('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
                                 style="background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             📥 Download
+                        </button>
+                        <button onclick="publishArticle('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
+                                style="background: #16a34a; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                            📤 Publish
                         </button>
                         <button onclick="closeContentModal()"
                                 style="background: #64748b; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
@@ -6907,6 +6915,49 @@ ${item.answer}
             });
         }
 
+        // Progress animation helper functions
+        function startProgressAnimation(cleanId, index) {
+            updateProgress(cleanId, index, 15, 'Preparing article generation...', 1);
+        }
+
+        function updateProgress(cleanId, index, percentage, message, activeStep) {
+            const progressBar = document.getElementById(`progress-bar-${cleanId}-${index}`);
+            const progressText = document.getElementById(`progress-text-${cleanId}-${index}`);
+
+            if (progressBar) {
+                progressBar.style.width = `${percentage}%`;
+            }
+
+            if (progressText) {
+                progressText.textContent = message;
+            }
+
+            // Update step indicators
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById(`step-${i}-${cleanId}-${index}`);
+                if (step) {
+                    step.style.opacity = i <= activeStep ? '1' : '0.3';
+                    step.style.fontWeight = i === activeStep ? '600' : '400';
+                }
+            }
+        }
+
+        function showDebugInfo(cleanId, index, message) {
+            const debugDiv = document.getElementById(`debug-info-${cleanId}-${index}`);
+            const debugContent = document.getElementById(`debug-content-${cleanId}-${index}`);
+
+            if (debugContent) {
+                debugContent.innerHTML += `${new Date().toLocaleTimeString()}: ${message}<br>`;
+            }
+
+            // Show debug info on errors or if explicitly enabled
+            if (message.includes('Error') || message.includes('Failed') || window.DEBUG_MODE) {
+                if (debugDiv) {
+                    debugDiv.style.display = 'block';
+                }
+            }
+        }
+
         // Inline article generation functions
         function showInlineArticleOptions(cleanId, index, title, wordCount, intent) {
             const optionsDiv = document.getElementById(`article-options-${cleanId}-${index}`);
@@ -7011,66 +7062,118 @@ ${item.answer}
             generateBtn.disabled = true;
             generateBtn.innerHTML = '<span>⏳</span>Generating...';
 
-            // Show loading in result area
+            // Show enhanced loading in result area with real progress tracking
             if (resultDiv) {
                 resultDiv.style.display = 'block';
                 resultDiv.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: center; padding: 30px; background: #f8fafc; border-radius: 8px;">
-                        <div style="text-align: center; color: #6b7280;">
-                            <div style="font-size: 24px; margin-bottom: 10px;">🤖</div>
-                            <div style="font-weight: 600; margin-bottom: 5px;">AI is generating your article...</div>
-                            <div style="font-size: 13px;">"${title}" (~${wordCount.toLocaleString()} words)</div>
-                            <div style="margin-top: 15px;">
-                                <div style="width: 200px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
-                                    <div style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 2px; animation: progress 30s ease-out forwards;"></div>
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 30px; background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%); border-radius: 8px; border: 1px solid #bfdbfe;">
+                        <div style="text-align: center; color: #1e293b; max-width: 400px;">
+                            <div style="font-size: 32px; margin-bottom: 15px; animation: pulse 2s infinite;">🤖</div>
+                            <div style="font-weight: 700; font-size: 18px; margin-bottom: 8px; color: #1e40af;">AI is generating your article...</div>
+                            <div style="font-size: 14px; color: #475569; margin-bottom: 5px;">"${title}"</div>
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 20px;">~${wordCount.toLocaleString()} words • ${model} model • ${images !== 'none' ? 'with images' : 'text only'}</div>
+
+                            <!-- Enhanced Progress Bar -->
+                            <div style="margin-bottom: 15px;">
+                                <div style="width: 300px; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin: 0 auto; position: relative;">
+                                    <div id="progress-bar-${cleanId}-${index}" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%); border-radius: 3px; transition: width 0.5s ease;"></div>
+                                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%); animation: shimmer 2s infinite;"></div>
                                 </div>
+                                <div id="progress-text-${cleanId}-${index}" style="font-size: 11px; color: #6b7280; margin-top: 8px; font-weight: 500;">Initializing AI generation...</div>
+                            </div>
+
+                            <!-- Progress Steps -->
+                            <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 10px; color: #9ca3af;">
+                                <span id="step-1-${cleanId}-${index}" style="opacity: 1; transition: opacity 0.3s;">🔍 Analyzing</span>
+                                <span id="step-2-${cleanId}-${index}" style="opacity: 0.3; transition: opacity 0.3s;">📝 Writing</span>
+                                <span id="step-3-${cleanId}-${index}" style="opacity: 0.3; transition: opacity 0.3s;">🔧 Optimizing</span>
+                                <span id="step-4-${cleanId}-${index}" style="opacity: 0.3; transition: opacity 0.3s;">✅ Finalizing</span>
+                            </div>
+
+                            <!-- Debug Info (hidden by default, shown on errors) -->
+                            <div id="debug-info-${cleanId}-${index}" style="display: none; margin-top: 15px; padding: 10px; background: #fef3c7; border-radius: 4px; text-align: left; font-size: 11px; font-family: monospace; color: #92400e;">
+                                <strong>Debug Info:</strong><br>
+                                <span id="debug-content-${cleanId}-${index}"></span>
                             </div>
                         </div>
                     </div>
+
+                    <style>
+                    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+                    @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+                    </style>
                 `;
+
+                // Start progress animation
+                startProgressAnimation(cleanId, index);
             }
 
             try {
-                // Call the article generation API
-                console.log('Generating inline article:', { title, model, images, wordCount, intent });
+                // Update progress to step 1
+                updateProgress(cleanId, index, 25, 'Connecting to AI service...', 2);
+
+                // Call the article generation API with enhanced debugging
+                const requestData = {
+                    title: title,
+                    wordCount: wordCount,
+                    intent: intent,
+                    model: model,
+                    difficulty: 'medium',
+                    imageType: images
+                };
+
+                console.log('🚀 Starting article generation:', requestData);
+                showDebugInfo(cleanId, index, `API Request: ${JSON.stringify(requestData, null, 2)}`);
 
                 const response = await fetch('/api/generate-article', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        title: title,
-                        wordCount: wordCount,
-                        intent: intent,
-                        model: model,
-                        includeImages: images !== 'none',
-                        imageType: images
-                    })
+                    body: JSON.stringify(requestData)
                 });
+
+                // Update progress to step 2
+                updateProgress(cleanId, index, 50, 'AI is writing your article...', 3);
+
+                console.log('📡 API Response status:', response.status, response.statusText);
+                showDebugInfo(cleanId, index, `Response Status: ${response.status} ${response.statusText}`);
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('Article generation API error:', errorText);
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    console.error('❌ Article generation API error:', errorText);
+                    showDebugInfo(cleanId, index, `API Error: ${errorText}`);
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
                 }
 
                 const articleData = await response.json();
-                console.log('Article generation response:', articleData);
+                console.log('✅ Article generation response:', articleData);
+
+                // Update progress to step 3
+                updateProgress(cleanId, index, 75, 'Processing article content...', 4);
 
                 if (articleData.success && articleData.article) {
-                    displayInlineGeneratedArticle(cleanId, index, articleData.article, model, totalCost);
+                    // Final progress update
+                    updateProgress(cleanId, index, 100, 'Article generated successfully!', 4);
 
-                    // Hide the options section
-                    if (optionsDiv) {
-                        optionsDiv.style.display = 'none';
-                    }
+                    setTimeout(() => {
+                        displayInlineGeneratedArticle(cleanId, index, articleData.article, model, totalCost);
+
+                        // Hide the options section
+                        if (optionsDiv) {
+                            optionsDiv.style.display = 'none';
+                        }
+                    }, 1000);
+
                 } else {
-                    throw new Error(articleData.message || 'Failed to generate article');
+                    console.error('❌ Invalid article data:', articleData);
+                    showDebugInfo(cleanId, index, `Invalid Response: ${JSON.stringify(articleData, null, 2)}`);
+                    throw new Error(articleData.message || 'API returned invalid article data');
                 }
 
             } catch (error) {
-                console.error('Article generation error:', error);
+                console.error('❌ Article generation error:', error);
+                showDebugInfo(cleanId, index, `Error: ${error.message}`);
 
                 // Refund credits on error
                 const currentCredits = parseInt(localStorage.getItem('credits') || '1000');
@@ -7079,10 +7182,37 @@ ${item.answer}
 
                 if (resultDiv) {
                     resultDiv.innerHTML = `
-                        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 15px; color: #dc2626;">
-                            <div style="font-weight: 600; margin-bottom: 5px;">❌ Generation Failed</div>
-                            <div style="font-size: 13px;">${error.message}</div>
-                            <div style="font-size: 12px; color: #7f1d1d; margin-top: 8px;">Credits have been refunded (${totalCost} credits)</div>
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 20px; color: #dc2626;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="font-size: 24px;">❌</div>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 16px;">Article Generation Failed</div>
+                                    <div style="font-size: 12px; color: #991b1b;">Don't worry - we've refunded your ${totalCost} credits</div>
+                                </div>
+                            </div>
+
+                            <div style="background: #fee2e2; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 13px;">
+                                <strong>Error Details:</strong><br>
+                                ${error.message}
+                            </div>
+
+                            <div style="margin-top: 15px;">
+                                <button onclick="window.DEBUG_MODE = true; showDebugInfo('${cleanId}', ${index}, 'Debug mode enabled'); document.getElementById('debug-info-${cleanId}-${index}').style.display = 'block';"
+                                        style="background: #6b7280; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 8px;">
+                                    🔍 Show Debug Info
+                                </button>
+                                <button onclick="generateInlineArticle('${cleanId}', ${index}, '${title.replace(/'/g, "\\'")}', ${wordCount}, '${intent}')"
+                                        style="background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                    🔄 Try Again
+                                </button>
+                            </div>
+
+                            <!-- Debug Info Section (initially hidden) -->
+                            <div id="debug-info-${cleanId}-${index}" style="display: none; margin-top: 15px; padding: 10px; background: #fef3c7; border-radius: 4px; text-align: left;">
+                                <strong style="color: #92400e;">Debug Information:</strong><br>
+                                <div id="debug-content-${cleanId}-${index}" style="font-size: 11px; font-family: monospace; color: #92400e; margin-top: 8px; max-height: 200px; overflow-y: auto;">
+                                </div>
+                            </div>
                         </div>
                     `;
                 }
@@ -7838,6 +7968,238 @@ ${item.answer}
             if (publishModal) {
                 publishModal.remove();
             }
+        }
+
+        // Article Editing Functions
+        let currentEditingData = null;
+
+        function enableArticleEditing(title, content, metaDescription, keywords) {
+            try {
+                // Store the current article data for editing
+                currentEditingData = {
+                    title: title,
+                    content: content,
+                    metaDescription: metaDescription,
+                    keywords: JSON.parse(keywords.replace(/&quot;/g, '"'))
+                };
+
+                // Replace the content result with an editing interface
+                document.getElementById('contentResult').innerHTML = `
+                    <div style="background: #fef3c7; padding: 20px; border-radius: 12px; border-left: 4px solid #f59e0b;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+                            <div>
+                                <h3 style="margin: 0 0 8px 0; color: #92400e; font-size: 20px;">✏️ Edit Article</h3>
+                                <div style="font-size: 14px; color: #a16207;">Make changes to your article before publishing</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Article Title:</label>
+                            <input type="text" id="editTitle" value="${title.replace(/"/g, '&quot;')}"
+                                   style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 16px; font-weight: 600;">
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Meta Description:</label>
+                            <textarea id="editMetaDescription" rows="3"
+                                      style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; resize: vertical;">${metaDescription.replace(/"/g, '&quot;')}</textarea>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Recommended: 150-160 characters</div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Article Content:</label>
+                            <textarea id="editContent" rows="20"
+                                      style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; line-height: 1.6; font-family: 'Courier New', monospace; resize: vertical;">${content.replace(/"/g, '&quot;')}</textarea>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                                <strong>Formatting Tips:</strong> Use ## for headings, **text** for bold, *text* for italic, - for bullet points
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">SEO Keywords:</label>
+                            <input type="text" id="editKeywords"
+                                   value="${currentEditingData.keywords.join(', ')}"
+                                   style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Separate keywords with commas</div>
+                        </div>
+
+                        <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <h4 style="margin: 0 0 10px 0; color: #01579b; font-size: 14px;">📝 Editing Tips:</h4>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #0277bd;">
+                                <li>Check for spelling and grammar errors</li>
+                                <li>Ensure your target keywords appear naturally throughout</li>
+                                <li>Add internal links to related content (when published)</li>
+                                <li>Include a clear call-to-action at the end</li>
+                                <li>Verify all facts and update any outdated information</li>
+                            </ul>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="saveArticleEdits()"
+                                    style="background: #16a34a; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                💾 Save Changes
+                            </button>
+                            <button onclick="previewEditedArticle()"
+                                    style="background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                👁️ Preview
+                            </button>
+                            <button onclick="cancelEditingArticle()"
+                                    style="background: #dc2626; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                ❌ Cancel
+                            </button>
+                            <button onclick="closeContentModal()"
+                                    style="background: #64748b; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                ✅ Done
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error enabling article editing:', error);
+                alert('Error loading article for editing. Please try again.');
+            }
+        }
+
+        function saveArticleEdits() {
+            // Get the edited content
+            const editedTitle = document.getElementById('editTitle').value;
+            const editedMetaDescription = document.getElementById('editMetaDescription').value;
+            const editedContent = document.getElementById('editContent').value;
+            const editedKeywords = document.getElementById('editKeywords').value.split(',').map(k => k.trim()).filter(k => k);
+
+            if (!editedTitle || !editedContent) {
+                alert('Title and content are required fields.');
+                return;
+            }
+
+            // Update the currentEditingData
+            currentEditingData.title = editedTitle;
+            currentEditingData.content = editedContent;
+            currentEditingData.metaDescription = editedMetaDescription;
+            currentEditingData.keywords = editedKeywords;
+
+            // Create updated article object
+            const updatedArticle = {
+                title: editedTitle,
+                content: editedContent,
+                seo: {
+                    metaDescription: editedMetaDescription,
+                    keywords: editedKeywords,
+                    readabilityScore: 'Good (Updated)'
+                },
+                metadata: {
+                    wordCount: editedContent.split(' ').length,
+                    readingTime: Math.ceil(editedContent.split(' ').length / 200) + ' min read',
+                    difficulty: 'Custom edited',
+                    modelUsed: 'User Edited',
+                    creditCost: 'N/A (Edited)'
+                },
+                tableOfContents: []
+            };
+
+            // Show success message and return to article view
+            displayRealArticleResult(updatedArticle);
+
+            // Show temporary success message
+            const successDiv = document.createElement('div');
+            successDiv.innerHTML = `
+                <div style="position: fixed; top: 20px; right: 20px; background: #16a34a; color: white; padding: 15px 20px; border-radius: 6px; z-index: 10000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    ✅ Article changes saved successfully!
+                </div>
+            `;
+            document.body.appendChild(successDiv);
+            setTimeout(() => {
+                if (successDiv.parentNode) {
+                    successDiv.parentNode.removeChild(successDiv);
+                }
+            }, 3000);
+        }
+
+        function previewEditedArticle() {
+            const editedTitle = document.getElementById('editTitle').value;
+            const editedContent = document.getElementById('editContent').value;
+
+            if (!editedTitle || !editedContent) {
+                alert('Please add a title and content to preview.');
+                return;
+            }
+
+            // Open preview in a new window
+            const previewWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+            const formattedContent = editedContent
+                .replace(/^# (.+)$/gm, '<h1 style="color: #1e293b; margin: 20px 0 15px 0; font-size: 28px;">$1</h1>')
+                .replace(/^## (.+)$/gm, '<h2 style="color: #374151; margin: 20px 0 12px 0; font-size: 24px;">$1</h2>')
+                .replace(/^### (.+)$/gm, '<h3 style="color: #4b5563; margin: 16px 0 10px 0; font-size: 20px;">$1</h3>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/^- (.+)$/gm, '<li style="margin: 4px 0;">$1</li>')
+                .replace(/\n\n/g, '</p><p style="margin: 16px 0; line-height: 1.6;">')
+                .replace(/^(?!<[hul])/gm, '<p style="margin: 16px 0; line-height: 1.6;">')
+                .replace(/<p[^>]*>$/gm, '');
+
+            previewWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Article Preview: ${editedTitle}</title>
+                    <style>
+                        body { font-family: Georgia, serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; color: #2d3748; }
+                        h1, h2, h3 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+                    </style>
+                </head>
+                <body>
+                    <div style="border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px;">
+                        <h1 style="margin: 0; color: #1a202c;">${editedTitle}</h1>
+                        <div style="color: #64748b; margin-top: 10px; font-size: 14px;">
+                            ${Math.ceil(editedContent.split(' ').length / 200)} min read • ${editedContent.split(' ').length} words • Preview Mode
+                        </div>
+                    </div>
+                    ${formattedContent}
+                    <div style="background: #f7fafc; padding: 20px; border-radius: 6px; margin-top: 40px; border-left: 4px solid #3182ce;">
+                        <strong>📝 Note:</strong> This is a preview of your edited article. Close this window to continue editing or save your changes.
+                    </div>
+                </body>
+                </html>
+            `);
+            previewWindow.document.close();
+        }
+
+        function cancelEditingArticle() {
+            if (confirm('Are you sure you want to cancel editing? Any unsaved changes will be lost.')) {
+                // Return to the original article view if we have the data
+                if (currentEditingData) {
+                    const originalArticle = {
+                        title: currentEditingData.title,
+                        content: currentEditingData.content,
+                        seo: {
+                            metaDescription: currentEditingData.metaDescription,
+                            keywords: currentEditingData.keywords,
+                            readabilityScore: 'Good'
+                        },
+                        metadata: {
+                            wordCount: currentEditingData.content.split(' ').length,
+                            readingTime: Math.ceil(currentEditingData.content.split(' ').length / 200) + ' min read',
+                            difficulty: 'Medium',
+                            modelUsed: 'AI Generated',
+                            creditCost: '50'
+                        },
+                        tableOfContents: []
+                    };
+                    displayRealArticleResult(originalArticle);
+                } else {
+                    closeContentModal();
+                }
+            }
+        }
+
+        function publishArticle(title, content) {
+            // For now, show the existing publish modal functionality
+            // This will integrate with the blog upload functionality later
+            alert('🚀 Publishing Feature\n\nThis will connect to your blog/website upload functionality.\n\nFor now, you can:\n• Copy the article content\n• Download as file\n• Edit before publishing');
+
+            // Could integrate with existing blog management functionality here
+            console.log('Publishing article:', title);
         }
 
         // Load saved research on page load
