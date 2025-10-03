@@ -6381,6 +6381,195 @@ ${item.answer}
 *Generated with SEO Wizard - ${new Date().toLocaleDateString()}*`;
         }
 
+        // Credit-based article ideas generation wrapper
+        async function generateArticleIdeasWithCredits(keyword, cleanId) {
+            const CREDIT_COST = 5; // Cost for article ideas generation
+
+            // Check credit requirement using consistent system
+            if (!checkCreditRequirement('Article Ideas Generation', CREDIT_COST)) {
+                return; // Exit if insufficient credits
+            }
+
+            // Deduct credits using consistent system
+            if (!deductCredits(CREDIT_COST)) {
+                alert('Unable to deduct credits. Please try again.');
+                return;
+            }
+
+            // Call the actual generation function
+            await generateArticleIdeas(keyword, cleanId);
+        }
+
+        // Generate article ideas function
+        async function generateArticleIdeas(keyword, cleanId) {
+            console.log('generateArticleIdeas called with:', keyword, cleanId);
+
+            const suggestionsSection = document.getElementById(`article-suggestions-${cleanId}`);
+            const outputDiv = document.getElementById(`suggestions-output-${cleanId}`);
+            const buttonId = `ideas-btn-${cleanId}`;
+            const button = document.getElementById(buttonId);
+
+            if (!suggestionsSection || !outputDiv) {
+                console.error('Missing DOM elements for article suggestions:', {
+                    suggestionsSection: !!suggestionsSection,
+                    outputDiv: !!outputDiv,
+                    cleanId: cleanId
+                });
+                alert('Error: Could not find article suggestions elements. Please refresh and try again.');
+                return;
+            }
+
+            // Show suggestions section and loading state
+            suggestionsSection.style.display = 'block';
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<span class="btn-icon">⏳</span>Generating Ideas...';
+            }
+
+            outputDiv.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #64748b;">
+                    <div style="font-size: 20px;">🤖</div>
+                    <p>AI is generating contextual article ideas for "${keyword}"...</p>
+                </div>
+            `;
+
+            try {
+                console.log('Making API request to generate article ideas');
+                const response = await fetch('/api/article-ideas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        keyword: keyword,
+                        modelType: 'free'
+                    })
+                });
+
+                console.log('Article ideas response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Article ideas API error:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Article ideas response data:', data);
+
+                if (data.success && data.articles && data.articles.length > 0) {
+                    console.log('Displaying article ideas:', data.articles.length, 'ideas');
+                    displayArticleIdeas(keyword, data.articles, cleanId);
+                } else {
+                    console.warn('Invalid article ideas data:', data);
+                    throw new Error(data.message || 'No article ideas generated');
+                }
+
+            } catch (error) {
+                console.error('Article ideas generation error:', error);
+                outputDiv.innerHTML = `
+                    <div style="color: #dc2626; text-align: center; padding: 20px;">
+                        <div style="font-size: 20px;">⚠️</div>
+                        <p>Unable to Generate Ideas</p>
+                        <p style="font-size: 12px;">Error: ${error.message}</p>
+                        <p style="font-size: 11px; color: #64748b;">Check browser console for details</p>
+                    </div>
+                `;
+            } finally {
+                // Reset button state
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = '<span class="btn-icon">💡</span>Generate Article Ideas <span style="font-size: 10px; background: #f59e0b; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">5 credits</span>';
+                }
+            }
+        }
+
+        // Display article ideas in the suggestions section
+        function displayArticleIdeas(keyword, articles, cleanId) {
+            const outputDiv = document.getElementById(`suggestions-output-${cleanId}`);
+
+            if (!outputDiv) {
+                console.error('Output div not found for cleanId:', cleanId);
+                return;
+            }
+
+            const articlesHtml = articles.map((article, index) => `
+                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 15px; transition: all 0.2s ease;"
+                     onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'"
+                     onmouseout="this.style.boxShadow='none'">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                        <h5 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 600; line-height: 1.4; flex: 1;">
+                            ${article.title}
+                        </h5>
+                        <span style="background: #eff6ff; color: #2563eb; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; white-space: nowrap; margin-left: 10px;">
+                            ${article.intent}
+                        </span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px; font-size: 12px; color: #64748b;">
+                        <div><strong>Audience:</strong> ${article.audience}</div>
+                        <div><strong>Length:</strong> ${article.wordCount.toLocaleString()} words</div>
+                    </div>
+
+                    <p style="color: #4b5563; font-size: 14px; line-height: 1.5; margin: 0 0 15px 0;">
+                        ${article.description}
+                    </p>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="generateFullArticleFromIdea('${article.title.replace(/'/g, "\\'")}', ${article.wordCount}, '${article.intent}', '${keyword.replace(/'/g, "\\'")}', '${cleanId}')"
+                                style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                            <span>✍️</span>
+                            Generate Full Article
+                        </button>
+                        <button onclick="copyToClipboard('${article.title.replace(/'/g, "\\'")}', event)"
+                                style="background: #6b7280; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                            <span>📋</span>
+                            Copy Title
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            outputDiv.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                        <div>
+                            <strong style="color: #1e293b; font-size: 16px;">${articles.length} Article Ideas Generated</strong>
+                            <div style="color: #64748b; font-size: 13px;">AI-generated contextual ideas for "${keyword}"</div>
+                        </div>
+                        <div style="color: #10b981; font-size: 12px; font-weight: 600;">
+                            ✅ 5 credits used
+                        </div>
+                    </div>
+                    ${articlesHtml}
+                </div>
+            `;
+
+            console.log('Article ideas displayed successfully');
+        }
+
+        // Generate full article from idea
+        function generateFullArticleFromIdea(title, wordCount, intent, keyword, cleanId) {
+            // This function can call the existing article generation workflow
+            showArticleGenerationOptions(title, wordCount, 'Medium', intent);
+        }
+
+        // Copy text to clipboard helper
+        function copyToClipboard(text, event) {
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target.closest('button');
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '<span>✅</span>Copied!';
+                btn.style.background = '#10b981';
+                setTimeout(() => {
+                    btn.innerHTML = originalContent;
+                    btn.style.background = '#6b7280';
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy: ' + err.message);
+            });
+        }
+
         // Load saved research on page load
         document.addEventListener('DOMContentLoaded', () => {
             displaySavedResearch();
