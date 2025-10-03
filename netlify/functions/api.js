@@ -1017,50 +1017,13 @@ exports.handler = async (event, context) => {
       }
 
       if (!OPENROUTER_API_KEY) {
-        // Return fallback article ideas when API is not configured
-        const fallbackArticles = [
-          {
-            title: `Ultimate Guide to ${keyword}`,
-            audience: 'Beginners and professionals',
-            wordCount: 2000,
-            intent: 'informational',
-            description: `Comprehensive guide covering everything you need to know about ${keyword}`
-          },
-          {
-            title: `${keyword}: Best Practices and Tips`,
-            audience: 'Intermediate users',
-            wordCount: 1500,
-            intent: 'informational',
-            description: `Expert tips and best practices for ${keyword}`
-          },
-          {
-            title: `How to Get Started with ${keyword}`,
-            audience: 'Beginners',
-            wordCount: 1200,
-            intent: 'informational',
-            description: `Step-by-step guide for beginners to ${keyword}`
-          }
-        ];
-
         return {
-          statusCode: 200,
+          statusCode: 503,
           headers,
           body: JSON.stringify({
-            success: true,
-            articles: fallbackArticles,
-            totalArticles: fallbackArticles.length,
-            responseTime: 50,
-            cached: false,
-            message: 'Using fallback article ideas (OpenRouter API not configured)',
-            metadata: {
-              keyword,
-              modelType: 'fallback',
-              model: 'fallback',
-              creditCost: 5,
-              requestedCount: 10,
-              actualCount: fallbackArticles.length
-            },
-            timestamp: new Date().toISOString()
+            error: 'Content generation service not configured',
+            message: 'OpenRouter API is required for article idea generation. No template or mock data is available.',
+            code: 'CONTENT_SERVICE_NOT_CONFIGURED'
           })
         };
       }
@@ -1202,22 +1165,10 @@ exports.handler = async (event, context) => {
         if (averageDA > 50 && averageBacklinks > 10000) competitionLevel = 'High';
         else if (averageDA > 35 && averageBacklinks > 5000) competitionLevel = 'Medium';
 
-        // Find content gaps (mock analysis)
-        const contentGaps = [
-          'Step-by-step tutorials missing',
-          'Lack of updated 2024 information',
-          'No comprehensive beginner guides',
-          'Missing visual content and infographics',
-          'Limited case studies and examples'
-        ];
-
-        const winningStrategies = [
-          'Create comprehensive guides (2000+ words)',
-          'Include visual elements and screenshots',
-          'Add FAQ sections for voice search',
-          'Update with latest industry trends',
-          'Include real-world case studies'
-        ];
+        // Content gaps and winning strategies require advanced content analysis
+        // These would be determined by analyzing actual competitor content
+        const contentGaps = [];
+        const winningStrategies = [];
 
         return {
           statusCode: 200,
