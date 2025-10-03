@@ -504,10 +504,10 @@ const calculateOpportunityScore = (searchVolume, difficulty) => {
 // OpenRouter API functions
 const getModelConfig = (modelType) => {
   const modelMap = {
-    'free': 'meta-llama/llama-3.2-3b-instruct:free',
+    'free': 'openai/gpt-3.5-turbo',
     'budget': 'openai/gpt-4o-mini',
-    'premium': 'anthropic/claude-3-5-sonnet-20241022',
-    'enterprise': 'anthropic/claude-3-5-sonnet-20241022'
+    'premium': 'openai/gpt-4',
+    'enterprise': 'openai/gpt-4'
   };
 
   const creditCosts = {
