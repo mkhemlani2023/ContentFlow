@@ -2,17 +2,41 @@
 
 ## 🚀 Starting Any Development Session
 
-### 1. Context Recovery (MANDATORY)
+### 1. Enhanced Context Recovery (MANDATORY)
 ```bash
-# Always start with these steps:
+# NEVER skip these steps - they prevent context loss:
 1. Read CURRENT_STATUS.md - understand current state
-2. Check SESSION_LOG.md - review recent session history
-3. Run: git status - check for uncommitted changes
-4. Run: npm run dev - test current functionality
-5. Use TodoWrite - create session todos immediately
+2. Read PROJECT_CONTEXT.md - get full project understanding
+3. Check SESSION_LOG.md - review recent session history
+4. Run: git log --oneline -5 - see recent changes
+5. Run: git status - check for uncommitted changes
+6. Test live application - verify current functionality
+7. Use TodoWrite - create session todos immediately
+8. Update session timestamp in CURRENT_STATUS.md
 ```
 
-### 2. Session Documentation
+### 2. Context Loss Prevention Protocol
+```bash
+# During every session:
+- Update CURRENT_STATUS.md when issues change
+- Log significant decisions in SESSION_LOG.md
+- Use TodoWrite consistently throughout work
+- Commit working states before major changes
+- Document any new discoveries or blockers
+
+# At session end:
+- Complete SESSION_LOG.md entry
+- Update CURRENT_STATUS.md with final state
+- Mark all TodoWrite items complete or document why pending
+- Commit any working progress
+```
+
+### 3. Context Recovery Resources
+- **`CONTEXT_RECOVERY_GUIDE.md`** - Step-by-step guide for when Claude loses context
+- **`PROJECT_CONTEXT.md`** - Complete project overview and architecture
+- **`.bmad-core/tasks/session-continuity-protocol.md`** - Comprehensive continuity protocol
+
+### 4. Session Documentation
 - **Update CURRENT_STATUS.md** when you discover new issues
 - **Log progress in SESSION_LOG.md** throughout the session
 - **Use TodoWrite consistently** - never work without active todos
