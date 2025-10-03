@@ -1289,23 +1289,16 @@
         async function toggleInlineCompetitorAnalysisWithCredits(keyword, cleanId) {
             const CREDIT_COST = 10; // Cost for competitor analysis
 
-            // Check if user has sufficient credits
-            if (!window.seoWizard || window.seoWizard.credits < CREDIT_COST) {
-                alert(`Insufficient credits. You need ${CREDIT_COST} credits for competitor analysis.`);
+            // Check credit requirement using consistent system
+            if (!checkCreditRequirement('Competitor Analysis', CREDIT_COST)) {
+                return; // Exit if insufficient credits
+            }
+
+            // Deduct credits using consistent system
+            if (!deductCredits(CREDIT_COST)) {
+                alert('Unable to deduct credits. Please try again.');
                 return;
             }
-
-            // Deduct credits
-            window.seoWizard.credits -= CREDIT_COST;
-
-            // Update credits display if it exists
-            const creditsDisplay = document.querySelector('.credits-display');
-            if (creditsDisplay) {
-                creditsDisplay.textContent = window.seoWizard.credits;
-            }
-
-            // Save updated credits to localStorage
-            localStorage.setItem('seoWizardCredits', window.seoWizard.credits.toString());
 
             // Call the original function
             await toggleInlineCompetitorAnalysis(keyword, cleanId);
@@ -2017,23 +2010,16 @@
         async function generateArticleIdeasWithCredits(keyword, cleanId) {
             const CREDIT_COST = 5; // Cost for Google Autocomplete usage
 
-            // Check if user has sufficient credits
-            if (!window.seoWizard || window.seoWizard.credits < CREDIT_COST) {
-                alert(`Insufficient credits. You need ${CREDIT_COST} credits to generate article ideas using Google Autocomplete.`);
+            // Check credit requirement using consistent system
+            if (!checkCreditRequirement('Article Ideas Generation', CREDIT_COST)) {
+                return; // Exit if insufficient credits
+            }
+
+            // Deduct credits using consistent system
+            if (!deductCredits(CREDIT_COST)) {
+                alert('Unable to deduct credits. Please try again.');
                 return;
             }
-
-            // Deduct credits
-            window.seoWizard.credits -= CREDIT_COST;
-
-            // Update credits display if it exists
-            const creditsDisplay = document.querySelector('.credits-display');
-            if (creditsDisplay) {
-                creditsDisplay.textContent = window.seoWizard.credits;
-            }
-
-            // Save updated credits to localStorage
-            localStorage.setItem('seoWizardCredits', window.seoWizard.credits.toString());
 
             // Call the original function
             await generateArticleSuggestions(keyword, cleanId);
@@ -5373,24 +5359,38 @@
 
         // Article generation functions
         async function generateArticleWithModel(keyword, wordCount, difficulty, intent, modelTier, creditCost) {
-            // Check credits first
-            let credits = parseInt(localStorage.getItem('credits')) || 1000;
-            if (credits < creditCost) {
-                alert(`Insufficient credits. Need ${creditCost} credits, you have ${credits}.`);
+            // Check credit requirement using consistent system
+            if (!checkCreditRequirement(`${modelTier} Article Generation`, creditCost)) {
+                return; // Exit if insufficient credits
+            }
+
+            // Create two-step process: First generate outline, then full article
+            await generateArticleWithOutline(keyword, wordCount, difficulty, intent, modelTier, creditCost);
+        }
+
+        async function generateArticleWithOutline(keyword, wordCount, difficulty, intent, modelTier, creditCost) {
+            // Deduct credits upfront for the complete process
+            if (!deductCredits(creditCost)) {
+                alert('Unable to deduct credits. Please try again.');
                 return;
             }
 
-            // Show loading
+            // Step 1: Generate outline first
+            await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier);
+        }
+
+        async function generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier) {
+            // Show Step 1 loading
             const loadingModal = document.createElement('div');
             loadingModal.innerHTML = `
                 <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
-                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; text-align: center;">
-                        <div style="font-size: 24px; margin-bottom: 20px;">🤖 Generating Article</div>
-                        <div style="margin-bottom: 20px;">Creating ${wordCount}-word article about "${keyword}" using ${modelTier} model...</div>
-                        <div style="background: #f0f0f0; height: 8px; border-radius: 4px; overflow: hidden;">
-                            <div style="background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; width: 0%; animation: loading 3s ease-in-out infinite;" id="loadingBar"></div>
+                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 600px; text-align: center;">
+                        <div style="font-size: 24px; margin-bottom: 20px;">📝 Step 1: Generating Article Outline</div>
+                        <div style="margin-bottom: 20px;">Creating structured outline for "${keyword}" (${wordCount} words) using ${modelTier} AI model...</div>
+                        <div style="background: #f0f0f0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+                            <div style="background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; width: 0%; animation: loading 4s ease-in-out infinite;" id="outlineLoadingBar"></div>
                         </div>
-                        <div style="margin-top: 15px; color: #666; font-size: 14px;">This may take 30-60 seconds...</div>
+                        <div style="color: #666; font-size: 14px;">Creating comprehensive outline with sections, subsections, and key points...</div>
                     </div>
                 </div>
                 <style>
@@ -5401,20 +5401,21 @@
                 }
                 </style>
             `;
+            loadingModal.id = 'outlineLoadingModal';
             document.body.appendChild(loadingModal);
 
             try {
                 // Get model configuration
                 const modelConfigs = {
-                    'Basic': { model: 'openai/gpt-3.5-turbo', temperature: 0.7 },
-                    'Premium': { model: 'openai/gpt-4o-mini', temperature: 0.8 },
-                    'Enterprise': { model: 'anthropic/claude-3.5-sonnet', temperature: 0.7 }
+                    'basic': { model: 'openai/gpt-3.5-turbo', temperature: 0.7 },
+                    'premium': { model: 'openai/gpt-4o-mini', temperature: 0.8 },
+                    'enterprise': { model: 'anthropic/claude-3.5-sonnet', temperature: 0.7 }
                 };
 
-                const config = modelConfigs[modelTier];
+                const config = modelConfigs[modelTier.toLowerCase()];
 
-                // Create comprehensive article prompt
-                const articlePrompt = `Write a comprehensive, SEO-optimized article about "${keyword}" with exactly ${wordCount} words.
+                // Step 1: Create outline prompt
+                const outlinePrompt = `Create a comprehensive article outline for "${keyword}" with exactly ${wordCount} words.
 
 REQUIREMENTS:
 - Target keyword: "${keyword}"
@@ -5423,88 +5424,85 @@ REQUIREMENTS:
 - Search intent: ${intent}
 - Current year: ${new Date().getFullYear()}
 
-STRUCTURE REQUIRED:
-1. H1 title with keyword
+OUTLINE STRUCTURE:
+1. SEO-optimized H1 title with keyword
 2. Table of contents with anchor links
-3. Introduction (150-200 words)
+3. Introduction section (150-200 words)
 4. 4-6 main sections with H2 headers
 5. 2-3 subsections per main section with H3 headers
-6. Conclusion with call-to-action
-7. FAQ section (5 questions)
+6. Conclusion with call-to-action (100-150 words)
+7. FAQ section (5 relevant questions)
 
-METADATA REQUIRED:
-- SEO title (60 characters max)
-- Meta description (155 characters max)
-- Focus keyword and related keywords
-- Featured image alt text
-- Estimated reading time
-
-FORMAT: Return as JSON with this exact structure:
+Return as JSON with this exact structure:
 {
   "metadata": {
-    "seoTitle": "SEO-optimized title here",
-    "metaDescription": "Meta description here",
+    "seoTitle": "SEO-optimized title (60 chars max)",
+    "metaDescription": "Meta description (155 chars max)",
     "focusKeyword": "${keyword}",
     "relatedKeywords": ["keyword1", "keyword2", "keyword3"],
-    "featuredImageAlt": "Alt text for featured image",
     "readingTime": "X min read",
-    "publishDate": "${new Date().toISOString()}",
     "wordCount": ${wordCount}
   },
-  "tableOfContents": [
-    {"title": "Section Title", "anchor": "#section-anchor", "level": 2},
-    {"title": "Subsection Title", "anchor": "#subsection-anchor", "level": 3}
-  ],
-  "content": {
+  "outline": {
     "title": "H1 Article Title Here",
-    "introduction": "Introduction paragraph here...",
+    "introduction": {
+      "purpose": "Brief description of introduction purpose",
+      "keyPoints": ["point1", "point2", "point3"],
+      "wordCount": 180
+    },
     "sections": [
       {
         "title": "Section Title",
         "anchor": "section-anchor",
-        "content": "Section content here...",
+        "purpose": "What this section covers",
+        "wordCount": 400,
         "subsections": [
           {
             "title": "Subsection Title",
             "anchor": "subsection-anchor",
-            "content": "Subsection content here..."
+            "keyPoints": ["point1", "point2"],
+            "wordCount": 200
           }
         ]
       }
     ],
-    "conclusion": "Conclusion paragraph here...",
+    "conclusion": {
+      "purpose": "Summarize and call-to-action",
+      "keyPoints": ["summary point", "cta"],
+      "wordCount": 120
+    },
     "faq": [
-      {"question": "FAQ question?", "answer": "FAQ answer here..."}
+      {"question": "FAQ question?", "purpose": "Why this question matters"}
     ]
   }
 }
 
-Make the content engaging, informative, and optimized for search engines. Include relevant statistics, actionable tips, and current information for ${new Date().getFullYear()}.`;
+Make the outline strategic, comprehensive, and optimized for search engines with current ${new Date().getFullYear()} context.`;
 
-                // Make OpenRouter API call
-                const response = await fetch('/api/openrouter-generate', {
+                // Step 1: Generate outline using OpenRouter API
+                const outlineResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         model: config.model,
-                        prompt: articlePrompt,
+                        prompt: outlinePrompt,
                         temperature: config.temperature,
-                        max_tokens: Math.floor(wordCount * 1.5) // Estimate tokens needed
+                        max_tokens: 2000 // Sufficient for detailed outline
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error(`OpenRouter API error: ${response.status}`);
+                if (!outlineResponse.ok) {
+                    throw new Error(`OpenRouter API error: ${outlineResponse.status}`);
                 }
 
-                const data = await response.json();
-                let articleData;
+                const outlineData = await outlineResponse.json();
+                let outlineStructure;
 
                 try {
-                    // Parse article data from response
-                    let content = data.choices[0].message.content;
+                    // Parse outline data from response
+                    let content = outlineData.choices[0].message.content;
 
                     // Handle markdown code blocks
                     if (content.includes('```json')) {
@@ -5513,38 +5511,172 @@ Make the content engaging, informative, and optimized for search engines. Includ
                         content = content.replace(/```\s*/, '').replace(/\s*```$/, '');
                     }
 
-                    articleData = JSON.parse(content);
+                    outlineStructure = JSON.parse(content);
                 } catch (parseError) {
-                    console.error('JSON parsing error:', parseError);
-                    throw new Error('Failed to parse article data from AI response');
+                    console.error('Outline parsing error:', parseError);
+                    throw new Error('Failed to parse outline data from AI response');
                 }
 
-                // Deduct credits
-                credits -= creditCost;
-                localStorage.setItem('credits', credits.toString());
-
-                // Close loading modal
+                // Close outline loading modal
                 document.body.removeChild(loadingModal);
 
-                // Display generated article
-                displayGeneratedArticle(articleData, modelTier, creditCost);
+                // Step 2: Generate full article from outline
+                await generateArticleFromOutline(outlineStructure, keyword, modelTier, config);
 
             } catch (error) {
                 console.error('Article generation error:', error);
-                document.body.removeChild(loadingModal);
-                alert('Error generating article: ' + error.message);
+                if (document.getElementById('outlineLoadingModal')) {
+                    document.body.removeChild(document.getElementById('outlineLoadingModal'));
+                }
+                alert('Error generating outline: ' + error.message);
+            }
+        }
+
+        async function generateArticleFromOutline(outlineStructure, keyword, modelTier, config) {
+            // Show Step 2 loading
+            const articleLoadingModal = document.createElement('div');
+            articleLoadingModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 600px; text-align: center;">
+                        <div style="font-size: 24px; margin-bottom: 20px;">✍️ Step 2: Generating Full Article</div>
+                        <div style="margin-bottom: 15px;">Creating complete article from outline using ${modelTier} AI model...</div>
+                        <div style="background: #f0f0f0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+                            <div style="background: linear-gradient(90deg, #4CAF50, #45a049); height: 100%; width: 0%; animation: loading 6s ease-in-out infinite;" id="articleLoadingBar"></div>
+                        </div>
+                        <div style="color: #666; font-size: 14px;">Writing engaging content based on the structured outline...</div>
+                        <div style="margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #4CAF50;">
+                            <div style="font-weight: 600; margin-bottom: 8px;">✅ Outline Generated</div>
+                            <div style="font-size: 14px; color: #64748b;">Article structure: ${outlineStructure.outline?.sections?.length || 0} main sections with comprehensive coverage</div>
+                        </div>
+                    </div>
+                </div>
+                <style>
+                @keyframes loading {
+                    0% { width: 0%; }
+                    50% { width: 80%; }
+                    100% { width: 100%; }
+                }
+                </style>
+            `;
+            articleLoadingModal.id = 'articleLoadingModal';
+            document.body.appendChild(articleLoadingModal);
+
+            try {
+                // Create article prompt based on outline
+                const articlePrompt = `Write a complete article based on this detailed outline. Follow the structure exactly and expand each section with engaging, SEO-optimized content.
+
+OUTLINE TO FOLLOW:
+${JSON.stringify(outlineStructure, null, 2)}
+
+REQUIREMENTS:
+- Follow the exact outline structure provided
+- Target keyword: "${keyword}"
+- Maintain the word count allocation for each section
+- Write engaging, informative content
+- Include relevant statistics and actionable tips
+- Use current ${new Date().getFullYear()} information
+- Optimize for search engines
+
+FORMAT: Return as JSON with this exact structure:
+{
+  "metadata": {
+    "seoTitle": "SEO-optimized title (60 chars max)",
+    "metaDescription": "Meta description (155 chars max)",
+    "focusKeyword": "${keyword}",
+    "relatedKeywords": ["keyword1", "keyword2", "keyword3"],
+    "readingTime": "X min read",
+    "wordCount": ${outlineStructure.metadata?.wordCount || 2000}
+  },
+  "content": {
+    "title": "H1 Article Title",
+    "introduction": "Full introduction paragraph...",
+    "sections": [
+      {
+        "title": "Section Title",
+        "anchor": "section-anchor",
+        "content": "Complete section content...",
+        "subsections": [
+          {
+            "title": "Subsection Title",
+            "anchor": "subsection-anchor",
+            "content": "Complete subsection content..."
+          }
+        ]
+      }
+    ],
+    "conclusion": "Complete conclusion with call-to-action...",
+    "faq": [
+      {"question": "FAQ question?", "answer": "Detailed FAQ answer..."}
+    ]
+  }
+}`;
+
+                // Generate full article using OpenRouter API
+                const articleResponse = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: config.model,
+                        prompt: articlePrompt,
+                        temperature: config.temperature,
+                        max_tokens: Math.floor((outlineStructure.metadata?.wordCount || 2000) * 1.8) // Generous token allowance
+                    })
+                });
+
+                if (!articleResponse.ok) {
+                    throw new Error(`OpenRouter API error: ${articleResponse.status}`);
+                }
+
+                const articleData = await articleResponse.json();
+                let finalArticle;
+
+                try {
+                    // Parse final article data from response
+                    let content = articleData.choices[0].message.content;
+
+                    // Handle markdown code blocks
+                    if (content.includes('```json')) {
+                        content = content.replace(/```json\s*/, '').replace(/\s*```$/, '');
+                    } else if (content.includes('```')) {
+                        content = content.replace(/```\s*/, '').replace(/\s*```$/, '');
+                    }
+
+                    finalArticle = JSON.parse(content);
+                } catch (parseError) {
+                    console.error('Final article parsing error:', parseError);
+                    throw new Error('Failed to parse final article data from AI response');
+                }
+
+                // Close article loading modal
+                document.body.removeChild(articleLoadingModal);
+
+                // Display the complete generated article
+                displayGeneratedArticle(finalArticle, modelTier, `${modelTier} Article`);
+
+            } catch (error) {
+                console.error('Article generation from outline error:', error);
+                if (document.getElementById('articleLoadingModal')) {
+                    document.body.removeChild(document.getElementById('articleLoadingModal'));
+                }
+                alert('Error generating article from outline: ' + error.message);
             }
         }
 
         async function generateArticleWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier, totalCredits) {
             // Calculate credit costs
-            const articleCreditCost = modelTier === 'Basic' ? 25 : modelTier === 'Premium' ? 50 : 85;
+            const articleCreditCost = modelTier === 'basic' ? 25 : modelTier === 'premium' ? 50 : 85;
             const imageCreditCost = totalCredits - articleCreditCost;
 
-            // Check credits first
-            let credits = parseInt(localStorage.getItem('credits')) || 1000;
-            if (credits < totalCredits) {
-                alert(`Insufficient credits. Need ${totalCredits} credits, you have ${credits}.`);
+            // Check credit requirement using consistent system
+            if (!checkCreditRequirement(`${modelTier} Article + Images`, totalCredits)) {
+                return; // Exit if insufficient credits
+            }
+
+            // Deduct credits using consistent system
+            if (!deductCredits(totalCredits)) {
+                alert('Unable to deduct credits. Please try again.');
                 return;
             }
 
@@ -5598,9 +5730,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                     totalCredits: totalCredits
                 };
 
-                // Deduct total credits
-                credits -= totalCredits;
-                localStorage.setItem('credits', credits.toString());
+                // Credits already deducted at function start
 
                 // Close loading modal
                 document.body.removeChild(loadingModal);
