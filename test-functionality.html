@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContentFlow Functionality Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .pending { background: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .test-btn { background: #007bff; color: white; }
+        .result { margin-top: 10px; padding: 10px; border-radius: 4px; }
+        input, select { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 ContentFlow Functionality Test</h1>
+    <p>This page tests the core functionality of the deployed ContentFlow application.</p>
+
+    <!-- Test 1: API Status Check -->
+    <div class="test-section pending" id="test1">
+        <h3>Test 1: API Status Check</h3>
+        <p>Testing if the backend API is responding...</p>
+        <button class="test-btn" onclick="testAPIStatus()">Test API Status</button>
+        <div class="result" id="result1" style="display: none;"></div>
+    </div>
+
+    <!-- Test 2: Keyword Search Functionality -->
+    <div class="test-section pending" id="test2">
+        <h3>Test 2: Keyword Search</h3>
+        <p>Testing the main keyword research functionality...</p>
+        <div>
+            <input type="text" id="testKeyword" placeholder="Enter test keyword" value="content marketing">
+            <select id="testLocation">
+                <option value="us">United States</option>
+                <option value="uk">United Kingdom</option>
+            </select>
+            <select id="testCount">
+                <option value="5">5 results</option>
+                <option value="10" selected>10 results</option>
+            </select>
+            <button class="test-btn" onclick="testKeywordSearch()">Test Keyword Search</button>
+        </div>
+        <div class="result" id="result2" style="display: none;"></div>
+    </div>
+
+    <!-- Test 3: Content Generation API -->
+    <div class="test-section pending" id="test3">
+        <h3>Test 3: Content Generation</h3>
+        <p>Testing the OpenRouter API integration...</p>
+        <button class="test-btn" onclick="testContentGeneration()">Test Content Generation</button>
+        <div class="result" id="result3" style="display: none;"></div>
+    </div>
+
+    <!-- Test 4: Frontend JavaScript -->
+    <div class="test-section pending" id="test4">
+        <h3>Test 4: Frontend JavaScript</h3>
+        <p>Testing if JavaScript functions are working correctly...</p>
+        <button class="test-btn" onclick="testJavaScript()">Test JavaScript Functions</button>
+        <div class="result" id="result4" style="display: none;"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'https://www.getseowizard.com';
+
+        function updateTestStatus(testId, status, message) {
+            const testDiv = document.getElementById(testId);
+            const resultDiv = document.getElementById(`result${testId.slice(-1)}`);
+
+            testDiv.className = `test-section ${status}`;
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = message;
+        }
+
+        async function testAPIStatus() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/status`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    updateTestStatus('test1', 'success',
+                        `✅ API Status: OK<br>
+                         Serper API: ${data.services?.serperAPI?.status || 'unknown'}<br>
+                         OpenRouter API: ${data.services?.openRouterAPI?.configured ? 'configured' : 'not configured'}<br>
+                         Response Time: ${data.services?.serperAPI?.responseTime || 'N/A'}`
+                    );
+                } else {
+                    throw new Error(`API returned ${response.status}`);
+                }
+            } catch (error) {
+                updateTestStatus('test1', 'error',
+                    `❌ API Status Test Failed: ${error.message}`
+                );
+            }
+        }
+
+        async function testKeywordSearch() {
+            const keyword = document.getElementById('testKeyword').value;
+            const location = document.getElementById('testLocation').value;
+            const count = parseInt(document.getElementById('testCount').value);
+
+            if (!keyword) {
+                updateTestStatus('test2', 'error', '❌ Please enter a keyword to test');
+                return;
+            }
+
+            try {
+                updateTestStatus('test2', 'pending', '⏳ Testing keyword search...');
+
+                const response = await fetch(`${BASE_URL}/api/keywords`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        keyword: keyword,
+                        location: location,
+                        count: count
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    updateTestStatus('test2', 'success',
+                        `✅ Keyword Search: SUCCESS<br>
+                         Found ${data.totalKeywords} keywords<br>
+                         Response time: ${data.responseTime || 'N/A'}<br>
+                         High-opportunity keywords: ${data.metadata?.businessValue?.highOpportunityKeywords || 0}<br>
+                         First keyword: ${data.keywords?.[0]?.keyword || 'N/A'}`
+                    );
+                } else {
+                    throw new Error(data.message || `HTTP ${response.status}`);
+                }
+            } catch (error) {
+                updateTestStatus('test2', 'error',
+                    `❌ Keyword Search Failed: ${error.message}`
+                );
+            }
+        }
+
+        async function testContentGeneration() {
+            try {
+                updateTestStatus('test3', 'pending', '⏳ Testing OpenRouter API...');
+
+                const response = await fetch(`${BASE_URL}/api/openrouter-generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'openai/gpt-3.5-turbo',
+                        prompt: 'Write a brief 50-word test article about content marketing.',
+                        temperature: 0.7,
+                        max_tokens: 100
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.choices) {
+                    updateTestStatus('test3', 'success',
+                        `✅ Content Generation: SUCCESS<br>
+                         Model: ${data.model || 'N/A'}<br>
+                         Generated content length: ${data.choices[0]?.message?.content?.length || 0} characters<br>
+                         Preview: ${data.choices[0]?.message?.content?.substring(0, 100) || 'N/A'}...`
+                    );
+                } else {
+                    throw new Error(data.error?.message || `HTTP ${response.status}`);
+                }
+            } catch (error) {
+                updateTestStatus('test3', 'error',
+                    `❌ Content Generation Failed: ${error.message}`
+                );
+            }
+        }
+
+        function testJavaScript() {
+            try {
+                // Test basic JavaScript functionality
+                const tests = [
+                    () => typeof fetch !== 'undefined',
+                    () => typeof JSON !== 'undefined',
+                    () => typeof localStorage !== 'undefined',
+                    () => document.getElementById('testKeyword') !== null
+                ];
+
+                const results = tests.map(test => test());
+                const allPassed = results.every(result => result);
+
+                if (allPassed) {
+                    updateTestStatus('test4', 'success',
+                        `✅ JavaScript Functions: OK<br>
+                         - Fetch API: Available<br>
+                         - JSON: Available<br>
+                         - LocalStorage: Available<br>
+                         - DOM Access: Working`
+                    );
+                } else {
+                    throw new Error('Some JavaScript features are missing');
+                }
+            } catch (error) {
+                updateTestStatus('test4', 'error',
+                    `❌ JavaScript Test Failed: ${error.message}`
+                );
+            }
+        }
+
+        // Auto-run basic tests on page load
+        window.addEventListener('load', () => {
+            testJavaScript();
+            testAPIStatus();
+        });
+    </script>
+</body>
+</html>

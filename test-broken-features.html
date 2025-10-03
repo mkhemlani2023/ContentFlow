@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContentFlow - Test Broken Features</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .pending { background: #fff3cd; border-color: #ffeaa7; }
+        .loading { background: #cce7ff; border-color: #99d6ff; }
+        button { padding: 12px 20px; margin: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .test-btn { background: #007bff; color: white; }
+        .test-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 15px; padding: 15px; border-radius: 4px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        input, select { padding: 10px; margin: 8px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
+        .section-title { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+        .api-response { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin-top: 10px; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 ContentFlow - Test Broken Features</h1>
+    <p>This page specifically tests the <strong>Article Ideas Generation</strong> and <strong>Competitor Analysis</strong> features that are reported as not working.</p>
+
+    <!-- Test 1: Autocomplete API -->
+    <div class="test-section pending" id="test1">
+        <h3 class="section-title">Test 1: Google Autocomplete API</h3>
+        <p>Testing the autocomplete suggestions that feed into article ideas...</p>
+        <div>
+            <input type="text" id="autocompleteKeyword" placeholder="Enter keyword for autocomplete" value="content marketing">
+            <button class="test-btn" onclick="testAutocompleteAPI()">Test Autocomplete API</button>
+        </div>
+        <div class="result" id="result1" style="display: none;"></div>
+    </div>
+
+    <!-- Test 2: Article Ideas Generation API -->
+    <div class="test-section pending" id="test2">
+        <h3 class="section-title">Test 2: Article Ideas Generation API</h3>
+        <p>Testing the OpenRouter-powered article ideas generation...</p>
+        <div>
+            <input type="text" id="articleKeyword" placeholder="Enter keyword for article ideas" value="digital marketing">
+            <select id="modelType">
+                <option value="free">Free Model</option>
+                <option value="premium">Premium Model</option>
+                <option value="enterprise">Enterprise Model</option>
+            </select>
+            <button class="test-btn" onclick="testArticleIdeasAPI()">Test Article Ideas API</button>
+        </div>
+        <div class="result" id="result2" style="display: none;"></div>
+    </div>
+
+    <!-- Test 3: Competitor Analysis API -->
+    <div class="test-section pending" id="test3">
+        <h3 class="section-title">Test 3: Competitor Analysis API</h3>
+        <p>Testing the Serper-powered competitor analysis...</p>
+        <div>
+            <input type="text" id="competitorKeyword" placeholder="Enter keyword for competitor analysis" value="seo tools">
+            <button class="test-btn" onclick="testCompetitorAnalysisAPI()">Test Competitor Analysis API</button>
+        </div>
+        <div class="result" id="result3" style="display: none;"></div>
+    </div>
+
+    <!-- Test 4: End-to-End Article Ideas Flow -->
+    <div class="test-section pending" id="test4">
+        <h3 class="section-title">Test 4: Complete Article Ideas Flow</h3>
+        <p>Testing the complete flow: Autocomplete → Article Ideas → Display</p>
+        <div>
+            <input type="text" id="fullFlowKeyword" placeholder="Enter keyword for full flow test" value="email marketing">
+            <button class="test-btn" onclick="testFullArticleIdeasFlow()">Test Full Flow</button>
+        </div>
+        <div class="result" id="result4" style="display: none;"></div>
+    </div>
+
+    <!-- Test 5: Frontend JavaScript Functions -->
+    <div class="test-section pending" id="test5">
+        <h3 class="section-title">Test 5: Frontend JavaScript Functions</h3>
+        <p>Testing if the frontend functions exist and are properly defined...</p>
+        <button class="test-btn" onclick="testFrontendFunctions()">Test Frontend Functions</button>
+        <div class="result" id="result5" style="display: none;"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'https://www.getseowizard.com';
+
+        function updateTestStatus(testId, status, message, apiResponse = null) {
+            const testDiv = document.getElementById(testId);
+            const resultDiv = document.getElementById(`result${testId.slice(-1)}`);
+
+            testDiv.className = `test-section ${status}`;
+            resultDiv.style.display = 'block';
+
+            let content = message;
+            if (apiResponse) {
+                content += `<div class="api-response"><strong>API Response:</strong>\n${JSON.stringify(apiResponse, null, 2)}</div>`;
+            }
+            resultDiv.innerHTML = content;
+        }
+
+        async function testAutocompleteAPI() {
+            const keyword = document.getElementById('autocompleteKeyword').value;
+            if (!keyword) {
+                updateTestStatus('test1', 'error', '❌ Please enter a keyword to test');
+                return;
+            }
+
+            try {
+                updateTestStatus('test1', 'loading', '⏳ Testing autocomplete API...');
+
+                const response = await fetch(`${BASE_URL}/api/autocomplete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        keyword: keyword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    updateTestStatus('test1', 'success',
+                        `✅ Autocomplete API: SUCCESS\n` +
+                        `Keyword: ${data.keyword}\n` +
+                        `Suggestions found: ${data.suggestions?.length || 0}\n` +
+                        `First few suggestions: ${data.suggestions?.slice(0, 3).join(', ') || 'None'}`,
+                        data
+                    );
+                } else {
+                    throw new Error(data.message || `HTTP ${response.status}`);
+                }
+            } catch (error) {
+                updateTestStatus('test1', 'error',
+                    `❌ Autocomplete API Failed: ${error.message}`
+                );
+            }
+        }
+
+        async function testArticleIdeasAPI() {
+            const keyword = document.getElementById('articleKeyword').value;
+            const modelType = document.getElementById('modelType').value;
+
+            if (!keyword) {
+                updateTestStatus('test2', 'error', '❌ Please enter a keyword to test');
+                return;
+            }
+
+            try {
+                updateTestStatus('test2', 'loading', '⏳ Testing article ideas API...');
+
+                const response = await fetch(`${BASE_URL}/api/article-ideas`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        keyword: keyword,
+                        modelType: modelType
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    updateTestStatus('test2', 'success',
+                        `✅ Article Ideas API: SUCCESS\n` +
+                        `Keyword: ${data.metadata.keyword}\n` +
+                        `Model: ${data.metadata.model}\n` +
+                        `Articles generated: ${data.totalArticles}\n` +
+                        `Response time: ${data.responseTime}ms\n` +
+                        `Credit cost: ${data.metadata.creditCost}\n` +
+                        `First article: ${data.articles?.[0]?.title || 'None'}`,
+                        data
+                    );
+                } else {
+                    throw new Error(data.message || data.error || `HTTP ${response.status}`);
+                }
+            } catch (error) {
+                updateTestStatus('test2', 'error',
+                    `❌ Article Ideas API Failed: ${error.message}`
+                );
+            }
+        }
+
+        async function testCompetitorAnalysisAPI() {
+            const keyword = document.getElementById('competitorKeyword').value;
+
+            if (!keyword) {
+                updateTestStatus('test3', 'error', '❌ Please enter a keyword to test');
+                return;
+            }
+
+            try {
+                updateTestStatus('test3', 'loading', '⏳ Testing competitor analysis API...');
+
+                const response = await fetch(`${BASE_URL}/api/competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        keyword: keyword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    updateTestStatus('test3', 'success',
+                        `✅ Competitor Analysis API: SUCCESS\n` +
+                        `Keyword: ${data.metadata?.keyword || keyword}\n` +
+                        `Competitors found: ${data.competitors?.length || 0}\n` +
+                        `Response time: ${data.responseTime || 'N/A'}ms\n` +
+                        `First competitor: ${data.competitors?.[0]?.domain || 'None'}\n` +
+                        `Analysis quality: ${data.analysis?.quality || 'N/A'}`,
+                        data
+                    );
+                } else {
+                    throw new Error(data.message || data.error || `HTTP ${response.status}`);
+                }
+            } catch (error) {
+                updateTestStatus('test3', 'error',
+                    `❌ Competitor Analysis API Failed: ${error.message}`
+                );
+            }
+        }
+
+        async function testFullArticleIdeasFlow() {
+            const keyword = document.getElementById('fullFlowKeyword').value;
+
+            if (!keyword) {
+                updateTestStatus('test4', 'error', '❌ Please enter a keyword to test');
+                return;
+            }
+
+            try {
+                updateTestStatus('test4', 'loading', '⏳ Testing complete article ideas flow...\nStep 1: Getting autocomplete suggestions...');
+
+                // Step 1: Get autocomplete suggestions
+                const autocompleteResponse = await fetch(`${BASE_URL}/api/autocomplete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ keyword: keyword })
+                });
+
+                const autocompleteData = await autocompleteResponse.json();
+
+                if (!autocompleteData.success) {
+                    throw new Error('Autocomplete failed: ' + autocompleteData.message);
+                }
+
+                updateTestStatus('test4', 'loading', '⏳ Testing complete article ideas flow...\nStep 2: Generating AI article ideas...');
+
+                // Step 2: Generate article ideas using the suggestions
+                const articlesResponse = await fetch(`${BASE_URL}/api/article-ideas`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        keyword: `Generate article ideas based on: ${keyword}. Related searches: ${autocompleteData.suggestions?.slice(0, 5).join(', ')}`,
+                        modelType: 'free'
+                    })
+                });
+
+                const articlesData = await articlesResponse.json();
+
+                if (!articlesData.success) {
+                    throw new Error('Article ideas failed: ' + (articlesData.message || articlesData.error));
+                }
+
+                // Success - show combined results
+                updateTestStatus('test4', 'success',
+                    `✅ Complete Article Ideas Flow: SUCCESS\n` +
+                    `✓ Step 1: Autocomplete (${autocompleteData.suggestions?.length || 0} suggestions)\n` +
+                    `✓ Step 2: Article Ideas (${articlesData.totalArticles} articles)\n` +
+                    `\nAutocomplete suggestions: ${autocompleteData.suggestions?.slice(0, 3).join(', ')}\n` +
+                    `Generated articles: ${articlesData.articles?.slice(0, 2).map(a => a.title).join(', ') || 'None'}\n` +
+                    `Total response time: ~${(articlesData.responseTime || 0)}ms`,
+                    {
+                        autocomplete: autocompleteData,
+                        articles: articlesData
+                    }
+                );
+
+            } catch (error) {
+                updateTestStatus('test4', 'error',
+                    `❌ Full Article Ideas Flow Failed: ${error.message}`
+                );
+            }
+        }
+
+        function testFrontendFunctions() {
+            try {
+                const functionsToTest = [
+                    'generateArticleIdeasWithCredits',
+                    'generateArticleSuggestions',
+                    'generateArticleIdeasFromAutocomplete',
+                    'performInlineCompetitorAnalysis',
+                    'displayCompetitorAnalysis'
+                ];
+
+                const results = functionsToTest.map(funcName => {
+                    const exists = typeof window[funcName] === 'function';
+                    return `${funcName}: ${exists ? '✅ EXISTS' : '❌ MISSING'}`;
+                });
+
+                // Test if main app functions exist by checking the DOM
+                const keywordForm = document.querySelector('#keywordForm') || 'Not loaded (different page)';
+                const mainAppLoaded = keywordForm !== 'Not loaded (different page)';
+
+                updateTestStatus('test5', 'success',
+                    `Frontend Function Test Results:\n\n` +
+                    `Main app context: ${mainAppLoaded ? '✅ LOADED' : '⚠️  Not on main page'}\n\n` +
+                    `Functions checked on main app:\n${results.join('\n')}\n\n` +
+                    `Note: Functions may not be available on this test page.\n` +
+                    `Test directly on www.getseowizard.com for accurate results.`
+                );
+
+            } catch (error) {
+                updateTestStatus('test5', 'error',
+                    `❌ Frontend Function Test Failed: ${error.message}`
+                );
+            }
+        }
+
+        // Auto-run basic test on page load
+        window.addEventListener('load', () => {
+            testFrontendFunctions();
+        });
+    </script>
+</body>
+</html>
