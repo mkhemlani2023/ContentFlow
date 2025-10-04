@@ -1526,7 +1526,7 @@ exports.handler = async (event, context) => {
 
     // Full Article Generation endpoint
     if (path === '/api/generate-article' && method === 'POST') {
-      const { title, wordCount, difficulty, intent, model, imageType } = body;
+      const { title, wordCount, difficulty, intent, model, imageType, audience } = body;
 
       if (!title) {
         return {
@@ -1598,9 +1598,16 @@ CRITICAL REQUIREMENTS:
 - FOCUS KEYWORD: "${focusKeyword}" - Use this EXACT phrase naturally 6-10 times throughout the article
 - TARGET WORD COUNT: ${wordCount || 2000} words MINIMUM (write comprehensive, detailed content)
 - WRITING TONE: ${selectedTone}
+- TARGET AUDIENCE: ${audience || 'General readers interested in the topic'}
 - Intent: ${intent || 'Informational'}
 - Difficulty level: ${difficulty || 'Medium'}
 - Current year: ${currentYear}
+
+AUDIENCE-SPECIFIC WRITING:
+- Tailor your language, examples, and explanations to match the specified target audience
+- Use terminology and references that resonate with this specific group
+- Address their particular concerns, questions, and use cases
+- Include relevant examples and scenarios they would relate to
 
 CONTENT STRUCTURE REQUIREMENTS:
 - Each main section MUST be 400-600 words minimum

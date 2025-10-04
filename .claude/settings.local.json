@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(sed:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(code .)"
     ],
     "deny": [],
     "ask": []

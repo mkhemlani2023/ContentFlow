@@ -6549,39 +6549,74 @@ ${item.answer}
                     <div id="article-options-${cleanId}-${index}" style="display: none; border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
                         <h6 style="margin: 0 0 15px 0; color: #374151; font-size: 14px; font-weight: 600;">⚙️ Article Generation Options</h6>
 
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                            <div>
+                                <label style="display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 5px;">Article Length</label>
+                                <select id="length-select-${cleanId}-${index}" onchange="updateCreditCost('${cleanId}', ${index})" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
+                                    <option value="1000">Short - 1,000 words</option>
+                                    <option value="1500" selected>Medium - 1,500 words</option>
+                                    <option value="2000">Long - 2,000 words</option>
+                                    <option value="2500">Extended - 2,500 words</option>
+                                    <option value="3000">Comprehensive - 3,000 words</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label style="display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 5px;">Writing Tone</label>
+                                <select id="tone-select-${cleanId}-${index}" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
+                                    <option value="professional">Professional & Authoritative</option>
+                                    <option value="conversational">Conversational & Engaging</option>
+                                    <option value="academic">Academic & Scholarly</option>
+                                    <option value="beginner">Beginner-Friendly & Accessible</option>
+                                    <option value="expert">Expert-Level & Technical</option>
+                                </select>
+                            </div>
+
                             <div>
                                 <label style="display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 5px;">Model Quality</label>
-                                <select id="model-select-${cleanId}-${index}" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
+                                <select id="model-select-${cleanId}-${index}" onchange="updateCreditCost('${cleanId}', ${index})" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
                                     <option value="basic">Basic - 25 credits (GPT-3.5)</option>
                                     <option value="premium">Premium - 50 credits (GPT-4)</option>
-                                    <option value="enterprise">Enterprise - 85 credits (GPT-4)</option>
+                                    <option value="enterprise">Enterprise - 85 credits (Claude 3.5)</option>
                                 </select>
                             </div>
 
                             <div>
                                 <label style="display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 5px;">Include Images</label>
-                                <select id="image-select-${cleanId}-${index}" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
+                                <select id="image-select-${cleanId}-${index}" onchange="updateCreditCost('${cleanId}', ${index})" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
                                     <option value="none">No Images - 0 credits</option>
-                                    <option value="featured">Featured Image - +20 credits</option>
-                                    <option value="full">Full Image Set - +50 credits</option>
+                                    <option value="featured">Featured Image - +10 credits</option>
+                                    <option value="full">Featured + Section Images - +30 credits</option>
                                 </select>
                             </div>
                         </div>
 
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <button onclick="generateInlineArticle('${cleanId}', ${index}, '${article.title.replace(/'/g, "\\'")}', ${article.wordCount}, '${article.intent}')"
-                                    id="generate-final-btn-${cleanId}-${index}"
-                                    style="background: #7c3aed; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                                <span>🚀</span>
-                                Generate Article
-                            </button>
-                            <button onclick="hideInlineArticleOptions('${cleanId}', ${index})"
-                                    style="background: #6b7280; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">
-                                Cancel
-                            </button>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 5px;">Target Audience</label>
+                            <input type="text" id="audience-input-${cleanId}-${index}"
+                                   placeholder="e.g., Novice practitioners of misogi looking to understand potential dangers"
+                                   style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+                            <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Describe who this article is written for (optional)</div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <button onclick="generateInlineArticle('${cleanId}', ${index}, '${article.title.replace(/'/g, "\\'")}', ${article.wordCount}, '${article.intent}')"
+                                        id="generate-final-btn-${cleanId}-${index}"
+                                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
+                                    <span>🚀</span>
+                                    Generate Article
+                                </button>
+                                <button onclick="hideInlineArticleOptions('${cleanId}', ${index})"
+                                        style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);">
+                                    ❌ Cancel
+                                </button>
+                            </div>
                             <div id="credit-cost-${cleanId}-${index}" style="font-size: 12px; color: #7c3aed; font-weight: 600;">
-                                Total: 25 credits
+                                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 12px; border-radius: 6px;">
+                                    <div style="font-size: 14px; font-weight: 600;">Total: 30 credits</div>
+                                    <div style="font-size: 11px; opacity: 0.9;">≈ $0.30 value</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -6624,6 +6659,44 @@ ${item.answer}
             `;
 
             console.log('Article ideas displayed successfully');
+        }
+
+        // Update credit cost calculation with enhanced styling
+        function updateCreditCost(cleanId, index) {
+            const lengthSelect = document.getElementById(`length-select-${cleanId}-${index}`);
+            const modelSelect = document.getElementById(`model-select-${cleanId}-${index}`);
+            const imageSelect = document.getElementById(`image-select-${cleanId}-${index}`);
+            const costDisplay = document.getElementById(`credit-cost-${cleanId}-${index}`);
+
+            if (!lengthSelect || !modelSelect || !imageSelect || !costDisplay) return;
+
+            // Base costs by model
+            const modelCosts = { 'basic': 25, 'premium': 50, 'enterprise': 85 };
+
+            // Length multipliers (longer articles cost more)
+            const lengthMultipliers = {
+                '1000': 1.0,    // Standard
+                '1500': 1.2,    // +20%
+                '2000': 1.4,    // +40%
+                '2500': 1.6,    // +60%
+                '3000': 1.8     // +80%
+            };
+
+            // Image costs
+            const imageCosts = { 'none': 0, 'featured': 10, 'full': 30 };
+
+            const baseCost = modelCosts[modelSelect.value] || 25;
+            const lengthMultiplier = lengthMultipliers[lengthSelect.value] || 1.2;
+            const imageCost = imageCosts[imageSelect.value] || 0;
+
+            const totalCost = Math.round(baseCost * lengthMultiplier) + imageCost;
+
+            costDisplay.innerHTML = `
+                <div style="text-align: right; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 12px; border-radius: 6px;">
+                    <div style="font-size: 14px; font-weight: 600;">Total: ${totalCost} credits</div>
+                    <div style="font-size: 11px; opacity: 0.9;">≈ $${(totalCost * 0.01).toFixed(2)} value</div>
+                </div>
+            `;
         }
 
         // Show inline article generation options
@@ -6678,26 +6751,38 @@ ${item.answer}
             }
         }
 
-        // Generate inline article
-        async function generateInlineArticle(cleanId, index, title, wordCount, intent) {
+        // Generate inline article with enhanced options
+        async function generateInlineArticle(cleanId, index, title, originalWordCount, intent) {
+            const lengthSelect = document.getElementById(`length-select-${cleanId}-${index}`);
+            const toneSelect = document.getElementById(`tone-select-${cleanId}-${index}`);
             const modelSelect = document.getElementById(`model-select-${cleanId}-${index}`);
             const imageSelect = document.getElementById(`image-select-${cleanId}-${index}`);
+            const audienceInput = document.getElementById(`audience-input-${cleanId}-${index}`);
             const generateBtn = document.getElementById(`generate-final-btn-${cleanId}-${index}`);
             const articleContentDiv = document.getElementById(`article-content-${cleanId}-${index}`);
             const generatedArticleDiv = document.getElementById(`generated-article-${cleanId}-${index}`);
 
-            if (!modelSelect || !imageSelect || !generateBtn || !articleContentDiv) {
+            if (!lengthSelect || !toneSelect || !modelSelect || !imageSelect || !generateBtn || !articleContentDiv) {
                 alert('Error: Missing required elements for article generation.');
                 return;
             }
 
+            // Get all the selected options
+            const wordCount = parseInt(lengthSelect.value) || 1500;
+            const tone = toneSelect.value || 'professional';
             const modelType = modelSelect.value;
             const imageType = imageSelect.value;
+            const audience = audienceInput.value.trim();
 
-            // Calculate total cost
+            // Calculate total cost with length multiplier
             const modelCosts = { 'basic': 25, 'premium': 50, 'enterprise': 85 };
-            const imageCosts = { 'none': 0, 'featured': 20, 'full': 50 };
-            const totalCost = (modelCosts[modelType] || 25) + (imageCosts[imageType] || 0);
+            const lengthMultipliers = { '1000': 1.0, '1500': 1.2, '2000': 1.4, '2500': 1.6, '3000': 1.8 };
+            const imageCosts = { 'none': 0, 'featured': 10, 'full': 30 };
+
+            const baseCost = modelCosts[modelType] || 25;
+            const lengthMultiplier = lengthMultipliers[wordCount.toString()] || 1.2;
+            const imageCost = imageCosts[imageType] || 0;
+            const totalCost = Math.round(baseCost * lengthMultiplier) + imageCost;
 
             // Check and deduct credits
             if (!checkCreditRequirement('Article Generation', totalCost)) {
@@ -6735,10 +6820,11 @@ ${item.answer}
                     body: JSON.stringify({
                         title: title,
                         wordCount: wordCount,
-                        difficulty: 'Medium',
+                        difficulty: tone,
                         intent: intent,
                         model: modelType,
-                        imageType: imageType
+                        imageType: imageType,
+                        audience: audience
                     })
                 });
 
