@@ -3831,8 +3831,22 @@
                 </tr>
             `).join('');
 
+            const analysisDate = new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
             document.getElementById('competitorAnalysis').innerHTML = `
-                <h2>🔍 Real Competitor Analysis: "${keyword}"</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0;">🔍 Real Competitor Analysis: "${keyword}"</h2>
+                    <div style="font-size: 12px; color: #64748b; text-align: right;">
+                        <div>📅 Analysis Date</div>
+                        <div style="font-weight: 600; color: #2d3748;">${analysisDate}</div>
+                    </div>
+                </div>
                 <div style="background: #f8fafc; padding: 20px; border-radius: 8px;">
 
                     <!-- Competition Overview -->
@@ -3842,18 +3856,22 @@
                                 ${analysis.competitionLevel}
                             </div>
                             <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Competition Level</div>
+                            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">as of ${analysisDate.split(',')[0]}</div>
                         </div>
                         <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center;">
                             <div style="font-size: 20px; font-weight: bold; color: #2d3748;">${analysis.averageDomainAuthority}</div>
                             <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Avg. Domain Authority</div>
+                            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">as of ${analysisDate.split(',')[0]}</div>
                         </div>
                         <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center;">
                             <div style="font-size: 16px; font-weight: bold; color: #2d3748;">${analysis.averageBacklinks.toLocaleString()}</div>
                             <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Avg. Backlinks</div>
+                            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">as of ${analysisDate.split(',')[0]}</div>
                         </div>
                         <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center;">
                             <div style="font-size: 18px; font-weight: bold; color: #2d3748;">${analysis.averageContentLength}</div>
                             <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Avg. Word Count</div>
+                            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">as of ${analysisDate.split(',')[0]}</div>
                         </div>
                     </div>
 
