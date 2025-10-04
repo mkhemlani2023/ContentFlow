@@ -1132,8 +1132,11 @@ exports.handler = async (event, context) => {
       }
 
       try {
+        console.log('Article ideas request - keyword:', keyword, 'modelType:', modelType);
         const { articles, responseTime } = await callOpenRouterAPI(keyword, modelType);
         const { cost } = getModelConfig(modelType);
+
+        console.log('Article ideas generated successfully:', articles.length, 'articles');
 
         return {
           statusCode: 200,
@@ -1156,12 +1159,15 @@ exports.handler = async (event, context) => {
           })
         };
       } catch (error) {
+        console.error('Article ideas generation error:', error);
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({
+            success: false,
             error: 'Failed to generate article ideas',
             message: error.message,
+            details: error.stack ? error.stack.split('\n')[0] : 'No additional details',
             code: 'ARTICLE_GENERATION_FAILED'
           })
         };
