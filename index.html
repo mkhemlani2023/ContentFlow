@@ -1066,9 +1066,14 @@
                     <div class="card">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                             <h2>📈 Keyword Opportunities</h2>
-                            <button onclick="saveKeywordResearch()" class="action-btn secondary" style="margin: 0; min-width: auto;">
-                                <span class="btn-icon">💾</span>Save Research
-                            </button>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <button onclick="showBulkArticleGeneration()" class="action-btn primary" style="margin: 0; min-width: auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                    <span class="btn-icon">📝</span>Generate All Articles
+                                </button>
+                                <button onclick="saveKeywordResearch()" class="action-btn secondary" style="margin: 0; min-width: auto;">
+                                    <span class="btn-icon">💾</span>Save Research
+                                </button>
+                            </div>
                         </div>
                         <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                             <strong>💡 Next Step:</strong> Click on any keyword below to see detailed analysis and content generation options.
@@ -8278,6 +8283,660 @@ ${item.answer}
 
             // Could integrate with existing blog management functionality here
             console.log('Publishing article:', title);
+        }
+
+        // Article Ideas Generation with Progress Bar
+        async function generateArticleIdeasWithCredits(keyword, cleanId) {
+            const CREDIT_COST = 5; // Cost for article ideas generation
+
+            // Check credit requirement using consistent system
+            if (!checkCreditRequirement('Article Ideas Generation', CREDIT_COST)) {
+                return; // Exit if insufficient credits
+            }
+
+            // Show progress modal
+            showArticleIdeasProgress(keyword, cleanId);
+
+            try {
+                // Deduct credits first
+                deductCredits(CREDIT_COST);
+
+                // Start the API call
+                const response = await fetch('/api/article-ideas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ keyword })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.ideas && data.ideas.length > 0) {
+                    // Update progress to completion
+                    updateIdeasProgress(100, 'Formatting results...', '✅ Ideas generated successfully');
+
+                    // Small delay to show completion
+                    setTimeout(() => {
+                        displayArticleIdeas(keyword, cleanId, data.ideas);
+                        closeIdeasProgressModal();
+                    }, 1000);
+                } else {
+                    throw new Error('Failed to generate article ideas');
+                }
+
+            } catch (error) {
+                console.error('Article ideas generation error:', error);
+                updateIdeasProgress(0, 'Generation failed', `❌ Error: ${error.message}`);
+
+                // Refund credits on failure
+                const currentCredits = parseInt(localStorage.getItem('userCredits')) || 0;
+                localStorage.setItem('userCredits', (currentCredits + CREDIT_COST).toString());
+                updateCreditDisplay();
+
+                setTimeout(() => {
+                    closeIdeasProgressModal();
+                    alert('Failed to generate article ideas. Credits have been refunded. Please try again.');
+                }, 2000);
+            }
+        }
+
+        function showArticleIdeasProgress(keyword, cleanId) {
+            const modal = document.createElement('div');
+            modal.id = 'ideasProgressModal';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2500; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%; text-align: center;">
+                        <div style="margin-bottom: 25px;">
+                            <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 22px;">💡 Generating Article Ideas</h3>
+                            <p style="color: #64748b; margin: 0; font-size: 16px;">"${keyword}"</p>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="font-weight: 600; color: #374151;">Progress</span>
+                                <span id="ideasProgressPercent" style="font-weight: 600; color: #667eea;">0%</span>
+                            </div>
+                            <div style="background: #e2e8f0; border-radius: 8px; height: 12px; overflow: hidden;">
+                                <div id="ideasProgressBar" style="background: linear-gradient(90deg, #f59e0b, #eab308); height: 100%; width: 0%; transition: width 0.3s ease-in-out;"></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <div id="ideasProgressStage" style="color: #667eea; font-size: 16px; font-weight: 500; margin-bottom: 5px;">Initializing AI analysis...</div>
+                            <div id="ideasProgressDetails" style="color: #64748b; font-size: 14px;">Connecting to article ideas API</div>
+                        </div>
+
+                        <div style="font-size: 12px; color: #64748b; font-style: italic;">
+                            This process analyzes search patterns and generates relevant article topics
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Start the progress simulation
+            simulateIdeasProgress();
+        }
+
+        function simulateIdeasProgress() {
+            const stages = [
+                { percent: 15, stage: "Analyzing keyword context...", details: "Understanding topic relevance and search intent" },
+                { percent: 35, stage: "Generating topic variations...", details: "Creating diverse content angle suggestions" },
+                { percent: 60, stage: "Validating search potential...", details: "Checking topic popularity and SEO value" },
+                { percent: 85, stage: "Finalizing article ideas...", details: "Optimizing suggestions for engagement" },
+                { percent: 95, stage: "Formatting results...", details: "Preparing ideas for display" }
+            ];
+
+            let currentIndex = 0;
+
+            function updateProgress() {
+                if (currentIndex >= stages.length) return;
+
+                const stage = stages[currentIndex];
+                updateIdeasProgress(stage.percent, stage.stage, stage.details);
+
+                currentIndex++;
+
+                // Realistic timing for each stage
+                const delay = currentIndex === 1 ? 800 :
+                             currentIndex === 2 ? 1200 :
+                             currentIndex === 3 ? 1000 :
+                             currentIndex === 4 ? 800 : 600;
+
+                setTimeout(updateProgress, delay);
+            }
+
+            // Start after a brief delay
+            setTimeout(updateProgress, 300);
+        }
+
+        function updateIdeasProgress(percent, stage, details) {
+            const progressBar = document.getElementById('ideasProgressBar');
+            const progressPercent = document.getElementById('ideasProgressPercent');
+            const progressStage = document.getElementById('ideasProgressStage');
+            const progressDetails = document.getElementById('ideasProgressDetails');
+
+            if (progressBar) {
+                progressBar.style.width = percent + '%';
+                progressPercent.textContent = percent + '%';
+                progressStage.textContent = stage;
+                progressDetails.textContent = details;
+
+                // Color transition based on progress
+                if (percent < 50) {
+                    progressBar.style.background = 'linear-gradient(90deg, #f59e0b, #eab308)';
+                } else if (percent < 90) {
+                    progressBar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+                } else {
+                    progressBar.style.background = 'linear-gradient(90deg, #8b5cf6, #7c3aed)';
+                }
+            }
+        }
+
+        function closeIdeasProgressModal() {
+            const modal = document.getElementById('ideasProgressModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function displayArticleIdeas(keyword, cleanId, ideas) {
+            const outputDiv = document.getElementById(`suggestions-output-${cleanId}`);
+            const suggestionsSection = document.getElementById(`article-suggestions-${cleanId}`);
+
+            if (!outputDiv || !suggestionsSection) {
+                console.error('Article suggestions output div not found');
+                return;
+            }
+
+            // Show the suggestions section
+            suggestionsSection.style.display = 'block';
+
+            // Create article idea cards
+            const ideasHtml = ideas.map((idea, index) => {
+                const cleanIdeaId = `${cleanId}-idea-${index}`;
+                return `
+                    <div class="article-idea-card" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 15px; transition: all 0.2s ease; position: relative;"
+                         onmouseover="this.style.borderColor='#667eea'" onmouseout="this.style.borderColor='#e2e8f0'">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 16px; line-height: 1.4;">${idea.title}</h4>
+                                <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.5;">${idea.description || 'AI-generated article idea based on your keyword research'}</p>
+                            </div>
+                            <div style="margin-left: 15px;">
+                                <span style="background: #e0f2fe; color: #0277bd; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
+                                    ${idea.searchVolume || 'High'} Volume
+                                </span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                            <div style="display: flex; gap: 8px; font-size: 12px; color: #64748b;">
+                                <span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">📊 ${idea.difficulty || 'Medium'} Difficulty</span>
+                                <span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">🎯 ${idea.intent || 'Informational'}</span>
+                                <span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">📝 ~${idea.wordCount || '1500'} words</span>
+                            </div>
+
+                            <button onclick="showArticleGenerationOptions('${idea.title.replace(/'/g, "\\'")}', ${idea.wordCount || 1500}, '${idea.difficulty || 'Medium'}', '${idea.intent || 'Informational'}')"
+                                    class="action-btn primary" style="margin: 0; font-size: 12px; padding: 8px 12px;">
+                                <span class="btn-icon">📝</span>
+                                Generate Article
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            outputDiv.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="font-weight: 600; color: #065f46; margin-bottom: 8px;">✅ Generated ${ideas.length} Article Ideas</div>
+                        <div style="color: #047857; font-size: 14px;">Based on search data analysis for "${keyword}". Click "Generate Article" to create full content.</div>
+                    </div>
+                    ${ideasHtml}
+                </div>
+            `;
+
+            // Update the button to show success state
+            const button = document.getElementById(`ideas-btn-${cleanId}`);
+            if (button) {
+                button.innerHTML = '<span class="btn-icon">✅</span>Ideas Generated';
+                button.style.background = '#10b981';
+                button.disabled = true;
+                button.style.cursor = 'not-allowed';
+                button.style.opacity = '0.8';
+            }
+        }
+
+        // Bulk Article Generation Functions
+        function showBulkArticleGeneration() {
+            if (!window.currentKeywordsData || window.currentKeywordsData.length === 0) {
+                alert('No keywords available for bulk generation. Please search for keywords first.');
+                return;
+            }
+
+            const unprocessedKeywords = window.currentKeywordsData.filter(keyword =>
+                !window.processedKeywords || !window.processedKeywords.has(keyword.keyword)
+            );
+
+            if (unprocessedKeywords.length === 0) {
+                alert('All keywords have already been processed! Please search for new keywords to generate more articles.');
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.id = 'bulkGenerationModal';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0;">
+                            <h3 style="margin: 0; color: #1e293b; font-size: 20px;">📝 Bulk Article Generation</h3>
+                            <button onclick="closeBulkGenerationModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">×</button>
+                        </div>
+
+                        <div style="margin-bottom: 25px; padding: 15px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                            <div style="font-weight: 600; color: #1e40af; margin-bottom: 8px;">📊 Generation Summary</div>
+                            <div style="color: #1e40af; font-size: 14px;">
+                                <div><strong>Available Keywords:</strong> ${unprocessedKeywords.length} keywords ready for generation</div>
+                                <div><strong>Already Generated:</strong> ${(window.currentKeywordsData.length - unprocessedKeywords.length)} articles completed</div>
+                                <div style="margin-top: 8px; font-style: italic;">This will generate ${unprocessedKeywords.length} articles in sequence</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="color: #1e293b; margin-bottom: 15px;">🤖 Choose AI Model & Settings</h4>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Model:</label>
+                                <select id="bulkModelSelect" onchange="updateBulkCostSummary()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
+                                    <option value="">Choose a model...</option>
+                                    <option value="basic|25">🥉 Basic Model (GPT-3.5) - 25 credits per article</option>
+                                    <option value="premium|50">🥈 Premium Model (GPT-4) - 50 credits per article</option>
+                                    <option value="enterprise|85">🥇 Enterprise Model (Claude 3.5 Sonnet) - 85 credits per article</option>
+                                </select>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Article Length:</label>
+                                    <select id="bulkLengthSelect" onchange="updateBulkCostSummary()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                                        <option value="1000">Short - 1,000 words</option>
+                                        <option value="1500" selected>Medium - 1,500 words</option>
+                                        <option value="2000">Long - 2,000 words</option>
+                                        <option value="2500">Extended - 2,500 words</option>
+                                        <option value="3000">Comprehensive - 3,000 words</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Writing Tone:</label>
+                                    <select id="bulkToneSelect" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                                        <option value="professional" selected>Professional</option>
+                                        <option value="conversational">Conversational</option>
+                                        <option value="educational">Educational</option>
+                                        <option value="casual">Casual</option>
+                                        <option value="authoritative">Authoritative</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Target Audience:</label>
+                                    <select id="bulkAudienceSelect" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                                        <option value="general" selected>General Audience</option>
+                                        <option value="beginners">Beginners</option>
+                                        <option value="professionals">Professionals</option>
+                                        <option value="experts">Experts</option>
+                                        <option value="consumers">Consumers</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="color: #1e293b; margin-bottom: 15px;">🖼️ Image Options</h4>
+                            <select id="bulkImageSelect" onchange="updateBulkCostSummary()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
+                                <option value="none|0">No Images</option>
+                                <option value="featured|10" selected>Featured Image Only (+10 credits per article)</option>
+                                <option value="full|30">Featured + Section Images (+30 credits per article)</option>
+                            </select>
+                        </div>
+
+                        <div id="bulkCostSummary" style="display: none; background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
+                            <div style="font-weight: 600; color: #1e40af; margin-bottom: 12px;">💰 Total Cost Estimate</div>
+                            <div id="bulkCostBreakdown" style="font-size: 14px; color: #1e40af;"></div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <button onclick="closeBulkGenerationModal()" style="padding: 12px 24px; background: #64748b; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                Cancel
+                            </button>
+                            <button id="startBulkGenerationBtn" onclick="startBulkGeneration()"
+                                    style="padding: 12px 24px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;" disabled>
+                                Select Model First
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Initialize selection tracking
+            window.bulkGenerationSettings = {
+                model: null,
+                credits: 0,
+                imageCredits: 0,
+                length: 1500,
+                tone: 'professional',
+                audience: 'general'
+            };
+        }
+
+        function updateBulkCostSummary() {
+            const modelSelect = document.getElementById('bulkModelSelect');
+            const imageSelect = document.getElementById('bulkImageSelect');
+            const bulkCostSummary = document.getElementById('bulkCostSummary');
+            const bulkCostBreakdown = document.getElementById('bulkCostBreakdown');
+            const startBtn = document.getElementById('startBulkGenerationBtn');
+
+            const [modelType, credits] = modelSelect.value.split('|');
+            const [imageType, imageCredits] = imageSelect.value.split('|');
+
+            if (modelType && credits) {
+                window.bulkGenerationSettings.model = modelType;
+                window.bulkGenerationSettings.credits = parseInt(credits);
+                window.bulkGenerationSettings.imageCredits = parseInt(imageCredits);
+                window.bulkGenerationSettings.length = parseInt(document.getElementById('bulkLengthSelect').value);
+                window.bulkGenerationSettings.tone = document.getElementById('bulkToneSelect').value;
+                window.bulkGenerationSettings.audience = document.getElementById('bulkAudienceSelect').value;
+
+                const unprocessedKeywords = window.currentKeywordsData.filter(keyword =>
+                    !window.processedKeywords || !window.processedKeywords.has(keyword.keyword)
+                );
+
+                const creditsPerArticle = window.bulkGenerationSettings.credits + window.bulkGenerationSettings.imageCredits;
+                const totalCredits = creditsPerArticle * unprocessedKeywords.length;
+                const totalCost = (totalCredits * 0.01).toFixed(2);
+
+                bulkCostSummary.style.display = 'block';
+
+                let breakdown = `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">`;
+                breakdown += `<div><strong>Articles to Generate:</strong> ${unprocessedKeywords.length}</div>`;
+                breakdown += `<div><strong>Credits per Article:</strong> ${creditsPerArticle}</div>`;
+                breakdown += `<div><strong>Model:</strong> ${modelType.charAt(0).toUpperCase() + modelType.slice(1)}</div>`;
+                breakdown += `<div><strong>Images:</strong> ${imageType === 'none' ? 'None' : imageType === 'featured' ? 'Featured Only' : 'Full Set'}</div>`;
+                breakdown += `</div>`;
+
+                breakdown += `<div style="border-top: 1px solid #3b82f6; padding-top: 12px; margin-top: 12px; font-size: 16px;">`;
+                breakdown += `<div style="display: flex; justify-content: space-between; align-items: center;"><strong>Total Credits: ${totalCredits}</strong><strong>Cost: ~$${totalCost}</strong></div>`;
+                breakdown += `</div>`;
+
+                breakdown += `<div style="margin-top: 10px; font-size: 12px; font-style: italic; color: #64748b;">`;
+                breakdown += `Estimated completion time: ${Math.ceil(unprocessedKeywords.length * 1.5)} - ${Math.ceil(unprocessedKeywords.length * 3)} minutes`;
+                breakdown += `</div>`;
+
+                bulkCostBreakdown.innerHTML = breakdown;
+
+                startBtn.disabled = false;
+                startBtn.textContent = `🚀 Generate ${unprocessedKeywords.length} Articles (${totalCredits} credits)`;
+                startBtn.style.background = '#2563eb';
+            } else {
+                bulkCostSummary.style.display = 'none';
+                startBtn.disabled = true;
+                startBtn.textContent = 'Select Model First';
+                startBtn.style.background = '#9ca3af';
+            }
+        }
+
+        function closeBulkGenerationModal() {
+            const modal = document.getElementById('bulkGenerationModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function startBulkGeneration() {
+            const settings = window.bulkGenerationSettings;
+            if (!settings.model) {
+                alert('Please select a model first');
+                return;
+            }
+
+            const unprocessedKeywords = window.currentKeywordsData.filter(keyword =>
+                !window.processedKeywords || !window.processedKeywords.has(keyword.keyword)
+            );
+
+            const totalCreditsNeeded = (settings.credits + settings.imageCredits) * unprocessedKeywords.length;
+
+            // Check credit requirements
+            const currentCredits = parseInt(localStorage.getItem('userCredits')) || 0;
+            if (currentCredits < totalCreditsNeeded) {
+                alert(`Insufficient credits! You need ${totalCreditsNeeded} credits but only have ${currentCredits}. Please purchase more credits.`);
+                return;
+            }
+
+            // Close the modal and show progress
+            closeBulkGenerationModal();
+            showBulkGenerationProgress(unprocessedKeywords, settings);
+
+            // Start the bulk generation process
+            await processBulkGeneration(unprocessedKeywords, settings);
+        }
+
+        function showBulkGenerationProgress(keywords, settings) {
+            const modal = document.createElement('div');
+            modal.id = 'bulkProgressModal';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 70vh; overflow-y: auto;">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 24px;">🚀 Bulk Article Generation</h3>
+                            <p style="color: #64748b; margin: 0;">Generating ${keywords.length} articles with AI automation</p>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <span style="font-weight: 600; color: #374151;">Overall Progress</span>
+                                <span id="bulkProgressText" style="font-weight: 600; color: #667eea;">0 / ${keywords.length}</span>
+                            </div>
+                            <div style="background: #e2e8f0; border-radius: 8px; height: 12px; overflow: hidden;">
+                                <div id="bulkProgressBar" style="background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; width: 0%; transition: width 0.5s ease-in-out;"></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 25px;">
+                            <div style="font-weight: 600; color: #374151; margin-bottom: 10px;">Current Article:</div>
+                            <div id="currentArticleTitle" style="color: #667eea; font-size: 16px; font-weight: 500; margin-bottom: 5px;">Preparing first article...</div>
+                            <div id="currentArticleStatus" style="color: #64748b; font-size: 14px;">Initializing generation process</div>
+                        </div>
+
+                        <div id="generationLog" style="background: #f1f5f9; padding: 15px; border-radius: 6px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; color: #4b5563;">
+                            <div>🔄 Starting bulk generation...</div>
+                        </div>
+
+                        <div style="margin-top: 25px; text-align: center;">
+                            <button id="bulkCancelBtn" onclick="cancelBulkGeneration()" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                Cancel Generation
+                            </button>
+                            <button id="bulkCompleteBtn" onclick="closeBulkProgress()" style="display: none; background: #16a34a; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500; margin-left: 10px;">
+                                ✅ View Results
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            window.bulkGenerationActive = true;
+        }
+
+        async function processBulkGeneration(keywords, settings) {
+            const totalArticles = keywords.length;
+            let completedArticles = 0;
+            let failedArticles = 0;
+            window.bulkGenerationResults = [];
+
+            for (let i = 0; i < keywords.length; i++) {
+                if (!window.bulkGenerationActive) {
+                    logBulkMessage('❌ Generation cancelled by user');
+                    break;
+                }
+
+                const keyword = keywords[i];
+                updateBulkProgress(i + 1, totalArticles, keyword.keyword, 'Generating article...');
+
+                try {
+                    logBulkMessage(`📝 Generating: "${keyword.keyword}"`);
+
+                    // Call the article generation API
+                    const articleData = await generateBulkArticle(keyword, settings);
+
+                    if (articleData) {
+                        completedArticles++;
+                        window.bulkGenerationResults.push({
+                            keyword: keyword.keyword,
+                            article: articleData,
+                            success: true
+                        });
+
+                        // Mark as processed
+                        if (!window.processedKeywords) window.processedKeywords = new Set();
+                        window.processedKeywords.add(keyword.keyword);
+
+                        logBulkMessage(`✅ Completed: "${keyword.keyword}" (${articleData.metadata.wordCount} words)`);
+                    } else {
+                        failedArticles++;
+                        logBulkMessage(`❌ Failed: "${keyword.keyword}"`);
+                        window.bulkGenerationResults.push({
+                            keyword: keyword.keyword,
+                            success: false,
+                            error: 'Generation failed'
+                        });
+                    }
+
+                    updateBulkProgress(i + 1, totalArticles, keyword.keyword, 'Complete');
+
+                    // Small delay between generations to avoid rate limits
+                    if (i < keywords.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+
+                } catch (error) {
+                    failedArticles++;
+                    logBulkMessage(`❌ Error generating "${keyword.keyword}": ${error.message}`);
+                    window.bulkGenerationResults.push({
+                        keyword: keyword.keyword,
+                        success: false,
+                        error: error.message
+                    });
+                    updateBulkProgress(i + 1, totalArticles, keyword.keyword, 'Failed');
+                }
+            }
+
+            // Show completion status
+            if (window.bulkGenerationActive) {
+                updateBulkProgress(totalArticles, totalArticles, 'Generation Complete!', `${completedArticles} successful, ${failedArticles} failed`);
+                logBulkMessage(`🎉 Bulk generation complete! ${completedArticles}/${totalArticles} articles generated successfully.`);
+
+                document.getElementById('bulkCancelBtn').style.display = 'none';
+                document.getElementById('bulkCompleteBtn').style.display = 'inline-block';
+            }
+        }
+
+        async function generateBulkArticle(keyword, settings) {
+            try {
+                const response = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: keyword.keyword,
+                        focusKeyword: keyword.keyword,
+                        wordCount: settings.length,
+                        modelType: settings.model,
+                        selectedTone: settings.tone,
+                        audience: settings.audience,
+                        includeImage: settings.imageCredits > 0
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success && result.article) {
+                    // Deduct credits
+                    const creditsToDeduct = settings.credits + settings.imageCredits;
+                    deductCredits(creditsToDeduct);
+
+                    return result.article;
+                } else {
+                    throw new Error(result.error || 'Article generation failed');
+                }
+            } catch (error) {
+                console.error('Bulk article generation error:', error);
+                throw error;
+            }
+        }
+
+        function updateBulkProgress(current, total, title, status) {
+            const progressBar = document.getElementById('bulkProgressBar');
+            const progressText = document.getElementById('bulkProgressText');
+            const currentTitle = document.getElementById('currentArticleTitle');
+            const currentStatus = document.getElementById('currentArticleStatus');
+
+            if (progressBar) {
+                const percentage = (current / total) * 100;
+                progressBar.style.width = percentage + '%';
+                progressText.textContent = `${current} / ${total}`;
+                currentTitle.textContent = title;
+                currentStatus.textContent = status;
+            }
+        }
+
+        function logBulkMessage(message) {
+            const log = document.getElementById('generationLog');
+            if (log) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.innerHTML = `[${timestamp}] ${message}`;
+                log.appendChild(logEntry);
+                log.scrollTop = log.scrollHeight;
+            }
+        }
+
+        function cancelBulkGeneration() {
+            if (confirm('Are you sure you want to cancel the bulk generation? Articles already generated will be saved.')) {
+                window.bulkGenerationActive = false;
+                logBulkMessage('⏹️ Generation cancelled by user');
+                document.getElementById('bulkCancelBtn').textContent = 'Cancelling...';
+                document.getElementById('bulkCancelBtn').disabled = true;
+
+                setTimeout(() => {
+                    document.getElementById('bulkCompleteBtn').style.display = 'inline-block';
+                }, 2000);
+            }
+        }
+
+        function closeBulkProgress() {
+            const modal = document.getElementById('bulkProgressModal');
+            if (modal) {
+                modal.remove();
+            }
+
+            // Refresh the keyword list to show updated processed status
+            if (window.currentKeywordsData) {
+                displayResults({
+                    keywords: window.currentKeywordsData,
+                    totalKeywords: window.currentKeywordsData.length
+                }, 0);
+            }
         }
 
         // Load saved research on page load
