@@ -1561,22 +1561,45 @@ exports.handler = async (event, context) => {
         const selectedModel = modelConfigs[model] || modelConfigs['basic'];
         const currentYear = new Date().getFullYear();
 
-        // Extract the main focus keyword from the title for better SEO
-        const stopWords = ['the', 'and', 'for', 'with', 'how', 'to', 'what', 'why', 'when', 'where', 'best', 'guide', 'complete', 'ultimate', 'beginner', 'comprehensive', 'behind', 'science', 'a', 'an', 'of', 'in', 'on', 'at', 'by', 'from'];
-        const titleWords = title.toLowerCase().split(' ').filter(word =>
-          word.length > 2 && !stopWords.includes(word) && word !== ':'
-        );
+        // Enhanced focus keyword extraction for better SEO accuracy
+        const stopWords = new Set(['the', 'and', 'for', 'with', 'how', 'to', 'what', 'why', 'when', 'where', 'best', 'guide', 'complete', 'ultimate', 'beginner', 'comprehensive', 'behind', 'science', 'a', 'an', 'of', 'in', 'on', 'at', 'by', 'from', 'your', 'you', 'is', 'are', 'this', 'that', 'can', 'will', 'should', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'up', 'down', 'out', 'off', 'over', 'under', 'again', 'further', 'then', 'once']);
 
-        // For scientific/technical titles, prioritize the main subject matter
+        // Extract focus keyword with better contextual understanding
         let focusKeyword;
-        if (titleWords.length >= 2) {
-          // Take 2-3 most meaningful words, prioritizing nouns over adjectives
-          focusKeyword = titleWords.slice(0, Math.min(3, titleWords.length)).join(' ');
-        } else if (titleWords.length === 1) {
-          focusKeyword = titleWords[0];
+        if (body.focusKeyword && body.focusKeyword.trim()) {
+          // Use provided focus keyword if available (from bulk generation or manual input)
+          focusKeyword = body.focusKeyword.trim();
         } else {
-          // Fallback: use first meaningful word from original title
-          focusKeyword = title.split(' ').find(word => word.length > 3) || title.split(' ')[0];
+          // Improved automatic extraction
+          const titleWords = title.toLowerCase()
+            .replace(/[^\w\s]/g, ' ') // Replace punctuation with spaces
+            .split(/\s+/)
+            .filter(word => word.length > 2 && !stopWords.has(word));
+
+          // Prioritize compound terms and technical concepts
+          const compounds = [];
+          for (let i = 0; i < titleWords.length - 1; i++) {
+            const compound = titleWords[i] + ' ' + titleWords[i + 1];
+            compounds.push(compound);
+
+            // Check for three-word compounds for technical terms
+            if (i < titleWords.length - 2) {
+              const threeWordCompound = compound + ' ' + titleWords[i + 2];
+              compounds.push(threeWordCompound);
+            }
+          }
+
+          // Select the most meaningful focus keyword
+          if (compounds.length > 0 && titleWords.length >= 2) {
+            // Prefer 2-word compounds for most topics
+            focusKeyword = compounds[0];
+          } else if (titleWords.length >= 1) {
+            // Fallback to single most meaningful word
+            focusKeyword = titleWords[0];
+          } else {
+            // Ultimate fallback
+            focusKeyword = title.split(' ').find(word => word.length > 3) || title.split(' ')[0] || title;
+          }
         }
 
         console.log('Extracted focus keyword:', focusKeyword, 'from title:', title);
@@ -1596,7 +1619,8 @@ exports.handler = async (event, context) => {
 
 CRITICAL REQUIREMENTS:
 - FOCUS KEYWORD: "${focusKeyword}" - Use this EXACT phrase naturally 6-10 times throughout the article
-- TARGET WORD COUNT: ${wordCount || 2000} words MINIMUM (write comprehensive, detailed content)
+- TARGET WORD COUNT: EXACTLY ${wordCount || 2000} words (THIS IS MANDATORY - not minimum, not maximum, but the EXACT target)
+- ACTUAL WORD COUNT MUST BE: ${Math.floor((wordCount || 2000) * 0.95)} to ${Math.floor((wordCount || 2000) * 1.05)} words (within 5% of target)
 - WRITING TONE: ${selectedTone}
 - TARGET AUDIENCE: ${audience || 'General readers interested in the topic'}
 - Intent: ${intent || 'Informational'}
@@ -1705,40 +1729,42 @@ Write the complete, detailed article now:`;
           const getTopicImage = (keyword, index = 0) => {
             // Map focus keywords to relevant Unsplash search terms
             const imageKeywordMap = {
-              'neural plasticity': 'brain-neurons',
-              'brain science': 'neuroscience-brain',
-              'digital marketing': 'marketing-analytics',
-              'machine learning': 'artificial-intelligence',
-              'data science': 'data-visualization',
-              'web development': 'programming-code',
-              'seo optimization': 'analytics-chart',
-              'content marketing': 'content-creation',
-              'social media': 'social-network',
-              'artificial intelligence': 'ai-technology',
-              'cybersecurity': 'computer-security',
-              'cloud computing': 'cloud-technology',
-              'project management': 'team-collaboration',
-              'financial planning': 'finance-chart',
-              'health wellness': 'health-lifestyle'
+              'neural plasticity': 'brain,neurons,neuroscience',
+              'brain': 'brain,neuroscience,psychology',
+              'science': 'science,research,laboratory',
+              'plasticity': 'brain,neuroscience,learning',
+              'digital marketing': 'marketing,digital,analytics',
+              'machine learning': 'artificial-intelligence,technology,data',
+              'data science': 'data,analytics,statistics',
+              'web development': 'programming,coding,computer',
+              'seo': 'analytics,marketing,strategy',
+              'content marketing': 'content,writing,marketing',
+              'social media': 'social,network,communication',
+              'artificial intelligence': 'ai,technology,future',
+              'cybersecurity': 'security,technology,protection',
+              'cloud computing': 'cloud,technology,computing',
+              'project management': 'team,collaboration,planning',
+              'finance': 'finance,money,business',
+              'health': 'health,wellness,fitness',
+              'business': 'business,office,corporate',
+              'technology': 'technology,innovation,digital'
             };
 
             // Find the most relevant image keyword
-            let imageKeyword = focusKeyword.toLowerCase();
+            let imageQuery = 'business,professional,modern';
+            const lowerKeyword = focusKeyword.toLowerCase();
+
             for (const [key, value] of Object.entries(imageKeywordMap)) {
-              if (focusKeyword.toLowerCase().includes(key) || key.includes(focusKeyword.toLowerCase())) {
-                imageKeyword = value;
+              if (lowerKeyword.includes(key)) {
+                imageQuery = value;
                 break;
               }
             }
 
-            // Fallback to generic but professional images
-            if (imageKeyword === focusKeyword) {
-              const cleanKeyword = focusKeyword.replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, '-');
-              imageKeyword = cleanKeyword || 'business-professional';
-            }
-
-            // Use Unsplash Source API for consistent, high-quality images
-            return `https://source.unsplash.com/800x600/?${imageKeyword}&${index + 1}`;
+            // Use Unsplash with specific parameters for high-quality, relevant images
+            // Use Picsum as fallback since Unsplash source is deprecated
+            const randomSeed = Math.floor(Math.random() * 10000) + index * 100;
+            return `https://picsum.photos/seed/${encodeURIComponent(focusKeyword)}-${randomSeed}/800/600`;
           };
 
           // Create contextually relevant image descriptions
