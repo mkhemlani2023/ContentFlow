@@ -2694,6 +2694,29 @@
 
         // Display both Google Autocomplete and AI-generated ideas with clear labeling
         function displayCombinedArticleSuggestions(container, autocompleteIdeas, aiIdeas) {
+            console.log('=== displayCombinedArticleSuggestions ===');
+            console.log('Autocomplete ideas count:', autocompleteIdeas.length);
+            console.log('AI ideas count:', aiIdeas.length);
+
+            // Check if we have any ideas at all
+            if (autocompleteIdeas.length === 0 && aiIdeas.length === 0) {
+                console.error('No ideas to display - both arrays empty');
+                container.innerHTML = `
+                    <div style="background: #fef2f2; padding: 20px; border-radius: 8px; border-left: 4px solid #dc2626;">
+                        <div style="font-weight: 600; color: #991b1b; margin-bottom: 10px;">❌ No Article Ideas Generated</div>
+                        <p style="margin: 0 0 10px 0; color: #b91c1c; font-size: 14px;">Unable to generate article suggestions. This could be due to:</p>
+                        <ul style="margin: 10px 0; padding-left: 20px; color: #b91c1c; font-size: 13px; list-style-position: outside; text-align: left;">
+                            <li>Google Autocomplete API returned no suggestions</li>
+                            <li>OpenRouter API is unavailable or returned an error</li>
+                            <li>Network connectivity problem</li>
+                            <li>API rate limit exceeded</li>
+                        </ul>
+                        <p style="margin: 10px 0 0 0; color: #64748b; font-size: 12px;">Check browser console (F12) for detailed error messages.</p>
+                    </div>
+                `;
+                return;
+            }
+
             const autocompleteSection = autocompleteIdeas.length > 0 ? `
                 <div style="margin-bottom: 25px;">
                     <h5 style="color: #1e293b; margin: 0 0 12px 0; font-size: 14px; display: flex; align-items: center; gap: 8px;">
@@ -2720,7 +2743,9 @@
                 </div>
             ` : '';
 
+            console.log('Rendering sections...');
             container.innerHTML = autocompleteSection + aiSection;
+            console.log('Display complete - total HTML length:', container.innerHTML.length);
         }
 
         function displayArticleCards(suggestions) {
@@ -4493,11 +4518,11 @@
 
                     if (section.subsections && section.subsections.length > 0) {
                         subsectionsHTML = section.subsections.map(sub => `
-                            <div style="margin-left: 20px; margin-top: 8px; padding-left: 10px; border-left: 2px solid #e2e8f0;">
-                                <strong style="color: ${color}; font-size: 11px;">▸ ${sub.heading}</strong>
+                            <div style="margin-left: 16px; margin-top: 10px; padding-left: 12px; border-left: 3px solid #e2e8f0; text-align: left;">
+                                <strong style="color: ${color}; font-size: 11px; display: block; margin-bottom: 6px;">▸ ${sub.heading}</strong>
                                 ${sub.keyPoints && sub.keyPoints.length > 0 ? `
-                                    <ul style="margin: 4px 0 0 15px; padding: 0; font-size: 10px; color: #64748b;">
-                                        ${sub.keyPoints.map(point => `<li style="margin: 2px 0;">${point}</li>`).join('')}
+                                    <ul style="margin: 6px 0 0 0; padding-left: 20px; list-style-position: outside; font-size: 10px; color: #64748b; text-align: left;">
+                                        ${sub.keyPoints.map(point => `<li style="margin: 3px 0; padding-left: 4px;">${point}</li>`).join('')}
                                     </ul>
                                 ` : ''}
                             </div>
@@ -4505,12 +4530,12 @@
                     }
 
                     return `
-                        <div style="margin-bottom: 12px;">
-                            <strong style="color: ${color};">${index + 1}. ${section.heading} ${section.wordCount ? `(~${section.wordCount} words)` : ''}</strong>
-                            ${section.description ? `<div style="font-size: 11px; color: #64748b; margin-top: 3px;">${section.description}</div>` : ''}
+                        <div style="margin-bottom: 16px; text-align: left;">
+                            <strong style="color: ${color}; display: block; margin-bottom: 6px;">${index + 1}. ${section.heading} ${section.wordCount ? `(~${section.wordCount} words)` : ''}</strong>
+                            ${section.description ? `<div style="font-size: 11px; color: #64748b; margin: 6px 0; text-align: left;">${section.description}</div>` : ''}
                             ${section.keyPoints && section.keyPoints.length > 0 ? `
-                                <ul style="margin: 6px 0 0 20px; padding: 0; font-size: 11px; color: #4a5568;">
-                                    ${section.keyPoints.map(point => `<li style="margin: 3px 0;">${point}</li>`).join('')}
+                                <ul style="margin: 8px 0 0 0; padding-left: 20px; list-style-position: outside; font-size: 11px; color: #4a5568; text-align: left;">
+                                    ${section.keyPoints.map(point => `<li style="margin: 4px 0; padding-left: 4px;">${point}</li>`).join('')}
                                 </ul>
                             ` : ''}
                             ${subsectionsHTML}
@@ -4523,13 +4548,13 @@
             let faqHTML = '';
             if (outline.faqQuestions && outline.faqQuestions.length > 0) {
                 faqHTML = `
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #e2e8f0;">
-                        <strong style="color: #2d3748; font-size: 13px;">❓ FAQ Section</strong>
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #e2e8f0; text-align: left;">
+                        <strong style="color: #2d3748; font-size: 13px; display: block; margin-bottom: 12px;">❓ FAQ Section</strong>
                         <div style="margin-top: 8px;">
                             ${outline.faqQuestions.map((faq, index) => `
-                                <div style="margin-bottom: 8px; font-size: 11px;">
-                                    <strong style="color: #4a5568;">${index + 1}. ${faq.question}</strong>
-                                    ${faq.answerGuidance ? `<div style="color: #64748b; margin-top: 2px; font-style: italic;">${faq.answerGuidance}</div>` : ''}
+                                <div style="margin-bottom: 12px; font-size: 11px; text-align: left;">
+                                    <strong style="color: #4a5568; display: block; margin-bottom: 4px;">${index + 1}. ${faq.question}</strong>
+                                    ${faq.answerGuidance ? `<div style="color: #64748b; margin-top: 4px; margin-left: 16px; font-style: italic; text-align: left;">${faq.answerGuidance}</div>` : ''}
                                 </div>
                             `).join('')}
                         </div>
@@ -6186,6 +6211,29 @@ FORMAT: Return as JSON with this exact structure:
 }`;
 
                 // Generate full article using OpenRouter API
+                // Adjust max_tokens based on model to avoid context window issues
+                const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
+                let maxTokens;
+
+                // Different models have different context windows
+                if (config.model.includes('gpt-3.5')) {
+                    // GPT-3.5-turbo has 4K context, be conservative
+                    maxTokens = Math.min(2000, Math.floor(targetWordCount * 1.5));
+                } else if (config.model.includes('gpt-4o-mini')) {
+                    // GPT-4o-mini has large context window
+                    maxTokens = Math.floor(targetWordCount * 1.8);
+                } else {
+                    // Claude and other models with large windows
+                    maxTokens = Math.floor(targetWordCount * 2);
+                }
+
+                console.log('Article generation request:', {
+                    model: config.model,
+                    targetWordCount,
+                    maxTokens,
+                    promptLength: articlePrompt.length
+                });
+
                 const articleResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
                     headers: {
@@ -6195,12 +6243,14 @@ FORMAT: Return as JSON with this exact structure:
                         model: config.model,
                         prompt: articlePrompt,
                         temperature: config.temperature,
-                        max_tokens: Math.floor((outlineStructure.metadata?.wordCount || 2000) * 1.8) // Generous token allowance
+                        max_tokens: maxTokens
                     })
                 });
 
                 if (!articleResponse.ok) {
-                    throw new Error(`OpenRouter API error: ${articleResponse.status}`);
+                    const errorData = await articleResponse.json().catch(() => ({error: 'Unknown error'}));
+                    console.error('OpenRouter API error response:', errorData);
+                    throw new Error(`OpenRouter API error ${articleResponse.status}: ${errorData.error || errorData.message || 'Unknown error'}`);
                 }
 
                 const articleData = await articleResponse.json();
