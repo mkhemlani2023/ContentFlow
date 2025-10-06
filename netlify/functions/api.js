@@ -1876,6 +1876,218 @@ Write the complete, detailed article now:`;
       }
     }
 
+    // Content Outline Generation endpoint
+    if (path === '/api/content-outline' && method === 'POST') {
+      const { keyword, wordCount = 2000, difficulty = 'medium', competitorData } = body;
+
+      if (!keyword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Keyword is required',
+            code: 'MISSING_KEYWORD'
+          })
+        };
+      }
+
+      if (!OPENROUTER_API_KEY) {
+        return {
+          statusCode: 503,
+          headers,
+          body: JSON.stringify({
+            error: 'Content generation service not configured',
+            message: 'OpenRouter API is required for content outline generation.',
+            code: 'OPENROUTER_NOT_CONFIGURED'
+          })
+        };
+      }
+
+      try {
+        const currentYear = new Date().getFullYear();
+
+        // Build context from competitor data if available
+        let competitorContext = '';
+        if (competitorData && competitorData.analysis) {
+          const { analysis, recommendations } = competitorData;
+          competitorContext = `
+
+COMPETITOR ANALYSIS INSIGHTS:
+- Competition Level: ${analysis.competitionLevel}
+- Average Competitor Content Length: ${analysis.averageContentLength} words
+- Average Domain Authority: ${analysis.averageDomainAuthority}
+- Recommended Word Count: ${recommendations.targetWordCount} words
+- Recommended Backlinks: ${recommendations.requiredBacklinks}
+
+Use this data to create an outline that can outperform these competitors.`;
+        }
+
+        const prompt = `You are an expert SEO content strategist. Create a detailed, SEO-optimized content outline for an article about "${keyword}".
+
+TARGET SPECIFICATIONS:
+- Word Count Target: ${wordCount} words
+- Content Difficulty: ${difficulty}
+- Current Year: ${currentYear}
+- Search Intent: ${determineIntent(keyword)}
+${competitorContext}
+
+REQUIREMENTS:
+Create a comprehensive article outline that includes:
+
+1. **Article Title**: Create a compelling, SEO-friendly title that naturally includes "${keyword}"
+
+2. **Introduction Section** (150-250 words):
+   - Hook with relevant statistic or compelling question
+   - Problem identification that resonates with readers
+   - Article value proposition
+   - Brief preview of what will be covered
+
+3. **Main Content Sections** (${Math.floor(wordCount * 0.65)}-${Math.floor(wordCount * 0.75)} words total):
+   Create 4-6 main sections with:
+   - Section heading (H2)
+   - Brief description of what this section will cover
+   - Key points to address (3-5 bullet points per section)
+   - Suggested word count for each section
+   - Subsections (H3) where appropriate
+
+4. **Supporting Elements**:
+   - FAQ section (200-300 words) with 5-7 relevant questions
+   - Key takeaways/summary box
+   - Expert tips or pro tips section
+   - Common mistakes to avoid (if relevant)
+
+5. **Conclusion Section** (100-150 words):
+   - Summary of key points
+   - Call-to-action
+   - Next steps for readers
+
+6. **SEO Elements**:
+   - Suggested meta description (150-160 characters)
+   - 8-10 related keywords to naturally include
+   - Internal linking opportunities
+   - External authority sources to reference
+
+FORMAT YOUR RESPONSE AS JSON:
+{
+  "title": "Compelling article title with keyword",
+  "metaDescription": "SEO-optimized meta description",
+  "estimatedWordCount": ${wordCount},
+  "readingTime": "X min",
+  "sections": [
+    {
+      "heading": "Section title",
+      "level": "h2",
+      "wordCount": 300,
+      "description": "What this section covers",
+      "keyPoints": ["point 1", "point 2", "point 3"],
+      "subsections": [
+        {
+          "heading": "Subsection title",
+          "level": "h3",
+          "keyPoints": ["point 1", "point 2"]
+        }
+      ]
+    }
+  ],
+  "faqQuestions": [
+    {"question": "Q1", "answerGuidance": "Key points to cover"}
+  ],
+  "seoKeywords": ["keyword1", "keyword2"],
+  "internalLinkingOpportunities": ["topic1", "topic2"],
+  "authoritySourcesNeeded": ["type of source 1", "type of source 2"]
+}
+
+Generate a professional, actionable outline that a content writer can follow to create a top-ranking article.`;
+
+        const startTime = Date.now();
+
+        const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://content-flow.netlify.app',
+            'X-Title': 'Content Flow - SEO Wizard'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-3.5-turbo',
+            messages: [
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            max_tokens: 2500,
+            temperature: 0.7
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const responseTime = Date.now() - startTime;
+
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+          throw new Error('Invalid response format from OpenRouter API');
+        }
+
+        let content = data.choices[0].message.content;
+
+        // Clean markdown code blocks
+        if (content.includes('```json')) {
+          content = content.replace(/```json\s*/, '').replace(/\s*```$/, '');
+        } else if (content.includes('```')) {
+          content = content.replace(/```\s*/, '').replace(/\s*```$/, '');
+        }
+
+        let outline;
+        try {
+          outline = JSON.parse(content.trim());
+        } catch (parseError) {
+          console.error('JSON parsing failed for outline:', content.substring(0, 200));
+          // Try to extract JSON from response
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            outline = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('Failed to parse content outline JSON');
+          }
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            outline,
+            responseTime,
+            metadata: {
+              keyword,
+              wordCount,
+              difficulty,
+              hasCompetitorData: !!competitorData
+            },
+            timestamp: new Date().toISOString()
+          })
+        };
+
+      } catch (error) {
+        console.error('Content outline generation error:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Failed to generate content outline',
+            message: error.message,
+            code: 'OUTLINE_GENERATION_FAILED'
+          })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
@@ -1893,7 +2105,8 @@ Write the complete, detailed article now:`;
           'POST /api/autocomplete',
           'POST /api/openrouter-generate',
           'POST /api/generate-images',
-          'POST /api/generate-article'
+          'POST /api/generate-article',
+          'POST /api/content-outline'
         ]
       })
     };

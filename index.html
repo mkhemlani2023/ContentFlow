@@ -1707,6 +1707,12 @@
                     const data = await response.json();
                     console.log('Competitor response data:', data);
 
+                    // Cache competitor data for content outline generation
+                    if (!window.competitorDataCache) {
+                        window.competitorDataCache = {};
+                    }
+                    window.competitorDataCache[keyword] = data;
+
                     if (data.success && data.competitors && data.competitors.length > 0) {
                         console.log('Displaying competitor analysis with', data.competitors.length, 'competitors');
                         displayInlineCompetitorAnalysis(keyword, data, cleanId);
@@ -4351,9 +4357,22 @@
 
         // Enhanced Content Generation Function with Always Inline Display
         async function generateContentOutline(keyword, wordCount = 2000, difficulty = 'medium', cleanId) {
+            const CREDIT_COST = 15; // Cost for AI-powered content outline generation
+
             // Always use inline display within the keyword card
             if (!cleanId) {
                 console.error('generateContentOutline called without cleanId');
+                return;
+            }
+
+            // Check credit requirement using consistent system
+            if (!checkCreditRequirement('Content Outline Generation', CREDIT_COST)) {
+                return; // Exit if insufficient credits
+            }
+
+            // Deduct credits using consistent system
+            if (!deductCredits(CREDIT_COST)) {
+                alert('Unable to deduct credits. Please try again.');
                 return;
             }
 
@@ -4363,93 +4382,186 @@
             targetDiv.innerHTML += `
                 <div id="outline-loading-${cleanId}" style="background: #f0f8ff; border-radius: 6px; padding: 20px; margin-top: 15px; text-align: center;">
                     <div style="font-size: 20px;">📝</div>
-                    <p style="margin: 5px 0; color: #2d3748;">Generating SEO-optimized content outline...</p>
+                    <p style="margin: 5px 0; color: #2d3748;">AI generating SEO-optimized content outline...</p>
                     <div style="font-size: 12px; color: #64748b;">Word target: ${wordCount.toLocaleString()} words</div>
+                    <div style="font-size: 11px; color: #7c3aed; margin-top: 8px;">⏳ This may take 10-15 seconds...</div>
                 </div>
             `;
 
             try {
-                // Call content generation API (placeholder for now)
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+                // Get competitor data if available for enhanced outline
+                let competitorData = null;
+                if (window.competitorDataCache && window.competitorDataCache[keyword]) {
+                    competitorData = window.competitorDataCache[keyword];
+                }
 
-                // Always use inline display
-                displayInlineContentOutline(keyword, wordCount, difficulty, cleanId);
+                // Call real content outline API
+                const response = await fetch('/api/content-outline', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        keyword,
+                        wordCount,
+                        difficulty,
+                        competitorData
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to generate content outline');
+                }
+
+                // Display the real AI-generated outline
+                displayInlineContentOutline(keyword, wordCount, difficulty, cleanId, data.outline);
 
             } catch (error) {
+                console.error('Content outline generation error:', error);
                 const errorDiv = document.getElementById(`outline-loading-${cleanId}`);
                 errorDiv.innerHTML = `
-                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 15px; color: #dc2626;">
-                        <strong>❌ Outline Generation Failed</strong><br>
-                        Unable to generate content outline. Please try again.
+                    <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #dc2626;">
+                        <div style="font-weight: 500; color: #991b1b;">❌ Content Outline Generation Failed</div>
+                        <p style="margin: 8px 0 0 0; color: #b91c1c; font-size: 14px;">${error.message || 'Unknown error occurred'}</p>
+                        <details style="margin-top: 8px;">
+                            <summary style="cursor: pointer; font-size: 12px; color: #991b1b;">Technical Details</summary>
+                            <pre style="font-size: 11px; margin-top: 4px; padding: 8px; background: #fef2f2; border-radius: 4px; overflow-x: auto;">${JSON.stringify(error, null, 2)}</pre>
+                        </details>
+                        <button onclick="generateContentOutline('${keyword.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${cleanId}')"
+                                style="margin-top: 12px; padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            🔄 Retry (15 credits)
+                        </button>
                     </div>
                 `;
             }
         }
 
-        function displayInlineContentOutline(keyword, wordCount, difficulty, cleanId) {
+        function displayInlineContentOutline(keyword, wordCount, difficulty, cleanId, outline) {
             const loadingDiv = document.getElementById(`outline-loading-${cleanId}`);
 
+            // Color palette for sections
+            const sectionColors = ['#4caf50', '#2196f3', '#f57c00', '#7b1fa2', '#d32f2f', '#00acc1', '#8bc34a', '#ff5722'];
+
+            // Build sections HTML
+            let sectionsHTML = '';
+            if (outline.sections && outline.sections.length > 0) {
+                sectionsHTML = outline.sections.map((section, index) => {
+                    const color = sectionColors[index % sectionColors.length];
+                    let subsectionsHTML = '';
+
+                    if (section.subsections && section.subsections.length > 0) {
+                        subsectionsHTML = section.subsections.map(sub => `
+                            <div style="margin-left: 20px; margin-top: 8px; padding-left: 10px; border-left: 2px solid #e2e8f0;">
+                                <strong style="color: ${color}; font-size: 11px;">▸ ${sub.heading}</strong>
+                                ${sub.keyPoints && sub.keyPoints.length > 0 ? `
+                                    <ul style="margin: 4px 0 0 15px; padding: 0; font-size: 10px; color: #64748b;">
+                                        ${sub.keyPoints.map(point => `<li style="margin: 2px 0;">${point}</li>`).join('')}
+                                    </ul>
+                                ` : ''}
+                            </div>
+                        `).join('');
+                    }
+
+                    return `
+                        <div style="margin-bottom: 12px;">
+                            <strong style="color: ${color};">${index + 1}. ${section.heading} ${section.wordCount ? `(~${section.wordCount} words)` : ''}</strong>
+                            ${section.description ? `<div style="font-size: 11px; color: #64748b; margin-top: 3px;">${section.description}</div>` : ''}
+                            ${section.keyPoints && section.keyPoints.length > 0 ? `
+                                <ul style="margin: 6px 0 0 20px; padding: 0; font-size: 11px; color: #4a5568;">
+                                    ${section.keyPoints.map(point => `<li style="margin: 3px 0;">${point}</li>`).join('')}
+                                </ul>
+                            ` : ''}
+                            ${subsectionsHTML}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Build FAQ HTML
+            let faqHTML = '';
+            if (outline.faqQuestions && outline.faqQuestions.length > 0) {
+                faqHTML = `
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #e2e8f0;">
+                        <strong style="color: #2d3748; font-size: 13px;">❓ FAQ Section</strong>
+                        <div style="margin-top: 8px;">
+                            ${outline.faqQuestions.map((faq, index) => `
+                                <div style="margin-bottom: 8px; font-size: 11px;">
+                                    <strong style="color: #4a5568;">${index + 1}. ${faq.question}</strong>
+                                    ${faq.answerGuidance ? `<div style="color: #64748b; margin-top: 2px; font-style: italic;">${faq.answerGuidance}</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Build SEO keywords HTML
+            let keywordsHTML = '';
+            if (outline.seoKeywords && outline.seoKeywords.length > 0) {
+                keywordsHTML = `
+                    <div style="margin-top: 12px;">
+                        <strong style="font-size: 11px; color: #2d3748;">🎯 Target Keywords:</strong>
+                        <div style="margin-top: 6px;">
+                            ${outline.seoKeywords.slice(0, 10).map(kw =>
+                                `<span style="background: #eff6ff; color: #2563eb; padding: 3px 8px; border-radius: 4px; font-size: 10px; margin-right: 6px; margin-bottom: 4px; display: inline-block;">${kw}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
             loadingDiv.innerHTML = `
-                <div style="background: #f0f8ff; border-radius: 6px; padding: 15px;">
-                    <h4 style="margin: 0 0 10px 0; color: #2d3748;">📝 SEO Content Outline</h4>
-                    <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 12px;">
-                        <strong>🎯 Target:</strong> ${wordCount.toLocaleString()} words |
-                        <strong>Difficulty:</strong> ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} |
-                        <strong>Reading Time:</strong> ~${Math.round(wordCount / 200)} min
-                    </div>
-
-                    <div style="background: white; border-radius: 4px; padding: 12px; margin-bottom: 15px; font-size: 12px;">
-                        <div style="margin-bottom: 10px;">
-                            <strong style="color: #4caf50;">1. Introduction (150-200 words)</strong>
-                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Hook with "${keyword}" statistic, problem identification, article preview</div>
-                        </div>
-
-                        <div style="margin-bottom: 10px;">
-                            <strong style="color: #2196f3;">2. What is ${keyword}? (300-400 words)</strong>
-                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Clear definition, 2024 relevance, common misconceptions</div>
-                        </div>
-
-                        <div style="margin-bottom: 10px;">
-                            <strong style="color: #f57c00;">3. Complete ${keyword} Guide (${Math.round(wordCount * 0.4)}-${Math.round(wordCount * 0.5)} words)</strong>
-                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Step-by-step walkthrough, tools needed, expert tips, examples</div>
-                        </div>
-
-                        <div style="margin-bottom: 10px;">
-                            <strong style="color: #7b1fa2;">4. Advanced Strategies (400-500 words)</strong>
-                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Expert techniques, scaling tips, future trends</div>
-                        </div>
-
-                        <div style="margin-bottom: 10px;">
-                            <strong style="color: #d32f2f;">5. FAQ Section (200-300 words)</strong>
-                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Top questions, voice search optimization</div>
-                        </div>
-
+                <div style="background: linear-gradient(135deg, #f0f8ff 0%, #e8f5e8 100%); border-radius: 8px; padding: 20px; border: 2px solid #3b82f6;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
                         <div>
-                            <strong style="color: #4caf50;">6. Conclusion & Next Steps (100-150 words)</strong>
-                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Key takeaways, call-to-action, related resources</div>
+                            <h4 style="margin: 0 0 8px 0; color: #2d3748; font-size: 16px;">📝 AI-Generated Content Strategy</h4>
+                            ${outline.title ? `<div style="font-size: 13px; color: #3b82f6; font-weight: 600; margin-bottom: 8px;">"${outline.title}"</div>` : ''}
+                            ${outline.metaDescription ? `<div style="font-size: 11px; color: #64748b; font-style: italic; line-height: 1.4;">${outline.metaDescription}</div>` : ''}
+                        </div>
+                        <div style="background: white; padding: 8px 12px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 18px; font-weight: bold; color: #3b82f6;">${outline.estimatedWordCount || wordCount}</div>
+                            <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">words</div>
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 8px; justify-content: center; margin-top: 15px; flex-wrap: wrap;">
-                        <button onclick="generateFullArticle('${keyword}', ${wordCount}, '${cleanId}')"
-                                class="action-btn primary" style="margin: 0; font-size: 11px; padding: 6px 12px;">
-                            <span class="btn-icon">✍️</span>Generate Article
+                    <div style="background: #e8f5e8; padding: 10px 12px; border-radius: 6px; margin-bottom: 15px; font-size: 12px; border-left: 3px solid #4caf50;">
+                        <strong>📊 Outline Summary:</strong>
+                        ${outline.sections ? outline.sections.length : 0} sections •
+                        ${outline.readingTime || `~${Math.round((outline.estimatedWordCount || wordCount) / 200)} min`} read •
+                        ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} difficulty
+                    </div>
+
+                    <div style="background: white; border-radius: 6px; padding: 15px; margin-bottom: 15px; font-size: 12px; max-height: 400px; overflow-y: auto;">
+                        ${sectionsHTML || '<div style="color: #64748b;">No sections generated</div>'}
+                        ${faqHTML}
+                    </div>
+
+                    ${keywordsHTML}
+
+                    <div style="display: flex; gap: 8px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
+                        <button onclick="generateArticleFromOutline('${keyword.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${cleanId}')"
+                                class="action-btn primary" style="margin: 0; font-size: 11px; padding: 8px 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <span class="btn-icon">✍️</span>Generate Full Article
                         </button>
-                        <button onclick="findRoyaltyFreeImages('${keyword}', '${cleanId}')"
-                                class="action-btn secondary" style="margin: 0; font-size: 11px; padding: 6px 12px;">
-                            <span class="btn-icon">🖼️</span>Add Images
+                        <button onclick="document.getElementById('outline-loading-${cleanId}').remove()"
+                                class="action-btn secondary" style="margin: 0; font-size: 11px; padding: 8px 14px;">
+                            <span class="btn-icon">✅</span>Done
                         </button>
-                        <button onclick="showImageGeneration('${keyword}', '${cleanId}')"
-                                class="action-btn secondary" style="margin: 0; font-size: 11px; padding: 6px 12px; background: #7b1fa2;">
-                            <span class="btn-icon">🎨</span>AI Images
-                        </button>
-                        <button onclick="scheduleContent('${keyword}', '${cleanId}')"
-                                class="action-btn secondary" style="margin: 0; font-size: 11px; padding: 6px 12px;">
-                            <span class="btn-icon">📅</span>Schedule Post
-                        </button>
+                    </div>
+
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #64748b; text-align: center;">
+                        ✨ AI-generated outline • Save this for your content writer
                     </div>
                 </div>
             `;
+        }
+
+        // Generate article from outline - wrapper for article generation options
+        function generateArticleFromOutline(keyword, wordCount, difficulty, cleanId) {
+            // Show article generation options
+            showArticleGenerationOptions(keyword, wordCount, difficulty, 'informational');
         }
 
         // Image Functions
