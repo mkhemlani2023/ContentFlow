@@ -2378,16 +2378,32 @@
 
         // Article suggestions function using Google Autocomplete
         async function generateArticleSuggestions(keyword, cleanId) {
+            console.log('=== generateArticleSuggestions START ===');
+            console.log('Keyword:', keyword);
+            console.log('CleanId:', cleanId);
+
             const suggestionsSection = document.getElementById(`article-suggestions-${cleanId}`);
             const outputDiv = document.getElementById(`suggestions-output-${cleanId}`);
-            const button = document.getElementById(`ideas-btn-${cleanId}`); // Fixed: was suggestions-btn
+            const button = document.getElementById(`ideas-btn-${cleanId}`);
+
+            console.log('DOM elements found:', {
+                suggestionsSection: !!suggestionsSection,
+                outputDiv: !!outputDiv,
+                button: !!button
+            });
+
+            if (!suggestionsSection || !outputDiv) {
+                console.error('Required DOM elements not found');
+                alert('Error: Could not find display area for article suggestions');
+                return;
+            }
 
             // Show the suggestions section
             suggestionsSection.style.display = 'block';
 
             // Show loading state
             if (button) {
-                button.innerHTML = '🔄 Generating Suggestions...';
+                button.innerHTML = '<span style="font-size: 14px;">🔄</span> Generating Suggestions...';
                 button.disabled = true;
             }
 
@@ -2403,6 +2419,7 @@
 
             try {
                 // First get Google autocomplete suggestions
+                console.log('Fetching autocomplete for:', keyword);
                 const autocompleteResponse = await fetch('/api/autocomplete', {
                     method: 'POST',
                     headers: {
@@ -2412,18 +2429,27 @@
                 });
 
                 const autocompleteData = await autocompleteResponse.json();
+                console.log('Autocomplete response:', autocompleteData);
 
                 if (autocompleteData.success) {
                     // Generate BOTH Google Autocomplete ideas AND AI-generated ideas
+                    console.log('Generating Google autocomplete ideas...');
                     const autocompleteIdeas = generateGoogleAutocompleteIdeas(keyword, autocompleteData.suggestions || []);
+                    console.log('Autocomplete ideas:', autocompleteIdeas);
+
+                    console.log('Generating AI ideas...');
                     const aiGeneratedIdeas = await generateArticleIdeasFromAutocomplete(keyword, autocompleteData.suggestions || []);
+                    console.log('AI ideas:', aiGeneratedIdeas);
 
                     // Combine both with proper labeling
                     const allSuggestions = [...autocompleteIdeas, ...aiGeneratedIdeas];
+                    console.log('Total suggestions:', allSuggestions.length);
                     displayCombinedArticleSuggestions(outputDiv, autocompleteIdeas, aiGeneratedIdeas);
                 } else {
                     // Fallback to AI suggestions only if autocomplete fails
+                    console.log('Autocomplete failed, using fallback...');
                     const aiSuggestions = await generateFallbackArticleIdeas(keyword);
+                    console.log('Fallback suggestions:', aiSuggestions);
                     displayCombinedArticleSuggestions(outputDiv, [], aiSuggestions);
                 }
 
@@ -4527,27 +4553,39 @@
             }
 
             loadingDiv.innerHTML = `
-                <div style="background: linear-gradient(135deg, #f0f8ff 0%, #e8f5e8 100%); border-radius: 8px; padding: 20px; border: 2px solid #3b82f6;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                        <div>
-                            <h4 style="margin: 0 0 8px 0; color: #2d3748; font-size: 16px;">📝 AI-Generated Content Strategy</h4>
-                            ${outline.title ? `<div style="font-size: 13px; color: #3b82f6; font-weight: 600; margin-bottom: 8px;">"${outline.title}"</div>` : ''}
-                            ${outline.metaDescription ? `<div style="font-size: 11px; color: #64748b; font-style: italic; line-height: 1.4;">${outline.metaDescription}</div>` : ''}
+                <div style="background: white; border-radius: 12px; padding: 24px; border: 2px solid #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                                <div style="font-size: 28px;">📝</div>
+                                <h4 style="margin: 0; color: #1e293b; font-size: 18px; font-weight: 700;">AI-Generated Content Strategy</h4>
+                            </div>
+                            ${outline.title ? `<div style="font-size: 15px; color: #3b82f6; font-weight: 600; margin-bottom: 10px; line-height: 1.4;">"${outline.title}"</div>` : ''}
+                            ${outline.metaDescription ? `<div style="font-size: 13px; color: #64748b; line-height: 1.5; padding: 10px; background: #f8fafc; border-radius: 6px; border-left: 3px solid #3b82f6;">${outline.metaDescription}</div>` : ''}
                         </div>
-                        <div style="background: white; padding: 8px 12px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0;">
-                            <div style="font-size: 18px; font-weight: bold; color: #3b82f6;">${outline.estimatedWordCount || wordCount}</div>
-                            <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">words</div>
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 16px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); min-width: 100px;">
+                            <div style="font-size: 24px; font-weight: bold; color: white;">${outline.estimatedWordCount || wordCount}</div>
+                            <div style="font-size: 11px; color: rgba(255,255,255,0.9); text-transform: uppercase; font-weight: 600;">words</div>
                         </div>
                     </div>
 
-                    <div style="background: #e8f5e8; padding: 10px 12px; border-radius: 6px; margin-bottom: 15px; font-size: 12px; border-left: 3px solid #4caf50;">
-                        <strong>📊 Outline Summary:</strong>
-                        ${outline.sections ? outline.sections.length : 0} sections •
-                        ${outline.readingTime || `~${Math.round((outline.estimatedWordCount || wordCount) / 200)} min`} read •
-                        ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} difficulty
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                        <div style="background: #e8f5e8; padding: 12px; border-radius: 8px; text-align: center; border: 2px solid #4caf50;">
+                            <div style="font-size: 20px; font-weight: bold; color: #4caf50;">${outline.sections ? outline.sections.length : 0}</div>
+                            <div style="font-size: 11px; color: #2d3748; font-weight: 600;">SECTIONS</div>
+                        </div>
+                        <div style="background: #fff3cd; padding: 12px; border-radius: 8px; text-align: center; border: 2px solid #ffc107;">
+                            <div style="font-size: 20px; font-weight: bold; color: #f59e0b;">${outline.readingTime || `~${Math.round((outline.estimatedWordCount || wordCount) / 200)} min`}</div>
+                            <div style="font-size: 11px; color: #2d3748; font-weight: 600;">READ TIME</div>
+                        </div>
+                        <div style="background: #f0f4ff; padding: 12px; border-radius: 8px; text-align: center; border: 2px solid #6366f1;">
+                            <div style="font-size: 20px; font-weight: bold; color: #6366f1; text-transform: capitalize;">${difficulty}</div>
+                            <div style="font-size: 11px; color: #2d3748; font-weight: 600;">DIFFICULTY</div>
+                        </div>
                     </div>
 
-                    <div style="background: white; border-radius: 6px; padding: 15px; margin-bottom: 15px; font-size: 12px; max-height: 400px; overflow-y: auto;">
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin-bottom: 20px; font-size: 13px; max-height: 500px; overflow-y: auto; border: 1px solid #e2e8f0;">
+                        <h5 style="color: #1e293b; margin: 0 0 15px 0; font-size: 15px; font-weight: 600;">📑 Content Structure</h5>
                         ${sectionsHTML || '<div style="color: #64748b;">No sections generated</div>'}
                         ${faqHTML}
                     </div>

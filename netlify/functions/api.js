@@ -1364,11 +1364,27 @@ exports.handler = async (event, context) => {
     // OpenRouter Article Generation
     if (path === '/api/openrouter-generate' && method === 'POST') {
       try {
-        const { model, prompt, temperature, max_tokens } = JSON.parse(body);
+        let requestBody;
+        try {
+          requestBody = typeof body === 'string' ? JSON.parse(body) : body;
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'Invalid JSON in request body',
+              error: parseError.message
+            })
+          };
+        }
+
+        const { model, prompt, temperature, max_tokens } = requestBody;
 
         if (!OPENROUTER_API_KEY) {
           return {
-            statusCode: 500,
+            statusCode: 503,
             headers,
             body: JSON.stringify({
               success: false,
@@ -1383,7 +1399,8 @@ exports.handler = async (event, context) => {
             headers,
             body: JSON.stringify({
               success: false,
-              message: 'Model and prompt are required'
+              message: 'Model and prompt are required',
+              received: { hasModel: !!model, hasPrompt: !!prompt }
             })
           };
         }
