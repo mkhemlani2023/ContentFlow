@@ -2380,14 +2380,16 @@
         async function generateArticleSuggestions(keyword, cleanId) {
             const suggestionsSection = document.getElementById(`article-suggestions-${cleanId}`);
             const outputDiv = document.getElementById(`suggestions-output-${cleanId}`);
-            const button = document.getElementById(`suggestions-btn-${cleanId}`);
+            const button = document.getElementById(`ideas-btn-${cleanId}`); // Fixed: was suggestions-btn
 
             // Show the suggestions section
             suggestionsSection.style.display = 'block';
 
             // Show loading state
-            button.innerHTML = '🔄 Generating Suggestions...';
-            button.disabled = true;
+            if (button) {
+                button.innerHTML = '🔄 Generating Suggestions...';
+                button.disabled = true;
+            }
 
             outputDiv.innerHTML = `
                 <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #7c3aed;">
@@ -2441,8 +2443,10 @@
                     </div>
                 `;
             } finally {
-                button.innerHTML = '✨ Generate Article Suggestions';
-                button.disabled = false;
+                if (button) {
+                    button.innerHTML = '💡 Generate Article Ideas <span style="font-size: 10px; background: #f59e0b; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">5 credits</span>';
+                    button.disabled = false;
+                }
             }
         }
 
@@ -4376,7 +4380,17 @@
                 return;
             }
 
-            const targetDiv = document.getElementById(`competitor-results-${cleanId}`);
+            // Try both possible container IDs (inline and regular)
+            let targetDiv = document.getElementById(`competitor-results-inline-${cleanId}`);
+            if (!targetDiv) {
+                targetDiv = document.getElementById(`competitor-results-${cleanId}`);
+            }
+
+            if (!targetDiv) {
+                console.error('Could not find target div for content outline');
+                alert('Error: Could not find display area. Please try again.');
+                return;
+            }
 
             // Show loading in the same area
             targetDiv.innerHTML += `
