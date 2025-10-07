@@ -8946,10 +8946,16 @@ ${item.answer}
         async function generateArticleIdeasWithCredits(keyword, cleanId) {
             const CREDIT_COST = 5; // Cost for article ideas generation
 
+            console.log('=== ARTICLE IDEAS (v3 - line 8946) ===');
+            console.log('Keyword:', keyword);
+            console.log('CleanId:', cleanId);
+
             // Check credit requirement using consistent system
             if (!checkCreditRequirement('Article Ideas Generation', CREDIT_COST)) {
+                console.log('Credit check failed');
                 return; // Exit if insufficient credits
             }
+            console.log('Credit check passed');
 
             // Show progress modal
             showArticleIdeasProgress(keyword, cleanId);
@@ -8957,8 +8963,10 @@ ${item.answer}
             try {
                 // Deduct credits first
                 deductCredits(CREDIT_COST);
+                console.log('Credits deducted');
 
                 // Start the API call
+                console.log('Calling /api/article-ideas...');
                 const response = await fetch('/api/article-ideas', {
                     method: 'POST',
                     headers: {
@@ -8967,13 +8975,22 @@ ${item.answer}
                     body: JSON.stringify({ keyword })
                 });
 
+                console.log('API Response status:', response.status);
+
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    const errorText = await response.text();
+                    console.error('API Error response:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
                 }
 
                 const data = await response.json();
+                console.log('API Response data:', data);
+                console.log('Success:', data.success);
+                console.log('Ideas:', data.ideas);
+                console.log('Ideas count:', data.ideas ? data.ideas.length : 0);
 
                 if (data.success && data.ideas && data.ideas.length > 0) {
+                    console.log('✅ Success! Displaying ideas...');
                     // Update progress to completion
                     updateIdeasProgress(100, 'Formatting results...', '✅ Ideas generated successfully');
 
@@ -8983,7 +9000,14 @@ ${item.answer}
                         closeIdeasProgressModal();
                     }, 1000);
                 } else {
-                    throw new Error('Failed to generate article ideas');
+                    console.error('❌ API returned but with issues:', {
+                        success: data.success,
+                        hasIdeas: !!data.ideas,
+                        ideasCount: data.ideas ? data.ideas.length : 0,
+                        errorMessage: data.error || data.message,
+                        fullData: data
+                    });
+                    throw new Error(`API returned: success=${data.success}, ideas=${data.ideas ? data.ideas.length : 0}, error=${data.error || data.message || 'Unknown'}`);
                 }
 
             } catch (error) {
