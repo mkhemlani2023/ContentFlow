@@ -2359,21 +2359,38 @@
 
         // Credit-based article ideas generator
         async function generateArticleIdeasWithCredits(keyword, cleanId) {
+            console.log('=== generateArticleIdeasWithCredits START ===');
+            console.log('Keyword:', keyword);
+            console.log('CleanId:', cleanId);
+
             const CREDIT_COST = 5; // Cost for Google Autocomplete usage
 
             // Check credit requirement using consistent system
+            console.log('Checking credit requirement...');
             if (!checkCreditRequirement('Article Ideas Generation', CREDIT_COST)) {
+                console.log('Credit check failed - insufficient credits');
                 return; // Exit if insufficient credits
             }
+            console.log('Credit check passed');
 
             // Deduct credits using consistent system
+            console.log('Attempting to deduct credits...');
             if (!deductCredits(CREDIT_COST)) {
+                console.error('Failed to deduct credits');
                 alert('Unable to deduct credits. Please try again.');
                 return;
             }
+            console.log('Credits deducted successfully');
 
             // Call the original function
-            await generateArticleSuggestions(keyword, cleanId);
+            console.log('Calling generateArticleSuggestions...');
+            try {
+                await generateArticleSuggestions(keyword, cleanId);
+                console.log('generateArticleSuggestions completed');
+            } catch (error) {
+                console.error('generateArticleSuggestions error:', error);
+                throw error;
+            }
         }
 
         // Article suggestions function using Google Autocomplete
@@ -2454,24 +2471,36 @@
                 }
 
             } catch (error) {
-                console.error('Article suggestions error:', error);
+                console.error('=== Article suggestions FATAL ERROR ===');
+                console.error('Error object:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+
                 outputDiv.innerHTML = `
                     <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #dc2626;">
-                        <div style="font-weight: 500; color: #991b1b;">Article Ideas Generation Failed</div>
+                        <div style="font-weight: 500; color: #991b1b;">❌ Article Ideas Generation Failed</div>
                         <p style="margin: 8px 0 0 0; color: #b91c1c; font-size: 14px;">${error.message || 'Unknown error occurred'}</p>
                         <details style="margin-top: 8px;">
                             <summary style="cursor: pointer; font-size: 12px; color: #991b1b;">Technical Details</summary>
-                            <pre style="font-size: 11px; margin-top: 4px; padding: 8px; background: #fef2f2; border-radius: 4px; overflow-x: auto;">${JSON.stringify(error, null, 2)}</pre>
+                            <pre style="font-size: 11px; margin-top: 4px; padding: 8px; background: #fef2f2; border-radius: 4px; overflow-x: auto; white-space: pre-wrap;">${JSON.stringify({
+                                message: error.message,
+                                stack: error.stack,
+                                name: error.name
+                            }, null, 2)}</pre>
                         </details>
                         <button onclick="generateArticleIdeasWithCredits('${keyword.replace(/'/g, "\\'")}', '${cleanId}')" style="margin-top: 12px; padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            🔄 Retry
+                            🔄 Retry (5 credits)
                         </button>
                     </div>
                 `;
             } finally {
+                console.log('=== generateArticleSuggestions END (finally block) ===');
                 if (button) {
                     button.innerHTML = '💡 Generate Article Ideas <span style="font-size: 10px; background: #f59e0b; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">5 credits</span>';
                     button.disabled = false;
+                    console.log('Button reset successfully');
+                } else {
+                    console.warn('Button element not found in finally block');
                 }
             }
         }
@@ -2634,9 +2663,18 @@
 
         // Generate simple article ideas directly from Google Autocomplete suggestions
         function generateGoogleAutocompleteIdeas(keyword, suggestions) {
+            console.log('=== generateGoogleAutocompleteIdeas START ===');
+            console.log('Keyword:', keyword);
             console.log('Raw Google Autocomplete suggestions received:', suggestions);
+            console.log('Suggestions count:', suggestions ? suggestions.length : 0);
+
+            if (!suggestions || suggestions.length === 0) {
+                console.warn('No autocomplete suggestions to process');
+                return [];
+            }
 
             // Filter out nonsensical combinations
+            console.log('Filtering suggestions...');
             const filteredSuggestions = suggestions.filter(suggestion => {
                 if (!suggestion || typeof suggestion !== 'string') return false;
 
