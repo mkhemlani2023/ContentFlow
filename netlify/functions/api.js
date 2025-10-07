@@ -1143,7 +1143,8 @@ exports.handler = async (event, context) => {
           headers,
           body: JSON.stringify({
             success: true,
-            articles,
+            ideas: articles,  // Changed from "articles" to "ideas" to match frontend expectation
+            articles: articles,  // Keep for backwards compatibility
             totalArticles: articles.length,
             responseTime,
             cached: false,
