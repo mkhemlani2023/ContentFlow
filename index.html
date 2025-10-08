@@ -1693,15 +1693,15 @@
                     <div class="keyword-actions">
                         <button class="action-btn primary" onclick="generateArticleIdeasWithCredits('${keywordData.keyword.replace(/'/g, "\\'")}', '${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')"
                                 id="ideas-btn-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}"
-                                title="Uses Google Autocomplete API to generate relevant article ideas based on real search data. This provides authentic topics that people are actually searching for, ensuring better content performance and SEO potential.">
+                                title="Discover authentic article topics based on real search data from Google Autocomplete. Get AI-powered content ideas that people are actively searching for, ensuring maximum SEO potential and audience engagement.">
                             <span class="btn-icon">💡</span>
-                            Generate Article Ideas
+                            Discover Content Ideas
                             <span style="font-size: 10px; background: #f59e0b; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">5 credits</span>
                         </button>
                         <button class="action-btn secondary" onclick="toggleInlineCompetitorAnalysisWithCredits('${keywordData.keyword.replace(/'/g, "\\'")}', '${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')"
-                                title="Analyzes top 10 competitors in search results, providing domain authority, backlink counts, content length analysis, and strategic insights for outranking them.">
-                            <span class="btn-icon">🔍</span>
-                            <span id="toggle-text-inline-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">Analyze Competitors</span>
+                                title="Analyze top-ranking websites for this keyword and generate a winning content strategy. Get insights on domain authority, backlinks, content length, and AI-powered recommendations to outrank your competition.">
+                            <span class="btn-icon">🎯</span>
+                            <span id="toggle-text-inline-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}">Outrank Top Competitors</span>
                             <span style="font-size: 10px; background: #8b5cf6; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">10 credits</span>
                         </button>
                     </div>
@@ -1813,7 +1813,7 @@
                 analysisSection.style.display = 'block';
                 loadingDiv.style.display = 'block';
                 resultsDiv.style.display = 'none';
-                toggleText.textContent = 'Hide Analysis';
+                toggleText.textContent = 'Hide Competitor Analysis';
 
                 try {
                     console.log('Making competitor analysis request for:', keyword);
@@ -1871,7 +1871,7 @@
             } else {
                 // Hide analysis
                 analysisSection.style.display = 'none';
-                toggleText.textContent = 'Competitor Analysis';
+                toggleText.textContent = 'Outrank Top Competitors';
             }
         }
 
@@ -2661,7 +2661,7 @@
             } finally {
                 console.log('=== generateArticleSuggestions END (finally block) ===');
                 if (button) {
-                    button.innerHTML = '💡 Generate Article Ideas <span style="font-size: 10px; background: #f59e0b; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">5 credits</span>';
+                    button.innerHTML = '💡 Discover Content Ideas <span style="font-size: 10px; background: #f59e0b; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">5 credits</span>';
                     button.disabled = false;
                     console.log('Button reset successfully');
                 } else {
@@ -7554,7 +7554,7 @@ ${item.answer}
                 // Reset button state
                 if (button) {
                     button.disabled = false;
-                    button.innerHTML = '<span class="btn-icon">💡</span>Generate Article Ideas <span style="font-size: 10px; background: #f59e0b; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">5 credits</span>';
+                    button.innerHTML = '<span class="btn-icon">💡</span>Discover Content Ideas <span style="font-size: 10px; background: #f59e0b; color: white; padding: 1px 4px; border-radius: 8px; margin-left: 6px;">5 credits</span>';
                 }
             }
         }
