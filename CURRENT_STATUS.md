@@ -1,7 +1,7 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2025-10-08 (Latest Session)
-**Current Session:** Article Ideas, Outline Editing & Internal Linking
+**Last Updated:** 2025-10-08 (Latest Session - Continued)
+**Current Session:** Progress Bars, Article Display Fixes & Workflow Improvements
 **Developer:** Mary + Claude Code
 
 ---
@@ -9,16 +9,24 @@
 ## 🆕 LATEST SESSION - 2025-10-08
 
 **Recent Updates:**
+- ✅ IMPLEMENTED: Comprehensive progress bar system for ALL AI operations with dynamic status messages
+- ✅ FIXED: Article generation from Article Ideas - reconnected to proper workflow (was calling wrong API)
+- ✅ FIXED: Article display issues - made metadata fields optional, auto-generate TOC if missing
+- ✅ ENHANCED: Button wording for clarity - "Discover Content Ideas" & "Outrank Top Competitors"
+- ✅ ADDED: Extensive debugging logging throughout article generation flow
 - ✅ FIXED: Article Ideas Generation button functionality (ID mismatch resolved)
 - ✅ FIXED: Content Strategy formatting (left alignment, proper bullet positioning)
 - ✅ FIXED: OpenRouter 400 errors (model-specific token management implemented)
 - ✅ IMPLEMENTED: Editable outline workflow - users can now review and modify outlines before article generation
 - ✅ ADDED: AI-powered internal linking feature (7 credits) - analyzes saved articles for contextual link suggestions
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
-- ✅ IMPLEMENTED: Comprehensive progress bar system for ALL AI operations with dynamic status messages
 
-**Git Commits:**
+**Git Commits (Latest Session Continued):**
+- `a729fd3`: Enhance workflow button wording for clarity and elegance
+- `f7072d3`: Fix article generation from Article Ideas - connect to correct workflow
+- `fb7e24c`: Fix article display issues with comprehensive debugging
 - `6483da2`: Add comprehensive progress indicators for all AI operations
+- `8f275a6`: Update CURRENT_STATUS with progress bar system documentation
 - `fc36809`: Update CURRENT_STATUS with session 2025-10-08 work
 - `78a60e5`: Add AI-powered internal linking feature with relevance analysis
 - `c747b83`: Implement editable outline review workflow before article generation
@@ -58,17 +66,40 @@
    - Claude: 2x word count (200K window)
    - Prevents OpenRouter 400 errors from context overflow
 
+5. **Critical Bug Fixes (Session Continued)**:
+   - **Article Generation Broken**: confirmArticleGeneration() was calling wrong API endpoint
+   - **Solution**: Reconnected to generateArticleWithModel() and generateArticleWithImages()
+   - **Article Display Failure**: displayGeneratedArticle() crashed on missing tableOfContents
+   - **Solution**: Made all metadata fields optional, auto-generate TOC from sections
+   - **No Progress Indicators**: Users had no visibility into AI processing
+   - **Solution**: Added comprehensive progress bars with 5-7 stages per operation
+   - **Confusing Button Labels**: "Generate Article Ideas" and "Analyze Competitors" unclear
+   - **Solution**: Changed to "Discover Content Ideas" and "Outrank Top Competitors"
+
+6. **Enhanced User Experience**:
+   - Button text: "📝 Generate Article Outline" (clarifies first step)
+   - Confirmation dialog explains workflow: outline → edit → article
+   - Progress bars show: icon, title, stages, technical details, estimated time
+   - Comprehensive console logging for debugging (parse errors, API responses)
+   - Elegant tooltips explaining each workflow's benefits
+
 **All Features Now Working:**
-- ✅ Article Ideas Generation: Fixed button IDs and API field names
+- ✅ Article Ideas Generation: Fixed button IDs, API field names, button wording
 - ✅ Content Strategy: Real-time formatting, left-aligned content, proper lists
 - ✅ Outline Editor: Full modification capability before article generation
+- ✅ Article Generation from Ideas: Now properly triggers outline → edit → article workflow
+- ✅ Article Display: Handles missing metadata gracefully, auto-generates TOC
+- ✅ Progress Indicators: All AI operations show real-time progress with stages
 - ✅ Internal Links: AI-powered relevance analysis with user selection
 
 **Technical Improvements:**
-- Fixed duplicate credit deductions in article generation flow
+- Fixed critical workflow disconnect in confirmArticleGeneration()
+- Made displayGeneratedArticle() resilient to missing/optional fields
+- Added comprehensive console debugging throughout generation flow
 - Enhanced error logging for OpenRouter API calls
-- Improved modal UI/UX with progress indicators
+- Improved modal UI/UX with animated progress indicators
 - Added fallback logic for container ID lookups
+- Updated button text across entire application for consistency
 
 ---
 
