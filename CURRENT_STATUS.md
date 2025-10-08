@@ -1,12 +1,65 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2025-10-04 (Latest Session)
-**Current Session:** Article Generation & UI Improvements
+**Last Updated:** 2025-10-08 (Latest Session)
+**Current Session:** Article Ideas, Outline Editing & Internal Linking
 **Developer:** Mary + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2025-10-06
+## 🆕 LATEST SESSION - 2025-10-08
+
+**Recent Updates:**
+- ✅ FIXED: Article Ideas Generation button functionality (ID mismatch resolved)
+- ✅ FIXED: Content Strategy formatting (left alignment, proper bullet positioning)
+- ✅ FIXED: OpenRouter 400 errors (model-specific token management implemented)
+- ✅ IMPLEMENTED: Editable outline workflow - users can now review and modify outlines before article generation
+- ✅ ADDED: AI-powered internal linking feature (7 credits) - analyzes saved articles for contextual link suggestions
+- ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
+
+**Git Commits:**
+- `78a60e5`: Add AI-powered internal linking feature with relevance analysis
+- `c747b83`: Implement editable outline review workflow before article generation
+- `3d635d9`: Fix OpenRouter token limits and content strategy formatting
+- `5b699f4`: Fix content strategy display formatting issues
+- `2761111`: Fix article ideas API response field name mismatch
+- `ea02e5d`: Fix button IDs for article ideas and content strategy
+
+**Major Features Added:**
+
+1. **Editable Outline Workflow**:
+   - Full-screen modal displays AI-generated outline
+   - Edit article title, meta description, section titles, subsections
+   - Users approve outline before final article generation
+   - Prevents wasted credits on unwanted article structures
+
+2. **Internal Linking System**:
+   - Analyzes current article against saved article library (up to 20 articles)
+   - GPT-3.5 suggests 3-5 contextual internal links with relevance scores
+   - Shows placement recommendations and SEO reasoning
+   - Users select which links to apply via checkboxes
+   - Cost: 7 credits per analysis
+
+3. **Token Management**:
+   - GPT-3.5: max 2000 tokens (4K window)
+   - GPT-4o-mini: 1.8x word count (128K window)
+   - Claude: 2x word count (200K window)
+   - Prevents OpenRouter 400 errors from context overflow
+
+**All Features Now Working:**
+- ✅ Article Ideas Generation: Fixed button IDs and API field names
+- ✅ Content Strategy: Real-time formatting, left-aligned content, proper lists
+- ✅ Outline Editor: Full modification capability before article generation
+- ✅ Internal Links: AI-powered relevance analysis with user selection
+
+**Technical Improvements:**
+- Fixed duplicate credit deductions in article generation flow
+- Enhanced error logging for OpenRouter API calls
+- Improved modal UI/UX with progress indicators
+- Added fallback logic for container ID lookups
+
+---
+
+## 🆕 PREVIOUS SESSION - 2025-10-06
 
 **Recent Updates:**
 - ✅ FIXED: "Create Winning Content Strategy" now uses real OpenRouter API (no more templates!)
