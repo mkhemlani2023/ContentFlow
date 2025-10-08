@@ -719,6 +719,136 @@
             return true;
         }
 
+        // ===== PROGRESS BAR SYSTEM =====
+        // Reusable progress modal with dynamic status messages
+        let globalProgressModal = null;
+        let globalProgressInterval = null;
+
+        function showProgressModal(config) {
+            // Close existing modal if any
+            hideProgressModal();
+
+            const {
+                title = '🤖 AI Processing',
+                initialMessage = 'Initializing...',
+                icon = '🤖',
+                stages = [],
+                estimatedDuration = 10000
+            } = config;
+
+            // Create modal
+            const modal = document.createElement('div');
+            modal.id = 'globalProgressModal';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 50000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 40px; border-radius: 16px; max-width: 600px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                        <div style="text-align: center;">
+                            <div id="progressIcon" style="font-size: 48px; margin-bottom: 15px; animation: pulse 1.5s ease-in-out infinite;">${icon}</div>
+                            <h2 id="progressTitle" style="margin: 0 0 15px 0; color: #1e293b; font-size: 24px;">${title}</h2>
+                            <div id="progressMessage" style="margin-bottom: 25px; color: #64748b; font-size: 16px; min-height: 24px;">${initialMessage}</div>
+
+                            <!-- Progress bar -->
+                            <div style="background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 20px; position: relative;">
+                                <div id="progressBar" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); height: 100%; width: 0%; transition: width 0.5s ease; border-radius: 6px;"></div>
+                            </div>
+
+                            <!-- Stage indicators -->
+                            <div id="stageIndicators" style="display: flex; justify-content: space-around; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                                ${stages.map((stage, index) => `
+                                    <div id="stage-${index}" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f1f5f9; border-radius: 6px; font-size: 13px; color: #64748b;">
+                                        <span id="stage-icon-${index}">⏳</span>
+                                        <span>${stage}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <!-- Technical info (collapsible) -->
+                            <details style="margin-top: 20px; text-align: left;">
+                                <summary style="cursor: pointer; color: #94a3b8; font-size: 12px; user-select: none;">Technical Details</summary>
+                                <div id="technicalInfo" style="margin-top: 10px; padding: 12px; background: #f8fafc; border-radius: 6px; font-size: 11px; color: #64748b; font-family: monospace;"></div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+                <style>
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.1); }
+                }
+                </style>
+            `;
+
+            document.body.appendChild(modal);
+            globalProgressModal = modal;
+
+            // Auto-update progress if stages provided
+            if (stages.length > 0) {
+                const stageInterval = estimatedDuration / stages.length;
+                let currentStage = 0;
+
+                globalProgressInterval = setInterval(() => {
+                    if (currentStage < stages.length) {
+                        updateProgressStage(currentStage, stages[currentStage]);
+                        currentStage++;
+                    } else {
+                        clearInterval(globalProgressInterval);
+                    }
+                }, stageInterval);
+            }
+
+            return {
+                updateMessage: (message) => {
+                    const elem = document.getElementById('progressMessage');
+                    if (elem) elem.textContent = message;
+                },
+                updateProgress: (percent) => {
+                    const bar = document.getElementById('progressBar');
+                    if (bar) bar.style.width = `${percent}%`;
+                },
+                updateIcon: (newIcon) => {
+                    const elem = document.getElementById('progressIcon');
+                    if (elem) elem.textContent = newIcon;
+                },
+                updateTechnicalInfo: (info) => {
+                    const elem = document.getElementById('technicalInfo');
+                    if (elem) elem.textContent = info;
+                },
+                close: () => hideProgressModal()
+            };
+        }
+
+        function updateProgressStage(stageIndex, message) {
+            const messageElem = document.getElementById('progressMessage');
+            if (messageElem) messageElem.textContent = message;
+
+            const iconElem = document.getElementById(`stage-icon-${stageIndex}`);
+            if (iconElem) iconElem.textContent = '✅';
+
+            const stageElem = document.getElementById(`stage-${stageIndex}`);
+            if (stageElem) {
+                stageElem.style.background = '#dcfce7';
+                stageElem.style.color = '#166534';
+            }
+
+            const bar = document.getElementById('progressBar');
+            if (bar) {
+                const totalStages = document.querySelectorAll('[id^="stage-"]').length;
+                const progress = ((stageIndex + 1) / totalStages) * 100;
+                bar.style.width = `${progress}%`;
+            }
+        }
+
+        function hideProgressModal() {
+            if (globalProgressInterval) {
+                clearInterval(globalProgressInterval);
+                globalProgressInterval = null;
+            }
+            if (globalProgressModal) {
+                globalProgressModal.remove();
+                globalProgressModal = null;
+            }
+        }
+
         function showCreditDashboard() {
             const creditDashboard = document.getElementById('creditDashboard');
             const blogManagement = document.getElementById('blogManagement');
@@ -2424,6 +2554,21 @@
                 button.disabled = true;
             }
 
+            // Show comprehensive progress modal
+            const progress = showProgressModal({
+                title: '💡 Generating Article Ideas',
+                initialMessage: 'Initializing article idea generation...',
+                icon: '💡',
+                stages: [
+                    'Fetching Google autocomplete data',
+                    'Analyzing search patterns',
+                    'Generating AI-powered article titles',
+                    'Optimizing for SEO & intent',
+                    'Finalizing suggestions'
+                ],
+                estimatedDuration: 8000
+            });
+
             outputDiv.innerHTML = `
                 <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #7c3aed;">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -2437,6 +2582,7 @@
             try {
                 // First get Google autocomplete suggestions
                 console.log('Fetching autocomplete for:', keyword);
+                progress.updateTechnicalInfo(`Calling /api/autocomplete with keyword: "${keyword}"`);
                 const autocompleteResponse = await fetch('/api/autocomplete', {
                     method: 'POST',
                     headers: {
@@ -2461,12 +2607,28 @@
                     // Combine both with proper labeling
                     const allSuggestions = [...autocompleteIdeas, ...aiGeneratedIdeas];
                     console.log('Total suggestions:', allSuggestions.length);
+
+                    // Update progress to complete
+                    progress.updateIcon('✅');
+                    progress.updateProgress(100);
+                    progress.updateMessage('Article ideas generated successfully!');
+
+                    // Wait a moment then close
+                    setTimeout(() => progress.close(), 1000);
+
                     displayCombinedArticleSuggestions(outputDiv, autocompleteIdeas, aiGeneratedIdeas);
                 } else {
                     // Fallback to AI suggestions only if autocomplete fails
                     console.log('Autocomplete failed, using fallback...');
+                    progress.updateMessage('Using AI fallback generation...');
                     const aiSuggestions = await generateFallbackArticleIdeas(keyword);
                     console.log('Fallback suggestions:', aiSuggestions);
+
+                    progress.updateIcon('✅');
+                    progress.updateProgress(100);
+                    progress.updateMessage('Article ideas generated successfully!');
+                    setTimeout(() => progress.close(), 1000);
+
                     displayCombinedArticleSuggestions(outputDiv, [], aiSuggestions);
                 }
 
@@ -2475,6 +2637,9 @@
                 console.error('Error object:', error);
                 console.error('Error message:', error.message);
                 console.error('Error stack:', error.stack);
+
+                // Close progress modal on error
+                progress.close();
 
                 outputDiv.innerHTML = `
                     <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #dc2626;">
@@ -4481,7 +4646,22 @@
                 return;
             }
 
-            // Show loading in the same area
+            // Show comprehensive progress modal
+            const progress = showProgressModal({
+                title: '📝 Creating Content Strategy',
+                initialMessage: 'Analyzing keyword and competitor data...',
+                icon: '📝',
+                stages: [
+                    'Analyzing keyword intent & difficulty',
+                    'Reviewing competitor content strategies',
+                    'Generating SEO-optimized outline structure',
+                    'Creating section breakdowns',
+                    'Finalizing content recommendations'
+                ],
+                estimatedDuration: 12000
+            });
+
+            // Also show loading in the same area
             targetDiv.innerHTML += `
                 <div id="outline-loading-${cleanId}" style="background: #f0f8ff; border-radius: 6px; padding: 20px; margin-top: 15px; text-align: center;">
                     <div style="font-size: 20px;">📝</div>
@@ -4496,7 +4676,10 @@
                 let competitorData = null;
                 if (window.competitorDataCache && window.competitorDataCache[keyword]) {
                     competitorData = window.competitorDataCache[keyword];
+                    progress.updateTechnicalInfo(`Using cached competitor data for ${keyword}\nCompetitors analyzed: ${competitorData.competitors?.length || 0}`);
                 }
+
+                progress.updateMessage('Calling AI to generate comprehensive outline...');
 
                 // Call real content outline API
                 const response = await fetch('/api/content-outline', {
@@ -4518,26 +4701,41 @@
                     throw new Error(data.message || 'Failed to generate content outline');
                 }
 
+                // Update progress to complete
+                progress.updateIcon('✅');
+                progress.updateProgress(100);
+                progress.updateMessage('Content strategy generated successfully!');
+                progress.updateTechnicalInfo(`Generated ${data.outline?.sections?.length || 0} sections\nTotal word count: ${wordCount}\nResponse time: ${data.responseTime || 'N/A'}ms`);
+
+                // Wait a moment then close
+                setTimeout(() => progress.close(), 1500);
+
                 // Display the real AI-generated outline
                 displayInlineContentOutline(keyword, wordCount, difficulty, cleanId, data.outline);
 
             } catch (error) {
                 console.error('Content outline generation error:', error);
+
+                // Close progress modal on error
+                progress.close();
+
                 const errorDiv = document.getElementById(`outline-loading-${cleanId}`);
-                errorDiv.innerHTML = `
-                    <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #dc2626;">
-                        <div style="font-weight: 500; color: #991b1b;">❌ Content Outline Generation Failed</div>
-                        <p style="margin: 8px 0 0 0; color: #b91c1c; font-size: 14px;">${error.message || 'Unknown error occurred'}</p>
-                        <details style="margin-top: 8px;">
-                            <summary style="cursor: pointer; font-size: 12px; color: #991b1b;">Technical Details</summary>
-                            <pre style="font-size: 11px; margin-top: 4px; padding: 8px; background: #fef2f2; border-radius: 4px; overflow-x: auto;">${JSON.stringify(error, null, 2)}</pre>
-                        </details>
-                        <button onclick="generateContentOutline('${keyword.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${cleanId}')"
-                                style="margin-top: 12px; padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            🔄 Retry (15 credits)
-                        </button>
-                    </div>
-                `;
+                if (errorDiv) {
+                    errorDiv.innerHTML = `
+                        <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #dc2626;">
+                            <div style="font-weight: 500; color: #991b1b;">❌ Content Outline Generation Failed</div>
+                            <p style="margin: 8px 0 0 0; color: #b91c1c; font-size: 14px;">${error.message || 'Unknown error occurred'}</p>
+                            <details style="margin-top: 8px;">
+                                <summary style="cursor: pointer; font-size: 12px; color: #991b1b;">Technical Details</summary>
+                                <pre style="font-size: 11px; margin-top: 4px; padding: 8px; background: #fef2f2; border-radius: 4px; overflow-x: auto;">${JSON.stringify(error, null, 2)}</pre>
+                            </details>
+                            <button onclick="generateContentOutline('${keyword.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${cleanId}')"
+                                    style="margin-top: 12px; padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                🔄 Retry (15 credits)
+                            </button>
+                        </div>
+                    `;
+                }
             }
         }
 
@@ -6017,29 +6215,21 @@
         }
 
         async function generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier) {
-            // Show Step 1 loading
-            const loadingModal = document.createElement('div');
-            loadingModal.innerHTML = `
-                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
-                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 600px; text-align: center;">
-                        <div style="font-size: 24px; margin-bottom: 20px;">📝 Step 1: Generating Article Outline</div>
-                        <div style="margin-bottom: 20px;">Creating structured outline for "${keyword}" (${wordCount} words) using ${modelTier} AI model...</div>
-                        <div style="background: #f0f0f0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
-                            <div style="background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; width: 0%; animation: loading 4s ease-in-out infinite;" id="outlineLoadingBar"></div>
-                        </div>
-                        <div style="color: #666; font-size: 14px;">Creating comprehensive outline with sections, subsections, and key points...</div>
-                    </div>
-                </div>
-                <style>
-                @keyframes loading {
-                    0% { width: 0%; }
-                    50% { width: 70%; }
-                    100% { width: 100%; }
-                }
-                </style>
-            `;
-            loadingModal.id = 'outlineLoadingModal';
-            document.body.appendChild(loadingModal);
+            // Show comprehensive progress modal
+            const progress = showProgressModal({
+                title: '📝 Step 1: Creating Article Outline',
+                initialMessage: `Preparing to generate ${wordCount}-word outline for "${keyword}"...`,
+                icon: '📝',
+                stages: [
+                    'Initializing AI model',
+                    'Analyzing keyword & search intent',
+                    'Creating outline structure',
+                    'Generating section titles',
+                    'Adding subsections & key points',
+                    'Finalizing SEO optimizations'
+                ],
+                estimatedDuration: 15000
+            });
 
             try {
                 // Get model configuration
@@ -6050,6 +6240,7 @@
                 };
 
                 const config = modelConfigs[modelTier.toLowerCase()];
+                progress.updateTechnicalInfo(`Model: ${config.model}\nWord count: ${wordCount}\nDifficulty: ${difficulty}\nIntent: ${intent}\nTemperature: ${config.temperature}`);
 
                 // Step 1: Create outline prompt
                 const outlinePrompt = `Create a comprehensive article outline for "${keyword}" with exactly ${wordCount} words.
@@ -6154,17 +6345,24 @@ Make the outline strategic, comprehensive, and optimized for search engines with
                     throw new Error('Failed to parse outline data from AI response');
                 }
 
-                // Close outline loading modal
-                document.body.removeChild(loadingModal);
+                // Update progress to complete
+                progress.updateIcon('✅');
+                progress.updateProgress(100);
+                progress.updateMessage('Outline generated successfully! Opening editor...');
+                progress.updateTechnicalInfo(`Sections created: ${outlineStructure.outline?.sections?.length || 0}\nWord count target: ${outlineStructure.metadata?.wordCount || wordCount}\nReady for review and editing`);
+
+                // Wait a moment then close
+                setTimeout(() => progress.close(), 1500);
 
                 // Show outline for user review and editing
                 await showOutlineForReviewAndEdit(outlineStructure, keyword, wordCount, difficulty, intent, modelTier, config);
 
             } catch (error) {
                 console.error('Article generation error:', error);
-                if (document.getElementById('outlineLoadingModal')) {
-                    document.body.removeChild(document.getElementById('outlineLoadingModal'));
-                }
+
+                // Close progress modal on error
+                progress.close();
+
                 alert('Error generating outline: ' + error.message);
             }
         }
@@ -6324,36 +6522,28 @@ Make the outline strategic, comprehensive, and optimized for search engines with
         }
 
         async function generateArticleFromOutline(outlineStructure, keyword, modelTier, config) {
-            // Show Step 2 loading
-            const articleLoadingModal = document.createElement('div');
-            articleLoadingModal.innerHTML = `
-                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
-                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 600px; text-align: center;">
-                        <div style="font-size: 24px; margin-bottom: 20px;">✍️ Step 2: Generating Full Article</div>
-                        <div style="margin-bottom: 15px;">Creating complete article from outline using ${modelTier} AI model...</div>
-                        <div style="background: #f0f0f0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
-                            <div style="background: linear-gradient(90deg, #4CAF50, #45a049); height: 100%; width: 0%; animation: loading 6s ease-in-out infinite;" id="articleLoadingBar"></div>
-                        </div>
-                        <div style="color: #666; font-size: 14px;">Writing engaging content based on the structured outline...</div>
-                        <div style="margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #4CAF50;">
-                            <div style="font-weight: 600; margin-bottom: 8px;">✅ Outline Generated</div>
-                            <div style="font-size: 14px; color: #64748b;">Article structure: ${outlineStructure.outline?.sections?.length || 0} main sections with comprehensive coverage</div>
-                        </div>
-                    </div>
-                </div>
-                <style>
-                @keyframes loading {
-                    0% { width: 0%; }
-                    50% { width: 80%; }
-                    100% { width: 100%; }
-                }
-                </style>
-            `;
-            articleLoadingModal.id = 'articleLoadingModal';
-            document.body.appendChild(articleLoadingModal);
+            // Show comprehensive progress modal for article generation
+            const progress = showProgressModal({
+                title: '✍️ Step 2: Generating Full Article',
+                initialMessage: `Writing complete article from your approved outline...`,
+                icon: '✍️',
+                stages: [
+                    'Loading outline structure',
+                    'Generating introduction',
+                    'Writing main content sections',
+                    'Creating subsection content',
+                    'Writing conclusion & FAQ',
+                    'Adding SEO metadata',
+                    'Final quality check'
+                ],
+                estimatedDuration: 35000
+            });
+
+            progress.updateTechnicalInfo(`Model: ${config.model}\nSections: ${outlineStructure.outline?.sections?.length || 0}\nTarget word count: ${outlineStructure.metadata?.wordCount || 2000}\nKeyword: ${keyword}`);
 
             try {
                 // Create article prompt based on outline
+                progress.updateMessage('Creating AI prompt from outline...');
                 const articlePrompt = `Write a complete article based on this detailed outline. Follow the structure exactly and expand each section with engaging, SEO-optimized content.
 
 OUTLINE TO FOLLOW:
@@ -6426,6 +6616,8 @@ FORMAT: Return as JSON with this exact structure:
                     promptLength: articlePrompt.length
                 });
 
+                progress.updateMessage('Sending request to AI model...');
+
                 const articleResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
                     headers: {
@@ -6445,6 +6637,7 @@ FORMAT: Return as JSON with this exact structure:
                     throw new Error(`OpenRouter API error ${articleResponse.status}: ${errorData.error || errorData.message || 'Unknown error'}`);
                 }
 
+                progress.updateMessage('Parsing AI response...');
                 const articleData = await articleResponse.json();
                 let finalArticle;
 
@@ -6465,17 +6658,24 @@ FORMAT: Return as JSON with this exact structure:
                     throw new Error('Failed to parse final article data from AI response');
                 }
 
-                // Close article loading modal
-                document.body.removeChild(articleLoadingModal);
+                // Update progress to complete
+                progress.updateIcon('✅');
+                progress.updateProgress(100);
+                progress.updateMessage('Article generated successfully!');
+                progress.updateTechnicalInfo(`Article word count: ${finalArticle.metadata?.wordCount || 'N/A'}\nSections: ${finalArticle.content?.sections?.length || 0}\nFAQs: ${finalArticle.content?.faq?.length || 0}\nReady to publish!`);
+
+                // Wait a moment then close
+                setTimeout(() => progress.close(), 2000);
 
                 // Display the complete generated article
                 displayGeneratedArticle(finalArticle, modelTier, `${modelTier} Article`);
 
             } catch (error) {
                 console.error('Article generation from outline error:', error);
-                if (document.getElementById('articleLoadingModal')) {
-                    document.body.removeChild(document.getElementById('articleLoadingModal'));
-                }
+
+                // Close progress modal on error
+                progress.close();
+
                 alert('Error generating article from outline: ' + error.message);
             }
         }
