@@ -9,7 +9,10 @@
 ## 🆕 LATEST SESSION - 2025-10-08
 
 **Recent Updates:**
-- ✅ FIXED: Word count accuracy - enhanced AI prompt to enforce exact word count (±5% tolerance)
+- ✅ FIXED: Word count accuracy - AGGRESSIVE AI prompt now treats word count as HIGHEST PRIORITY
+- ✅ FIXED: max_tokens limit - increased from 2000 to 3500 for GPT-3.5 (allows full-length articles)
+- ✅ FIXED: Image display crash - wrapped FAQ/Conclusion in conditional checks to prevent .map() errors
+- ✅ ENHANCED: AI prompt now specifies 150-300 words per section minimum
 - ✅ FIXED: Actual word count calculation - counts all sections, subsections, conclusion, and FAQ
 - ✅ FIXED: Focus keyword - now forces correct keyword instead of article title
 - ✅ FIXED: Progress bar conflict - added manualStageControl to prevent auto-timer and manual update conflicts
@@ -33,6 +36,8 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `9d211d9`: Fix word count and image display errors (aggressive prompts, increased max_tokens, FAQ/Conclusion checks)
+- `c18e2b2`: Update CURRENT_STATUS with word count, focus keyword, and progress bar fixes
 - `8bc3401`: Fix article generation issues: word count, focus keyword, progress bar, and image generation
 - `50cf4ad`: Update CURRENT_STATUS with latest JSON parsing and progress bar fixes
 - `5c1b0e4`: Fix JSON parsing errors with multiple fallback strategies and comprehensive debugging
@@ -109,7 +114,9 @@
 - ✅ Internal Links: AI-powered relevance analysis with user selection
 
 **Technical Improvements:**
-- **Word Count Accuracy**: AI prompt enforces exact word count with ±5% tolerance, counts all sections including FAQs
+- **Word Count Priority**: AI prompt now treats word count as HIGHEST PRIORITY with explicit minimum section lengths (150-300 words/section)
+- **Token Limits Increased**: GPT-3.5 max_tokens raised from 2000 → 3500 (2x word count multiplier instead of 1.5x)
+- **Image Display Safety**: Wrapped FAQ and Conclusion rendering in conditional checks to prevent .map() errors on undefined arrays
 - **Word Count Calculation**: Client-side validation counts actual words from all article sections
 - **Focus Keyword Fix**: Forces correct keyword in metadata after AI generation (prevents title substitution)
 - **Progress Bar System**: manualStageControl flag prevents auto-timer/manual update conflicts
