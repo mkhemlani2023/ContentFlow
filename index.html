@@ -6247,7 +6247,7 @@ OUTLINE STRUCTURE:
 6. Conclusion with call-to-action (100-150 words)
 7. FAQ section (5 relevant questions)
 
-Return as JSON with this exact structure:
+CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include explanations, markdown, or any other formatting. Start your response with { and end with }. Use this exact structure:
 {
   "metadata": {
     "seoTitle": "SEO-optimized title (60 chars max)",
@@ -6324,18 +6324,46 @@ Make the outline strategic, comprehensive, and optimized for search engines with
                     // Parse outline data from response
                     let content = outlineData.choices[0].message.content;
 
-                    // Handle markdown code blocks
+                    console.log('=== RAW OUTLINE RESPONSE (first 1000 chars) ===');
+                    console.log(content.substring(0, 1000));
+
+                    // Try multiple extraction strategies
+                    let cleanedContent = content;
+
+                    // Strategy 1: Remove markdown code blocks
                     if (content.includes('```json')) {
-                        content = content.replace(/```json\s*/, '').replace(/\s*```$/, '');
+                        cleanedContent = content.replace(/```json\s*/g, '').replace(/\s*```/g, '');
                     } else if (content.includes('```')) {
-                        content = content.replace(/```\s*/, '').replace(/\s*```$/, '');
+                        cleanedContent = content.replace(/```\s*/g, '').replace(/\s*```/g, '');
                     }
 
-                    outlineStructure = JSON.parse(content);
+                    // Strategy 2: Extract JSON if there's extra text
+                    if (!cleanedContent.trim().startsWith('{')) {
+                        const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                            cleanedContent = jsonMatch[0];
+                            console.log('Extracted JSON from outline response');
+                        }
+                    }
+
+                    // Strategy 3: Remove trailing text
+                    const lastBrace = cleanedContent.lastIndexOf('}');
+                    if (lastBrace !== -1 && lastBrace < cleanedContent.length - 1) {
+                        cleanedContent = cleanedContent.substring(0, lastBrace + 1);
+                    }
+
+                    outlineStructure = JSON.parse(cleanedContent);
 
                     updateProgressStage(5, 'Finalizing SEO optimizations');
                 } catch (parseError) {
-                    console.error('Outline parsing error:', parseError);
+                    console.error('=== OUTLINE PARSING ERROR ===');
+                    console.error('Parse error:', parseError);
+                    console.error('=== FULL RAW OUTLINE ===');
+                    console.error(outlineData.choices[0]?.message?.content);
+                    console.error('=== END RAW OUTLINE ===');
+
+                    progress.close();
+                    alert(`Outline generation failed to parse AI response.\n\nPlease open console (F12) and share the content between "=== FULL RAW OUTLINE ===" markers.\n\nError: ${parseError.message}`);
                     throw new Error('Failed to parse outline data from AI response');
                 }
 
@@ -6556,7 +6584,7 @@ REQUIREMENTS:
 - Use current ${new Date().getFullYear()} information
 - Optimize for search engines
 
-FORMAT: Return as JSON with this exact structure:
+CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include explanations, markdown, or any other formatting. Start your response with { and end with }. Use this exact structure:
 {
   "metadata": {
     "seoTitle": "SEO-optimized title (60 chars max)",
@@ -6649,14 +6677,42 @@ FORMAT: Return as JSON with this exact structure:
                     // Parse final article data from response
                     let content = articleData.choices[0].message.content;
 
-                    // Handle markdown code blocks
+                    console.log('=== RAW AI RESPONSE (first 1000 chars) ===');
+                    console.log(content.substring(0, 1000));
+                    console.log('=== RESPONSE LENGTH:', content.length, 'chars ===');
+
+                    // Try multiple extraction strategies
+                    let cleanedContent = content;
+
+                    // Strategy 1: Remove markdown code blocks
                     if (content.includes('```json')) {
-                        content = content.replace(/```json\s*/, '').replace(/\s*```$/, '');
+                        cleanedContent = content.replace(/```json\s*/g, '').replace(/\s*```/g, '');
                     } else if (content.includes('```')) {
-                        content = content.replace(/```\s*/, '').replace(/\s*```$/, '');
+                        cleanedContent = content.replace(/```\s*/g, '').replace(/\s*```/g, '');
                     }
 
-                    finalArticle = JSON.parse(content);
+                    // Strategy 2: Extract JSON from between curly braces if there's extra text
+                    if (!cleanedContent.trim().startsWith('{')) {
+                        console.log('Content does not start with {, attempting to extract JSON...');
+                        const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                            cleanedContent = jsonMatch[0];
+                            console.log('Extracted JSON from response');
+                        }
+                    }
+
+                    // Strategy 3: Remove any trailing non-JSON text
+                    const lastBrace = cleanedContent.lastIndexOf('}');
+                    if (lastBrace !== -1 && lastBrace < cleanedContent.length - 1) {
+                        cleanedContent = cleanedContent.substring(0, lastBrace + 1);
+                        console.log('Trimmed trailing text after final }');
+                    }
+
+                    console.log('=== CLEANED CONTENT (first 500 chars) ===');
+                    console.log(cleanedContent.substring(0, 500));
+
+                    // Attempt to parse
+                    finalArticle = JSON.parse(cleanedContent);
 
                     updateProgressStage(6, 'Final quality check');
 
@@ -6667,8 +6723,16 @@ FORMAT: Return as JSON with this exact structure:
                     console.log('Content keys:', finalArticle.content ? Object.keys(finalArticle.content) : 'NO CONTENT');
                     console.log('Full article:', JSON.stringify(finalArticle, null, 2));
                 } catch (parseError) {
-                    console.error('Final article parsing error:', parseError);
-                    console.error('Raw content that failed to parse:', articleData.choices[0]?.message?.content?.substring(0, 500));
+                    console.error('=== FINAL ARTICLE PARSING ERROR ===');
+                    console.error('Parse error:', parseError);
+                    console.error('Error message:', parseError.message);
+                    console.error('=== FULL RAW CONTENT ===');
+                    console.error(articleData.choices[0]?.message?.content);
+                    console.error('=== END RAW CONTENT ===');
+
+                    // Show user-friendly error with instructions
+                    progress.close();
+                    alert(`Article generation failed to parse AI response.\n\nPlease open the browser console (F12) and:\n1. Look for "=== FULL RAW CONTENT ==="\n2. Copy the content\n3. Share it for debugging\n\nError: ${parseError.message}`);
                     throw new Error('Failed to parse final article data from AI response');
                 }
 
