@@ -6224,7 +6224,11 @@
                 const config = modelConfigs[modelTier.toLowerCase()];
                 progress.updateTechnicalInfo(`Model: ${config.model}\nWord count: ${wordCount}\nDifficulty: ${difficulty}\nIntent: ${intent}\nTemperature: ${config.temperature}`);
 
+                // Manually advance through stages
+                updateProgressStage(0, 'Initializing AI model');
+
                 // Step 1: Create outline prompt
+                updateProgressStage(1, 'Analyzing keyword & search intent');
                 const outlinePrompt = `Create a comprehensive article outline for "${keyword}" with exactly ${wordCount} words.
 
 REQUIREMENTS:
@@ -6289,6 +6293,8 @@ Return as JSON with this exact structure:
 
 Make the outline strategic, comprehensive, and optimized for search engines with current ${new Date().getFullYear()} context.`;
 
+                updateProgressStage(2, 'Creating outline structure');
+
                 // Step 1: Generate outline using OpenRouter API
                 const outlineResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
@@ -6307,8 +6313,12 @@ Make the outline strategic, comprehensive, and optimized for search engines with
                     throw new Error(`OpenRouter API error: ${outlineResponse.status}`);
                 }
 
+                updateProgressStage(3, 'Generating section titles');
+
                 const outlineData = await outlineResponse.json();
                 let outlineStructure;
+
+                updateProgressStage(4, 'Adding subsections & key points');
 
                 try {
                     // Parse outline data from response
@@ -6322,6 +6332,8 @@ Make the outline strategic, comprehensive, and optimized for search engines with
                     }
 
                     outlineStructure = JSON.parse(content);
+
+                    updateProgressStage(5, 'Finalizing SEO optimizations');
                 } catch (parseError) {
                     console.error('Outline parsing error:', parseError);
                     throw new Error('Failed to parse outline data from AI response');
@@ -6524,7 +6536,11 @@ Make the outline strategic, comprehensive, and optimized for search engines with
             progress.updateTechnicalInfo(`Model: ${config.model}\nSections: ${outlineStructure.outline?.sections?.length || 0}\nTarget word count: ${outlineStructure.metadata?.wordCount || 2000}\nKeyword: ${keyword}`);
 
             try {
+                // Manually advance through stages
+                updateProgressStage(0, 'Loading outline structure');
+
                 // Create article prompt based on outline
+                updateProgressStage(1, 'Generating introduction');
                 progress.updateMessage('Creating AI prompt from outline...');
                 const articlePrompt = `Write a complete article based on this detailed outline. Follow the structure exactly and expand each section with engaging, SEO-optimized content.
 
@@ -6598,6 +6614,7 @@ FORMAT: Return as JSON with this exact structure:
                     promptLength: articlePrompt.length
                 });
 
+                updateProgressStage(2, 'Writing main content sections');
                 progress.updateMessage('Sending request to AI model...');
 
                 const articleResponse = await fetch('/api/openrouter-generate', {
@@ -6619,9 +6636,14 @@ FORMAT: Return as JSON with this exact structure:
                     throw new Error(`OpenRouter API error ${articleResponse.status}: ${errorData.error || errorData.message || 'Unknown error'}`);
                 }
 
+                updateProgressStage(3, 'Creating subsection content');
+                updateProgressStage(4, 'Writing conclusion & FAQ');
                 progress.updateMessage('Parsing AI response...');
+
                 const articleData = await articleResponse.json();
                 let finalArticle;
+
+                updateProgressStage(5, 'Adding SEO metadata');
 
                 try {
                     // Parse final article data from response
@@ -6635,6 +6657,8 @@ FORMAT: Return as JSON with this exact structure:
                     }
 
                     finalArticle = JSON.parse(content);
+
+                    updateProgressStage(6, 'Final quality check');
 
                     // Debug: Log the parsed article structure
                     console.log('=== PARSED ARTICLE STRUCTURE ===');
@@ -6679,7 +6703,10 @@ FORMAT: Return as JSON with this exact structure:
                             });
 
                             const imageCount = window.pendingImageGeneration.imageTier === 'Featured Image' ? 1 : 3;
+                            console.log('Generating images:', {keyword, imageTier: window.pendingImageGeneration.imageTier, imageCount});
+
                             const images = await generateImagesForArticle(keyword, window.pendingImageGeneration.imageTier, imageCount);
+                            console.log('Images generated:', images);
 
                             imageProgress.updateIcon('✅');
                             imageProgress.updateProgress(100);
@@ -6949,6 +6976,24 @@ Make the content engaging, informative, and optimized for search engines. Includ
                         anchor: section.anchor || `#${section.title.toLowerCase().replace(/\s+/g, '-')}`,
                         level: 2
                     }));
+
+                    // Add Conclusion to TOC if it exists
+                    if (content.conclusion) {
+                        toc.push({
+                            title: 'Conclusion',
+                            anchor: '#conclusion',
+                            level: 2
+                        });
+                    }
+
+                    // Add FAQ to TOC if it exists
+                    if (content.faq && content.faq.length > 0) {
+                        toc.push({
+                            title: 'Frequently Asked Questions',
+                            anchor: '#faq',
+                            level: 2
+                        });
+                    }
                 }
 
                 // Store globally for edit functions
@@ -7061,7 +7106,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                 <!-- Conclusion -->
                                 ${content.conclusion ? `
                                 <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #22c55e;">
-                                    <h2 style="color: #166534; margin-bottom: 15px;">🎯 Conclusion</h2>
+                                    <h2 id="conclusion" style="color: #166534; margin-bottom: 15px;">🎯 Conclusion</h2>
                                     ${content.conclusion}
                                 </div>
                                 ` : ''}
@@ -7069,7 +7114,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                 <!-- FAQ Section -->
                                 ${content.faq && content.faq.length > 0 ? `
                                 <div style="background: #fefce8; padding: 20px; border-radius: 8px; border-left: 4px solid #eab308;">
-                                    <h2 style="color: #92400e; margin-bottom: 20px;">❓ Frequently Asked Questions</h2>
+                                    <h2 id="faq" style="color: #92400e; margin-bottom: 20px;">❓ Frequently Asked Questions</h2>
                                     ${content.faq.map(item => `
                                         <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #fde68a;">
                                             <h3 style="color: #92400e; font-size: 16px; margin-bottom: 10px;">${item.question}</h3>
