@@ -791,7 +791,9 @@
                         updateProgressStage(currentStage, stages[currentStage]);
                         currentStage++;
                     } else {
-                        clearInterval(globalProgressInterval);
+                        // Keep progress at 100% instead of clearing interval
+                        // This prevents the appearance of looping
+                        // The interval will be cleared when progress.close() is called
                     }
                 }, stageInterval);
             }
@@ -2566,7 +2568,7 @@
                     'Optimizing for SEO & intent',
                     'Finalizing suggestions'
                 ],
-                estimatedDuration: 8000
+                estimatedDuration: 15000 // Increased from 8000 for more realistic timing
             });
 
             outputDiv.innerHTML = `
@@ -4638,7 +4640,7 @@
                     'Creating section breakdowns',
                     'Finalizing content recommendations'
                 ],
-                estimatedDuration: 12000
+                estimatedDuration: 20000 // Increased from 12000 for more realistic timing
             });
 
             // Also show loading in the same area
@@ -6208,7 +6210,7 @@
                     'Adding subsections & key points',
                     'Finalizing SEO optimizations'
                 ],
-                estimatedDuration: 15000
+                estimatedDuration: 25000 // Increased from 15000 for more realistic timing
             });
 
             try {
@@ -6516,7 +6518,7 @@ Make the outline strategic, comprehensive, and optimized for search engines with
                     'Adding SEO metadata',
                     'Final quality check'
                 ],
-                estimatedDuration: 35000
+                estimatedDuration: 70000 // Increased from 35000 - articles can take 60-90+ seconds
             });
 
             progress.updateTechnicalInfo(`Model: ${config.model}\nSections: ${outlineStructure.outline?.sections?.length || 0}\nTarget word count: ${outlineStructure.metadata?.wordCount || 2000}\nKeyword: ${keyword}`);
