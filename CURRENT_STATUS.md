@@ -9,6 +9,11 @@
 ## 🆕 LATEST SESSION - 2025-10-08
 
 **Recent Updates:**
+- ✅ FIXED: JSON parsing errors - implemented 3 fallback strategies for AI response parsing
+- ✅ FIXED: Progress bar stages - now manually advance through all steps tied to actual work
+- ✅ FIXED: Table of Contents - now includes Conclusion and FAQ sections with anchor links
+- ✅ ENHANCED: Comprehensive error logging throughout parsing pipeline with full response capture
+- ✅ ENHANCED: AI prompts with explicit JSON-only output instructions
 - ✅ IMPLEMENTED: Comprehensive progress bar system for ALL AI operations with dynamic status messages
 - ✅ FIXED: Article generation from Article Ideas - reconnected to proper workflow (was calling wrong API)
 - ✅ FIXED: Article display issues - made metadata fields optional, auto-generate TOC if missing
@@ -22,6 +27,9 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `5c1b0e4`: Fix JSON parsing errors with multiple fallback strategies and comprehensive debugging
+- `270e17c`: Fix 3 out of 4 user-reported issues (progress stages, TOC sections)
+- `2a03450`: Fix all article generation issues - reconnect to outline-first workflow
 - `a729fd3`: Enhance workflow button wording for clarity and elegance
 - `f7072d3`: Fix article generation from Article Ideas - connect to correct workflow
 - `fb7e24c`: Fix article display issues with comprehensive debugging
@@ -93,6 +101,10 @@
 - ✅ Internal Links: AI-powered relevance analysis with user selection
 
 **Technical Improvements:**
+- **JSON Parsing Robustness**: Implemented 3-tier fallback strategy (remove markdown → extract JSON → trim trailing text)
+- **Progress Bar Synchronization**: Manual stage advancement tied to actual API progress (6 stages outline, 7 stages article)
+- **Comprehensive Error Logging**: Full raw response capture with clear markers for debugging
+- **Enhanced AI Prompts**: Explicit JSON-only instructions to reduce parsing failures
 - Fixed critical workflow disconnect in confirmArticleGeneration()
 - Made displayGeneratedArticle() resilient to missing/optional fields
 - Added comprehensive console debugging throughout generation flow
