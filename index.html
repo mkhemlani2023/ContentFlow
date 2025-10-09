@@ -6578,13 +6578,26 @@ Make the outline strategic, comprehensive, and optimized for search engines with
 OUTLINE TO FOLLOW:
 ${JSON.stringify(outlineStructure, null, 2)}
 
+CRITICAL WORD COUNT REQUIREMENT:
+The article MUST contain EXACTLY ${outlineStructure.metadata?.wordCount || 2000} words.
+This is NOT negotiable. The word count is the HIGHEST PRIORITY.
+
+If the article is shorter than ${Math.floor((outlineStructure.metadata?.wordCount || 2000) * 0.95)} words, it is UNACCEPTABLE.
+
+TO ACHIEVE THE WORD COUNT:
+- Write LONG, DETAILED paragraphs for EVERY section (minimum 150-300 words per section)
+- Include multiple examples, case studies, and statistics in each section
+- Write detailed explanations for every point
+- Expand subsections with comprehensive information
+- Write detailed FAQ answers (100-150 words per answer)
+- Add transitional paragraphs between sections
+- Include actionable tips and step-by-step guidance
+
 REQUIREMENTS:
 - Follow the exact outline structure provided
 - Target keyword: "${keyword}" (CRITICAL: Use this EXACT keyword as focusKeyword, do NOT use the article title)
-- CRITICAL WORD COUNT: Write EXACTLY ${outlineStructure.metadata?.wordCount || 2000} words (±5% tolerance)
-- Count every word in all sections: introduction, all main sections, all subsections, conclusion, and FAQ answers
-- Expand sections with detailed examples, statistics, and actionable tips to meet the exact word count
-- Write engaging, informative content
+- WORD COUNT: ${outlineStructure.metadata?.wordCount || 2000} words (must be at least ${Math.floor((outlineStructure.metadata?.wordCount || 2000) * 0.95)} words)
+- Write engaging, informative, COMPREHENSIVE content
 - Use current ${new Date().getFullYear()} information
 - Optimize for search engines
 
@@ -6628,15 +6641,17 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
                 let maxTokens;
 
                 // Different models have different context windows
+                // NOTE: 1 word ≈ 1.33 tokens on average
                 if (config.model.includes('gpt-3.5')) {
-                    // GPT-3.5-turbo has 4K context, be conservative
-                    maxTokens = Math.min(2000, Math.floor(targetWordCount * 1.5));
+                    // GPT-3.5-turbo: Increased limit to allow full-length articles
+                    // For 1800 words we need ~2400 tokens, so use 2x multiplier
+                    maxTokens = Math.min(3500, Math.floor(targetWordCount * 2));
                 } else if (config.model.includes('gpt-4o-mini')) {
-                    // GPT-4o-mini has large context window
-                    maxTokens = Math.floor(targetWordCount * 1.8);
+                    // GPT-4o-mini has 128K context window
+                    maxTokens = Math.floor(targetWordCount * 2.5);
                 } else {
-                    // Claude and other models with large windows
-                    maxTokens = Math.floor(targetWordCount * 2);
+                    // Claude and other models with large windows (200K+)
+                    maxTokens = Math.floor(targetWordCount * 3);
                 }
 
                 console.log('Article generation request:', {
@@ -7447,12 +7462,15 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                 `).join('')}
 
                                 <!-- Conclusion -->
+                                ${content.conclusion ? `
                                 <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #22c55e;">
                                     <h2 style="color: #166534; margin-bottom: 15px;">🎯 Conclusion</h2>
                                     ${content.conclusion}
                                 </div>
+                                ` : ''}
 
                                 <!-- FAQ Section -->
+                                ${content.faq && content.faq.length > 0 ? `
                                 <div style="background: #fefce8; padding: 20px; border-radius: 8px; border-left: 4px solid #eab308;">
                                     <h2 style="color: #92400e; margin-bottom: 20px;">❓ Frequently Asked Questions</h2>
                                     ${content.faq.map(item => `
@@ -7462,6 +7480,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                         </div>
                                     `).join('')}
                                 </div>
+                                ` : ''}
 
                                 <!-- Image Gallery (if more than 4 images) -->
                                 ${images && images.length > 4 ? `
