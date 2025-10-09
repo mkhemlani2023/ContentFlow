@@ -9,6 +9,12 @@
 ## 🆕 LATEST SESSION - 2025-10-08
 
 **Recent Updates:**
+- ✅ FIXED: Word count accuracy - enhanced AI prompt to enforce exact word count (±5% tolerance)
+- ✅ FIXED: Actual word count calculation - counts all sections, subsections, conclusion, and FAQ
+- ✅ FIXED: Focus keyword - now forces correct keyword instead of article title
+- ✅ FIXED: Progress bar conflict - added manualStageControl to prevent auto-timer and manual update conflicts
+- ✅ ENHANCED: Image generation debugging - comprehensive logging for troubleshooting
+- ✅ ENHANCED: Article display - shows actual vs target word count
 - ✅ FIXED: JSON parsing errors - implemented 3 fallback strategies for AI response parsing
 - ✅ FIXED: Progress bar stages - now manually advance through all steps tied to actual work
 - ✅ FIXED: Table of Contents - now includes Conclusion and FAQ sections with anchor links
@@ -27,6 +33,8 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `8bc3401`: Fix article generation issues: word count, focus keyword, progress bar, and image generation
+- `50cf4ad`: Update CURRENT_STATUS with latest JSON parsing and progress bar fixes
 - `5c1b0e4`: Fix JSON parsing errors with multiple fallback strategies and comprehensive debugging
 - `270e17c`: Fix 3 out of 4 user-reported issues (progress stages, TOC sections)
 - `2a03450`: Fix all article generation issues - reconnect to outline-first workflow
@@ -101,6 +109,11 @@
 - ✅ Internal Links: AI-powered relevance analysis with user selection
 
 **Technical Improvements:**
+- **Word Count Accuracy**: AI prompt enforces exact word count with ±5% tolerance, counts all sections including FAQs
+- **Word Count Calculation**: Client-side validation counts actual words from all article sections
+- **Focus Keyword Fix**: Forces correct keyword in metadata after AI generation (prevents title substitution)
+- **Progress Bar System**: manualStageControl flag prevents auto-timer/manual update conflicts
+- **Image Generation Debugging**: Comprehensive console logging for troubleshooting API failures
 - **JSON Parsing Robustness**: Implemented 3-tier fallback strategy (remove markdown → extract JSON → trim trailing text)
 - **Progress Bar Synchronization**: Manual stage advancement tied to actual API progress (6 stages outline, 7 stages article)
 - **Comprehensive Error Logging**: Full raw response capture with clear markers for debugging
