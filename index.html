@@ -733,7 +733,8 @@
                 initialMessage = 'Initializing...',
                 icon = '🤖',
                 stages = [],
-                estimatedDuration = 10000
+                estimatedDuration = 10000,
+                manualStageControl = false  // NEW: If true, disable auto-update timer
             } = config;
 
             // Create modal
@@ -781,8 +782,8 @@
             document.body.appendChild(modal);
             globalProgressModal = modal;
 
-            // Auto-update progress if stages provided
-            if (stages.length > 0) {
+            // Auto-update progress if stages provided (only if not using manual control)
+            if (stages.length > 0 && !manualStageControl) {
                 const stageInterval = estimatedDuration / stages.length;
                 let currentStage = 0;
 
@@ -6210,7 +6211,8 @@
                     'Adding subsections & key points',
                     'Finalizing SEO optimizations'
                 ],
-                estimatedDuration: 25000 // Increased from 15000 for more realistic timing
+                estimatedDuration: 25000, // Increased from 15000 for more realistic timing
+                manualStageControl: true // Disable auto-timer, use manual updates
             });
 
             try {
@@ -6558,7 +6560,8 @@ Make the outline strategic, comprehensive, and optimized for search engines with
                     'Adding SEO metadata',
                     'Final quality check'
                 ],
-                estimatedDuration: 70000 // Increased from 35000 - articles can take 60-90+ seconds
+                estimatedDuration: 70000, // Increased from 35000 - articles can take 60-90+ seconds
+                manualStageControl: true // Disable auto-timer, use manual updates
             });
 
             progress.updateTechnicalInfo(`Model: ${config.model}\nSections: ${outlineStructure.outline?.sections?.length || 0}\nTarget word count: ${outlineStructure.metadata?.wordCount || 2000}\nKeyword: ${keyword}`);
@@ -6577,10 +6580,11 @@ ${JSON.stringify(outlineStructure, null, 2)}
 
 REQUIREMENTS:
 - Follow the exact outline structure provided
-- Target keyword: "${keyword}"
-- Maintain the word count allocation for each section
+- Target keyword: "${keyword}" (CRITICAL: Use this EXACT keyword as focusKeyword, do NOT use the article title)
+- CRITICAL WORD COUNT: Write EXACTLY ${outlineStructure.metadata?.wordCount || 2000} words (±5% tolerance)
+- Count every word in all sections: introduction, all main sections, all subsections, conclusion, and FAQ answers
+- Expand sections with detailed examples, statistics, and actionable tips to meet the exact word count
 - Write engaging, informative content
-- Include relevant statistics and actionable tips
 - Use current ${new Date().getFullYear()} information
 - Optimize for search engines
 
@@ -6716,6 +6720,61 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
 
                     updateProgressStage(6, 'Final quality check');
 
+                    // CRITICAL FIX: Force correct focus keyword (AI often uses title instead)
+                    if (finalArticle.metadata) {
+                        finalArticle.metadata.focusKeyword = keyword;
+                        console.log('✅ Focus keyword forced to:', keyword);
+                    }
+
+                    // Calculate actual word count from content
+                    let actualWordCount = 0;
+                    if (finalArticle.content) {
+                        // Count introduction words
+                        if (finalArticle.content.introduction) {
+                            actualWordCount += finalArticle.content.introduction.split(/\s+/).filter(word => word.length > 0).length;
+                        }
+                        // Count all section words
+                        if (finalArticle.content.sections) {
+                            finalArticle.content.sections.forEach(section => {
+                                if (section.content) {
+                                    actualWordCount += section.content.split(/\s+/).filter(word => word.length > 0).length;
+                                }
+                                // Count subsection words
+                                if (section.subsections) {
+                                    section.subsections.forEach(sub => {
+                                        if (sub.content) {
+                                            actualWordCount += sub.content.split(/\s+/).filter(word => word.length > 0).length;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        // Count conclusion words
+                        if (finalArticle.content.conclusion) {
+                            actualWordCount += finalArticle.content.conclusion.split(/\s+/).filter(word => word.length > 0).length;
+                        }
+                        // Count FAQ words
+                        if (finalArticle.content.faq) {
+                            finalArticle.content.faq.forEach(item => {
+                                if (item.answer) {
+                                    actualWordCount += item.answer.split(/\s+/).filter(word => word.length > 0).length;
+                                }
+                            });
+                        }
+                    }
+
+                    // Update metadata with actual word count
+                    if (finalArticle.metadata) {
+                        finalArticle.metadata.actualWordCount = actualWordCount;
+                        const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
+                        const variance = Math.abs(actualWordCount - targetWordCount);
+                        const percentVariance = ((variance / targetWordCount) * 100).toFixed(1);
+                        console.log('📊 Word Count Analysis:');
+                        console.log('  Target:', targetWordCount);
+                        console.log('  Actual:', actualWordCount);
+                        console.log('  Variance:', variance, `words (${percentVariance}%)`);
+                    }
+
                     // Debug: Log the parsed article structure
                     console.log('=== PARSED ARTICLE STRUCTURE ===');
                     console.log('Article keys:', Object.keys(finalArticle));
@@ -6749,7 +6808,9 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
 
                     // Check if images were requested
                     if (window.pendingImageGeneration) {
+                        console.log('=== IMAGE GENERATION START ===');
                         console.log('Pending image generation detected:', window.pendingImageGeneration);
+                        console.log('Keyword for images:', keyword);
 
                         try {
                             // Show progress for image generation
@@ -6763,14 +6824,21 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
                                     'Creating images',
                                     'Optimizing for web'
                                 ],
-                                estimatedDuration: 15000
+                                estimatedDuration: 15000,
+                                manualStageControl: false // Use auto-timer for images
                             });
 
                             const imageCount = window.pendingImageGeneration.imageTier === 'Featured Image' ? 1 : 3;
-                            console.log('Generating images:', {keyword, imageTier: window.pendingImageGeneration.imageTier, imageCount});
+                            console.log('=== IMAGE GENERATION PARAMS ===');
+                            console.log('- Keyword:', keyword);
+                            console.log('- Image Tier:', window.pendingImageGeneration.imageTier);
+                            console.log('- Image Count:', imageCount);
+                            console.log('Calling generateImagesForArticle...');
 
                             const images = await generateImagesForArticle(keyword, window.pendingImageGeneration.imageTier, imageCount);
-                            console.log('Images generated:', images);
+                            console.log('=== IMAGES GENERATED ===');
+                            console.log('Images array:', images);
+                            console.log('Number of images:', images?.length || 0);
 
                             imageProgress.updateIcon('✅');
                             imageProgress.updateProgress(100);
@@ -6976,7 +7044,11 @@ Make the content engaging, informative, and optimized for search engines. Includ
         }
 
         async function generateImagesForArticle(keyword, imageTier, imageCount) {
+            console.log('=== generateImagesForArticle CALLED ===');
+            console.log('Input params:', {keyword, imageTier, imageCount});
+
             try {
+                console.log('Sending request to /api/generate-images...');
                 const response = await fetch('/api/generate-images', {
                     method: 'POST',
                     headers: {
@@ -6989,25 +7061,42 @@ Make the content engaging, informative, and optimized for search engines. Includ
                     })
                 });
 
+                console.log('API response status:', response.status);
+
                 if (!response.ok) {
-                    throw new Error(`Image generation error: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('API error response:', errorText);
+                    throw new Error(`Image generation API returned ${response.status}: ${errorText}`);
                 }
 
                 const data = await response.json();
+                console.log('API response data:', data);
+
+                if (!data.images || !Array.isArray(data.images)) {
+                    console.error('Invalid response format - no images array');
+                    throw new Error('Invalid API response format');
+                }
+
+                console.log('Successfully received', data.images.length, 'images from API');
                 return data.images;
             } catch (error) {
-                console.error('Image generation error:', error);
+                console.error('=== IMAGE GENERATION FAILED ===');
+                console.error('Error:', error);
+                console.error('Error message:', error.message);
+                console.error('Falling back to placeholder images...');
+
                 // Return placeholder images if generation fails
                 const placeholders = [];
                 for (let i = 0; i < imageCount; i++) {
                     placeholders.push({
-                        url: `https://via.placeholder.com/800x600/667eea/ffffff?text=${encodeURIComponent(keyword)}`,
+                        url: `https://picsum.photos/seed/${keyword}-${i}/800/600`,
                         alt: `${i === 0 ? 'Featured' : 'Supporting'} image for ${keyword}`,
                         type: i === 0 ? 'featured' : 'supporting',
                         prompt: `Image ${i + 1} for ${keyword}`,
                         style: 'placeholder'
                     });
                 }
+                console.log('Generated', placeholders.length, 'placeholder images');
                 return placeholders;
             }
         }
@@ -7075,7 +7164,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                         <h1 style="margin: 0; font-size: 28px; color: #1a202c;">${content.title || 'Generated Article'}</h1>
                                         <div style="display: flex; gap: 20px; margin-top: 10px; font-size: 14px; color: #64748b;">
                                             <span>📖 ${metadata?.readingTime || 'N/A'}</span>
-                                            <span>📝 ${metadata?.wordCount || 'N/A'} words</span>
+                                            <span>📝 ${metadata?.actualWordCount || metadata?.wordCount || 'N/A'} words ${metadata?.actualWordCount && metadata?.wordCount ? `(target: ${metadata.wordCount})` : ''}</span>
                                             <span>🤖 Generated with ${modelTier}</span>
                                             <span>💳 Cost: ${creditCost} credits</span>
                                         </div>
