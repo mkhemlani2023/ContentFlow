@@ -6655,12 +6655,62 @@ FORMAT: Return as JSON with this exact structure:
                 progress.updateTechnicalInfo(`Article word count: ${finalArticle.metadata?.wordCount || 'N/A'}\nSections: ${finalArticle.content?.sections?.length || 0}\nFAQs: ${finalArticle.content?.faq?.length || 0}\nReady to publish!`);
 
                 // Wait a moment then close
-                setTimeout(() => {
+                setTimeout(async () => {
                     progress.close();
                     console.log('Progress modal closed, about to display article...');
 
-                    // Display the complete generated article
-                    displayGeneratedArticle(finalArticle, modelTier, `${modelTier} Article`);
+                    // Check if images were requested
+                    if (window.pendingImageGeneration) {
+                        console.log('Pending image generation detected:', window.pendingImageGeneration);
+
+                        try {
+                            // Show progress for image generation
+                            const imageProgress = showProgressModal({
+                                title: '🎨 Generating Images',
+                                initialMessage: 'Creating AI-generated images for your article...',
+                                icon: '🎨',
+                                stages: [
+                                    'Analyzing article content',
+                                    'Generating image prompts',
+                                    'Creating images',
+                                    'Optimizing for web'
+                                ],
+                                estimatedDuration: 15000
+                            });
+
+                            const imageCount = window.pendingImageGeneration.imageTier === 'Featured Image' ? 1 : 3;
+                            const images = await generateImagesForArticle(keyword, window.pendingImageGeneration.imageTier, imageCount);
+
+                            imageProgress.updateIcon('✅');
+                            imageProgress.updateProgress(100);
+                            imageProgress.updateMessage('Images generated successfully!');
+                            setTimeout(() => imageProgress.close(), 1000);
+
+                            // Combine article with images
+                            const completeArticle = {
+                                ...finalArticle,
+                                images: images,
+                                imageTier: window.pendingImageGeneration.imageTier
+                            };
+
+                            // Store totalCredits before clearing
+                            const totalCreditsUsed = window.pendingImageGeneration.totalCredits;
+
+                            // Clear pending images
+                            window.pendingImageGeneration = null;
+
+                            // Display with images
+                            displayGeneratedArticleWithImages(completeArticle, modelTier, totalCreditsUsed);
+                        } catch (error) {
+                            console.error('Image generation error:', error);
+                            alert('Article generated successfully, but images failed: ' + error.message);
+                            window.pendingImageGeneration = null;
+                            displayGeneratedArticle(finalArticle, modelTier, `${modelTier} Article`);
+                        }
+                    } else {
+                        // No images requested, display article only
+                        displayGeneratedArticle(finalArticle, modelTier, `${modelTier} Article`);
+                    }
                 }, 2000);
 
             } catch (error) {
@@ -6678,6 +6728,12 @@ FORMAT: Return as JSON with this exact structure:
             const articleCreditCost = modelTier === 'basic' ? 25 : modelTier === 'premium' ? 50 : 85;
             const imageCreditCost = totalCredits - articleCreditCost;
 
+            console.log('=== GENERATE ARTICLE WITH IMAGES ===');
+            console.log('Keyword:', keyword);
+            console.log('Model Tier:', modelTier);
+            console.log('Image Tier:', imageTier);
+            console.log('Total Credits:', totalCredits);
+
             // Check credit requirement using consistent system
             if (!checkCreditRequirement(`${modelTier} Article + Images`, totalCredits)) {
                 return; // Exit if insufficient credits
@@ -6689,71 +6745,20 @@ FORMAT: Return as JSON with this exact structure:
                 return;
             }
 
-            try {
-                // Show combined loading modal
-                const loadingModal = document.createElement('div');
-                loadingModal.innerHTML = `
-                    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
-                        <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; text-align: center;">
-                            <div style="font-size: 24px; margin-bottom: 20px;">🤖🎨 Generating Article & Images</div>
-                            <div style="margin-bottom: 20px;" id="generationStatus">
-                                Creating ${wordCount}-word article about "${keyword}" with ${imageTier}...
-                            </div>
-                            <div style="background: #f0f0f0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
-                                <div style="background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; width: 0%; animation: loading 4s ease-in-out infinite;" id="loadingBar"></div>
-                            </div>
-                            <div style="font-size: 14px; color: #666;">
-                                <div>📝 Article: ${articleCreditCost} credits</div>
-                                <div>🎨 Images: ${imageCreditCost} credits</div>
-                                <div><strong>Total: ${totalCredits} credits</strong></div>
-                            </div>
-                        </div>
-                    </div>
-                    <style>
-                    @keyframes loading {
-                        0% { width: 0%; }
-                        30% { width: 50%; }
-                        70% { width: 80%; }
-                        100% { width: 100%; }
-                    }
-                    </style>
-                `;
-                document.body.appendChild(loadingModal);
+            // IMPORTANT: Use the same outline-first workflow as generateArticleWithModel
+            // This ensures consistency and allows user to edit the outline before generating
+            console.log('Calling generateOutlineFirst for article with images...');
 
-                // Step 1: Generate the article
-                document.getElementById('generationStatus').textContent = `Step 1/2: Generating article with ${modelTier} model...`;
+            // Store image requirements globally so they can be used after article generation
+            window.pendingImageGeneration = {
+                imageTier,
+                imageCreditCost,
+                totalCredits
+            };
 
-                const articleData = await generateArticleContentWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier);
-
-                // Step 2: Generate images
-                document.getElementById('generationStatus').textContent = `Step 2/2: Generating ${imageTier} images...`;
-
-                const imageCount = imageTier === 'Featured Image' ? 1 : imageTier === 'Featured + 2 Others' ? 3 : 5;
-                const images = await generateImagesForArticle(keyword, imageTier, imageCount);
-
-                // Combine article and images
-                const completeArticle = {
-                    ...articleData,
-                    images: images,
-                    imageTier: imageTier,
-                    totalCredits: totalCredits
-                };
-
-                // Credits already deducted at function start
-
-                // Close loading modal
-                document.body.removeChild(loadingModal);
-
-                // Display complete article with images
-                displayGeneratedArticleWithImages(completeArticle, modelTier, totalCredits);
-
-            } catch (error) {
-                console.error('Article with images generation error:', error);
-                if (document.body.contains(loadingModal)) {
-                    document.body.removeChild(loadingModal);
-                }
-                alert('Error generating article with images: ' + error.message);
-            }
+            // Generate outline first (user can edit), then article
+            // The outline workflow will eventually call generateArticleFromOutline
+            await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier);
         }
 
         async function generateArticleContentWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier) {
