@@ -9,6 +9,9 @@
 ## 🆕 LATEST SESSION - 2025-10-08
 
 **Recent Updates:**
+- ✅ FIXED: Progress bar UX - stages advance one at a time with ⏳ working indicators
+- ✅ FIXED: Progress bar initial state - added delays to prevent 3 stages lighting up instantly
+- ✅ ENHANCED: Progress messages show "working" status and time estimates
 - ✅ FIXED: 504 timeout errors - capped GPT-3.5 at 2500 tokens for articles >1500 words
 - ✅ ENHANCED: Smart error handling for timeouts with upgrade recommendations
 - ✅ OPTIMIZED: Balanced word count prompt (90-110% target) to prevent timeouts
@@ -38,6 +41,8 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `252b031`: Fix progress bar UX - show working status and prevent multiple stages lighting up
+- `272f9a1`: Update CURRENT_STATUS with 504 timeout fixes and optimizations
 - `3043d96`: Fix 504 timeout errors for long article generation (smart token caps, error handling, optimized prompts)
 - `56162ba`: Update CURRENT_STATUS with aggressive word count and image display fixes
 - `9d211d9`: Fix word count and image display errors (aggressive prompts, increased max_tokens, FAQ/Conclusion checks)
@@ -118,6 +123,10 @@
 - ✅ Internal Links: AI-powered relevance analysis with user selection
 
 **Technical Improvements:**
+- **Progress Bar UX**: Added 200-300ms delays between stage updates to prevent instant multi-activation
+- **Working Indicators**: ⏳ hourglass shows active work, ✓ checkmark shows completion
+- **Stage Advancement**: Only one stage active at a time, progress percentage updates automatically
+- **Status Messages**: Clear "working" indicators with time estimates (e.g., "This may take 30-60 seconds ⏳")
 - **Timeout Prevention**: GPT-3.5 capped at 2500 tokens for articles >1500 words (prevents 504 Gateway Timeout)
 - **Smart Token Scaling**: Articles ≤1500 words use 1.8x multiplier, >1500 words use fixed 2500 cap
 - **Enhanced Error Handling**: 504 errors show helpful upgrade recommendations (Premium/Enterprise for long articles)
