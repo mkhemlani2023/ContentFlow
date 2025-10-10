@@ -6368,53 +6368,18 @@ JSON only:
                     throw new Error(`OpenRouter API error: ${outlineResponse.status}`);
                 }
 
-                // Handle streaming outline response
+                // Backend processes streaming and returns complete response
                 updateProgressStage(3, '✓ Receiving outline');
-                progress.updateMessage('📋 AI is creating outline structure...');
+                progress.updateMessage('📋 AI is creating outline (streaming backend prevents timeout)...');
 
-                const reader = outlineResponse.body.getReader();
-                const decoder = new TextDecoder();
-                let accumulatedOutline = '';
+                const outlineData = await outlineResponse.json();
 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6);
-                            if (data === '[DONE]') continue;
-
-                            try {
-                                const parsed = JSON.parse(data);
-                                const content = parsed.choices?.[0]?.delta?.content || '';
-                                if (content) {
-                                    accumulatedOutline += content;
-                                }
-                            } catch (e) {
-                                console.warn('Failed to parse outline chunk:', e);
-                            }
-                        }
-                    }
-                }
-
-                console.log('=== OUTLINE STREAMING COMPLETE ===');
+                console.log('=== OUTLINE RECEIVED (via streaming backend) ===');
 
                 updateProgressStage(4, '✓ Outline received');
                 progress.updateMessage('📋 Processing outline structure...');
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                // Create outlineData object from streamed content
-                const outlineData = {
-                    choices: [{
-                        message: {
-                            content: accumulatedOutline
-                        }
-                    }]
-                };
                 let outlineStructure;
 
                 updateProgressStage(4, '✓ Structure processed');
@@ -6758,50 +6723,13 @@ JSON only:
                     throw new Error(`OpenRouter API error ${articleResponse.status}: ${errorData.error || errorData.message || 'Unknown error'}`);
                 }
 
-                // Handle streaming response
-                updateProgressStage(3, '✓ Connected - receiving content');
-                progress.updateMessage('📝 AI is writing article... (streaming live)');
+                // Backend processes streaming and returns complete response
+                updateProgressStage(3, '✓ Receiving article');
+                progress.updateMessage('📝 AI is writing article (streaming backend prevents timeout)...');
 
-                const reader = articleResponse.body.getReader();
-                const decoder = new TextDecoder();
-                let accumulatedContent = '';
-                let lastUpdateTime = Date.now();
+                const articleData = await articleResponse.json();
 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6);
-                            if (data === '[DONE]') continue;
-
-                            try {
-                                const parsed = JSON.parse(data);
-                                const content = parsed.choices?.[0]?.delta?.content || '';
-                                if (content) {
-                                    accumulatedContent += content;
-
-                                    // Update progress every 2 seconds
-                                    const now = Date.now();
-                                    if (now - lastUpdateTime > 2000) {
-                                        const wordCount = accumulatedContent.split(/\s+/).length;
-                                        progress.updateMessage(`📝 Generated ${wordCount} words so far...`);
-                                        lastUpdateTime = now;
-                                    }
-                                }
-                            } catch (e) {
-                                console.warn('Failed to parse chunk:', e);
-                            }
-                        }
-                    }
-                }
-
-                console.log('=== STREAMING COMPLETE ===');
-                console.log('Total accumulated content length:', accumulatedContent.length);
+                console.log('=== ARTICLE RECEIVED (via streaming backend) ===');
 
                 // AI is processing - update status
                 updateProgressStage(4, '✓ Article received');
@@ -6811,14 +6739,6 @@ JSON only:
                 updateProgressStage(5, '✓ Content processed');
                 progress.updateMessage('🔍 Validating article structure...');
 
-                // Create articleData object from streamed content
-                const articleData = {
-                    choices: [{
-                        message: {
-                            content: accumulatedContent
-                        }
-                    }]
-                };
                 let finalArticle;
 
                 updateProgressStage(5, '✓ Structure validated');
