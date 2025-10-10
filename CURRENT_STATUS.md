@@ -1,14 +1,22 @@
 # ContentFlow - Current Development Status
 
 **Last Updated:** 2025-10-10 (Latest Session - Continued)
-**Current Session:** API Timeout Prevention & Prompt Optimization
+**Current Session:** API Timeout Prevention & Streaming Implementation
 **Developer:** Mary + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2025-10-10
+## 🆕 LATEST SESSION - 2025-10-10 (Continued)
 
 **Recent Updates:**
+- ✅ FIXED: Outline prompt now generates proper multi-section structure based on word count
+- ✅ IMPLEMENTED: Dynamic section calculation (3-6 sections) based on article length
+- ✅ ENHANCED: Outline prompt shows multiple section examples in JSON template
+- ✅ OPTIMIZED: Word distribution across sections (1800 words = 6 sections × 250 words each)
+- ✅ IMPLEMENTED: Backend streaming support for OpenRouter API to prevent 504 timeouts
+- ✅ FIXED: Backend accumulates streaming chunks and returns complete response to frontend
+- ✅ ENHANCED: Both outline and article generation now use streaming to prevent gateway timeouts
+- ✅ INCREASED: Default credits from 10,000 to 50,000 for testing
 - ✅ OPTIMIZED: Drastically simplified article prompt by ~75% to prevent API timeouts
 - ✅ INCREASED: max_tokens for Premium (3.5x) and Enterprise (4x) tiers for reliable 1800-word generation
 - ✅ IMPROVED: Model-specific timeout error messages with actionable solutions
@@ -67,6 +75,11 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `[pending]`: Fix outline prompt to generate proper multi-section structure for 1800-word articles
+- `6d99fbf`: Increase default credits to 50000 for testing
+- `ec1820c`: Fix frontend streaming implementation - simplify to receive complete response
+- `ef20e79`: Implement backend streaming accumulation for OpenRouter API
+- `3b7c8e2`: Add streaming support to prevent 504 timeouts on article generation
 - `fa754d2`: Increase max_tokens for Premium/Enterprise tiers for better completion rates
 - `7d0b04c`: Drastically simplify article prompt to prevent timeouts - reduce by ~75%
 - `cc64bb9`: Improve timeout error messages to show model-specific solutions
