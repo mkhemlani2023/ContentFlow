@@ -6753,7 +6753,6 @@ Return ONLY JSON (no markdown, no extra text):
 
                 // Generate full article using OpenRouter API
                 // Adjust max_tokens based on model to avoid context window issues
-                const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
                 let maxTokens;
 
                 // Different models have different context windows
