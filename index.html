@@ -2050,12 +2050,16 @@
         }
 
         // Content generation functions for inline workflow
-        async function generateOutlineForKeyword(keyword, wordCount, difficulty, intent) {
+        async function generateOutlineForKeyword(keyword, wordCount, difficulty, intent, originalKeyword) {
+            // Use original research keyword if provided, fallback to keyword (which might be the title)
+            const focusKeyword = originalKeyword || keyword;
+            console.log('📌 Generating outline - Title:', keyword, '| Focus Keyword:', focusKeyword);
+
             // Find the suggestion card and add outline content inline
             const suggestionCards = document.querySelectorAll('.article-suggestion-card');
             let targetCard = null;
 
-            // Find the card with this keyword
+            // Find the card with this keyword (using title to find the card)
             suggestionCards.forEach(card => {
                 if (card.textContent.includes(keyword)) {
                     targetCard = card;
@@ -2736,7 +2740,8 @@
                         type: determineArticleType(article.title),
                         intent: article.intent,
                         estimatedWords: article.wordCount,
-                        difficulty: mapDifficultyFromWordCount(article.wordCount)
+                        difficulty: mapDifficultyFromWordCount(article.wordCount),
+                        originalKeyword: keyword // Preserve original research keyword
                     }));
                 } else {
                     throw new Error('No articles returned from API');
@@ -3014,11 +3019,11 @@
                         </div>
 
                         <div style="display: flex; gap: 8px; margin-top: 12px;">
-                            <button onclick="generateOutlineForKeyword('${suggestion.title.replace(/'/g, "\\'")}', ${suggestion.estimatedWords}, '${suggestion.difficulty}', '${suggestion.intent}')"
+                            <button onclick="generateOutlineForKeyword('${suggestion.title.replace(/'/g, "\\'")}', ${suggestion.estimatedWords}, '${suggestion.difficulty}', '${suggestion.intent}', '${(suggestion.originalKeyword || suggestion.title).replace(/'/g, "\\'")}')"
                                     style="background: #f59e0b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500;">
                                 📋 Generate Outline
                             </button>
-                            <button onclick="showArticleGenerationOptions('${suggestion.title.replace(/'/g, "\\'")}', ${suggestion.estimatedWords}, '${suggestion.difficulty}', '${suggestion.intent}')"
+                            <button onclick="showArticleGenerationOptions('${suggestion.title.replace(/'/g, "\\'")}', ${suggestion.estimatedWords}, '${suggestion.difficulty}', '${suggestion.intent}', '${(suggestion.originalKeyword || suggestion.title).replace(/'/g, "\\'")}')"
                                     style="background: #2196F3; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500;">
                                 ✍️ Generate Article
                             </button>
@@ -3478,7 +3483,11 @@
             setTimeout(updateProgress, 500);
         }
 
-        function showArticleGenerationOptions(title, wordCount, difficulty, intent) {
+        function showArticleGenerationOptions(title, wordCount, difficulty, intent, originalKeyword) {
+            // Store original keyword for use in article generation
+            window.originalResearchKeyword = originalKeyword || title;
+            console.log('📌 Original Research Keyword:', window.originalResearchKeyword);
+
             // Create modal overlay for article generation options
             const modal = document.createElement('div');
             modal.id = 'articleGenerationModal';
@@ -3782,8 +3791,12 @@
             const modelTier = window.selectedModel; // 'basic', 'premium', or 'enterprise'
             const imageType = window.selectedImageType; // 'none', 'featured', or 'full'
 
+            // Use original research keyword if available, fallback to title
+            const keyword = window.originalResearchKeyword || title;
+
             console.log('=== CONFIRM ARTICLE GENERATION ===');
-            console.log('Title:', title);
+            console.log('Article Title:', title);
+            console.log('Focus Keyword (from research):', keyword);
             console.log('Word Count:', wordCount);
             console.log('Difficulty:', difficulty);
             console.log('Intent:', intent);
@@ -3800,7 +3813,7 @@
                 if (imageType === 'none') {
                     // Generate article without images using the correct workflow
                     console.log('Calling generateArticleWithModel (no images)...');
-                    await generateArticleWithModel(title, wordCount, difficulty, intent, modelTier, window.selectedCredits);
+                    await generateArticleWithModel(keyword, wordCount, difficulty, intent, modelTier, window.selectedCredits);
                 } else {
                     // Generate article with images
                     console.log('Calling generateArticleWithImages...');
@@ -3812,7 +3825,7 @@
                     };
                     const imageTier = imageTierMap[imageType] || 'Featured Image';
 
-                    await generateArticleWithImages(title, wordCount, difficulty, intent, modelTier, imageTier, totalCredits);
+                    await generateArticleWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier, totalCredits);
                 }
 
             } catch (error) {
@@ -6706,23 +6719,33 @@ Make the outline strategic, comprehensive, and optimized for search engines with
                     return `${i + 1}. ${s.title}\n${subsections}`;
                 }).join('\n');
 
-                const articlePrompt = `Write a complete SEO-optimized article about "${keyword}".
+                const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
+                const minWordsPerSection = Math.floor(targetWordCount / (sections.length + 3)); // +3 for intro, conclusion, FAQ
+
+                const articlePrompt = `Write a comprehensive, in-depth SEO article about "${keyword}".
+
+CRITICAL - WORD COUNT REQUIREMENT:
+Target: ${targetWordCount} words MINIMUM
+Acceptable range: ${Math.floor(targetWordCount * 0.9)}-${Math.ceil(targetWordCount * 1.1)} words
+Each main section MUST be ${minWordsPerSection}+ words minimum.
 
 ARTICLE STRUCTURE:
 Title: ${outlineStructure.outline?.title || keyword}
+Introduction (${minWordsPerSection}+ words - set context, explain importance)
 ${sectionList}
-Conclusion
-FAQ (5 questions)
+Conclusion (${minWordsPerSection}+ words - summarize key points, call to action)
+FAQ (5 detailed questions with ${Math.floor(minWordsPerSection * 0.7)}+ word answers each)
 
-WORD COUNT: ${outlineStructure.metadata?.wordCount || 2000} words (aim for 90-110% of target)
-
-REQUIREMENTS:
-- Focus keyword: "${keyword}"
-- Write engaging, informative content
-- Include examples and actionable tips
+CONTENT REQUIREMENTS:
+- Focus keyword: "${keyword}" (use naturally 5-7 times)
+- Write detailed, comprehensive paragraphs (not summaries!)
+- Include specific examples, statistics, and actionable steps
+- Explain concepts thoroughly - assume reader is learning for first time
+- Add context, background info, and expert insights
 - Current year: ${new Date().getFullYear()}
+- Professional tone, but accessible language
 
-Return ONLY JSON:
+Return ONLY JSON (no markdown, no extra text):
 {
   "metadata": {"seoTitle": "...", "metaDescription": "...", "focusKeyword": "${keyword}", "relatedKeywords": ["..."], "readingTime": "X min", "wordCount": ${outlineStructure.metadata?.wordCount || 2000}},
   "content": {"title": "...", "introduction": "...", "sections": [{"title": "...", "anchor": "...", "content": "...", "subsections": [{"title": "...", "anchor": "...", "content": "..."}]}], "conclusion": "...", "faq": [{"question": "...", "answer": "..."}]}
@@ -7514,7 +7537,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                     </div>
                                     <div>
                                         <strong>Related Keywords:</strong><br>
-                                        <span style="color: #4b5563;">${metadata.relatedKeywords.join(', ')}</span>
+                                        <span style="color: #4b5563;">${metadata.relatedKeywords ? metadata.relatedKeywords.join(', ') : 'None'}</span>
                                     </div>
                                     <div>
                                         <strong>Featured Image Alt:</strong><br>
@@ -7530,6 +7553,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                             </div>
 
                             <!-- Table of Contents -->
+                            ${tableOfContents && Array.isArray(tableOfContents) && tableOfContents.length > 0 ? `
                             <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #0ea5e9;">
                                 <h3 style="margin: 0 0 15px 0; color: #0c4a6e;">📋 Table of Contents</h3>
                                 <ul style="margin: 0; padding-left: 20px; color: #0369a1;">
@@ -7543,6 +7567,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                     `).join('')}
                                 </ul>
                             </div>
+                            ` : ''}
 
                             <!-- Article Content with Images -->
                             <div style="line-height: 1.7; color: #374151;">
@@ -7552,7 +7577,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                 </div>
 
                                 <!-- Main Sections with Image Integration -->
-                                ${content.sections.map((section, index) => `
+                                ${content.sections && Array.isArray(content.sections) ? content.sections.map((section, index) => `
                                     <div style="margin-bottom: 40px;">
                                         <h2 id="${section.anchor}" style="color: #1f2937; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb;">
                                             ${section.title}
