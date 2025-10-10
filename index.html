@@ -6339,9 +6339,9 @@
                 // Calculate number of sections based on word count
                 const numSections = Math.max(3, Math.min(6, Math.floor(wordCount / 300)));
 
-                const outlinePrompt = `Return ONLY this JSON. NO extra fields like "content" or "anchor". ${numSections} sections for "${keyword}". ${wordCount}w. ${intent}. ${new Date().getFullYear()}.
+                const outlinePrompt = `Return ONLY this JSON. NO "content" or "anchor" fields. Include "purpose" for each section. ${numSections} sections for "${keyword}". ${wordCount}w. ${intent}. ${new Date().getFullYear()}.
 
-{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":[],"wordCount":180},"sections":[{"title":"","wordCount":400}],"conclusion":{"purpose":"","keyPoints":[],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
+{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":[],"wordCount":180},"sections":[{"title":"","purpose":"","keyPoints":[],"wordCount":400}],"conclusion":{"purpose":"","keyPoints":[],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
 
                 updateProgressStage(2, '✓ Instructions ready');
                 progress.updateMessage('🚀 Connecting to AI model...');
@@ -6689,14 +6689,15 @@ ${sectionList}
                     maxTokens = Math.min(1800, Math.floor(targetWordCount * 1.5));
                     console.log('✓ Basic tier: Generating article ≤1200 words');
                 } else if (config.model.includes('gpt-4o-mini')) {
-                    // GPT-4o-mini: Fastest model, most flexible
-                    // Dynamic scaling with hard cap based on word count
+                    // GPT-4o-mini: Fastest model, but still limited by 26s timeout
+                    // CRITICAL: Must complete in <20 seconds
                     if (targetWordCount <= 1000) {
-                        maxTokens = Math.floor(targetWordCount * 1.8); // ~1800 tokens
+                        maxTokens = Math.floor(targetWordCount * 1.8); // ~1800 tokens (~12s)
                     } else if (targetWordCount <= 1500) {
-                        maxTokens = Math.floor(targetWordCount * 1.6); // ~2400 tokens
+                        maxTokens = Math.floor(targetWordCount * 1.5); // ~2250 tokens (~18s)
                     } else {
-                        maxTokens = Math.min(2500, Math.floor(targetWordCount * 1.4)); // Cap at 2500
+                        // 1800+ words: Extremely aggressive cap to prevent timeout
+                        maxTokens = Math.min(2200, Math.floor(targetWordCount * 1.2)); // ~2160 tokens (~17s)
                     }
                 } else {
                     // Claude: Slowest model, strictest caps
