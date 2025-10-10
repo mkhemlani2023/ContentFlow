@@ -6698,63 +6698,34 @@ Make the outline strategic, comprehensive, and optimized for search engines with
 
                 // Create article prompt based on outline
                 progress.updateMessage('🎯 Preparing instructions for AI writer...');
-                const articlePrompt = `Write a complete article based on this detailed outline. Follow the structure exactly and expand each section with engaging, SEO-optimized content.
 
-OUTLINE TO FOLLOW:
-${JSON.stringify(outlineStructure, null, 2)}
+                // Extract essential outline info (not full JSON - too long!)
+                const sections = outlineStructure.outline?.sections || [];
+                const sectionList = sections.map((s, i) => {
+                    const subsections = s.subsections?.map(sub => `  - ${sub.title}`).join('\n') || '';
+                    return `${i + 1}. ${s.title}\n${subsections}`;
+                }).join('\n');
 
-CRITICAL WORD COUNT REQUIREMENT:
-Target word count: ${outlineStructure.metadata?.wordCount || 2000} words (aim for 90-110% of target)
+                const articlePrompt = `Write a complete SEO-optimized article about "${keyword}".
 
-TO ACHIEVE THE WORD COUNT:
-- Write detailed, comprehensive paragraphs for each section (100-200 words per section)
-- Include relevant examples and statistics
-- Expand subsections with thorough explanations
-- Write informative FAQ answers (50-100 words per answer)
-- Add context and actionable insights throughout
+ARTICLE STRUCTURE:
+Title: ${outlineStructure.outline?.title || keyword}
+${sectionList}
+Conclusion
+FAQ (5 questions)
 
-IMPORTANT: Balance comprehensive content with generation efficiency. Focus on quality and relevance.
+WORD COUNT: ${outlineStructure.metadata?.wordCount || 2000} words (aim for 90-110% of target)
 
 REQUIREMENTS:
-- Follow the exact outline structure provided
-- Target keyword: "${keyword}" (CRITICAL: Use this EXACT keyword as focusKeyword, do NOT use the article title)
-- WORD COUNT: ${outlineStructure.metadata?.wordCount || 2000} words (must be at least ${Math.floor((outlineStructure.metadata?.wordCount || 2000) * 0.95)} words)
-- Write engaging, informative, COMPREHENSIVE content
-- Use current ${new Date().getFullYear()} information
-- Optimize for search engines
+- Focus keyword: "${keyword}"
+- Write engaging, informative content
+- Include examples and actionable tips
+- Current year: ${new Date().getFullYear()}
 
-CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include explanations, markdown, or any other formatting. Start your response with { and end with }. Use this exact structure:
+Return ONLY JSON:
 {
-  "metadata": {
-    "seoTitle": "SEO-optimized title (60 chars max)",
-    "metaDescription": "Meta description (155 chars max)",
-    "focusKeyword": "${keyword}",
-    "relatedKeywords": ["keyword1", "keyword2", "keyword3"],
-    "readingTime": "X min read",
-    "wordCount": ${outlineStructure.metadata?.wordCount || 2000}
-  },
-  "content": {
-    "title": "H1 Article Title",
-    "introduction": "Full introduction paragraph...",
-    "sections": [
-      {
-        "title": "Section Title",
-        "anchor": "section-anchor",
-        "content": "Complete section content...",
-        "subsections": [
-          {
-            "title": "Subsection Title",
-            "anchor": "subsection-anchor",
-            "content": "Complete subsection content..."
-          }
-        ]
-      }
-    ],
-    "conclusion": "Complete conclusion with call-to-action...",
-    "faq": [
-      {"question": "FAQ question?", "answer": "Detailed FAQ answer..."}
-    ]
-  }
+  "metadata": {"seoTitle": "...", "metaDescription": "...", "focusKeyword": "${keyword}", "relatedKeywords": ["..."], "readingTime": "X min", "wordCount": ${outlineStructure.metadata?.wordCount || 2000}},
+  "content": {"title": "...", "introduction": "...", "sections": [{"title": "...", "anchor": "...", "content": "...", "subsections": [{"title": "...", "anchor": "...", "content": "..."}]}], "conclusion": "...", "faq": [{"question": "...", "answer": "..."}]}
 }`;
 
                 // Generate full article using OpenRouter API
