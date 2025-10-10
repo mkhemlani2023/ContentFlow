@@ -3575,6 +3575,9 @@
             window.selectedCredits = 0;
             window.selectedImageCredits = 0;
             window.selectedWordCount = parseInt(document.getElementById('wordCountSelect')?.value || wordCount);
+
+            // Immediately update model restrictions based on pre-selected word count
+            updateWordCountSelection();
         }
 
         function updateWordCountSelection() {
@@ -6333,69 +6336,10 @@
                 progress.updateMessage('📝 Preparing outline instructions...');
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                const outlinePrompt = `Create a comprehensive article outline for "${keyword}" with exactly ${wordCount} words.
+                const outlinePrompt = `Outline for "${keyword}". ${wordCount} words. ${intent} intent. ${new Date().getFullYear()}.
 
-REQUIREMENTS:
-- Target keyword: "${keyword}"
-- Word count: ${wordCount} words (must be exact)
-- Difficulty level: ${difficulty}
-- Search intent: ${intent}
-- Current year: ${new Date().getFullYear()}
-
-OUTLINE STRUCTURE:
-1. SEO-optimized H1 title with keyword
-2. Table of contents with anchor links
-3. Introduction section (150-200 words)
-4. 4-6 main sections with H2 headers
-5. 2-3 subsections per main section with H3 headers
-6. Conclusion with call-to-action (100-150 words)
-7. FAQ section (5 relevant questions)
-
-CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include explanations, markdown, or any other formatting. Start your response with { and end with }. Use this exact structure:
-{
-  "metadata": {
-    "seoTitle": "SEO-optimized title (60 chars max)",
-    "metaDescription": "Meta description (155 chars max)",
-    "focusKeyword": "${keyword}",
-    "relatedKeywords": ["keyword1", "keyword2", "keyword3"],
-    "readingTime": "X min read",
-    "wordCount": ${wordCount}
-  },
-  "outline": {
-    "title": "H1 Article Title Here",
-    "introduction": {
-      "purpose": "Brief description of introduction purpose",
-      "keyPoints": ["point1", "point2", "point3"],
-      "wordCount": 180
-    },
-    "sections": [
-      {
-        "title": "Section Title",
-        "anchor": "section-anchor",
-        "purpose": "What this section covers",
-        "wordCount": 400,
-        "subsections": [
-          {
-            "title": "Subsection Title",
-            "anchor": "subsection-anchor",
-            "keyPoints": ["point1", "point2"],
-            "wordCount": 200
-          }
-        ]
-      }
-    ],
-    "conclusion": {
-      "purpose": "Summarize and call-to-action",
-      "keyPoints": ["summary point", "cta"],
-      "wordCount": 120
-    },
-    "faq": [
-      {"question": "FAQ question?", "purpose": "Why this question matters"}
-    ]
-  }
-}
-
-Make the outline strategic, comprehensive, and optimized for search engines with current ${new Date().getFullYear()} context.`;
+JSON only:
+{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"readingTime":"","wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":[],"wordCount":180},"sections":[{"title":"","anchor":"","purpose":"","wordCount":400,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":200}]}],"conclusion":{"purpose":"","keyPoints":[],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
 
                 updateProgressStage(2, '✓ Instructions ready');
                 progress.updateMessage('🚀 Connecting to AI model...');
