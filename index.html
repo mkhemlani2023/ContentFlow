@@ -6351,6 +6351,16 @@ IMPORTANT: You MUST create ${numSections} section objects in the sections array,
 
                 // Step 1: Generate outline using OpenRouter API with streaming
                 // ALWAYS use GPT-4o-mini for outlines (fastest model, prevents timeouts)
+                // Calculate outline tokens: ~200 tokens per section + 300 for metadata
+                const outlineTokens = Math.min(2000, Math.max(800, (numSections * 200) + 300));
+
+                console.log('Outline generation:', {
+                    wordCount,
+                    numSections,
+                    outlineTokens,
+                    model: 'openai/gpt-4o-mini'
+                });
+
                 const outlineResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
                     headers: {
@@ -6360,7 +6370,7 @@ IMPORTANT: You MUST create ${numSections} section objects in the sections array,
                         model: 'openai/gpt-4o-mini', // Fast model for outlines regardless of article tier
                         prompt: outlinePrompt,
                         temperature: 0.7,
-                        max_tokens: 1000, // Outlines are smaller, reduced for speed
+                        max_tokens: outlineTokens, // Scale with number of sections
                         stream: true
                     })
                 });
