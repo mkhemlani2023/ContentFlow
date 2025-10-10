@@ -7162,13 +7162,16 @@ Make the content engaging, informative, and optimized for search engines. Includ
             console.log('Input params:', {keyword, imageTier, imageCount});
 
             // Extract most specific/relevant keywords from title
-            // Remove generic words like "guide", "tips", "how to"
-            const genericWords = ['guide', 'ultimate', 'complete', 'comprehensive', 'tips', 'how to', 'what', 'why', 'when', 'where', 'best', 'top', 'essential', 'important', 'a', 'an', 'the', 'for', 'on', 'in', 'with', 'and', 'or'];
+            // Remove generic words like "guide", "tips", "how to", people words
+            const genericWords = ['guide', 'ultimate', 'complete', 'comprehensive', 'tips', 'how to', 'what', 'why', 'when', 'where', 'best', 'top', 'essential', 'important', 'a', 'an', 'the', 'for', 'on', 'in', 'with', 'and', 'or', 'think', 'say', 'nutritionist', 'nutritionists', 'expert', 'experts', 'people'];
             const words = keyword.toLowerCase().split(/\s+/);
             const relevantWords = words.filter(w => !genericWords.includes(w) && w.length > 3);
 
-            // Use the most specific keywords (usually the topic, not generic terms)
-            const imageQuery = relevantWords.slice(0, 3).join(' ') || keyword;
+            // For diet-related articles, add "food" to get food images, not animals/people
+            let imageQuery = relevantWords.slice(0, 2).join(' ') || keyword;
+            if (imageQuery.includes('diet') || imageQuery.includes('nutrition') || imageQuery.includes('food')) {
+                imageQuery += ' food meal';
+            }
 
             console.log('Original keyword:', keyword);
             console.log('Image search query:', imageQuery);
