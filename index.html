@@ -7140,6 +7140,18 @@ Make the content engaging, informative, and optimized for search engines. Includ
             console.log('=== generateImagesForArticle CALLED ===');
             console.log('Input params:', {keyword, imageTier, imageCount});
 
+            // Extract most specific/relevant keywords from title
+            // Remove generic words like "guide", "tips", "how to"
+            const genericWords = ['guide', 'ultimate', 'complete', 'comprehensive', 'tips', 'how to', 'what', 'why', 'when', 'where', 'best', 'top', 'essential', 'important', 'a', 'an', 'the', 'for', 'on', 'in', 'with', 'and', 'or'];
+            const words = keyword.toLowerCase().split(/\s+/);
+            const relevantWords = words.filter(w => !genericWords.includes(w) && w.length > 3);
+
+            // Use the most specific keywords (usually the topic, not generic terms)
+            const imageQuery = relevantWords.slice(0, 3).join(' ') || keyword;
+
+            console.log('Original keyword:', keyword);
+            console.log('Image search query:', imageQuery);
+
             try {
                 console.log('Fetching images from Pexels/Unsplash...');
                 const response = await fetch('/api/pexels-images', {
@@ -7148,7 +7160,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        query: keyword,
+                        query: imageQuery,
                         count: imageCount
                     })
                 });
