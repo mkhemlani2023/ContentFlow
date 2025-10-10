@@ -3019,11 +3019,11 @@
                         </div>
 
                         <div style="display: flex; gap: 8px; margin-top: 12px;">
-                            <button onclick="generateOutlineForKeyword('${suggestion.title.replace(/'/g, "\\'")}', ${suggestion.estimatedWords}, '${suggestion.difficulty}', '${suggestion.intent}', '${(suggestion.originalKeyword || suggestion.title).replace(/'/g, "\\'")}')"
+                            <button onclick="generateOutlineForKeyword('${suggestion.title.replace(/'/g, "\\'")}', ${suggestion.estimatedWords}, '${suggestion.difficulty}', '${suggestion.intent}', '${suggestion.originalKeyword ? suggestion.originalKeyword.replace(/'/g, "\\'") : suggestion.title.replace(/'/g, "\\'")}')"
                                     style="background: #f59e0b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500;">
                                 📋 Generate Outline
                             </button>
-                            <button onclick="showArticleGenerationOptions('${suggestion.title.replace(/'/g, "\\'")}', ${suggestion.estimatedWords}, '${suggestion.difficulty}', '${suggestion.intent}', '${(suggestion.originalKeyword || suggestion.title).replace(/'/g, "\\'")}')"
+                            <button onclick="showArticleGenerationOptions('${suggestion.title.replace(/'/g, "\\'")}', ${suggestion.estimatedWords}, '${suggestion.difficulty}', '${suggestion.intent}', '${suggestion.originalKeyword ? suggestion.originalKeyword.replace(/'/g, "\\'") : suggestion.title.replace(/'/g, "\\'")}')"
                                     style="background: #2196F3; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500;">
                                 ✍️ Generate Article
                             </button>
