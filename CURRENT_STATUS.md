@@ -9,10 +9,13 @@
 ## 🆕 LATEST SESSION - 2025-10-10 (Continued)
 
 **Recent Updates:**
+- ✅ FIXED: Force GPT-4o-mini for outline generation regardless of article tier (prevents Enterprise timeout)
+- ✅ OPTIMIZED: Reduced outline max_tokens to 1000 and ultra-concise prompt for <10 second generation
+- ✅ ENHANCED: Explicit "Return ONLY valid JSON" instruction prevents conversational responses
 - ✅ FIXED: Outline prompt now generates proper multi-section structure based on word count
 - ✅ IMPLEMENTED: Dynamic section calculation (3-6 sections) based on article length
 - ✅ ENHANCED: Outline prompt shows multiple section examples in JSON template
-- ✅ OPTIMIZED: Word distribution across sections (1800 words = 6 sections × 250 words each)
+- ✅ OPTIMIZED: Variable section lengths based on content importance (not equal distribution)
 - ✅ IMPLEMENTED: Backend streaming support for OpenRouter API to prevent 504 timeouts
 - ✅ FIXED: Backend accumulates streaming chunks and returns complete response to frontend
 - ✅ ENHANCED: Both outline and article generation now use streaming to prevent gateway timeouts
@@ -75,7 +78,11 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
-- `[pending]`: Fix outline prompt to generate proper multi-section structure for 1800-word articles
+- `612f082`: Force GPT-4o-mini for outline generation to prevent Enterprise tier timeouts
+- `55f1755`: Add explicit JSON-only instruction to outline prompt
+- `6d20c2d`: Drastically simplify outline prompt and reduce max_tokens to prevent 504 timeouts
+- `25ae50a`: Allow variable section lengths in outline based on content importance
+- `ab072c0`: Fix outline prompt to generate proper multi-section structure for long-form articles
 - `6d99fbf`: Increase default credits to 50000 for testing
 - `ec1820c`: Fix frontend streaming implementation - simplify to receive complete response
 - `ef20e79`: Implement backend streaming accumulation for OpenRouter API
