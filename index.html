@@ -3589,8 +3589,8 @@
             const modelWarning = document.getElementById('modelWarning');
             const modelSelect = document.getElementById('modelSelect');
 
-            if (window.selectedWordCount > 1200) {
-                // Disable Basic model for articles over 1200 words
+            if (window.selectedWordCount >= 1200) {
+                // Disable Basic model for articles 1200+ words
                 basicOption.disabled = true;
                 basicOption.textContent = '🥉 Basic Model (Not available for 1200+ words)';
                 basicOption.style.color = '#9ca3af';
