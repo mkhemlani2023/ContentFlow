@@ -9,10 +9,12 @@
 ## 🆕 LATEST SESSION - 2025-10-08
 
 **Recent Updates:**
-- ✅ FIXED: Word count accuracy - AGGRESSIVE AI prompt now treats word count as HIGHEST PRIORITY
-- ✅ FIXED: max_tokens limit - increased from 2000 to 3500 for GPT-3.5 (allows full-length articles)
+- ✅ FIXED: 504 timeout errors - capped GPT-3.5 at 2500 tokens for articles >1500 words
+- ✅ ENHANCED: Smart error handling for timeouts with upgrade recommendations
+- ✅ OPTIMIZED: Balanced word count prompt (90-110% target) to prevent timeouts
+- ✅ FIXED: Word count accuracy - AI prompt optimized for 100-200 words per section
+- ✅ FIXED: max_tokens scaling - GPT-3.5 uses 1.8x multiplier (≤1500 words) or 2500 cap (>1500 words)
 - ✅ FIXED: Image display crash - wrapped FAQ/Conclusion in conditional checks to prevent .map() errors
-- ✅ ENHANCED: AI prompt now specifies 150-300 words per section minimum
 - ✅ FIXED: Actual word count calculation - counts all sections, subsections, conclusion, and FAQ
 - ✅ FIXED: Focus keyword - now forces correct keyword instead of article title
 - ✅ FIXED: Progress bar conflict - added manualStageControl to prevent auto-timer and manual update conflicts
@@ -36,6 +38,8 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `3043d96`: Fix 504 timeout errors for long article generation (smart token caps, error handling, optimized prompts)
+- `56162ba`: Update CURRENT_STATUS with aggressive word count and image display fixes
 - `9d211d9`: Fix word count and image display errors (aggressive prompts, increased max_tokens, FAQ/Conclusion checks)
 - `c18e2b2`: Update CURRENT_STATUS with word count, focus keyword, and progress bar fixes
 - `8bc3401`: Fix article generation issues: word count, focus keyword, progress bar, and image generation
@@ -114,8 +118,11 @@
 - ✅ Internal Links: AI-powered relevance analysis with user selection
 
 **Technical Improvements:**
-- **Word Count Priority**: AI prompt now treats word count as HIGHEST PRIORITY with explicit minimum section lengths (150-300 words/section)
-- **Token Limits Increased**: GPT-3.5 max_tokens raised from 2000 → 3500 (2x word count multiplier instead of 1.5x)
+- **Timeout Prevention**: GPT-3.5 capped at 2500 tokens for articles >1500 words (prevents 504 Gateway Timeout)
+- **Smart Token Scaling**: Articles ≤1500 words use 1.8x multiplier, >1500 words use fixed 2500 cap
+- **Enhanced Error Handling**: 504 errors show helpful upgrade recommendations (Premium/Enterprise for long articles)
+- **Optimized Prompts**: Balanced word count requirements (100-200 words/section) for efficiency
+- **Model Recommendations**: Console warns when using Basic tier for 1500+ word articles
 - **Image Display Safety**: Wrapped FAQ and Conclusion rendering in conditional checks to prevent .map() errors on undefined arrays
 - **Word Count Calculation**: Client-side validation counts actual words from all article sections
 - **Focus Keyword Fix**: Forces correct keyword in metadata after AI generation (prevents title substitution)
