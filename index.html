@@ -3461,13 +3461,19 @@
                             <button onclick="closeArticleGenerationModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">×</button>
                         </div>
 
-                        <div style="margin-bottom: 25px; padding: 15px; background: #f8fafc; border-radius: 8px;">
-                            <div style="font-weight: 600; color: #374151; margin-bottom: 8px;">📊 Article Details</div>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; font-size: 13px; color: #64748b;">
-                                <div><strong>Word Count:</strong> ~${wordCount.toLocaleString()}</div>
-                                <div><strong>Difficulty:</strong> ${difficulty}</div>
-                                <div><strong>Intent:</strong> ${intent}</div>
-                                <div><strong>Est. Time:</strong> ${Math.ceil(wordCount/200)} min read</div>
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="color: #1e293b; margin-bottom: 15px;">📝 Article Length</h4>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Target Word Count:</label>
+                            <select id="wordCountSelect" onchange="updateWordCountSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; margin-bottom: 10px;">
+                                <option value="500">🟢 Short Article - 500 words (Quick read, 2-3 min)</option>
+                                <option value="800">🟢 Medium Article - 800 words (Standard blog post, 3-4 min)</option>
+                                <option value="1200">🟢 Long Article - 1,200 words (In-depth content, 5-6 min)</option>
+                                <option value="1500" ${wordCount >= 1500 && wordCount < 1800 ? 'selected' : ''}>🟡 Extended Article - 1,500 words (Comprehensive guide, 7-8 min)</option>
+                                <option value="1800" ${wordCount >= 1800 && wordCount < 2500 ? 'selected' : ''}>🟡 Long-form Article - 1,800 words (Detailed analysis, 9-10 min)</option>
+                                <option value="2500" ${wordCount >= 2500 ? 'selected' : ''}>🔴 Ultimate Guide - 2,500 words (Complete resource, 12-15 min)</option>
+                            </select>
+                            <div style="padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 13px; color: #64748b;">
+                                <div><strong>Difficulty:</strong> ${difficulty} | <strong>Intent:</strong> ${intent}</div>
                             </div>
                         </div>
 
@@ -3477,12 +3483,15 @@
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Model:</label>
                                 <select id="modelSelect" onchange="updateModelSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
                                     <option value="">Choose a model...</option>
-                                    <option value="basic|25">🥉 Basic Model (GPT-3.5) - 25 credits (~$0.25)</option>
-                                    <option value="premium|50">🥈 Premium Model (GPT-4) - 50 credits (~$0.50)</option>
+                                    <option value="basic|25" id="basicModelOption">🥉 Basic Model (GPT-3.5) - 25 credits (~$0.25)</option>
+                                    <option value="premium|50">🥈 Premium Model (GPT-4o-mini) - 50 credits (~$0.50) ⭐ RECOMMENDED</option>
                                     <option value="enterprise|85">🥇 Enterprise Model (Claude 3.5 Sonnet) - 85 credits (~$0.85)</option>
                                 </select>
+                                <div id="modelWarning" style="display: none; padding: 12px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px; margin-top: 10px; font-size: 13px; color: #92400e;">
+                                    ⚠️ <strong>Warning:</strong> Basic model may timeout for articles over 1,500 words. We strongly recommend Premium or Enterprise tier for better results.
+                                </div>
                                 <div style="font-size: 12px; color: #64748b; margin-top: 6px; font-style: italic;">
-                                    Higher tier models provide better quality, more detailed content, and advanced reasoning capabilities.
+                                    Higher tier models provide better quality, faster generation, and can handle longer articles.
                                 </div>
                             </div>
                         </div>
@@ -3511,7 +3520,7 @@
                             <button onclick="closeArticleGenerationModal()" style="padding: 12px 24px; background: #64748b; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
                                 Cancel
                             </button>
-                            <button id="generateArticleBtn" onclick="showGenerationConfirmation('${title.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}')"
+                            <button id="generateArticleBtn" onclick="showGenerationConfirmation('${title.replace(/'/g, "\\'")}', window.selectedWordCount || ${wordCount}, '${difficulty}', '${intent}')"
                                     style="padding: 12px 24px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;" disabled>
                                 Select Model First
                             </button>
@@ -3526,11 +3535,49 @@
             window.selectedModel = null;
             window.selectedCredits = 0;
             window.selectedImageCredits = 0;
+            window.selectedWordCount = parseInt(document.getElementById('wordCountSelect')?.value || wordCount);
+        }
+
+        function updateWordCountSelection() {
+            const wordCountSelect = document.getElementById('wordCountSelect');
+            window.selectedWordCount = parseInt(wordCountSelect.value);
+
+            // Update model options based on word count
+            const basicOption = document.getElementById('basicModelOption');
+            const modelWarning = document.getElementById('modelWarning');
+            const modelSelect = document.getElementById('modelSelect');
+
+            if (window.selectedWordCount > 1500) {
+                // Disable Basic model for long articles
+                basicOption.disabled = true;
+                basicOption.textContent = '🥉 Basic Model (Not recommended for 1500+ words)';
+                basicOption.style.color = '#9ca3af';
+
+                // If Basic is currently selected, deselect it
+                if (modelSelect.value === 'basic|25') {
+                    modelSelect.value = '';
+                    window.selectedModel = null;
+                    window.selectedCredits = 0;
+                    updateCostSummary();
+                    updateGenerateButton();
+                }
+            } else {
+                // Re-enable Basic model for shorter articles
+                basicOption.disabled = false;
+                basicOption.textContent = '🥉 Basic Model (GPT-3.5) - 25 credits (~$0.25)';
+                basicOption.style.color = '';
+            }
+
+            // Update warning visibility
+            if (modelSelect.value === 'basic|25' && window.selectedWordCount > 1500) {
+                modelWarning.style.display = 'block';
+            }
         }
 
         function updateModelSelection() {
             const modelSelect = document.getElementById('modelSelect');
             const [modelType, credits] = modelSelect.value.split('|');
+            const modelWarning = document.getElementById('modelWarning');
 
             if (modelType && credits) {
                 window.selectedModel = modelType;
@@ -3538,6 +3585,13 @@
             } else {
                 window.selectedModel = null;
                 window.selectedCredits = 0;
+            }
+
+            // Show warning if Basic model selected for long articles
+            if (modelType === 'basic' && window.selectedWordCount > 1500) {
+                modelWarning.style.display = 'block';
+            } else {
+                modelWarning.style.display = 'none';
             }
 
             updateCostSummary();
@@ -6226,14 +6280,15 @@
                 const config = modelConfigs[modelTier.toLowerCase()];
                 progress.updateTechnicalInfo(`Model: ${config.model}\nWord count: ${wordCount}\nDifficulty: ${difficulty}\nIntent: ${intent}\nTemperature: ${config.temperature}`);
 
-                // Manually advance through stages
-                updateProgressStage(0, 'Initializing AI model... ⏳');
-                await new Promise(resolve => setTimeout(resolve, 300));
+                // Manually advance through stages with confidence-inspiring messages
+                updateProgressStage(0, '✓ AI model ready');
+                progress.updateMessage('🎯 Analyzing your keyword and topic...');
+                await new Promise(resolve => setTimeout(resolve, 400));
 
                 // Step 1: Create outline prompt
-                updateProgressStage(1, 'Analyzing keyword & search intent... ⏳');
-                progress.updateMessage('Creating outline structure... ⏳');
-                await new Promise(resolve => setTimeout(resolve, 200));
+                updateProgressStage(1, '✓ Keyword analyzed');
+                progress.updateMessage('📝 Preparing outline instructions...');
+                await new Promise(resolve => setTimeout(resolve, 300));
 
                 const outlinePrompt = `Create a comprehensive article outline for "${keyword}" with exactly ${wordCount} words.
 
@@ -6299,9 +6354,9 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
 
 Make the outline strategic, comprehensive, and optimized for search engines with current ${new Date().getFullYear()} context.`;
 
-                updateProgressStage(2, 'Preparing outline request... ⏳');
-                progress.updateMessage('Sending request to AI... ⏳');
-                await new Promise(resolve => setTimeout(resolve, 200));
+                updateProgressStage(2, '✓ Instructions ready');
+                progress.updateMessage('🚀 Connecting to AI model...');
+                await new Promise(resolve => setTimeout(resolve, 300));
 
                 // Step 1: Generate outline using OpenRouter API
                 const outlineResponse = await fetch('/api/openrouter-generate', {
@@ -6321,16 +6376,16 @@ Make the outline strategic, comprehensive, and optimized for search engines with
                     throw new Error(`OpenRouter API error: ${outlineResponse.status}`);
                 }
 
-                updateProgressStage(3, 'AI generating outline... ⏳');
-                progress.updateMessage('Processing response... ⏳');
-                await new Promise(resolve => setTimeout(resolve, 200));
+                updateProgressStage(3, '✓ Outline received');
+                progress.updateMessage('📋 Processing outline structure...');
+                await new Promise(resolve => setTimeout(resolve, 300));
 
                 const outlineData = await outlineResponse.json();
                 let outlineStructure;
 
-                updateProgressStage(4, 'Parsing outline structure... ⏳');
-                progress.updateMessage('Adding subsections & key points... ⏳');
-                await new Promise(resolve => setTimeout(resolve, 200));
+                updateProgressStage(4, '✓ Structure processed');
+                progress.updateMessage('✨ Adding sections & subsections...');
+                await new Promise(resolve => setTimeout(resolve, 300));
 
                 try {
                     // Parse outline data from response
@@ -6366,9 +6421,9 @@ Make the outline strategic, comprehensive, and optimized for search engines with
 
                     outlineStructure = JSON.parse(cleanedContent);
 
-                    updateProgressStage(5, 'Finalizing outline... ⏳');
-                    progress.updateMessage('Optimizing for SEO... ⏳');
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    updateProgressStage(5, '✓ Outline complete');
+                    progress.updateMessage('🎉 Ready for your review!');
+                    await new Promise(resolve => setTimeout(resolve, 400));
                 } catch (parseError) {
                     console.error('=== OUTLINE PARSING ERROR ===');
                     console.error('Parse error:', parseError);
@@ -6579,12 +6634,13 @@ Make the outline strategic, comprehensive, and optimized for search engines with
             progress.updateTechnicalInfo(`Model: ${config.model}\nSections: ${outlineStructure.outline?.sections?.length || 0}\nTarget word count: ${outlineStructure.metadata?.wordCount || 2000}\nKeyword: ${keyword}`);
 
             try {
-                // Manually advance through stages
-                updateProgressStage(0, 'Loading outline structure... ⏳');
-                await new Promise(resolve => setTimeout(resolve, 300)); // Small delay for visual feedback
+                // Manually advance through stages with confidence-inspiring messages
+                updateProgressStage(0, '✓ Outline loaded successfully');
+                progress.updateMessage('📋 Processing your approved outline...');
+                await new Promise(resolve => setTimeout(resolve, 400));
 
                 // Create article prompt based on outline
-                progress.updateMessage('Creating AI prompt from outline... ⏳');
+                progress.updateMessage('🎯 Preparing instructions for AI writer...');
                 const articlePrompt = `Write a complete article based on this detailed outline. Follow the structure exactly and expand each section with engaging, SEO-optimized content.
 
 OUTLINE TO FOLLOW:
@@ -6676,11 +6732,12 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
                 });
 
                 // Complete stage 1 before moving to stage 2
-                updateProgressStage(1, 'AI prompt created ✓');
-                await new Promise(resolve => setTimeout(resolve, 200));
+                updateProgressStage(1, '✓ Instructions prepared');
+                progress.updateMessage('🚀 Connecting to AI model...');
+                await new Promise(resolve => setTimeout(resolve, 300));
 
-                updateProgressStage(2, 'Sending request to AI... ⏳');
-                progress.updateMessage('Writing main content sections... This may take 30-60 seconds ⏳');
+                updateProgressStage(2, '✓ Connected to AI');
+                progress.updateMessage('✍️ AI is now writing your article... (Est. 30-60 seconds)');
 
                 const articleResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
@@ -6711,18 +6768,18 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
                 }
 
                 // AI is processing - update status
-                updateProgressStage(3, 'AI is writing content... ⏳');
-                progress.updateMessage('Creating subsection content... ⏳');
-                await new Promise(resolve => setTimeout(resolve, 200));
+                updateProgressStage(3, '✓ Article received from AI');
+                progress.updateMessage('📄 Processing generated content...');
+                await new Promise(resolve => setTimeout(resolve, 300));
 
-                updateProgressStage(4, 'Processing AI response... ⏳');
-                progress.updateMessage('Parsing article structure... ⏳');
+                updateProgressStage(4, '✓ Content processed');
+                progress.updateMessage('🔍 Validating article structure...');
 
                 const articleData = await articleResponse.json();
                 let finalArticle;
 
-                updateProgressStage(5, 'Validating content... ⏳');
-                progress.updateMessage('Adding SEO metadata... ⏳');
+                updateProgressStage(5, '✓ Structure validated');
+                progress.updateMessage('✨ Adding SEO optimizations...');
 
                 try {
                     // Parse final article data from response
@@ -6765,9 +6822,9 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
                     // Attempt to parse
                     finalArticle = JSON.parse(cleanedContent);
 
-                    updateProgressStage(6, 'Performing quality checks... ⏳');
-                    progress.updateMessage('Validating article structure... ⏳');
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    updateProgressStage(6, '✓ Final quality check');
+                    progress.updateMessage('🎉 Article ready! Preparing display...');
+                    await new Promise(resolve => setTimeout(resolve, 400));
 
                     // CRITICAL FIX: Force correct focus keyword (AI often uses title instead)
                     if (finalArticle.metadata) {
