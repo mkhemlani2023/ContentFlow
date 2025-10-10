@@ -9,6 +9,10 @@ const SERPER_API_KEY = process.env.SERPER_API_KEY;
 const SERPER_BASE_URL = process.env.SERPER_BASE_URL || 'https://google.serper.dev';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+const PEXELS_BASE_URL = 'https://api.pexels.com/v1';
+const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
+const UNSPLASH_BASE_URL = 'https://api.unsplash.com';
 
 // Domain Authority and Backlink Estimation Functions
 const estimateDomainAuthority = (domain) => {
@@ -2158,6 +2162,137 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
     }
 
+    // Image Search Endpoint (Pexels primary, Unsplash fallback)
+    if (path === '/api/pexels-images' && method === 'POST') {
+      try {
+        const requestBody = JSON.parse(event.body || '{}');
+        const { query, count = 3 } = requestBody;
+
+        console.log('Image search:', { query, count });
+
+        if (!query) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'Query parameter is required'
+            })
+          };
+        }
+
+        let images = [];
+        let source = 'none';
+
+        // Try Pexels first
+        if (PEXELS_API_KEY) {
+          try {
+            console.log('Trying Pexels API...');
+            const response = await fetch(
+              `${PEXELS_BASE_URL}/search?query=${encodeURIComponent(query)}&per_page=${count}&orientation=landscape`,
+              {
+                headers: {
+                  'Authorization': PEXELS_API_KEY
+                }
+              }
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.photos && data.photos.length > 0) {
+                images = data.photos.map(photo => ({
+                  url: photo.src.large,
+                  alt: photo.alt || query,
+                  photographer: photo.photographer,
+                  photographerUrl: photo.photographer_url,
+                  width: photo.width,
+                  height: photo.height,
+                  source: 'pexels'
+                }));
+                source = 'pexels';
+                console.log(`✓ Found ${images.length} images from Pexels`);
+              }
+            }
+          } catch (pexelsError) {
+            console.warn('Pexels API failed:', pexelsError.message);
+          }
+        }
+
+        // Fallback to Unsplash if Pexels failed or no images found
+        if (images.length === 0 && UNSPLASH_ACCESS_KEY) {
+          try {
+            console.log('Trying Unsplash API as fallback...');
+            const response = await fetch(
+              `${UNSPLASH_BASE_URL}/search/photos?query=${encodeURIComponent(query)}&per_page=${count}&orientation=landscape`,
+              {
+                headers: {
+                  'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`
+                }
+              }
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.results && data.results.length > 0) {
+                images = data.results.map(photo => ({
+                  url: photo.urls.regular,
+                  alt: photo.alt_description || photo.description || query,
+                  photographer: photo.user.name,
+                  photographerUrl: photo.user.links.html,
+                  width: photo.width,
+                  height: photo.height,
+                  source: 'unsplash'
+                }));
+                source = 'unsplash';
+                console.log(`✓ Found ${images.length} images from Unsplash`);
+              }
+            }
+          } catch (unsplashError) {
+            console.warn('Unsplash API failed:', unsplashError.message);
+          }
+        }
+
+        // If both APIs failed, return error
+        if (images.length === 0) {
+          return {
+            statusCode: 503,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'Image search failed - both Pexels and Unsplash unavailable',
+              apis_configured: {
+                pexels: !!PEXELS_API_KEY,
+                unsplash: !!UNSPLASH_ACCESS_KEY
+              }
+            })
+          };
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            images,
+            source,
+            total: images.length
+          })
+        };
+
+      } catch (error) {
+        console.error('Image Search Error:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Image search failed',
+            error: error.message
+          })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
@@ -2176,7 +2311,8 @@ Generate a professional, actionable outline that a content writer can follow to 
           'POST /api/openrouter-generate',
           'POST /api/generate-images',
           'POST /api/generate-article',
-          'POST /api/content-outline'
+          'POST /api/content-outline',
+          'POST /api/pexels-images'
         ]
       })
     };

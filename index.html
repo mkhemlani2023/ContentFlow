@@ -7132,15 +7132,14 @@ Make the content engaging, informative, and optimized for search engines. Includ
             console.log('Input params:', {keyword, imageTier, imageCount});
 
             try {
-                console.log('Sending request to /api/generate-images...');
-                const response = await fetch('/api/generate-images', {
+                console.log('Fetching images from Pexels/Unsplash...');
+                const response = await fetch('/api/pexels-images', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        keyword: keyword,
-                        imageType: imageTier,
+                        query: keyword,
                         count: imageCount
                     })
                 });
@@ -7150,37 +7149,47 @@ Make the content engaging, informative, and optimized for search engines. Includ
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('API error response:', errorText);
-                    throw new Error(`Image generation API returned ${response.status}: ${errorText}`);
+                    throw new Error(`Image search API returned ${response.status}: ${errorText}`);
                 }
 
                 const data = await response.json();
                 console.log('API response data:', data);
 
-                if (!data.images || !Array.isArray(data.images)) {
+                if (!data.success || !data.images || !Array.isArray(data.images)) {
                     console.error('Invalid response format - no images array');
                     throw new Error('Invalid API response format');
                 }
 
-                console.log('Successfully received', data.images.length, 'images from API');
-                return data.images;
+                console.log(`✓ Successfully received ${data.images.length} images from ${data.source}`);
+
+                // Transform to expected format
+                const transformedImages = data.images.map((img, index) => ({
+                    url: img.url,
+                    alt: img.alt,
+                    type: index === 0 ? 'featured' : 'supporting',
+                    photographer: img.photographer,
+                    photographerUrl: img.photographerUrl,
+                    source: img.source
+                }));
+
+                return transformedImages;
             } catch (error) {
                 console.error('=== IMAGE GENERATION FAILED ===');
                 console.error('Error:', error);
                 console.error('Error message:', error.message);
-                console.error('Falling back to placeholder images...');
+                console.error('Falling back to Picsum placeholder images...');
 
                 // Return placeholder images if generation fails
                 const placeholders = [];
                 for (let i = 0; i < imageCount; i++) {
                     placeholders.push({
-                        url: `https://picsum.photos/seed/${keyword}-${i}/800/600`,
+                        url: `https://picsum.photos/seed/${encodeURIComponent(keyword)}-${i}/800/600`,
                         alt: `${i === 0 ? 'Featured' : 'Supporting'} image for ${keyword}`,
                         type: i === 0 ? 'featured' : 'supporting',
-                        prompt: `Image ${i + 1} for ${keyword}`,
-                        style: 'placeholder'
+                        source: 'picsum'
                     });
                 }
-                console.log('Generated', placeholders.length, 'placeholder images');
+                console.log('Generated', placeholders.length, 'Picsum placeholder images');
                 return placeholders;
             }
         }
