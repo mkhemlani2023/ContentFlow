@@ -6579,19 +6579,16 @@ OUTLINE TO FOLLOW:
 ${JSON.stringify(outlineStructure, null, 2)}
 
 CRITICAL WORD COUNT REQUIREMENT:
-The article MUST contain EXACTLY ${outlineStructure.metadata?.wordCount || 2000} words.
-This is NOT negotiable. The word count is the HIGHEST PRIORITY.
-
-If the article is shorter than ${Math.floor((outlineStructure.metadata?.wordCount || 2000) * 0.95)} words, it is UNACCEPTABLE.
+Target word count: ${outlineStructure.metadata?.wordCount || 2000} words (aim for 90-110% of target)
 
 TO ACHIEVE THE WORD COUNT:
-- Write LONG, DETAILED paragraphs for EVERY section (minimum 150-300 words per section)
-- Include multiple examples, case studies, and statistics in each section
-- Write detailed explanations for every point
-- Expand subsections with comprehensive information
-- Write detailed FAQ answers (100-150 words per answer)
-- Add transitional paragraphs between sections
-- Include actionable tips and step-by-step guidance
+- Write detailed, comprehensive paragraphs for each section (100-200 words per section)
+- Include relevant examples and statistics
+- Expand subsections with thorough explanations
+- Write informative FAQ answers (50-100 words per answer)
+- Add context and actionable insights throughout
+
+IMPORTANT: Balance comprehensive content with generation efficiency. Focus on quality and relevance.
 
 REQUIREMENTS:
 - Follow the exact outline structure provided
@@ -6643,14 +6640,19 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
                 // Different models have different context windows
                 // NOTE: 1 word ≈ 1.33 tokens on average
                 if (config.model.includes('gpt-3.5')) {
-                    // GPT-3.5-turbo: Increased limit to allow full-length articles
-                    // For 1800 words we need ~2400 tokens, so use 2x multiplier
-                    maxTokens = Math.min(3500, Math.floor(targetWordCount * 2));
+                    // GPT-3.5-turbo: Balanced limit to prevent timeouts
+                    // For long articles (>1500 words), consider using Premium or Enterprise tier
+                    if (targetWordCount > 1500) {
+                        maxTokens = 2500; // Cap at 2500 to prevent timeouts
+                        console.warn('⚠️ Article >1500 words with Basic model may timeout. Consider Premium/Enterprise.');
+                    } else {
+                        maxTokens = Math.floor(targetWordCount * 1.8);
+                    }
                 } else if (config.model.includes('gpt-4o-mini')) {
-                    // GPT-4o-mini has 128K context window
+                    // GPT-4o-mini has 128K context window - better for longer articles
                     maxTokens = Math.floor(targetWordCount * 2.5);
                 } else {
-                    // Claude and other models with large windows (200K+)
+                    // Claude and other models with large windows (200K+) - best for long articles
                     maxTokens = Math.floor(targetWordCount * 3);
                 }
 
@@ -6680,6 +6682,15 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
                 if (!articleResponse.ok) {
                     const errorData = await articleResponse.json().catch(() => ({error: 'Unknown error'}));
                     console.error('OpenRouter API error response:', errorData);
+
+                    // Special handling for timeout errors
+                    if (articleResponse.status === 504) {
+                        const timeoutMessage = targetWordCount > 1500
+                            ? `The AI model timed out while generating this ${targetWordCount}-word article.\n\n💡 SOLUTION: For articles over 1500 words, we recommend:\n• Premium tier (GPT-4o-mini) - 50 credits\n• Enterprise tier (Claude 3.5) - 85 credits\n\nThese models are faster and better suited for long-form content.`
+                            : `The AI model timed out. This can happen with complex prompts.\n\nPlease try again, or use Premium/Enterprise tier for better performance.`;
+                        throw new Error(timeoutMessage);
+                    }
+
                     throw new Error(`OpenRouter API error ${articleResponse.status}: ${errorData.error || errorData.message || 'Unknown error'}`);
                 }
 
