@@ -6665,41 +6665,34 @@ IMPORTANT: You MUST create ${numSections} section objects in the sections array,
 
                 const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
 
-                const articlePrompt = `Write SEO article: "${keyword}". ${targetWordCount} words minimum (aim for ${Math.floor(targetWordCount * 0.95)}-${Math.ceil(targetWordCount * 1.05)}).
+                const articlePrompt = `Return ONLY valid JSON. No text before/after. Write "${keyword}". ${targetWordCount}w. ${new Date().getFullYear()}.
 
-Structure:
-${outlineStructure.outline?.title || keyword}
 ${sectionList}
-FAQ (5 Q&As)
 
-Write detailed content with examples. Focus keyword: "${keyword}". Year: ${new Date().getFullYear()}.
-
-JSON only:
 {"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"readingTime":"","wordCount":${targetWordCount}},"content":{"title":"","introduction":"","sections":[{"title":"","anchor":"","content":"","subsections":[{"title":"","anchor":"","content":""}]}],"conclusion":"","faq":[{"question":"","answer":""}]}}`;
 
                 // Generate full article using OpenRouter API
-                // Adjust max_tokens based on model to avoid context window issues
+                // CRITICAL: Keep max_tokens low to prevent Netlify Function timeout (26s limit)
                 let maxTokens;
 
-                // Different models have different context windows
-                // NOTE: 1 word ≈ 1.33 tokens on average
+                // Cap tokens aggressively to ensure completion within timeout
+                // Even with streaming, generating too many tokens causes 504 errors
+                // Netlify Functions max timeout: 26 seconds
                 if (config.model.includes('gpt-3.5')) {
                     // GPT-3.5-turbo: Capped at 1200 words max
-                    // For articles >1200 words, Premium or Enterprise tier is REQUIRED
                     if (targetWordCount > 1200) {
-                        // This should never happen due to frontend restrictions, but just in case
                         progress.close();
                         alert('❌ Basic tier is limited to 1,200 words maximum.\n\nPlease use Premium or Enterprise tier for longer articles.');
                         throw new Error('Basic tier cannot generate articles over 1200 words');
                     }
-                    maxTokens = Math.floor(targetWordCount * 1.8);
+                    maxTokens = Math.min(1800, Math.floor(targetWordCount * 1.5));
                     console.log('✓ Basic tier: Generating article ≤1200 words');
                 } else if (config.model.includes('gpt-4o-mini')) {
-                    // GPT-4o-mini has 128K context window - better for longer articles
-                    maxTokens = Math.floor(targetWordCount * 3.5);
+                    // GPT-4o-mini: Cap at 2500 tokens for reliable <20s generation
+                    maxTokens = Math.min(2500, Math.floor(targetWordCount * 1.8));
                 } else {
-                    // Claude and other models with large windows (200K+) - best for long articles
-                    maxTokens = Math.floor(targetWordCount * 4);
+                    // Claude: Slowest model, strictest cap needed
+                    maxTokens = Math.min(2000, Math.floor(targetWordCount * 1.5));
                 }
 
                 console.log('Article generation request:', {
