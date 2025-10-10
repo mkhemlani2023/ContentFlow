@@ -6348,17 +6348,18 @@
                 await new Promise(resolve => setTimeout(resolve, 300));
 
                 // Step 1: Generate outline using OpenRouter API with streaming
+                // ALWAYS use GPT-4o-mini for outlines (fastest model, prevents timeouts)
                 const outlineResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: config.model,
+                        model: 'openai/gpt-4o-mini', // Fast model for outlines regardless of article tier
                         prompt: outlinePrompt,
-                        temperature: config.temperature,
-                        max_tokens: 1200, // Reduced from 1500 for faster generation
-                        stream: true // Enable streaming for outline too
+                        temperature: 0.7,
+                        max_tokens: 1000, // Outlines are smaller, reduced for speed
+                        stream: true
                     })
                 });
 
