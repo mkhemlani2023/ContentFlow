@@ -3465,15 +3465,16 @@
                             <h4 style="color: #1e293b; margin-bottom: 15px;">📝 Article Length</h4>
                             <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Target Word Count:</label>
                             <select id="wordCountSelect" onchange="updateWordCountSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; margin-bottom: 10px;">
-                                <option value="500">🟢 Short Article - 500 words (Quick read, 2-3 min)</option>
-                                <option value="800">🟢 Medium Article - 800 words (Standard blog post, 3-4 min)</option>
-                                <option value="1200">🟢 Long Article - 1,200 words (In-depth content, 5-6 min)</option>
-                                <option value="1500" ${wordCount >= 1500 && wordCount < 1800 ? 'selected' : ''}>🟡 Extended Article - 1,500 words (Comprehensive guide, 7-8 min)</option>
-                                <option value="1800" ${wordCount >= 1800 && wordCount < 2500 ? 'selected' : ''}>🟡 Long-form Article - 1,800 words (Detailed analysis, 9-10 min)</option>
-                                <option value="2500" ${wordCount >= 2500 ? 'selected' : ''}>🔴 Ultimate Guide - 2,500 words (Complete resource, 12-15 min)</option>
+                                <option value="500">📝 Short Article - 500 words (Quick read, 2-3 min)</option>
+                                <option value="800">📄 Medium Article - 800 words (Standard blog post, 3-4 min)</option>
+                                <option value="1200">📋 Long Article - 1,200 words (In-depth content, 5-6 min)</option>
+                                <option value="1500" ${wordCount >= 1500 && wordCount < 1800 ? 'selected' : ''}>📚 Extended Article - 1,500 words (Comprehensive guide, 7-8 min) ⭐</option>
+                                <option value="1800" ${wordCount >= 1800 && wordCount < 2500 ? 'selected' : ''}>📖 Long-form Article - 1,800 words (Detailed analysis, 9-10 min) ⭐</option>
+                                <option value="2500" ${wordCount >= 2500 ? 'selected' : ''}>🎯 Ultimate Guide - 2,500 words (Complete resource, 12-15 min) ⭐⭐</option>
                             </select>
-                            <div style="padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 13px; color: #64748b;">
-                                <div><strong>Difficulty:</strong> ${difficulty} | <strong>Intent:</strong> ${intent}</div>
+                            <div style="padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 12px; color: #64748b;">
+                                <div style="margin-bottom: 4px;"><strong>Article Info:</strong> ${difficulty} difficulty | ${intent} intent</div>
+                                <div style="font-size: 11px; font-style: italic;">⭐ = Premium/Enterprise tier recommended for best results & reliability</div>
                             </div>
                         </div>
 
