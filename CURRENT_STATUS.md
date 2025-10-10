@@ -9,6 +9,11 @@
 ## 🆕 LATEST SESSION - 2025-10-10
 
 **Recent Updates:**
+- ✅ FIXED: Focus keyword now preserves original research keyword instead of using article title
+- ✅ IMPLEMENTED: originalKeyword flows from keyword research through entire article generation workflow
+- ✅ STRENGTHENED: Article prompt with explicit minimum word count requirements per section
+- ✅ ENHANCED: Prompt emphasizes comprehensive, detailed content with examples and statistics
+- ✅ FIXED: Image display undefined errors (tableOfContents, sections, relatedKeywords safety checks)
 - ✅ OPTIMIZED: Drastically simplified article generation prompt (60-70% reduction) to prevent API timeouts
 - ✅ IMPROVED: Removed full JSON outline structure from prompt - now extracts only section titles
 - ✅ ENHANCED: Compressed prompt instructions for faster API processing
@@ -58,6 +63,8 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `776fe0c`: Fix article generation issues: word count, focus keyword, and image display
+- `2726b39`: Update CURRENT_STATUS with prompt simplification optimization
 - `5f40187`: Drastically simplify article generation prompt to prevent API timeouts
 - `8bd10db`: Update CURRENT_STATUS with Basic tier 1200-word restriction
 - `d71954e`: Restrict Basic tier to 1200 words maximum - require Premium for longer articles
