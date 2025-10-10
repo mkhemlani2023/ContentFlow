@@ -6339,7 +6339,9 @@
                 // Calculate number of sections based on word count
                 const numSections = Math.max(3, Math.min(6, Math.floor(wordCount / 300)));
 
-                const outlinePrompt = `Return ONLY valid JSON. No text before/after. ${numSections} sections for "${keyword}". ${wordCount}w total. ${intent}. ${new Date().getFullYear()}. Vary lengths by importance.
+                const outlinePrompt = `Return ONLY valid JSON. No text before/after. Create EXACTLY ${numSections} sections for "${keyword}". Total must be ${wordCount} words. ${intent}. ${new Date().getFullYear()}. Vary section lengths by importance.
+
+IMPORTANT: You MUST create ${numSections} section objects in the sections array, not 3. Distribute ${wordCount} words across intro (180w) + ${numSections} sections + conclusion (120w) + FAQ.
 
 {"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"readingTime":"","wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":[],"wordCount":180},"sections":[{"title":"","anchor":"","purpose":"","wordCount":400,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":200}]},{"title":"","anchor":"","purpose":"","wordCount":350,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":150}]},{"title":"","anchor":"","purpose":"","wordCount":300,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":180}]}],"conclusion":{"purpose":"","keyPoints":[],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
 
