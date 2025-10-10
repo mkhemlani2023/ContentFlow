@@ -9,6 +9,8 @@ const SERPER_API_KEY = process.env.SERPER_API_KEY;
 const SERPER_BASE_URL = process.env.SERPER_BASE_URL || 'https://google.serper.dev';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_BASE_URL = 'https://api.anthropic.com/v1';
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
 const PEXELS_BASE_URL = 'https://api.pexels.com/v1';
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
@@ -1513,6 +1515,111 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({
             success: false,
             message: 'Article generation failed',
+            error: error.message
+          })
+        };
+      }
+    }
+
+    // Claude Direct API Endpoint
+    if (path === '/api/claude-generate' && method === 'POST') {
+      try {
+        let requestBody;
+        try {
+          requestBody = typeof body === 'string' ? JSON.parse(body) : body;
+        } catch (parseError) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'Invalid JSON in request body',
+              error: parseError.message
+            })
+          };
+        }
+
+        const { prompt, temperature, max_tokens } = requestBody;
+
+        if (!ANTHROPIC_API_KEY) {
+          return {
+            statusCode: 503,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'Anthropic API key not configured'
+            })
+          };
+        }
+
+        if (!prompt) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'Prompt is required'
+            })
+          };
+        }
+
+        console.log('Making Claude API call with', max_tokens, 'max tokens');
+
+        // Make Claude API request
+        const response = await fetch(`${ANTHROPIC_BASE_URL}/messages`, {
+          method: 'POST',
+          headers: {
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: max_tokens || 4000,
+            temperature: temperature || 0.7,
+            messages: [
+              {
+                role: 'user',
+                content: prompt
+              }
+            ]
+          })
+        });
+
+        console.log('Claude response status:', response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Claude API error:', errorText);
+          throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        // Convert Claude response format to OpenAI-compatible format
+        const content = data.content[0].text;
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            choices: [{
+              message: {
+                content: content
+              }
+            }]
+          })
+        };
+
+      } catch (error) {
+        console.error('Claude API Error:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Claude API request failed',
             error: error.message
           })
         };
