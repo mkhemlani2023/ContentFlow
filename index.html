@@ -6368,11 +6368,38 @@ Make the outline strategic, comprehensive, and optimized for search engines with
                         model: config.model,
                         prompt: outlinePrompt,
                         temperature: config.temperature,
-                        max_tokens: 2000 // Sufficient for detailed outline
+                        max_tokens: 1500 // Reduced for faster generation (outlines are shorter)
                     })
                 });
 
                 if (!outlineResponse.ok) {
+                    const errorData = await outlineResponse.json().catch(() => ({error: 'Unknown error'}));
+                    console.error('OpenRouter outline API error:', errorData);
+
+                    // Special handling for timeout errors
+                    if (outlineResponse.status === 504) {
+                        progress.close();
+
+                        let timeoutMessage = 'The AI model timed out while generating the outline.\n\n';
+
+                        if (modelTier === 'basic') {
+                            timeoutMessage += '💡 SOLUTION:\n';
+                            timeoutMessage += '• Try again (sometimes the API is temporarily slow)\n';
+                            timeoutMessage += '• Or use Premium tier (GPT-4o-mini) - 50 credits\n';
+                            timeoutMessage += '• Or use Enterprise tier (Claude 3.5) - 85 credits\n\n';
+                            timeoutMessage += 'Premium and Enterprise models are faster and more reliable.';
+                        } else {
+                            timeoutMessage += 'The API is experiencing delays. Please:\n';
+                            timeoutMessage += '• Wait a moment and try again\n';
+                            timeoutMessage += '• Or try a different model tier';
+                        }
+
+                        alert(timeoutMessage);
+                        throw new Error('Outline generation timed out (504)');
+                    }
+
+                    progress.close();
+                    alert(`Outline generation failed: ${errorData.error || 'API error ' + outlineResponse.status}`);
                     throw new Error(`OpenRouter API error: ${outlineResponse.status}`);
                 }
 
