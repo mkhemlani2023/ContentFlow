@@ -6227,10 +6227,14 @@
                 progress.updateTechnicalInfo(`Model: ${config.model}\nWord count: ${wordCount}\nDifficulty: ${difficulty}\nIntent: ${intent}\nTemperature: ${config.temperature}`);
 
                 // Manually advance through stages
-                updateProgressStage(0, 'Initializing AI model');
+                updateProgressStage(0, 'Initializing AI model... ⏳');
+                await new Promise(resolve => setTimeout(resolve, 300));
 
                 // Step 1: Create outline prompt
-                updateProgressStage(1, 'Analyzing keyword & search intent');
+                updateProgressStage(1, 'Analyzing keyword & search intent... ⏳');
+                progress.updateMessage('Creating outline structure... ⏳');
+                await new Promise(resolve => setTimeout(resolve, 200));
+
                 const outlinePrompt = `Create a comprehensive article outline for "${keyword}" with exactly ${wordCount} words.
 
 REQUIREMENTS:
@@ -6295,7 +6299,9 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
 
 Make the outline strategic, comprehensive, and optimized for search engines with current ${new Date().getFullYear()} context.`;
 
-                updateProgressStage(2, 'Creating outline structure');
+                updateProgressStage(2, 'Preparing outline request... ⏳');
+                progress.updateMessage('Sending request to AI... ⏳');
+                await new Promise(resolve => setTimeout(resolve, 200));
 
                 // Step 1: Generate outline using OpenRouter API
                 const outlineResponse = await fetch('/api/openrouter-generate', {
@@ -6315,12 +6321,16 @@ Make the outline strategic, comprehensive, and optimized for search engines with
                     throw new Error(`OpenRouter API error: ${outlineResponse.status}`);
                 }
 
-                updateProgressStage(3, 'Generating section titles');
+                updateProgressStage(3, 'AI generating outline... ⏳');
+                progress.updateMessage('Processing response... ⏳');
+                await new Promise(resolve => setTimeout(resolve, 200));
 
                 const outlineData = await outlineResponse.json();
                 let outlineStructure;
 
-                updateProgressStage(4, 'Adding subsections & key points');
+                updateProgressStage(4, 'Parsing outline structure... ⏳');
+                progress.updateMessage('Adding subsections & key points... ⏳');
+                await new Promise(resolve => setTimeout(resolve, 200));
 
                 try {
                     // Parse outline data from response
@@ -6356,7 +6366,9 @@ Make the outline strategic, comprehensive, and optimized for search engines with
 
                     outlineStructure = JSON.parse(cleanedContent);
 
-                    updateProgressStage(5, 'Finalizing SEO optimizations');
+                    updateProgressStage(5, 'Finalizing outline... ⏳');
+                    progress.updateMessage('Optimizing for SEO... ⏳');
+                    await new Promise(resolve => setTimeout(resolve, 300));
                 } catch (parseError) {
                     console.error('=== OUTLINE PARSING ERROR ===');
                     console.error('Parse error:', parseError);
@@ -6568,11 +6580,11 @@ Make the outline strategic, comprehensive, and optimized for search engines with
 
             try {
                 // Manually advance through stages
-                updateProgressStage(0, 'Loading outline structure');
+                updateProgressStage(0, 'Loading outline structure... ⏳');
+                await new Promise(resolve => setTimeout(resolve, 300)); // Small delay for visual feedback
 
                 // Create article prompt based on outline
-                updateProgressStage(1, 'Generating introduction');
-                progress.updateMessage('Creating AI prompt from outline...');
+                progress.updateMessage('Creating AI prompt from outline... ⏳');
                 const articlePrompt = `Write a complete article based on this detailed outline. Follow the structure exactly and expand each section with engaging, SEO-optimized content.
 
 OUTLINE TO FOLLOW:
@@ -6663,8 +6675,12 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
                     promptLength: articlePrompt.length
                 });
 
-                updateProgressStage(2, 'Writing main content sections');
-                progress.updateMessage('Sending request to AI model...');
+                // Complete stage 1 before moving to stage 2
+                updateProgressStage(1, 'AI prompt created ✓');
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                updateProgressStage(2, 'Sending request to AI... ⏳');
+                progress.updateMessage('Writing main content sections... This may take 30-60 seconds ⏳');
 
                 const articleResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
@@ -6694,14 +6710,19 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
                     throw new Error(`OpenRouter API error ${articleResponse.status}: ${errorData.error || errorData.message || 'Unknown error'}`);
                 }
 
-                updateProgressStage(3, 'Creating subsection content');
-                updateProgressStage(4, 'Writing conclusion & FAQ');
-                progress.updateMessage('Parsing AI response...');
+                // AI is processing - update status
+                updateProgressStage(3, 'AI is writing content... ⏳');
+                progress.updateMessage('Creating subsection content... ⏳');
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                updateProgressStage(4, 'Processing AI response... ⏳');
+                progress.updateMessage('Parsing article structure... ⏳');
 
                 const articleData = await articleResponse.json();
                 let finalArticle;
 
-                updateProgressStage(5, 'Adding SEO metadata');
+                updateProgressStage(5, 'Validating content... ⏳');
+                progress.updateMessage('Adding SEO metadata... ⏳');
 
                 try {
                     // Parse final article data from response
@@ -6744,7 +6765,9 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
                     // Attempt to parse
                     finalArticle = JSON.parse(cleanedContent);
 
-                    updateProgressStage(6, 'Final quality check');
+                    updateProgressStage(6, 'Performing quality checks... ⏳');
+                    progress.updateMessage('Validating article structure... ⏳');
+                    await new Promise(resolve => setTimeout(resolve, 300));
 
                     // CRITICAL FIX: Force correct focus keyword (AI often uses title instead)
                     if (finalArticle.metadata) {
