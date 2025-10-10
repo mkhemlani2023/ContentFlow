@@ -9,6 +9,9 @@
 ## 🆕 LATEST SESSION - 2025-10-08
 
 **Recent Updates:**
+- ✅ RESTRICTED: Basic tier limited to 1,200 words max (was 1,500) - Premium required for longer articles
+- ✅ ENFORCED: Backend validation prevents Basic tier from generating >1200 word articles
+- ✅ ENHANCED: Clear "⭐ Premium+" indicators on 1500+, 1800, and 2500 word options
 - ✅ ADDED: Animated progress bar with shimmer effect showing continuous movement
 - ✅ IMPLEMENTED: Pulsing animation on current working stage (yellow background + ⏳)
 - ✅ ENHANCED: Clear visual distinction between working/complete/pending stages
@@ -52,6 +55,8 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `d71954e`: Restrict Basic tier to 1200 words maximum - require Premium for longer articles
+- `7936a96`: Update CURRENT_STATUS with animated progress bar and color coding fixes
 - `5b55ffc`: Add animated progress bar with visual activity indicators (shimmer + pulse animations)
 - `bc3400e`: Fix confusing traffic light color coding in word count selection
 - `e59a894`: Update CURRENT_STATUS with outline timeout fixes
