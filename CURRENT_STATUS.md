@@ -1,14 +1,17 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2025-10-08 (Latest Session - Continued)
-**Current Session:** Progress Bars, Article Display Fixes & Workflow Improvements
+**Last Updated:** 2025-10-10 (Latest Session - Continued)
+**Current Session:** API Timeout Prevention & Prompt Optimization
 **Developer:** Mary + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2025-10-08
+## 🆕 LATEST SESSION - 2025-10-10
 
 **Recent Updates:**
+- ✅ OPTIMIZED: Drastically simplified article generation prompt (60-70% reduction) to prevent API timeouts
+- ✅ IMPROVED: Removed full JSON outline structure from prompt - now extracts only section titles
+- ✅ ENHANCED: Compressed prompt instructions for faster API processing
 - ✅ RESTRICTED: Basic tier limited to 1,200 words max (was 1,500) - Premium required for longer articles
 - ✅ ENFORCED: Backend validation prevents Basic tier from generating >1200 word articles
 - ✅ ENHANCED: Clear "⭐ Premium+" indicators on 1500+, 1800, and 2500 word options
@@ -55,6 +58,8 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `5f40187`: Drastically simplify article generation prompt to prevent API timeouts
+- `8bd10db`: Update CURRENT_STATUS with Basic tier 1200-word restriction
 - `d71954e`: Restrict Basic tier to 1200 words maximum - require Premium for longer articles
 - `7936a96`: Update CURRENT_STATUS with animated progress bar and color coding fixes
 - `5b55ffc`: Add animated progress bar with visual activity indicators (shimmer + pulse animations)
