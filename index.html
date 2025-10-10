@@ -6752,10 +6752,10 @@ JSON only:
                     console.log('✓ Basic tier: Generating article ≤1200 words');
                 } else if (config.model.includes('gpt-4o-mini')) {
                     // GPT-4o-mini has 128K context window - better for longer articles
-                    maxTokens = Math.floor(targetWordCount * 2.5);
+                    maxTokens = Math.floor(targetWordCount * 3.5);
                 } else {
                     // Claude and other models with large windows (200K+) - best for long articles
-                    maxTokens = Math.floor(targetWordCount * 3);
+                    maxTokens = Math.floor(targetWordCount * 4);
                 }
 
                 console.log('Article generation request:', {
