@@ -1,12 +1,15 @@
 [build]
   # Build command - ensure public directory exists and copy files
-  command = "mkdir -p public && cp index.html public/"
+  command = "mkdir -p public && cp index.html public/ && echo 'Build completed successfully'"
 
   # Directory to publish - serve static files from public
   publish = "public"
 
   # Functions directory for serverless functions
   functions = "netlify/functions"
+
+  # Ignore TypeScript build command
+  ignore = "exit 0"
 
 [build.environment]
   # Node.js version
