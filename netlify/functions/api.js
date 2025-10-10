@@ -2293,39 +2293,6 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
     }
 
-    // Article Status Endpoint (for background generation polling)
-    if (path.startsWith('/api/article-status/') && method === 'GET') {
-      const jobId = path.split('/').pop();
-
-      try {
-        const fs = require('fs').promises;
-        const statusPath = `/tmp/article-status/${jobId}.json`;
-
-        const statusData = await fs.readFile(statusPath, 'utf8');
-        const status = JSON.parse(statusData);
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            status
-          })
-        };
-      } catch (error) {
-        // Job not found or not started yet
-        return {
-          statusCode: 404,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            message: 'Job not found',
-            jobId
-          })
-        };
-      }
-    }
-
     // Default 404
     return {
       statusCode: 404,
@@ -2345,8 +2312,7 @@ Generate a professional, actionable outline that a content writer can follow to 
           'POST /api/generate-images',
           'POST /api/generate-article',
           'POST /api/content-outline',
-          'POST /api/pexels-images',
-          'GET /api/article-status/:jobId'
+          'POST /api/pexels-images'
         ]
       })
     };
