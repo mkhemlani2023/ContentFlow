@@ -641,7 +641,7 @@
 
         // Initialize SEO Wizard credit system
         window.seoWizard = {
-            credits: parseInt(localStorage.getItem('seoWizardCredits') || '50000')
+            credits: parseInt(localStorage.getItem('seoWizardCredits') || '100000')
         };
 
         // Credit System Functions
@@ -891,7 +891,7 @@
             results.innerHTML = '';
 
             // Calculate usage statistics
-            const totalCreditsEver = parseInt(localStorage.getItem('seoWizardTotalCreditsEver') || '1000');
+            const totalCreditsEver = parseInt(localStorage.getItem('seoWizardTotalCreditsEver') || '100000');
             const creditsUsed = totalCreditsEver - window.seoWizard.credits;
             const usageRate = ((creditsUsed / totalCreditsEver) * 100).toFixed(1);
 
@@ -8566,7 +8566,7 @@ ${item.answer}
                 showDebugInfo(cleanId, index, `Error: ${error.message}`);
 
                 // Refund credits on error
-                const currentCredits = parseInt(localStorage.getItem('credits') || '1000');
+                const currentCredits = parseInt(localStorage.getItem('credits') || '100000');
                 localStorage.setItem('credits', (currentCredits + totalCost).toString());
                 updateCreditDisplay();
 
