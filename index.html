@@ -6339,12 +6339,10 @@
                 // Calculate number of sections based on word count
                 const numSections = Math.max(3, Math.min(6, Math.floor(wordCount / 300)));
 
-                const outlinePrompt = `Create ${numSections} main sections for "${keyword}". ${wordCount} words total. ${intent} intent. ${new Date().getFullYear()}.
+                const outlinePrompt = `${numSections} sections. "${keyword}". ${wordCount}w. ${intent}. ${new Date().getFullYear()}. Vary section lengths by importance.
 
-Important: Sections can vary in length based on importance. More critical sections should be longer. Total must equal ${wordCount} words.
-
-JSON only:
-{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"readingTime":"","wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":[],"wordCount":180},"sections":[{"title":"Section 1","anchor":"","purpose":"","wordCount":400,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":200}]},{"title":"Section 2","anchor":"","purpose":"","wordCount":350,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":150}]},{"title":"Section 3","anchor":"","purpose":"","wordCount":300,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":180}]}],"conclusion":{"purpose":"","keyPoints":[],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
+JSON:
+{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"readingTime":"","wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":[],"wordCount":180},"sections":[{"title":"","anchor":"","purpose":"","wordCount":400,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":200}]},{"title":"","anchor":"","purpose":"","wordCount":350,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":150}]},{"title":"","anchor":"","purpose":"","wordCount":300,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":180}]}],"conclusion":{"purpose":"","keyPoints":[],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
 
                 updateProgressStage(2, '✓ Instructions ready');
                 progress.updateMessage('🚀 Connecting to AI model...');
@@ -6360,7 +6358,7 @@ JSON only:
                         model: config.model,
                         prompt: outlinePrompt,
                         temperature: config.temperature,
-                        max_tokens: 1500,
+                        max_tokens: 1200, // Reduced from 1500 for faster generation
                         stream: true // Enable streaming for outline too
                     })
                 });
