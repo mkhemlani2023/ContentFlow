@@ -7891,7 +7891,7 @@ ${item.answer}
                     </p>
 
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
-                        <button onclick="showInlineArticleOptions('${cleanId}', ${index}, '${article.title.replace(/'/g, "\\'")}', ${article.wordCount}, '${article.intent}')"
+                        <button onclick="showInlineArticleOptions('${cleanId}', ${index}, '${article.title.replace(/'/g, "\\'")}', ${article.wordCount}, '${article.intent}', '${keyword.replace(/'/g, "\\'")}')"
                                 id="generate-btn-${cleanId}-${index}"
                                 style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
                             <span>✍️</span>
@@ -7960,7 +7960,7 @@ ${item.answer}
 
                         <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between;">
                             <div style="display: flex; gap: 10px; align-items: center;">
-                                <button onclick="generateInlineArticle('${cleanId}', ${index}, '${article.title.replace(/'/g, "\\'")}', ${article.wordCount}, '${article.intent}')"
+                                <button onclick="generateInlineArticle('${cleanId}', ${index}, '${article.title.replace(/'/g, "\\'")}', ${article.wordCount}, '${article.intent}', '${keyword.replace(/'/g, "\\'")}')"
                                         id="generate-final-btn-${cleanId}-${index}"
                                         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
                                     <span>🚀</span>
@@ -8111,7 +8111,10 @@ ${item.answer}
         }
 
         // Generate inline article with enhanced options
-        async function generateInlineArticle(cleanId, index, title, originalWordCount, intent) {
+        async function generateInlineArticle(cleanId, index, title, originalWordCount, intent, originalKeyword) {
+            // Use original keyword from research if provided, otherwise fall back to title
+            const focusKeyword = originalKeyword || title;
+            console.log('🔑 generateInlineArticle - Title:', title, '| Focus Keyword:', focusKeyword);
             const lengthSelect = document.getElementById(`length-select-${cleanId}-${index}`);
             const toneSelect = document.getElementById(`tone-select-${cleanId}-${index}`);
             const modelSelect = document.getElementById(`model-select-${cleanId}-${index}`);
@@ -8178,6 +8181,7 @@ ${item.answer}
                     },
                     body: JSON.stringify({
                         title: title,
+                        focusKeyword: focusKeyword,
                         wordCount: wordCount,
                         difficulty: tone,
                         intent: intent,
