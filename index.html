@@ -6345,7 +6345,7 @@ JSON only:
                 progress.updateMessage('🚀 Connecting to AI model...');
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                // Step 1: Generate outline using OpenRouter API
+                // Step 1: Generate outline using OpenRouter API with streaming
                 const outlineResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
                     headers: {
@@ -6355,46 +6355,66 @@ JSON only:
                         model: config.model,
                         prompt: outlinePrompt,
                         temperature: config.temperature,
-                        max_tokens: 1500 // Reduced for faster generation (outlines are shorter)
+                        max_tokens: 1500,
+                        stream: true // Enable streaming for outline too
                     })
                 });
 
                 if (!outlineResponse.ok) {
                     const errorData = await outlineResponse.json().catch(() => ({error: 'Unknown error'}));
                     console.error('OpenRouter outline API error:', errorData);
-
-                    // Special handling for timeout errors
-                    if (outlineResponse.status === 504) {
-                        progress.close();
-
-                        let timeoutMessage = 'The AI model timed out while generating the outline.\n\n';
-
-                        if (modelTier === 'basic') {
-                            timeoutMessage += '💡 SOLUTION:\n';
-                            timeoutMessage += '• Try again (sometimes the API is temporarily slow)\n';
-                            timeoutMessage += '• Or use Premium tier (GPT-4o-mini) - 50 credits\n';
-                            timeoutMessage += '• Or use Enterprise tier (Claude 3.5) - 85 credits\n\n';
-                            timeoutMessage += 'Premium and Enterprise models are faster and more reliable.';
-                        } else {
-                            timeoutMessage += 'The API is experiencing delays. Please:\n';
-                            timeoutMessage += '• Wait a moment and try again\n';
-                            timeoutMessage += '• Or try a different model tier';
-                        }
-
-                        alert(timeoutMessage);
-                        throw new Error('Outline generation timed out (504)');
-                    }
-
                     progress.close();
                     alert(`Outline generation failed: ${errorData.error || 'API error ' + outlineResponse.status}`);
                     throw new Error(`OpenRouter API error: ${outlineResponse.status}`);
                 }
 
-                updateProgressStage(3, '✓ Outline received');
+                // Handle streaming outline response
+                updateProgressStage(3, '✓ Receiving outline');
+                progress.updateMessage('📋 AI is creating outline structure...');
+
+                const reader = outlineResponse.body.getReader();
+                const decoder = new TextDecoder();
+                let accumulatedOutline = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') continue;
+
+                            try {
+                                const parsed = JSON.parse(data);
+                                const content = parsed.choices?.[0]?.delta?.content || '';
+                                if (content) {
+                                    accumulatedOutline += content;
+                                }
+                            } catch (e) {
+                                console.warn('Failed to parse outline chunk:', e);
+                            }
+                        }
+                    }
+                }
+
+                console.log('=== OUTLINE STREAMING COMPLETE ===');
+
+                updateProgressStage(4, '✓ Outline received');
                 progress.updateMessage('📋 Processing outline structure...');
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                const outlineData = await outlineResponse.json();
+                // Create outlineData object from streamed content
+                const outlineData = {
+                    choices: [{
+                        message: {
+                            content: accumulatedOutline
+                        }
+                    }]
+                };
                 let outlineStructure;
 
                 updateProgressStage(4, '✓ Structure processed');
@@ -6717,6 +6737,7 @@ JSON only:
                 updateProgressStage(2, '✓ Connected to AI');
                 progress.updateMessage('✍️ AI is now writing your article... (Est. 30-60 seconds)');
 
+                // Use streaming to prevent timeouts
                 const articleResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
                     headers: {
@@ -6726,39 +6747,78 @@ JSON only:
                         model: config.model,
                         prompt: articlePrompt,
                         temperature: config.temperature,
-                        max_tokens: maxTokens
+                        max_tokens: maxTokens,
+                        stream: true // Enable streaming to prevent timeouts
                     })
                 });
 
                 if (!articleResponse.ok) {
                     const errorData = await articleResponse.json().catch(() => ({error: 'Unknown error'}));
                     console.error('OpenRouter API error response:', errorData);
-
-                    // Special handling for timeout errors
-                    if (articleResponse.status === 504) {
-                        let timeoutMessage;
-                        if (config.model.includes('gpt-3.5')) {
-                            timeoutMessage = `The AI model timed out while generating this ${targetWordCount}-word article.\n\n💡 SOLUTION: Basic tier cannot handle this length.\nPlease use:\n• Premium tier (GPT-4o-mini) - 50 credits\n• Enterprise tier (Claude 3.5) - 85 credits`;
-                        } else if (config.model.includes('gpt-4o-mini')) {
-                            timeoutMessage = `The AI model (GPT-4o-mini) timed out.\n\n💡 SOLUTION: Try again, or upgrade to:\n• Enterprise tier (Claude 3.5) - 85 credits (faster & more reliable for ${targetWordCount} words)`;
-                        } else {
-                            timeoutMessage = `The AI model (Claude 3.5) timed out while generating this ${targetWordCount}-word article.\n\n💡 POSSIBLE CAUSES:\n• API server overloaded (try again in 1-2 minutes)\n• Article too complex/long\n• Network issues\n\nTRY:\n1. Wait 1-2 minutes and try again\n2. Reduce word count to ${Math.floor(targetWordCount * 0.8)} words\n3. Simplify the topic/outline`;
-                        }
-                        throw new Error(timeoutMessage);
-                    }
-
                     throw new Error(`OpenRouter API error ${articleResponse.status}: ${errorData.error || errorData.message || 'Unknown error'}`);
                 }
 
+                // Handle streaming response
+                updateProgressStage(3, '✓ Connected - receiving content');
+                progress.updateMessage('📝 AI is writing article... (streaming live)');
+
+                const reader = articleResponse.body.getReader();
+                const decoder = new TextDecoder();
+                let accumulatedContent = '';
+                let lastUpdateTime = Date.now();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') continue;
+
+                            try {
+                                const parsed = JSON.parse(data);
+                                const content = parsed.choices?.[0]?.delta?.content || '';
+                                if (content) {
+                                    accumulatedContent += content;
+
+                                    // Update progress every 2 seconds
+                                    const now = Date.now();
+                                    if (now - lastUpdateTime > 2000) {
+                                        const wordCount = accumulatedContent.split(/\s+/).length;
+                                        progress.updateMessage(`📝 Generated ${wordCount} words so far...`);
+                                        lastUpdateTime = now;
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn('Failed to parse chunk:', e);
+                            }
+                        }
+                    }
+                }
+
+                console.log('=== STREAMING COMPLETE ===');
+                console.log('Total accumulated content length:', accumulatedContent.length);
+
                 // AI is processing - update status
-                updateProgressStage(3, '✓ Article received from AI');
+                updateProgressStage(4, '✓ Article received');
                 progress.updateMessage('📄 Processing generated content...');
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                updateProgressStage(4, '✓ Content processed');
+                updateProgressStage(5, '✓ Content processed');
                 progress.updateMessage('🔍 Validating article structure...');
 
-                const articleData = await articleResponse.json();
+                // Create articleData object from streamed content
+                const articleData = {
+                    choices: [{
+                        message: {
+                            content: accumulatedContent
+                        }
+                    }]
+                };
                 let finalArticle;
 
                 updateProgressStage(5, '✓ Structure validated');

@@ -1381,7 +1381,7 @@ exports.handler = async (event, context) => {
           };
         }
 
-        const { model, prompt, temperature, max_tokens } = requestBody;
+        const { model, prompt, temperature, max_tokens, stream } = requestBody;
 
         if (!OPENROUTER_API_KEY) {
           return {
@@ -1406,7 +1406,7 @@ exports.handler = async (event, context) => {
           };
         }
 
-        console.log('Making OpenRouter API call with model:', model);
+        console.log('Making OpenRouter API call with model:', model, 'stream:', stream);
 
         // Make OpenRouter API request
         const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
@@ -1425,7 +1425,8 @@ exports.handler = async (event, context) => {
               }
             ],
             temperature: temperature || 0.7,
-            max_tokens: max_tokens || 4000
+            max_tokens: max_tokens || 4000,
+            stream: stream || false
           })
         });
 
@@ -1437,6 +1438,22 @@ exports.handler = async (event, context) => {
           throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
         }
 
+        // If streaming is enabled, pass the stream through
+        if (stream) {
+          return {
+            statusCode: 200,
+            headers: {
+              ...headers,
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive'
+            },
+            body: response.body, // Pass through the ReadableStream
+            isBase64Encoded: false
+          };
+        }
+
+        // Non-streaming response (original behavior)
         const data = await response.json();
         console.log('OpenRouter response received');
 
