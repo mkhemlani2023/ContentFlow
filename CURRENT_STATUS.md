@@ -9,6 +9,10 @@
 ## 🆕 LATEST SESSION - 2025-10-08
 
 **Recent Updates:**
+- ✅ ADDED: Animated progress bar with shimmer effect showing continuous movement
+- ✅ IMPLEMENTED: Pulsing animation on current working stage (yellow background + ⏳)
+- ✅ ENHANCED: Clear visual distinction between working/complete/pending stages
+- ✅ FIXED: Confusing traffic light colors - replaced with article type icons and ⭐ ratings
 - ✅ FIXED: 504 timeout errors in outline generation with helpful recovery guidance
 - ✅ OPTIMIZED: Reduced outline max_tokens from 2000 → 1500 for faster generation
 - ✅ ENHANCED: Tier-specific timeout error messages with actionable solutions
@@ -48,6 +52,9 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `5b55ffc`: Add animated progress bar with visual activity indicators (shimmer + pulse animations)
+- `bc3400e`: Fix confusing traffic light color coding in word count selection
+- `e59a894`: Update CURRENT_STATUS with outline timeout fixes
 - `aa05be6`: Fix 504 timeout errors in outline generation (reduced tokens, better error handling)
 - `7f598f3`: Update CURRENT_STATUS with word count selection and smart model filtering features
 - `e5dc2e8`: Add word count selection and smart model filtering with confidence-inspiring progress messages
@@ -134,7 +141,13 @@
 - ✅ Internal Links: AI-powered relevance analysis with user selection
 
 **Technical Improvements:**
-- **Word Count Selection**: 6 predefined options (500-2500 words) with reading time estimates and difficulty indicators
+- **Animated Progress Bar**: Shimmer gradient animation (2s cycle) shows continuous activity
+- **Stage Pulse Animation**: Current working stage pulses with yellow background and ⏳ icon
+- **Visual State System**: Yellow pulsing = working, Green static = complete, Gray = pending
+- **CSS Keyframe Animations**: shimmer (200% gradient), stagePulse (scale + opacity)
+- **Smart Stage Detection**: Automatically detects working vs complete stages based on message content
+- **Word Count Selection**: 6 predefined options (500-2500 words) with reading time estimates
+- **Icon-Based Ratings**: Replaced traffic light colors with article type icons (📝📄📋📚📖🎯) and ⭐ ratings
 - **Smart Model Filtering**: Basic tier automatically disabled for >1500 word articles to prevent timeouts
 - **Dynamic UI Updates**: Model dropdown updates in real-time when word count changes
 - **Warning System**: Yellow banner alerts users when selecting incompatible model/word count combinations
