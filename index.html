@@ -6720,36 +6720,18 @@ Make the outline strategic, comprehensive, and optimized for search engines with
                 }).join('\n');
 
                 const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
-                const minWordsPerSection = Math.floor(targetWordCount / (sections.length + 3)); // +3 for intro, conclusion, FAQ
 
-                const articlePrompt = `Write a comprehensive, in-depth SEO article about "${keyword}".
+                const articlePrompt = `Write SEO article: "${keyword}". ${targetWordCount} words minimum (aim for ${Math.floor(targetWordCount * 0.95)}-${Math.ceil(targetWordCount * 1.05)}).
 
-CRITICAL - WORD COUNT REQUIREMENT:
-Target: ${targetWordCount} words MINIMUM
-Acceptable range: ${Math.floor(targetWordCount * 0.9)}-${Math.ceil(targetWordCount * 1.1)} words
-Each main section MUST be ${minWordsPerSection}+ words minimum.
-
-ARTICLE STRUCTURE:
-Title: ${outlineStructure.outline?.title || keyword}
-Introduction (${minWordsPerSection}+ words - set context, explain importance)
+Structure:
+${outlineStructure.outline?.title || keyword}
 ${sectionList}
-Conclusion (${minWordsPerSection}+ words - summarize key points, call to action)
-FAQ (5 detailed questions with ${Math.floor(minWordsPerSection * 0.7)}+ word answers each)
+FAQ (5 Q&As)
 
-CONTENT REQUIREMENTS:
-- Focus keyword: "${keyword}" (use naturally 5-7 times)
-- Write detailed, comprehensive paragraphs (not summaries!)
-- Include specific examples, statistics, and actionable steps
-- Explain concepts thoroughly - assume reader is learning for first time
-- Add context, background info, and expert insights
-- Current year: ${new Date().getFullYear()}
-- Professional tone, but accessible language
+Write detailed content with examples. Focus keyword: "${keyword}". Year: ${new Date().getFullYear()}.
 
-Return ONLY JSON (no markdown, no extra text):
-{
-  "metadata": {"seoTitle": "...", "metaDescription": "...", "focusKeyword": "${keyword}", "relatedKeywords": ["..."], "readingTime": "X min", "wordCount": ${outlineStructure.metadata?.wordCount || 2000}},
-  "content": {"title": "...", "introduction": "...", "sections": [{"title": "...", "anchor": "...", "content": "...", "subsections": [{"title": "...", "anchor": "...", "content": "..."}]}], "conclusion": "...", "faq": [{"question": "...", "answer": "..."}]}
-}`;
+JSON only:
+{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"readingTime":"","wordCount":${targetWordCount}},"content":{"title":"","introduction":"","sections":[{"title":"","anchor":"","content":"","subsections":[{"title":"","anchor":"","content":""}]}],"conclusion":"","faq":[{"question":"","answer":""}]}}`;
 
                 // Generate full article using OpenRouter API
                 // Adjust max_tokens based on model to avoid context window issues
