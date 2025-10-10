@@ -9,6 +9,9 @@
 ## 🆕 LATEST SESSION - 2025-10-08
 
 **Recent Updates:**
+- ✅ FIXED: 504 timeout errors in outline generation with helpful recovery guidance
+- ✅ OPTIMIZED: Reduced outline max_tokens from 2000 → 1500 for faster generation
+- ✅ ENHANCED: Tier-specific timeout error messages with actionable solutions
 - ✅ ADDED: Word count selection dropdown (500-2500 words) with reading time estimates
 - ✅ IMPLEMENTED: Smart model filtering - Basic tier disabled for articles >1500 words
 - ✅ ENHANCED: Warning system for incompatible model/word count combinations
@@ -45,6 +48,8 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `aa05be6`: Fix 504 timeout errors in outline generation (reduced tokens, better error handling)
+- `7f598f3`: Update CURRENT_STATUS with word count selection and smart model filtering features
 - `e5dc2e8`: Add word count selection and smart model filtering with confidence-inspiring progress messages
 - `5c4bfa5`: Update CURRENT_STATUS with progress bar UX improvements
 - `252b031`: Fix progress bar UX - show working status and prevent multiple stages lighting up
