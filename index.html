@@ -3497,13 +3497,13 @@
                                 <option value="500">📝 Short Article - 500 words (Quick read, 2-3 min)</option>
                                 <option value="800">📄 Medium Article - 800 words (Standard blog post, 3-4 min)</option>
                                 <option value="1200">📋 Long Article - 1,200 words (In-depth content, 5-6 min)</option>
-                                <option value="1500" ${wordCount >= 1500 && wordCount < 1800 ? 'selected' : ''}>📚 Extended Article - 1,500 words (Comprehensive guide, 7-8 min) ⭐</option>
-                                <option value="1800" ${wordCount >= 1800 && wordCount < 2500 ? 'selected' : ''}>📖 Long-form Article - 1,800 words (Detailed analysis, 9-10 min) ⭐</option>
-                                <option value="2500" ${wordCount >= 2500 ? 'selected' : ''}>🎯 Ultimate Guide - 2,500 words (Complete resource, 12-15 min) ⭐⭐</option>
+                                <option value="1500" ${wordCount >= 1500 && wordCount < 1800 ? 'selected' : ''}>📚 Extended Article - 1,500 words (Comprehensive guide, 7-8 min) ⭐ Premium+</option>
+                                <option value="1800" ${wordCount >= 1800 && wordCount < 2500 ? 'selected' : ''}>📖 Long-form Article - 1,800 words (Detailed analysis, 9-10 min) ⭐ Premium+</option>
+                                <option value="2500" ${wordCount >= 2500 ? 'selected' : ''}>🎯 Ultimate Guide - 2,500 words (Complete resource, 12-15 min) ⭐⭐ Premium+</option>
                             </select>
                             <div style="padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 12px; color: #64748b;">
                                 <div style="margin-bottom: 4px;"><strong>Article Info:</strong> ${difficulty} difficulty | ${intent} intent</div>
-                                <div style="font-size: 11px; font-style: italic;">⭐ = Premium/Enterprise tier recommended for best results & reliability</div>
+                                <div style="font-size: 11px; font-style: italic;">⭐ Premium+ = Requires Premium or Enterprise tier (Basic not available)</div>
                             </div>
                         </div>
 
@@ -3518,7 +3518,7 @@
                                     <option value="enterprise|85">🥇 Enterprise Model (Claude 3.5 Sonnet) - 85 credits (~$0.85)</option>
                                 </select>
                                 <div id="modelWarning" style="display: none; padding: 12px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px; margin-top: 10px; font-size: 13px; color: #92400e;">
-                                    ⚠️ <strong>Warning:</strong> Basic model may timeout for articles over 1,500 words. We strongly recommend Premium or Enterprise tier for better results.
+                                    ⚠️ <strong>Warning:</strong> Basic model will timeout for articles over 1,200 words. Please use Premium or Enterprise tier.
                                 </div>
                                 <div style="font-size: 12px; color: #64748b; margin-top: 6px; font-style: italic;">
                                     Higher tier models provide better quality, faster generation, and can handle longer articles.
@@ -3577,10 +3577,10 @@
             const modelWarning = document.getElementById('modelWarning');
             const modelSelect = document.getElementById('modelSelect');
 
-            if (window.selectedWordCount > 1500) {
-                // Disable Basic model for long articles
+            if (window.selectedWordCount > 1200) {
+                // Disable Basic model for articles over 1200 words
                 basicOption.disabled = true;
-                basicOption.textContent = '🥉 Basic Model (Not recommended for 1500+ words)';
+                basicOption.textContent = '🥉 Basic Model (Not available for 1200+ words)';
                 basicOption.style.color = '#9ca3af';
 
                 // If Basic is currently selected, deselect it
@@ -3599,7 +3599,7 @@
             }
 
             // Update warning visibility
-            if (modelSelect.value === 'basic|25' && window.selectedWordCount > 1500) {
+            if (modelSelect.value === 'basic|25' && window.selectedWordCount > 1200) {
                 modelWarning.style.display = 'block';
             }
         }
@@ -3618,7 +3618,7 @@
             }
 
             // Show warning if Basic model selected for long articles
-            if (modelType === 'basic' && window.selectedWordCount > 1500) {
+            if (modelType === 'basic' && window.selectedWordCount > 1200) {
                 modelWarning.style.display = 'block';
             } else {
                 modelWarning.style.display = 'none';
@@ -6765,14 +6765,16 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
                 // Different models have different context windows
                 // NOTE: 1 word ≈ 1.33 tokens on average
                 if (config.model.includes('gpt-3.5')) {
-                    // GPT-3.5-turbo: Balanced limit to prevent timeouts
-                    // For long articles (>1500 words), consider using Premium or Enterprise tier
-                    if (targetWordCount > 1500) {
-                        maxTokens = 2500; // Cap at 2500 to prevent timeouts
-                        console.warn('⚠️ Article >1500 words with Basic model may timeout. Consider Premium/Enterprise.');
-                    } else {
-                        maxTokens = Math.floor(targetWordCount * 1.8);
+                    // GPT-3.5-turbo: Capped at 1200 words max
+                    // For articles >1200 words, Premium or Enterprise tier is REQUIRED
+                    if (targetWordCount > 1200) {
+                        // This should never happen due to frontend restrictions, but just in case
+                        progress.close();
+                        alert('❌ Basic tier is limited to 1,200 words maximum.\n\nPlease use Premium or Enterprise tier for longer articles.');
+                        throw new Error('Basic tier cannot generate articles over 1200 words');
                     }
+                    maxTokens = Math.floor(targetWordCount * 1.8);
+                    console.log('✓ Basic tier: Generating article ≤1200 words');
                 } else if (config.model.includes('gpt-4o-mini')) {
                     // GPT-4o-mini has 128K context window - better for longer articles
                     maxTokens = Math.floor(targetWordCount * 2.5);
@@ -6815,8 +6817,8 @@ CRITICAL: Return ONLY valid JSON, no other text before or after. Do not include 
 
                     // Special handling for timeout errors
                     if (articleResponse.status === 504) {
-                        const timeoutMessage = targetWordCount > 1500
-                            ? `The AI model timed out while generating this ${targetWordCount}-word article.\n\n💡 SOLUTION: For articles over 1500 words, we recommend:\n• Premium tier (GPT-4o-mini) - 50 credits\n• Enterprise tier (Claude 3.5) - 85 credits\n\nThese models are faster and better suited for long-form content.`
+                        const timeoutMessage = targetWordCount > 1200
+                            ? `The AI model timed out while generating this ${targetWordCount}-word article.\n\n💡 SOLUTION: For articles over 1200 words, you MUST use:\n• Premium tier (GPT-4o-mini) - 50 credits\n• Enterprise tier (Claude 3.5) - 85 credits\n\nBasic tier cannot handle articles over 1,200 words.`
                             : `The AI model timed out. This can happen with complex prompts.\n\nPlease try again, or use Premium/Enterprise tier for better performance.`;
                         throw new Error(timeoutMessage);
                     }
