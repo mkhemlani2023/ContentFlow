@@ -6338,12 +6338,13 @@
 
                 // Calculate number of sections based on word count
                 const numSections = Math.max(3, Math.min(6, Math.floor(wordCount / 300)));
-                const wordsPerSection = Math.floor((wordCount - 300) / numSections); // Reserve 300 for intro/conclusion
 
                 const outlinePrompt = `Create ${numSections} main sections for "${keyword}". ${wordCount} words total. ${intent} intent. ${new Date().getFullYear()}.
 
+Important: Sections can vary in length based on importance. More critical sections should be longer. Total must equal ${wordCount} words.
+
 JSON only:
-{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"readingTime":"","wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":[],"wordCount":180},"sections":[{"title":"Section 1","anchor":"","purpose":"","wordCount":${wordsPerSection},"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":200}]},{"title":"Section 2","anchor":"","purpose":"","wordCount":${wordsPerSection},"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":200}]},{"title":"Section 3","anchor":"","purpose":"","wordCount":${wordsPerSection},"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":200}]}],"conclusion":{"purpose":"","keyPoints":[],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
+{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"readingTime":"","wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":[],"wordCount":180},"sections":[{"title":"Section 1","anchor":"","purpose":"","wordCount":400,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":200}]},{"title":"Section 2","anchor":"","purpose":"","wordCount":350,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":150}]},{"title":"Section 3","anchor":"","purpose":"","wordCount":300,"subsections":[{"title":"","anchor":"","keyPoints":[],"wordCount":180}]}],"conclusion":{"purpose":"","keyPoints":[],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
 
                 updateProgressStage(2, '✓ Instructions ready');
                 progress.updateMessage('🚀 Connecting to AI model...');
