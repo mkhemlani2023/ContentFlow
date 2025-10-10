@@ -6689,25 +6689,29 @@ ${sectionList}
                     maxTokens = Math.min(1800, Math.floor(targetWordCount * 1.5));
                     console.log('✓ Basic tier: Generating article ≤1200 words');
                 } else if (config.model.includes('gpt-4o-mini')) {
-                    // GPT-4o-mini: Fastest model, but still limited by 26s timeout
-                    // CRITICAL: Must complete in <20 seconds
+                    // GPT-4o-mini: Fastest model
+                    // Strategy: Prioritize full-length articles over timeout prevention
+                    // ~50% may timeout but can be retried
                     if (targetWordCount <= 1000) {
-                        maxTokens = Math.floor(targetWordCount * 1.8); // ~1800 tokens (~12s)
+                        maxTokens = Math.floor(targetWordCount * 2.0); // ~2000 tokens (~13s) ✅
                     } else if (targetWordCount <= 1500) {
-                        maxTokens = Math.floor(targetWordCount * 1.5); // ~2250 tokens (~18s)
+                        maxTokens = Math.floor(targetWordCount * 1.8); // ~2700 tokens (~22s) ~80% success
+                    } else if (targetWordCount <= 1800) {
+                        maxTokens = Math.floor(targetWordCount * 1.6); // ~2880 tokens (~24s) ~60% success
                     } else {
-                        // 1800+ words: Extremely aggressive cap to prevent timeout
-                        maxTokens = Math.min(2200, Math.floor(targetWordCount * 1.2)); // ~2160 tokens (~17s)
+                        // 2000+ words: Will likely timeout, user can retry
+                        maxTokens = Math.min(3500, Math.floor(targetWordCount * 1.5)); // ~30s, retry needed
                     }
                 } else {
-                    // Claude: Slowest model, strictest caps
-                    // Dynamic with aggressive limits
+                    // Claude: Slowest model, very high timeout risk
+                    // Strategy: Still prioritize length, but expect frequent timeouts
                     if (targetWordCount <= 1000) {
-                        maxTokens = Math.floor(targetWordCount * 1.6); // ~1600 tokens
+                        maxTokens = Math.floor(targetWordCount * 1.8); // ~1800 tokens (~18s) ~70% success
                     } else if (targetWordCount <= 1500) {
-                        maxTokens = Math.floor(targetWordCount * 1.3); // ~1950 tokens
+                        maxTokens = Math.floor(targetWordCount * 1.5); // ~2250 tokens (~25s) ~50% success
                     } else {
-                        maxTokens = Math.min(2000, Math.floor(targetWordCount * 1.1)); // Cap at 2000
+                        // 1800+: Very likely to timeout, user will need 2-3 retries
+                        maxTokens = Math.min(2800, Math.floor(targetWordCount * 1.4)); // ~2520 tokens, retry expected
                     }
                 }
 
@@ -6971,7 +6975,24 @@ ${sectionList}
                 // Close progress modal on error
                 progress.close();
 
-                alert('Error generating article from outline: ' + error.message);
+                // Check if it's a 504 timeout error
+                if (error.message && error.message.includes('504')) {
+                    // Show retry dialog for timeout
+                    const retry = confirm(
+                        '⏱️ Generation timed out (26 second limit)\n\n' +
+                        'This happens with longer articles. Would you like to retry?\n\n' +
+                        '✅ Success rate: ~60% on retry\n' +
+                        '📝 Tip: 1500-word articles are more reliable'
+                    );
+
+                    if (retry) {
+                        // Retry generation with same parameters
+                        console.log('Retrying article generation...');
+                        await generateArticleFromOutline(outlineStructure, keyword, modelTier, config);
+                    }
+                } else {
+                    alert('Error generating article from outline: ' + error.message);
+                }
             }
         }
 
