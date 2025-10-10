@@ -9,10 +9,14 @@
 ## 🆕 LATEST SESSION - 2025-10-10
 
 **Recent Updates:**
+- ✅ OPTIMIZED: Drastically simplified article prompt by ~75% to prevent API timeouts
+- ✅ INCREASED: max_tokens for Premium (3.5x) and Enterprise (4x) tiers for reliable 1800-word generation
+- ✅ IMPROVED: Model-specific timeout error messages with actionable solutions
+- ✅ FIXED: Syntax error in content.sections ternary operator
+- ✅ FIXED: Duplicate targetWordCount declaration
+- ✅ FIXED: Button onclick handlers for undefined originalKeyword
 - ✅ FIXED: Focus keyword now preserves original research keyword instead of using article title
 - ✅ IMPLEMENTED: originalKeyword flows from keyword research through entire article generation workflow
-- ✅ STRENGTHENED: Article prompt with explicit minimum word count requirements per section
-- ✅ ENHANCED: Prompt emphasizes comprehensive, detailed content with examples and statistics
 - ✅ FIXED: Image display undefined errors (tableOfContents, sections, relatedKeywords safety checks)
 - ✅ OPTIMIZED: Drastically simplified article generation prompt (60-70% reduction) to prevent API timeouts
 - ✅ IMPROVED: Removed full JSON outline structure from prompt - now extracts only section titles
@@ -63,6 +67,13 @@
 - ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
 
 **Git Commits (Latest Session Continued):**
+- `fa754d2`: Increase max_tokens for Premium/Enterprise tiers for better completion rates
+- `7d0b04c`: Drastically simplify article prompt to prevent timeouts - reduce by ~75%
+- `cc64bb9`: Improve timeout error messages to show model-specific solutions
+- `3af1d75`: Fix syntax error: add missing ternary operator false case for content.sections
+- `3040b3f`: Fix duplicate targetWordCount declaration causing SyntaxError
+- `f0d5d4f`: Fix button onclick handlers - check for undefined originalKeyword before calling replace()
+- `bc0d20b`: Increase default credits from 1000 to 10000 for testing
 - `776fe0c`: Fix article generation issues: word count, focus keyword, and image display
 - `2726b39`: Update CURRENT_STATUS with prompt simplification optimization
 - `5f40187`: Drastically simplify article generation prompt to prevent API timeouts
