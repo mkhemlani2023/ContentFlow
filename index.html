@@ -6810,9 +6810,14 @@ Return ONLY JSON (no markdown, no extra text):
 
                     // Special handling for timeout errors
                     if (articleResponse.status === 504) {
-                        const timeoutMessage = targetWordCount > 1200
-                            ? `The AI model timed out while generating this ${targetWordCount}-word article.\n\n💡 SOLUTION: For articles over 1200 words, you MUST use:\n• Premium tier (GPT-4o-mini) - 50 credits\n• Enterprise tier (Claude 3.5) - 85 credits\n\nBasic tier cannot handle articles over 1,200 words.`
-                            : `The AI model timed out. This can happen with complex prompts.\n\nPlease try again, or use Premium/Enterprise tier for better performance.`;
+                        let timeoutMessage;
+                        if (config.model.includes('gpt-3.5')) {
+                            timeoutMessage = `The AI model timed out while generating this ${targetWordCount}-word article.\n\n💡 SOLUTION: Basic tier cannot handle this length.\nPlease use:\n• Premium tier (GPT-4o-mini) - 50 credits\n• Enterprise tier (Claude 3.5) - 85 credits`;
+                        } else if (config.model.includes('gpt-4o-mini')) {
+                            timeoutMessage = `The AI model (GPT-4o-mini) timed out.\n\n💡 SOLUTION: Try again, or upgrade to:\n• Enterprise tier (Claude 3.5) - 85 credits (faster & more reliable for ${targetWordCount} words)`;
+                        } else {
+                            timeoutMessage = `The AI model (Claude 3.5) timed out while generating this ${targetWordCount}-word article.\n\n💡 POSSIBLE CAUSES:\n• API server overloaded (try again in 1-2 minutes)\n• Article too complex/long\n• Network issues\n\nTRY:\n1. Wait 1-2 minutes and try again\n2. Reduce word count to ${Math.floor(targetWordCount * 0.8)} words\n3. Simplify the topic/outline`;
+                        }
                         throw new Error(timeoutMessage);
                     }
 
