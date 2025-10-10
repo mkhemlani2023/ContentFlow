@@ -10230,7 +10230,7 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                                 <span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">📝 ~${idea.wordCount || '1500'} words</span>
                             </div>
 
-                            <button onclick="showArticleGenerationOptions('${idea.title.replace(/'/g, "\\'")}', ${idea.wordCount || 1500}, '${idea.difficulty || 'Medium'}', '${idea.intent || 'Informational'}')"
+                            <button onclick="showArticleGenerationOptions('${idea.title.replace(/'/g, "\\'")}', ${idea.wordCount || 1500}, '${idea.difficulty || 'Medium'}', '${idea.intent || 'Informational'}', '${keyword.replace(/'/g, "\\'")}')"
                                     class="action-btn primary" style="margin: 0; font-size: 12px; padding: 8px 12px;">
                                 <span class="btn-icon">📝</span>
                                 Generate Article
