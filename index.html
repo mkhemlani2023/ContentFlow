@@ -6318,9 +6318,9 @@
             try {
                 // Get model configuration
                 const modelConfigs = {
-                    'basic': { model: 'claude-3-5-sonnet-20240620', temperature: 0.7 },
-                    'premium': { model: 'claude-3-5-sonnet-20240620', temperature: 0.8 },
-                    'enterprise': { model: 'claude-3-5-sonnet-20240620', temperature: 0.7 }
+                    'basic': { model: 'claude-sonnet-4-5-20250929', temperature: 0.7 },
+                    'premium': { model: 'claude-sonnet-4-5-20250929', temperature: 0.8 },
+                    'enterprise': { model: 'claude-sonnet-4-5-20250929', temperature: 0.7 }
                 };
 
                 const config = modelConfigs[modelTier.toLowerCase()];
@@ -7033,9 +7033,9 @@ ${sectionList}
         async function generateArticleContentWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier) {
             // Get model configuration
             const modelConfigs = {
-                'Basic': { model: 'claude-3-5-sonnet-20240620', temperature: 0.7 },
-                'Premium': { model: 'claude-3-5-sonnet-20240620', temperature: 0.7 },
-                'Enterprise': { model: 'claude-3-5-sonnet-20240620', temperature: 0.7 }
+                'Basic': { model: 'claude-sonnet-4-5-20250929', temperature: 0.7 },
+                'Premium': { model: 'claude-sonnet-4-5-20250929', temperature: 0.7 },
+                'Enterprise': { model: 'claude-sonnet-4-5-20250929', temperature: 0.7 }
             };
 
             const config = modelConfigs[modelTier];
