@@ -1542,6 +1542,7 @@ exports.handler = async (event, context) => {
         const { prompt, temperature, max_tokens } = requestBody;
 
         if (!ANTHROPIC_API_KEY) {
+          console.error('ANTHROPIC_API_KEY is not set in environment variables');
           return {
             statusCode: 503,
             headers,
@@ -1551,6 +1552,8 @@ exports.handler = async (event, context) => {
             })
           };
         }
+
+        console.log('ANTHROPIC_API_KEY is set:', ANTHROPIC_API_KEY ? 'YES (length: ' + ANTHROPIC_API_KEY.length + ')' : 'NO');
 
         if (!prompt) {
           return {
@@ -1591,7 +1594,22 @@ exports.handler = async (event, context) => {
         if (!response.ok) {
           const errorText = await response.text();
           console.error('Claude API error:', errorText);
-          throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
+          console.error('Request body was:', JSON.stringify({
+            model: 'claude-3-5-sonnet-20240620',
+            max_tokens: max_tokens || 4000,
+            temperature: temperature || 0.7,
+            messages_preview: prompt.substring(0, 200)
+          }));
+          return {
+            statusCode: response.status,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'Claude API request failed',
+              error: errorText,
+              status: response.status
+            })
+          };
         }
 
         const data = await response.json();
