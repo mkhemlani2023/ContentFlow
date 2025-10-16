@@ -6688,44 +6688,17 @@ ${sectionList}
                 // CRITICAL: Keep max_tokens low to prevent Netlify Function timeout (26s limit)
                 let maxTokens;
 
-                // Dynamic token allocation based on word count and model speed
-                // Cap aggressively to ensure completion within Netlify 26s timeout
-                // Target: ~1.5 tokens per word but with hard caps for reliability
-                if (config.model.includes('gpt-3.5')) {
-                    // GPT-3.5-turbo: Capped at 1200 words max
-                    if (targetWordCount > 1200) {
-                        progress.close();
-                        alert('❌ Basic tier is limited to 1,200 words maximum.\n\nPlease use Premium or Enterprise tier for longer articles.');
-                        throw new Error('Basic tier cannot generate articles over 1200 words');
-                    }
-                    // Dynamic: 1.5x words, hard cap 1800 tokens
-                    maxTokens = Math.min(1800, Math.floor(targetWordCount * 1.5));
-                    console.log('✓ Basic tier: Generating article ≤1200 words');
-                } else if (config.model.includes('gpt-4o-mini')) {
-                    // GPT-4o-mini: Fastest model
-                    // Strategy: Prioritize full-length articles over timeout prevention
-                    // ~50% may timeout but can be retried
-                    if (targetWordCount <= 1000) {
-                        maxTokens = Math.floor(targetWordCount * 2.0); // ~2000 tokens (~13s) ✅
-                    } else if (targetWordCount <= 1500) {
-                        maxTokens = Math.floor(targetWordCount * 1.8); // ~2700 tokens (~22s) ~80% success
-                    } else if (targetWordCount <= 1800) {
-                        maxTokens = Math.floor(targetWordCount * 1.6); // ~2880 tokens (~24s) ~60% success
-                    } else {
-                        // 2000+ words: Will likely timeout, user can retry
-                        maxTokens = Math.min(3500, Math.floor(targetWordCount * 1.5)); // ~30s, retry needed
-                    }
+                // Dynamic token allocation for Claude Sonnet 4.5
+                // Claude is slower but very high quality
+                // Conservative limits to stay within 26s Netlify timeout
+                if (targetWordCount <= 1000) {
+                    maxTokens = Math.floor(targetWordCount * 1.5); // ~1500 tokens (~20s)
+                } else if (targetWordCount <= 1500) {
+                    maxTokens = Math.floor(targetWordCount * 1.3); // ~1950 tokens (~24s)
+                } else if (targetWordCount <= 1800) {
+                    maxTokens = Math.floor(targetWordCount * 1.2); // ~2160 tokens (~26s) - at limit
                 } else {
-                    // Claude: Slowest model, very high timeout risk
-                    // Strategy: Still prioritize length, but expect frequent timeouts
-                    if (targetWordCount <= 1000) {
-                        maxTokens = Math.floor(targetWordCount * 1.8); // ~1800 tokens (~18s) ~70% success
-                    } else if (targetWordCount <= 1500) {
-                        maxTokens = Math.floor(targetWordCount * 1.5); // ~2250 tokens (~25s) ~50% success
-                    } else {
-                        // 1800+: Very likely to timeout, user will need 2-3 retries
-                        maxTokens = Math.min(2800, Math.floor(targetWordCount * 1.4)); // ~2520 tokens, retry expected
-                    }
+                    maxTokens = Math.floor(targetWordCount * 1.1); // Will timeout, needs retry
                 }
 
                 console.log('Article generation request:', {
