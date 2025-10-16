@@ -6339,18 +6339,19 @@
                 // Calculate number of sections based on word count
                 const numSections = Math.max(3, Math.min(6, Math.floor(wordCount / 300)));
 
-                const outlinePrompt = `Return ONLY this JSON. NO "content" or "anchor" fields. Include "purpose" for each section. ${numSections} sections for "${keyword}". ${wordCount}w. ${intent}. ${new Date().getFullYear()}.
+                const outlinePrompt = `Return ONLY valid JSON. NO markdown. KEEP IT CONCISE. ${numSections} sections for "${keyword}". ${wordCount}w. ${intent}. ${new Date().getFullYear()}.
 
-{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":[],"wordCount":180},"sections":[{"title":"","purpose":"","keyPoints":[],"wordCount":400}],"conclusion":{"purpose":"","keyPoints":[],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
+CRITICAL: Keep keyPoints SHORT (4-6 words each). Keep purpose to ONE sentence.
+
+{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":["","",""],"wordCount":180},"sections":[{"title":"","purpose":"","keyPoints":["","",""],"wordCount":400}],"conclusion":{"purpose":"","keyPoints":["",""],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
 
                 updateProgressStage(2, '✓ Instructions ready');
                 progress.updateMessage('🚀 Connecting to AI model...');
                 await new Promise(resolve => setTimeout(resolve, 300));
 
                 // Step 1: Generate outline using Claude API
-                // Calculate outline tokens dynamically based on word count
-                // Claude needs more tokens for detailed, structured outlines
-                const outlineTokens = Math.min(2500, Math.max(1000, Math.floor(wordCount * 0.8)));
+                // Increase token limit significantly for Claude's verbose responses
+                const outlineTokens = Math.min(4000, Math.max(1500, Math.floor(wordCount * 1.2)));
 
                 console.log('Outline generation:', {
                     wordCount,
