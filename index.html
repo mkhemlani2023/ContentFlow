@@ -6318,9 +6318,9 @@
             try {
                 // Get model configuration
                 const modelConfigs = {
-                    'basic': { model: 'claude-sonnet-4-5-20250929', temperature: 0.7 },
-                    'premium': { model: 'claude-sonnet-4-5-20250929', temperature: 0.8 },
-                    'enterprise': { model: 'claude-sonnet-4-5-20250929', temperature: 0.7 }
+                    'basic': { model: 'openai/gpt-3.5-turbo', temperature: 0.7 },
+                    'premium': { model: 'openai/gpt-4o-mini', temperature: 0.8 },
+                    'enterprise': { model: 'anthropic/claude-3.5-sonnet', temperature: 0.7 }
                 };
 
                 const config = modelConfigs[modelTier.toLowerCase()];
@@ -6360,15 +6360,17 @@ CRITICAL: Keep keyPoints SHORT (4-6 words each). Keep purpose to ONE sentence.
                     model: 'openai/gpt-4o-mini'
                 });
 
-                const outlineResponse = await fetch('/api/claude-generate', {
+                const outlineResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        model: 'openai/gpt-4o-mini',
                         prompt: outlinePrompt,
                         temperature: 0.7,
-                        max_tokens: outlineTokens
+                        max_tokens: outlineTokens,
+                        stream: true
                     })
                 });
 
@@ -6688,17 +6690,35 @@ ${sectionList}
                 // CRITICAL: Keep max_tokens low to prevent Netlify Function timeout (26s limit)
                 let maxTokens;
 
-                // Dynamic token allocation for Claude Sonnet 4.5
-                // Claude is slower but very high quality
-                // Conservative limits to stay within 26s Netlify timeout
-                if (targetWordCount <= 1000) {
-                    maxTokens = Math.floor(targetWordCount * 1.5); // ~1500 tokens (~20s)
-                } else if (targetWordCount <= 1500) {
-                    maxTokens = Math.floor(targetWordCount * 1.3); // ~1950 tokens (~24s)
-                } else if (targetWordCount <= 1800) {
-                    maxTokens = Math.floor(targetWordCount * 1.2); // ~2160 tokens (~26s) - at limit
+                // Dynamic token allocation based on word count and model speed
+                if (config.model.includes('gpt-3.5')) {
+                    // GPT-3.5-turbo: Capped at 1200 words max
+                    if (targetWordCount > 1200) {
+                        progress.close();
+                        alert('❌ Basic tier is limited to 1,200 words maximum.\n\nPlease use Premium or Enterprise tier for longer articles.');
+                        throw new Error('Basic tier cannot generate articles over 1200 words');
+                    }
+                    maxTokens = Math.min(1800, Math.floor(targetWordCount * 1.5));
+                } else if (config.model.includes('gpt-4o-mini')) {
+                    // GPT-4o-mini: Fastest model
+                    if (targetWordCount <= 1000) {
+                        maxTokens = Math.floor(targetWordCount * 2.0);
+                    } else if (targetWordCount <= 1500) {
+                        maxTokens = Math.floor(targetWordCount * 1.8);
+                    } else if (targetWordCount <= 1800) {
+                        maxTokens = Math.floor(targetWordCount * 1.6);
+                    } else {
+                        maxTokens = Math.min(3500, Math.floor(targetWordCount * 1.5));
+                    }
                 } else {
-                    maxTokens = Math.floor(targetWordCount * 1.1); // Will timeout, needs retry
+                    // Claude via OpenRouter
+                    if (targetWordCount <= 1000) {
+                        maxTokens = Math.floor(targetWordCount * 1.8);
+                    } else if (targetWordCount <= 1500) {
+                        maxTokens = Math.floor(targetWordCount * 1.5);
+                    } else {
+                        maxTokens = Math.min(2800, Math.floor(targetWordCount * 1.4));
+                    }
                 }
 
                 console.log('Article generation request:', {
@@ -6716,16 +6736,18 @@ ${sectionList}
                 updateProgressStage(2, '✓ Connected to AI');
                 progress.updateMessage('✍️ AI is now writing your article... (Est. 30-60 seconds)');
 
-                // Use Claude API directly
-                const articleResponse = await fetch('/api/claude-generate', {
+                // Use OpenRouter API with streaming
+                const articleResponse = await fetch('/api/openrouter-generate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        model: config.model,
                         prompt: articlePrompt,
                         temperature: config.temperature,
-                        max_tokens: maxTokens
+                        max_tokens: maxTokens,
+                        stream: true
                     })
                 });
 
@@ -7021,9 +7043,9 @@ ${sectionList}
         async function generateArticleContentWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier) {
             // Get model configuration
             const modelConfigs = {
-                'Basic': { model: 'claude-sonnet-4-5-20250929', temperature: 0.7 },
-                'Premium': { model: 'claude-sonnet-4-5-20250929', temperature: 0.7 },
-                'Enterprise': { model: 'claude-sonnet-4-5-20250929', temperature: 0.7 }
+                'Basic': { model: 'openai/gpt-3.5-turbo', temperature: 0.7 },
+                'Premium': { model: 'openai/gpt-4o-mini', temperature: 0.8 },
+                'Enterprise': { model: 'anthropic/claude-3.5-sonnet', temperature: 0.7 }
             };
 
             const config = modelConfigs[modelTier];
