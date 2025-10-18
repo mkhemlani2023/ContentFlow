@@ -443,8 +443,8 @@
     <div class="header">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <div>
-                <h1>🚀 SEO Wizard</h1>
-                <p>AI-Powered Content Research & Strategy Platform</p>
+                <h1>SEO Wizard</h1>
+                <p>Content Research & Strategy Platform</p>
             </div>
             <div class="credit-display" style="text-align: right;">
                 <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.3);">
@@ -571,7 +571,7 @@
                         <div style="margin-bottom: 8px;">✅ 50 keyword searches</div>
                         <div style="margin-bottom: 8px;">✅ 40 medium articles</div>
                         <div style="margin-bottom: 8px;">✅ 30 image packs</div>
-                        <div style="margin-bottom: 8px;">✅ Advanced AI models</div>
+                        <div style="margin-bottom: 8px;">✅ Advanced content generation</div>
                         <div>✅ Perfect for small agencies</div>
                     </div>
 
@@ -593,7 +593,7 @@
                         <div style="margin-bottom: 8px;">✅ 125 keyword searches</div>
                         <div style="margin-bottom: 8px;">✅ 100 articles (mixed)</div>
                         <div style="margin-bottom: 8px;">✅ Multi-website management</div>
-                        <div style="margin-bottom: 8px;">✅ Premium AI models</div>
+                        <div style="margin-bottom: 8px;">✅ Premium content generation</div>
                         <div>✅ Perfect for medium agencies</div>
                     </div>
 
@@ -615,7 +615,7 @@
                         <div style="margin-bottom: 8px;">✅ 400 keyword searches</div>
                         <div style="margin-bottom: 8px;">✅ 250+ premium articles</div>
                         <div style="margin-bottom: 8px;">✅ Unlimited websites</div>
-                        <div style="margin-bottom: 8px;">✅ Enterprise AI models</div>
+                        <div style="margin-bottom: 8px;">✅ Enterprise content generation</div>
                         <div>✅ Perfect for large agencies</div>
                     </div>
 
@@ -729,9 +729,9 @@
             hideProgressModal();
 
             const {
-                title = '🤖 AI Processing',
+                title = 'Processing',
                 initialMessage = 'Initializing...',
-                icon = '🤖',
+                icon = '⚙️',
                 stages = [],
                 estimatedDuration = 10000,
                 manualStageControl = false  // NEW: If true, disable auto-update timer
@@ -1970,7 +1970,7 @@
                         </div>
 
                         <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #2196F3;">
-                            <h4 style="margin: 0 0 12px 0; color: #1e293b; font-size: 16px;">🤖 AI Model Options</h4>
+                            <h4 style="margin: 0 0 12px 0; color: #1e293b; font-size: 16px;">Quality Options</h4>
 
                             <div style="display: grid; gap: 12px;">
                                 <div style="background: white; border: 2px solid #10b981; border-radius: 8px; padding: 16px;">
@@ -2973,11 +2973,11 @@
             const aiSection = aiIdeas.length > 0 ? `
                 <div style="margin-bottom: 25px;">
                     <h5 style="color: #1e293b; margin: 0 0 12px 0; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-                        <span style="background: #7c3aed; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">🤖 AI GENERATED</span>
+                        <span style="background: #7c3aed; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">SUGGESTED</span>
                         Context-Aware Content Ideas
                     </h5>
                     <div style="font-size: 12px; color: #64748b; margin-bottom: 15px;">
-                        AI-analyzed suggestions based on search patterns, user intent, and content gaps in the market.
+                        Advanced suggestions based on search patterns, user intent, and content gaps in the market.
                     </div>
                     ${displayArticleCards(aiIdeas)}
                 </div>
@@ -3355,10 +3355,10 @@
         function showContentModal(type, keyword, params) {
             const modal = document.getElementById('contentModal') || createContentModal();
             const title = {
-                'outline': '📝 Content Outline Generator',
-                'article': '✍️ Article Writer',
-                'analysis': '🔍 Competitor Analysis',
-                'article-ideas': '💡 Article Ideas Generator'
+                'outline': 'Content Outline Generator',
+                'article': 'Article Writer',
+                'analysis': 'Competitor Analysis',
+                'article-ideas': 'Article Ideas Generator'
             }[type];
 
             document.getElementById('modalTitle').textContent = title;
@@ -3517,7 +3517,7 @@
                         </div>
 
                         <div style="margin-bottom: 25px;">
-                            <h4 style="color: #1e293b; margin-bottom: 15px;">🤖 Choose AI Model & Pricing</h4>
+                            <h4 style="color: #1e293b; margin-bottom: 15px;">Choose Quality & Pricing</h4>
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Model:</label>
                                 <select id="modelSelect" onchange="updateModelSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
@@ -3740,7 +3740,7 @@
 
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                                 <div>
-                                    <strong style="color: #374151;">🤖 AI Model:</strong>
+                                    <strong style="color: #374151;">Quality Tier:</strong>
                                     <div style="color: #64748b; font-size: 14px;">${modelNames[window.selectedModel]}</div>
                                 </div>
                                 <div>
@@ -4122,9 +4122,9 @@
         function displayArticleResult(keyword, articles) {
             document.getElementById('contentResult').innerHTML = `
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
-                    <h3>✍️ AI-Generated Article: ${keyword}</h3>
+                    <h3>Generated Article: ${keyword}</h3>
                     <div style="background: white; padding: 20px; border-radius: 6px; margin: 15px 0; line-height: 1.6;">
-                        <div style="color: #666; margin-bottom: 15px;">🤖 This is a sample of what the full article would contain:</div>
+                        <div style="color: #666; margin-bottom: 15px;">This is a sample of what the full article would contain:</div>
                         <h4>Introduction</h4>
                         <p>Understanding ${keyword} is crucial for anyone looking to improve their online presence. In this comprehensive guide, we'll explore the key aspects, benefits, and practical applications that can help you achieve your goals.</p>
                         <h4>Why ${keyword} Matters</h4>
@@ -4902,7 +4902,7 @@
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                                 <div style="font-size: 28px;">📝</div>
-                                <h4 style="margin: 0; color: #1e293b; font-size: 18px; font-weight: 700;">AI-Generated Content Strategy</h4>
+                                <h4 style="margin: 0; color: #1e293b; font-size: 18px; font-weight: 700;">Content Strategy</h4>
                             </div>
                             ${outline.title ? `<div style="font-size: 15px; color: #3b82f6; font-weight: 600; margin-bottom: 10px; line-height: 1.4;">"${outline.title}"</div>` : ''}
                             ${outline.metaDescription ? `<div style="font-size: 13px; color: #64748b; line-height: 1.5; padding: 10px; background: #f8fafc; border-radius: 6px; border-left: 3px solid #3b82f6;">${outline.metaDescription}</div>` : ''}
@@ -5014,7 +5014,7 @@
 
                     <!-- Model Selection -->
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; font-size: 12px; font-weight: 500;">Choose AI Model & Quality:</label>
+                        <label style="display: block; margin-bottom: 8px; font-size: 12px; font-weight: 500;">Choose Quality Tier:</label>
                         <select id="imageModel-${cleanId}" style="width: 100%; padding: 8px; border: none; border-radius: 4px; color: #333;">
                             <option value="dall-e-2" data-cost="10">DALL-E 2 - Good Quality (10 credits)</option>
                             <option value="dall-e-3" data-cost="25">DALL-E 3 - Premium Quality (25 credits)</option>
@@ -6648,9 +6648,9 @@ CRITICAL: Keep keyPoints SHORT (4-6 words each). Keep purpose to ONE sentence.
             const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
 
             const progress = showProgressModal({
-                title: '✍️ Step 2: Generating Article (Multi-Phase)',
+                title: 'Step 2: Generating Article (Multi-Phase)',
                 initialMessage: `Generating article in ${numSections + 3} phases to avoid timeouts...`,
-                icon: '✍️',
+                icon: '📄',
                 stages: [
                     'Preparing',
                     'Introduction',
@@ -6695,7 +6695,7 @@ CRITICAL: Keep keyPoints SHORT (4-6 words each). Keep purpose to ONE sentence.
 
                 // Phase 1: Generate Introduction
                 updateProgressStage(1, 'Generating introduction...');
-                progress.updateMessage('✍️ Writing introduction...');
+                progress.updateMessage('Generating introduction...');
 
                 const introData = outlineStructure.outline.introduction;
                 const introWords = Math.floor(targetWordCount * 0.10); // 10% of total
@@ -6718,7 +6718,7 @@ Return ONLY the introduction text, no JSON, no markdown.`;
 
                 for (let i = 0; i < sections.length; i++) {
                     updateProgressStage(2, `Generating section ${i + 1}/${numSections}...`);
-                    progress.updateMessage(`✍️ Writing: ${sections[i].title}`);
+                    progress.updateMessage(`Generating: ${sections[i].title}`);
 
                     const section = sections[i];
                     const subsectionList = section.subsections?.map(s => `- ${s.title}: ${s.keyPoints?.join(', ')}`).join('\n') || '';
@@ -6762,7 +6762,7 @@ Return ONLY the section content in this JSON format:
 
                 // Phase 3: Generate Conclusion
                 updateProgressStage(3, 'Generating conclusion...');
-                progress.updateMessage('✍️ Writing conclusion...');
+                progress.updateMessage('Generating conclusion...');
 
                 const conclusionWords = Math.floor(targetWordCount * 0.10); // 10% of total
                 const conclusionData = outlineStructure.outline.conclusion;
@@ -6781,7 +6781,7 @@ Return ONLY the conclusion text, no JSON, no markdown.`;
 
                 // Phase 4: Generate FAQ
                 updateProgressStage(4, 'Generating FAQ...');
-                progress.updateMessage('✍️ Writing FAQ section...');
+                progress.updateMessage('Generating FAQ section...');
 
                 const faqData = outlineStructure.outline.faq;
                 const faqPrompt = `Generate ${faqData.questions?.length || 5} FAQ items for an article about "${keyword}". Year: ${new Date().getFullYear()}.
@@ -9584,7 +9584,7 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
 
                         <div style="flex: 1; overflow-y: auto; padding: 24px;">
                             <div style="background: #ecfdf5; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #10b981;">
-                                <div style="font-weight: 600; color: #065f46; margin-bottom: 6px;">✨ AI-Powered SEO Optimization</div>
+                                <div style="font-weight: 600; color: #065f46; margin-bottom: 6px;">Advanced SEO Optimization</div>
                                 <div style="color: #047857; font-size: 13px;">These contextual links will improve your site's SEO by distributing link equity and helping users discover related content.</div>
                             </div>
 
@@ -10304,7 +10304,7 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                         </div>
 
                         <div style="margin-bottom: 25px;">
-                            <h4 style="color: #1e293b; margin-bottom: 15px;">🤖 Choose AI Model & Settings</h4>
+                            <h4 style="color: #1e293b; margin-bottom: 15px;">Choose Quality & Settings</h4>
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Model:</label>
                                 <select id="bulkModelSelect" onchange="updateBulkCostSummary()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
