@@ -6718,10 +6718,17 @@ Write ${introWords} words of engaging, informative content. Use double line brea
 
                 for (let i = 0; i < sections.length; i++) {
                     // Update the Sections stage text to show progress
-                    const stageElement = document.querySelector('#progressStage');
-                    if (stageElement) {
-                        stageElement.textContent = `Sections (${i + 1}/${numSections})`;
+                    updateProgressStage(2, `Sections (${i + 1}/${numSections})`);
+
+                    // Also update the stage label itself
+                    const stageLabel = document.getElementById('stage-2');
+                    if (stageLabel) {
+                        const stageText = stageLabel.querySelector('span:last-child');
+                        if (stageText) {
+                            stageText.textContent = `Sections (${i + 1}/${numSections})`;
+                        }
                     }
+
                     progress.updateMessage(`Generating: ${sections[i].title}`);
 
                     const section = sections[i];
