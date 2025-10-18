@@ -7352,7 +7352,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                 <!-- Introduction -->
                                 ${content.introduction ? `
                                 <div style="font-size: 18px; margin-bottom: 30px; padding: 20px; background: #fefce8; border-radius: 8px; border-left: 4px solid #eab308;">
-                                    ${content.introduction}
+                                    ${content.introduction.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('')}
                                 </div>
                                 ` : ''}
 
@@ -7363,7 +7363,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                             ${section.title}
                                         </h2>
                                         <div style="margin-bottom: 25px;">
-                                            ${section.content || ''}
+                                            ${section.content ? section.content.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('') : ''}
                                         </div>
 
                                         ${section.subsections && section.subsections.length > 0 ? section.subsections.map(sub => `
@@ -7371,7 +7371,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                                 <h3 id="${sub.anchor || ''}" style="color: #374151; margin-bottom: 15px;">
                                                     ${sub.title}
                                                 </h3>
-                                                <div>${sub.content || ''}</div>
+                                                <div>${sub.content ? sub.content.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('') : ''}</div>
                                             </div>
                                         `).join('') : ''}
                                     </div>
@@ -7380,19 +7380,19 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                 <!-- Conclusion -->
                                 ${content.conclusion ? `
                                 <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #22c55e;">
-                                    <h2 id="conclusion" style="color: #166534; margin-bottom: 15px;">🎯 Conclusion</h2>
-                                    ${content.conclusion}
+                                    <h2 id="conclusion" style="color: #166534; margin-bottom: 15px;">Conclusion</h2>
+                                    ${content.conclusion.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('')}
                                 </div>
                                 ` : ''}
 
                                 <!-- FAQ Section -->
                                 ${content.faq && content.faq.length > 0 ? `
                                 <div style="background: #fefce8; padding: 20px; border-radius: 8px; border-left: 4px solid #eab308;">
-                                    <h2 id="faq" style="color: #92400e; margin-bottom: 20px;">❓ Frequently Asked Questions</h2>
+                                    <h2 id="faq" style="color: #92400e; margin-bottom: 20px;">Frequently Asked Questions</h2>
                                     ${content.faq.map(item => `
                                         <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #fde68a;">
                                             <h3 style="color: #92400e; font-size: 16px; margin-bottom: 10px;">${item.question}</h3>
-                                            <div style="color: #451a03;">${item.answer}</div>
+                                            <div style="color: #451a03;">${item.answer.split('\n\n').map(para => `<p style="margin-bottom: 10px;">${para}</p>`).join('')}</div>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -7400,30 +7400,36 @@ Make the content engaging, informative, and optimized for search engines. Includ
                             </div>
 
                             <!-- Action Buttons -->
-                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                                 <button onclick="addInternalLinks()"
-                                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
-                                    🔗 Add Internal Links <span style="font-size: 10px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 8px; margin-left: 6px;">7 credits</span>
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Add Internal Links
                                 </button>
                                 <button onclick="enterEditMode()"
-                                        style="background: #f59e0b; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                                    ✏️ Edit Article
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Edit Article
                                 </button>
                                 <button onclick="copyArticleToClipboard()"
-                                        style="background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                                    📋 Copy Article HTML
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Copy HTML
                                 </button>
                                 <button onclick="saveGeneratedArticle()"
-                                        style="background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                                    💾 Save to Library
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Save to Library
                                 </button>
                                 <button onclick="exportArticleMarkdown()"
-                                        style="background: #8b5cf6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                                    📄 Export Markdown
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Export Markdown
                                 </button>
                                 <button onclick="publishToWebsite()"
-                                        style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                                    🚀 Publish Now
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Publish Now
                                 </button>
                             </div>
                         </div>
