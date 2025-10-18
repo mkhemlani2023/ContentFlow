@@ -6698,15 +6698,15 @@ CRITICAL: Keep keyPoints SHORT (4-6 words each). Keep purpose to ONE sentence.
                 progress.updateMessage('Generating introduction...');
 
                 const introData = outlineStructure.outline.introduction;
-                const introWords = Math.floor(targetWordCount * 0.10); // 10% of total
-                const introPrompt = `Write ONLY the introduction for an article about "${keyword}". ${introWords} words. Year: ${new Date().getFullYear()}.
+                const introWords = Math.floor(targetWordCount * 0.12); // 12% of total (increased)
+                const introPrompt = `Write the introduction for an article about "${keyword}". IMPORTANT: Write exactly ${introWords} words. Year: ${new Date().getFullYear()}.
 
 Purpose: ${introData.purpose}
 Key points: ${introData.keyPoints.join(', ')}
 
-Return ONLY the introduction text, no JSON, no markdown.`;
+Write ${introWords} words of engaging, informative content. Use double line breaks between paragraphs. Return ONLY the introduction text, no JSON, no markdown.`;
 
-                const introduction = await generatePhase(introPrompt, Math.floor(introWords * 1.5));
+                const introduction = await generatePhase(introPrompt, Math.floor(introWords * 2.0));
                 console.log('✅ Introduction generated:', introduction.substring(0, 100));
 
                 updateProgressStage(1, '✓ Introduction complete');
@@ -6714,7 +6714,7 @@ Return ONLY the introduction text, no JSON, no markdown.`;
 
                 // Phase 2: Generate each section
                 const generatedSections = [];
-                const wordsPerSection = Math.floor((targetWordCount * 0.70) / numSections); // 70% of total split across sections
+                const wordsPerSection = Math.floor((targetWordCount * 0.72) / numSections); // 72% of total split across sections (increased)
 
                 for (let i = 0; i < sections.length; i++) {
                     // Update the Sections stage text to show progress
@@ -6727,15 +6727,15 @@ Return ONLY the introduction text, no JSON, no markdown.`;
                     const section = sections[i];
                     const subsectionList = section.subsections?.map(s => `- ${s.title}: ${s.keyPoints?.join(', ')}`).join('\n') || '';
 
-                    const sectionPrompt = `Write content for this section of an article about "${keyword}". ${wordsPerSection} words. Year: ${new Date().getFullYear()}.
+                    const sectionPrompt = `Write content for this section of an article about "${keyword}". IMPORTANT: Write exactly ${wordsPerSection} words. Year: ${new Date().getFullYear()}.
 
 Section: ${section.title}
 Key points: ${section.keyPoints?.join(', ')}
 ${subsectionList ? `Subsections to cover:\n${subsectionList}` : ''}
 
-Write informative, engaging paragraphs. Use double line breaks between paragraphs. Return ONLY the content text, no JSON, no formatting.`;
+Write ${wordsPerSection} words of informative, engaging paragraphs. Use double line breaks between paragraphs. Return ONLY the content text, no JSON, no formatting.`;
 
-                    const sectionContent = await generatePhase(sectionPrompt, Math.floor(wordsPerSection * 1.5));
+                    const sectionContent = await generatePhase(sectionPrompt, Math.floor(wordsPerSection * 2.0));
 
                     generatedSections.push({
                         title: section.title,
@@ -6758,14 +6758,14 @@ Write informative, engaging paragraphs. Use double line breaks between paragraph
 
                 const conclusionWords = Math.floor(targetWordCount * 0.10); // 10% of total
                 const conclusionData = outlineStructure.outline.conclusion;
-                const conclusionPrompt = `Write ONLY the conclusion for an article about "${keyword}". ${conclusionWords} words. Year: ${new Date().getFullYear()}.
+                const conclusionPrompt = `Write the conclusion for an article about "${keyword}". IMPORTANT: Write exactly ${conclusionWords} words. Year: ${new Date().getFullYear()}.
 
 Purpose: ${conclusionData.purpose}
 Key points: ${conclusionData.keyPoints.join(', ')}
 
-Return ONLY the conclusion text, no JSON, no markdown.`;
+Write ${conclusionWords} words wrapping up the article. Use double line breaks between paragraphs. Return ONLY the conclusion text, no JSON, no markdown.`;
 
-                const conclusion = await generatePhase(conclusionPrompt, Math.floor(conclusionWords * 1.5));
+                const conclusion = await generatePhase(conclusionPrompt, Math.floor(conclusionWords * 2.0));
                 console.log('✅ Conclusion generated:', conclusion.substring(0, 100));
 
                 updateProgressStage(3, '✓ Conclusion complete');
@@ -6780,10 +6780,10 @@ Return ONLY the conclusion text, no JSON, no markdown.`;
 
 Questions to answer: ${faqData.questions?.join(', ')}
 
-Return ONLY valid JSON array:
+IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON array:
 [{"question":"...","answer":"..."},{"question":"...","answer":"..."}]`;
 
-                const faqJson = await generatePhase(faqPrompt, 1000);
+                const faqJson = await generatePhase(faqPrompt, 1500);
 
                 let faqItems = [];
                 try {
