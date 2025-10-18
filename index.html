@@ -7357,25 +7357,45 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                 ` : ''}
 
                                 <!-- Main Sections -->
-                                ${content.sections && content.sections.length > 0 ? content.sections.map(section => `
+                                ${content.sections && content.sections.length > 0 ? content.sections.map(section => {
+                                    // Detect if content is a JSON string and parse it
+                                    let sectionContent = section.content;
+                                    if (typeof sectionContent === 'string' && sectionContent.trim().startsWith('{')) {
+                                        try {
+                                            const parsed = JSON.parse(sectionContent);
+                                            sectionContent = parsed.content || sectionContent;
+                                        } catch (e) {
+                                            // Not valid JSON, use as-is
+                                        }
+                                    }
+
+                                    return `
                                     <div style="margin-bottom: 40px;">
                                         <h2 id="${section.anchor || ''}" style="color: #1f2937; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb;">
                                             ${section.title}
                                         </h2>
                                         <div style="margin-bottom: 25px;">
-                                            ${section.content ? section.content.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('') : ''}
+                                            ${sectionContent ? sectionContent.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('') : ''}
                                         </div>
 
-                                        ${section.subsections && section.subsections.length > 0 ? section.subsections.map(sub => `
+                                        ${section.subsections && section.subsections.length > 0 ? section.subsections.map(sub => {
+                                            let subContent = sub.content;
+                                            if (typeof subContent === 'string' && subContent.trim().startsWith('{')) {
+                                                try {
+                                                    const parsed = JSON.parse(subContent);
+                                                    subContent = parsed.content || subContent;
+                                                } catch (e) {}
+                                            }
+                                            return `
                                             <div style="margin-bottom: 25px;">
                                                 <h3 id="${sub.anchor || ''}" style="color: #374151; margin-bottom: 15px;">
                                                     ${sub.title}
                                                 </h3>
-                                                <div>${sub.content ? sub.content.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('') : ''}</div>
+                                                <div>${subContent ? subContent.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('') : ''}</div>
                                             </div>
-                                        `).join('') : ''}
+                                        `}).join('') : ''}
                                     </div>
-                                `).join('') : '<p>No sections available</p>'}
+                                `}).join('') : '<p>No sections available</p>'}
 
                                 <!-- Conclusion -->
                                 ${content.conclusion ? `
@@ -7541,11 +7561,21 @@ Make the content engaging, informative, and optimized for search engines. Includ
                             <div style="line-height: 1.7; color: #374151;">
                                 <!-- Introduction -->
                                 <div style="font-size: 18px; margin-bottom: 30px; padding: 20px; background: #fefce8; border-radius: 8px; border-left: 4px solid #eab308;">
-                                    ${content.introduction}
+                                    ${content.introduction.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('')}
                                 </div>
 
                                 <!-- Main Sections with Image Integration -->
-                                ${content.sections && Array.isArray(content.sections) ? content.sections.map((section, index) => `
+                                ${content.sections && Array.isArray(content.sections) ? content.sections.map((section, index) => {
+                                    // Detect if content is a JSON string and parse it
+                                    let sectionContent = section.content;
+                                    if (typeof sectionContent === 'string' && sectionContent.trim().startsWith('{')) {
+                                        try {
+                                            const parsed = JSON.parse(sectionContent);
+                                            sectionContent = parsed.content || sectionContent;
+                                        } catch (e) {}
+                                    }
+
+                                    return `
                                     <div style="margin-bottom: 40px;">
                                         <h2 id="${section.anchor}" style="color: #1f2937; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb;">
                                             ${section.title}
@@ -7561,25 +7591,33 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                         ` : ''}
 
                                         <div style="margin-bottom: 25px;">
-                                            ${section.content}
+                                            ${sectionContent ? sectionContent.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('') : ''}
                                         </div>
 
-                                        ${section.subsections ? section.subsections.map(sub => `
+                                        ${section.subsections ? section.subsections.map(sub => {
+                                            let subContent = sub.content;
+                                            if (typeof subContent === 'string' && subContent.trim().startsWith('{')) {
+                                                try {
+                                                    const parsed = JSON.parse(subContent);
+                                                    subContent = parsed.content || subContent;
+                                                } catch (e) {}
+                                            }
+                                            return `
                                             <div style="margin-bottom: 25px;">
                                                 <h3 id="${sub.anchor}" style="color: #374151; margin-bottom: 15px;">
                                                     ${sub.title}
                                                 </h3>
-                                                <div>${sub.content}</div>
+                                                <div>${subContent ? subContent.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('') : ''}</div>
                                             </div>
-                                        `).join('') : ''}
+                                        `}).join('') : ''}
                                     </div>
-                                `).join('') : ''}
+                                `}).join('') : ''}
 
                                 <!-- Conclusion -->
                                 ${content.conclusion ? `
                                 <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #22c55e;">
                                     <h2 style="color: #166534; margin-bottom: 15px;">Conclusion</h2>
-                                    ${content.conclusion}
+                                    ${content.conclusion.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('')}
                                 </div>
                                 ` : ''}
 
@@ -7590,7 +7628,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                     ${content.faq.map(item => `
                                         <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #fde68a;">
                                             <h3 style="color: #92400e; font-size: 16px; margin-bottom: 10px;">${item.question}</h3>
-                                            <div style="color: #451a03;">${item.answer}</div>
+                                            <div style="color: #451a03;">${item.answer.split('\n\n').map(para => `<p style="margin-bottom: 10px;">${para}</p>`).join('')}</div>
                                         </div>
                                     `).join('')}
                                 </div>
