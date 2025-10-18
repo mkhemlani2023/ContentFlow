@@ -1441,7 +1441,17 @@ exports.handler = async (event, context) => {
         if (!response.ok) {
           const errorText = await response.text();
           console.error('OpenRouter API error:', errorText);
-          throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+          console.error('Request details:', { model, promptLength: prompt.length, max_tokens, temperature });
+          return {
+            statusCode: response.status,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: `OpenRouter API error: ${response.status}`,
+              error: errorText,
+              details: { model, promptLength: prompt.length }
+            })
+          };
         }
 
         // If streaming is enabled, collect all chunks and return complete response
