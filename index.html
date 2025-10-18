@@ -6717,7 +6717,11 @@ Return ONLY the introduction text, no JSON, no markdown.`;
                 const wordsPerSection = Math.floor((targetWordCount * 0.70) / numSections); // 70% of total split across sections
 
                 for (let i = 0; i < sections.length; i++) {
-                    updateProgressStage(2, `Generating section ${i + 1}/${numSections}...`);
+                    // Update the Sections stage text to show progress
+                    const stageElement = document.querySelector('#progressStage');
+                    if (stageElement) {
+                        stageElement.textContent = `Sections (${i + 1}/${numSections})`;
+                    }
                     progress.updateMessage(`Generating: ${sections[i].title}`);
 
                     const section = sections[i];
@@ -6727,32 +6731,20 @@ Return ONLY the introduction text, no JSON, no markdown.`;
 
 Section: ${section.title}
 Key points: ${section.keyPoints?.join(', ')}
-Subsections to cover:
-${subsectionList}
+${subsectionList ? `Subsections to cover:\n${subsectionList}` : ''}
 
-Return ONLY the section content in this JSON format:
-{"title":"${section.title}","anchor":"${section.title.toLowerCase().replace(/[^a-z0-9]+/g,'-')}","content":"...main section content...","subsections":[{"title":"subsection title","anchor":"anchor","content":"subsection content"}]}`;
+Write informative, engaging paragraphs. Use double line breaks between paragraphs. Return ONLY the content text, no JSON, no formatting.`;
 
-                    const sectionJson = await generatePhase(sectionPrompt, Math.floor(wordsPerSection * 1.5));
+                    const sectionContent = await generatePhase(sectionPrompt, Math.floor(wordsPerSection * 1.5));
 
-                    try {
-                        // Clean and parse section JSON
-                        let cleaned = sectionJson.replace(/```json\s*/g, '').replace(/\s*```/g, '');
-                        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-                        if (jsonMatch) cleaned = jsonMatch[0];
+                    generatedSections.push({
+                        title: section.title,
+                        anchor: section.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                        content: sectionContent.trim(),
+                        subsections: []
+                    });
 
-                        const sectionData = JSON.parse(cleaned);
-                        generatedSections.push(sectionData);
-                        console.log(`✅ Section ${i + 1} generated:`, sectionData.title);
-                    } catch (err) {
-                        console.error(`❌ Failed to parse section ${i + 1}, using fallback`);
-                        generatedSections.push({
-                            title: section.title,
-                            anchor: section.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                            content: sectionJson,
-                            subsections: []
-                        });
-                    }
+                    console.log(`✅ Section ${i + 1} generated:`, section.title);
 
                     await new Promise(resolve => setTimeout(resolve, 200));
                 }
@@ -7146,14 +7138,22 @@ Make the content engaging, informative, and optimized for search engines. Includ
 
             // Extract most specific/relevant keywords from title
             // Remove generic words like "guide", "tips", "how to", people words
-            const genericWords = ['guide', 'ultimate', 'complete', 'comprehensive', 'tips', 'how to', 'what', 'why', 'when', 'where', 'best', 'top', 'essential', 'important', 'a', 'an', 'the', 'for', 'on', 'in', 'with', 'and', 'or', 'think', 'say', 'nutritionist', 'nutritionists', 'expert', 'experts', 'people'];
+            const genericWords = ['guide', 'ultimate', 'complete', 'comprehensive', 'tips', 'how to', 'what', 'why', 'when', 'where', 'best', 'top', 'essential', 'important', 'a', 'an', 'the', 'for', 'on', 'in', 'with', 'and', 'or', 'think', 'say', 'nutritionist', 'nutritionists', 'expert', 'experts', 'people', 'healthy', 'health', 'it', 'is', 'to', 'be'];
             const words = keyword.toLowerCase().split(/\s+/);
             const relevantWords = words.filter(w => !genericWords.includes(w) && w.length > 3);
 
-            // For diet-related articles, add "food" to get food images, not animals/people
+            // For diet-related articles, use specific food imagery
             let imageQuery = relevantWords.slice(0, 2).join(' ') || keyword;
-            if (imageQuery.includes('diet') || imageQuery.includes('nutrition') || imageQuery.includes('food')) {
-                imageQuery += ' food meal';
+
+            // Special handling for diet types
+            if (imageQuery.includes('carnivore')) {
+                imageQuery = 'steak meat beef protein meal plate';
+            } else if (imageQuery.includes('keto')) {
+                imageQuery = 'ketogenic diet healthy food plate';
+            } else if (imageQuery.includes('vegan')) {
+                imageQuery = 'vegan food vegetables plant based meal';
+            } else if (imageQuery.includes('diet') || imageQuery.includes('nutrition') || imageQuery.includes('food')) {
+                imageQuery += ' healthy food meal plate nutrition';
             }
 
             console.log('Original keyword:', keyword);
