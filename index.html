@@ -7284,10 +7284,10 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                     <div>
                                         <h1 style="margin: 0; font-size: 28px; color: #1a202c;">${content.title || 'Generated Article'}</h1>
                                         <div style="display: flex; gap: 20px; margin-top: 10px; font-size: 14px; color: #64748b;">
-                                            <span>📖 ${metadata?.readingTime || 'N/A'}</span>
-                                            <span>📝 ${metadata?.actualWordCount || metadata?.wordCount || 'N/A'} words ${metadata?.actualWordCount && metadata?.wordCount ? `(target: ${metadata.wordCount})` : ''}</span>
-                                            <span>🤖 Generated with ${modelTier}</span>
-                                            <span>💳 Cost: ${creditCost} credits</span>
+                                            <span>${metadata?.readingTime || 'N/A'}</span>
+                                            <span>${metadata?.actualWordCount || metadata?.wordCount || 'N/A'} words ${metadata?.actualWordCount && metadata?.wordCount ? `(target: ${metadata.wordCount})` : ''}</span>
+                                            <span>${modelTier}</span>
+                                            <span>${creditCost} credits</span>
                                         </div>
                                     </div>
                                     <button onclick="this.closest('[style*=\\'position: fixed\\']').remove()"
@@ -7300,7 +7300,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                             <!-- Metadata Section -->
                             ${metadata ? `
                             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                <h3 style="margin: 0 0 15px 0; color: #374151;">📊 SEO Metadata</h3>
+                                <h3 style="margin: 0 0 15px 0; color: #374151;">SEO Metadata</h3>
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 14px;">
                                     <div>
                                         <strong>SEO Title:</strong><br>
@@ -7333,7 +7333,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                             <!-- Table of Contents -->
                             ${toc && toc.length > 0 ? `
                             <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #0ea5e9;">
-                                <h3 style="margin: 0 0 15px 0; color: #0c4a6e;">📋 Table of Contents</h3>
+                                <h3 style="margin: 0 0 15px 0; color: #0c4a6e;">Table of Contents</h3>
                                 <ul style="margin: 0; padding-left: 20px; color: #0369a1;">
                                     ${toc.map(item => `
                                         <li style="margin-bottom: 8px; ${item.level === 3 ? 'margin-left: 20px; list-style-type: circle;' : ''}">
@@ -7462,11 +7462,11 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                 <div>
                                     <h1 style="margin: 0; font-size: 28px; color: #1a202c;">${content.title}</h1>
                                     <div style="display: flex; gap: 20px; margin-top: 10px; font-size: 14px; color: #64748b; flex-wrap: wrap;">
-                                        <span>📖 ${metadata.readingTime}</span>
-                                        <span>📝 ${metadata.wordCount} words</span>
-                                        <span>🤖 ${modelTier} Model</span>
-                                        <span>🎨 ${imageTier}</span>
-                                        <span>💳 ${totalCredits} credits</span>
+                                        <span>${metadata.readingTime}</span>
+                                        <span>${metadata.wordCount} words</span>
+                                        <span>${modelTier}</span>
+                                        <span>${imageTier}</span>
+                                        <span>${totalCredits} credits</span>
                                     </div>
                                 </div>
                                 <button onclick="this.closest('.modal').remove()"
@@ -7489,7 +7489,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                         <div style="padding: 0 40px 40px;">
                             <!-- Enhanced Metadata Section -->
                             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                <h3 style="margin: 0 0 15px 0; color: #374151;">📊 Article & Media Details</h3>
+                                <h3 style="margin: 0 0 15px 0; color: #374151;">Article & Media Details</h3>
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 14px;">
                                     <div>
                                         <strong>SEO Title:</strong><br>
@@ -7523,7 +7523,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                             <!-- Table of Contents -->
                             ${tableOfContents && Array.isArray(tableOfContents) && tableOfContents.length > 0 ? `
                             <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #0ea5e9;">
-                                <h3 style="margin: 0 0 15px 0; color: #0c4a6e;">📋 Table of Contents</h3>
+                                <h3 style="margin: 0 0 15px 0; color: #0c4a6e;">Table of Contents</h3>
                                 <ul style="margin: 0; padding-left: 20px; color: #0369a1;">
                                     ${tableOfContents.map(item => `
                                         <li style="margin-bottom: 8px; ${item.level === 3 ? 'margin-left: 20px; list-style-type: circle;' : ''}">
@@ -7578,7 +7578,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                 <!-- Conclusion -->
                                 ${content.conclusion ? `
                                 <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #22c55e;">
-                                    <h2 style="color: #166534; margin-bottom: 15px;">🎯 Conclusion</h2>
+                                    <h2 style="color: #166534; margin-bottom: 15px;">Conclusion</h2>
                                     ${content.conclusion}
                                 </div>
                                 ` : ''}
@@ -7586,7 +7586,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                 <!-- FAQ Section -->
                                 ${content.faq && content.faq.length > 0 ? `
                                 <div style="background: #fefce8; padding: 20px; border-radius: 8px; border-left: 4px solid #eab308;">
-                                    <h2 style="color: #92400e; margin-bottom: 20px;">❓ Frequently Asked Questions</h2>
+                                    <h2 style="color: #92400e; margin-bottom: 20px;">Frequently Asked Questions</h2>
                                     ${content.faq.map(item => `
                                         <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #fde68a;">
                                             <h3 style="color: #92400e; font-size: 16px; margin-bottom: 10px;">${item.question}</h3>
@@ -7599,7 +7599,7 @@ Make the content engaging, informative, and optimized for search engines. Includ
                                 <!-- Image Gallery (if more than 4 images) -->
                                 ${images && images.length > 4 ? `
                                 <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 8px;">
-                                    <h3 style="margin: 0 0 15px 0; color: #374151;">🖼️ Additional Images</h3>
+                                    <h3 style="margin: 0 0 15px 0; color: #374151;">Additional Images</h3>
                                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                                         ${images.slice(4).map(img => `
                                             <div style="text-align: center;">
@@ -7615,30 +7615,36 @@ Make the content engaging, informative, and optimized for search engines. Includ
                             </div>
 
                             <!-- Enhanced Action Buttons -->
-                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                                 <button onclick="enterEditMode()"
-                                        style="background: #f59e0b; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">
-                                    ✏️ Edit Article
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Edit Article
                                 </button>
                                 <button onclick="copyArticleToClipboard()"
-                                        style="background: #10b981; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">
-                                    📋 Copy HTML
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Copy HTML
                                 </button>
                                 <button onclick="saveGeneratedArticle()"
-                                        style="background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">
-                                    💾 Save Article
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Save Article
                                 </button>
                                 <button onclick="exportArticleMarkdown()"
-                                        style="background: #8b5cf6; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">
-                                    📄 Export MD
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Export Markdown
                                 </button>
                                 <button onclick="downloadImages()"
-                                        style="background: #6b7280; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">
-                                    🎨 Download Images
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Download Images
                                 </button>
                                 <button onclick="publishToWebsite()"
-                                        style="background: #dc2626; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;">
-                                    🚀 Publish Now
+                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                    Publish Now
                                 </button>
                             </div>
                         </div>
