@@ -6642,261 +6642,238 @@ CRITICAL: Keep keyPoints SHORT (4-6 words each). Keep purpose to ONE sentence.
         }
 
         async function generateArticleFromOutline(outlineStructure, keyword, modelTier, config) {
-            // Show comprehensive progress modal for article generation
+            // Multi-phase generation to avoid timeouts
+            const sections = outlineStructure.outline?.sections || [];
+            const numSections = sections.length;
+            const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
+
             const progress = showProgressModal({
-                title: '✍️ Step 2: Generating Full Article',
-                initialMessage: `Writing complete article from your approved outline...`,
+                title: '✍️ Step 2: Generating Article (Multi-Phase)',
+                initialMessage: `Generating article in ${numSections + 3} phases to avoid timeouts...`,
                 icon: '✍️',
                 stages: [
-                    'Loading outline structure',
-                    'Generating introduction',
-                    'Writing main content sections',
-                    'Creating subsection content',
-                    'Writing conclusion & FAQ',
-                    'Adding SEO metadata',
-                    'Final quality check'
+                    'Preparing',
+                    'Introduction',
+                    `Sections (0/${numSections})`,
+                    'Conclusion',
+                    'FAQ',
+                    'Assembly',
+                    'Complete'
                 ],
-                estimatedDuration: 70000, // Increased from 35000 - articles can take 60-90+ seconds
-                manualStageControl: true // Disable auto-timer, use manual updates
+                estimatedDuration: (numSections + 3) * 8000,
+                manualStageControl: true
             });
 
-            progress.updateTechnicalInfo(`Model: ${config.model}\nSections: ${outlineStructure.outline?.sections?.length || 0}\nTarget word count: ${outlineStructure.metadata?.wordCount || 2000}\nKeyword: ${keyword}`);
+            progress.updateTechnicalInfo(`Model: ${config.model}\nPhases: ${numSections + 3}\nTarget: ${targetWordCount}w`);
 
             try {
-                // Manually advance through stages with confidence-inspiring messages
-                updateProgressStage(0, '✓ Outline loaded successfully');
-                progress.updateMessage('📋 Processing your approved outline...');
-                await new Promise(resolve => setTimeout(resolve, 400));
-
-                // Create article prompt based on outline
-                progress.updateMessage('🎯 Preparing instructions for AI writer...');
-
-                // Extract essential outline info (not full JSON - too long!)
-                const sections = outlineStructure.outline?.sections || [];
-                const sectionList = sections.map((s, i) => {
-                    const subsections = s.subsections?.map(sub => `  - ${sub.title}`).join('\n') || '';
-                    return `${i + 1}. ${s.title}\n${subsections}`;
-                }).join('\n');
-
-                const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
-
-                const articlePrompt = `Return ONLY valid JSON. No text before/after. Write "${keyword}". ${targetWordCount}w. ${new Date().getFullYear()}.
-
-${sectionList}
-
-{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"readingTime":"","wordCount":${targetWordCount}},"content":{"title":"","introduction":"","sections":[{"title":"","anchor":"","content":"","subsections":[{"title":"","anchor":"","content":""}]}],"conclusion":"","faq":[{"question":"","answer":""}]}}`;
-
-                // Generate full article using OpenRouter API
-                // CRITICAL: Keep max_tokens low to prevent Netlify Function timeout (26s limit)
-                let maxTokens;
-
-                // Dynamic token allocation based on word count and model speed
-                if (config.model.includes('gpt-3.5')) {
-                    // GPT-3.5-turbo: Capped at 1200 words max
-                    if (targetWordCount > 1200) {
-                        progress.close();
-                        alert('❌ Basic tier is limited to 1,200 words maximum.\n\nPlease use Premium or Enterprise tier for longer articles.');
-                        throw new Error('Basic tier cannot generate articles over 1200 words');
-                    }
-                    maxTokens = Math.min(1800, Math.floor(targetWordCount * 1.5));
-                } else if (config.model.includes('gpt-4o-mini')) {
-                    // GPT-4o-mini: Fastest model
-                    if (targetWordCount <= 1000) {
-                        maxTokens = Math.floor(targetWordCount * 2.0);
-                    } else if (targetWordCount <= 1500) {
-                        maxTokens = Math.floor(targetWordCount * 1.8);
-                    } else if (targetWordCount <= 1800) {
-                        maxTokens = Math.floor(targetWordCount * 1.6);
-                    } else {
-                        maxTokens = Math.min(3500, Math.floor(targetWordCount * 1.5));
-                    }
-                } else {
-                    // Claude via OpenRouter
-                    if (targetWordCount <= 1000) {
-                        maxTokens = Math.floor(targetWordCount * 1.8);
-                    } else if (targetWordCount <= 1500) {
-                        maxTokens = Math.floor(targetWordCount * 1.5);
-                    } else {
-                        maxTokens = Math.min(2800, Math.floor(targetWordCount * 1.4));
-                    }
-                }
-
-                console.log('Article generation request:', {
-                    model: config.model,
-                    targetWordCount,
-                    maxTokens,
-                    promptLength: articlePrompt.length
-                });
-
-                // Complete stage 1 before moving to stage 2
-                updateProgressStage(1, '✓ Instructions prepared');
-                progress.updateMessage('🚀 Connecting to AI model...');
+                updateProgressStage(0, '✓ Outline loaded');
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                updateProgressStage(2, '✓ Connected to AI');
-                progress.updateMessage('✍️ AI is now writing your article... (Est. 30-60 seconds)');
+                // Helper function to call OpenRouter for each phase
+                async function generatePhase(prompt, maxTokens = 800) {
+                    const response = await fetch('/api/openrouter-generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: config.model,
+                            prompt: prompt,
+                            temperature: config.temperature,
+                            max_tokens: maxTokens,
+                            stream: true
+                        })
+                    });
 
-                // Use OpenRouter API with streaming
-                const articleResponse = await fetch('/api/openrouter-generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: config.model,
-                        prompt: articlePrompt,
-                        temperature: config.temperature,
-                        max_tokens: maxTokens,
-                        stream: true
-                    })
-                });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({error: 'Unknown error'}));
+                        throw new Error(`OpenRouter error ${response.status}: ${errorData.error || 'Unknown'}`);
+                    }
 
-                if (!articleResponse.ok) {
-                    const errorData = await articleResponse.json().catch(() => ({error: 'Unknown error'}));
-                    console.error('OpenRouter API error response:', errorData);
-                    throw new Error(`OpenRouter API error ${articleResponse.status}: ${errorData.error || errorData.message || 'Unknown error'}`);
+                    const data = await response.json();
+                    return data.choices[0].message.content.trim();
                 }
 
-                // Backend processes streaming and returns complete response
-                updateProgressStage(3, '✓ Receiving article');
-                progress.updateMessage('📝 AI is writing article (streaming backend prevents timeout)...');
+                // Phase 1: Generate Introduction
+                updateProgressStage(1, 'Generating introduction...');
+                progress.updateMessage('✍️ Writing introduction...');
 
-                const articleData = await articleResponse.json();
+                const introData = outlineStructure.outline.introduction;
+                const introWords = Math.floor(targetWordCount * 0.10); // 10% of total
+                const introPrompt = `Write ONLY the introduction for an article about "${keyword}". ${introWords} words. Year: ${new Date().getFullYear()}.
 
-                console.log('=== ARTICLE RECEIVED (via streaming backend) ===');
+Purpose: ${introData.purpose}
+Key points: ${introData.keyPoints.join(', ')}
 
-                // AI is processing - update status
-                updateProgressStage(4, '✓ Article received');
-                progress.updateMessage('📄 Processing generated content...');
-                await new Promise(resolve => setTimeout(resolve, 300));
+Return ONLY the introduction text, no JSON, no markdown.`;
 
-                updateProgressStage(5, '✓ Content processed');
-                progress.updateMessage('🔍 Validating article structure...');
+                const introduction = await generatePhase(introPrompt, Math.floor(introWords * 1.5));
+                console.log('✅ Introduction generated:', introduction.substring(0, 100));
 
-                let finalArticle;
+                updateProgressStage(1, '✓ Introduction complete');
+                await new Promise(resolve => setTimeout(resolve, 200));
 
-                updateProgressStage(5, '✓ Structure validated');
-                progress.updateMessage('✨ Adding SEO optimizations...');
+                // Phase 2: Generate each section
+                const generatedSections = [];
+                const wordsPerSection = Math.floor((targetWordCount * 0.70) / numSections); // 70% of total split across sections
 
+                for (let i = 0; i < sections.length; i++) {
+                    updateProgressStage(2, `Generating section ${i + 1}/${numSections}...`);
+                    progress.updateMessage(`✍️ Writing: ${sections[i].title}`);
+
+                    const section = sections[i];
+                    const subsectionList = section.subsections?.map(s => `- ${s.title}: ${s.keyPoints?.join(', ')}`).join('\n') || '';
+
+                    const sectionPrompt = `Write content for this section of an article about "${keyword}". ${wordsPerSection} words. Year: ${new Date().getFullYear()}.
+
+Section: ${section.title}
+Key points: ${section.keyPoints?.join(', ')}
+Subsections to cover:
+${subsectionList}
+
+Return ONLY the section content in this JSON format:
+{"title":"${section.title}","anchor":"${section.title.toLowerCase().replace(/[^a-z0-9]+/g,'-')}","content":"...main section content...","subsections":[{"title":"subsection title","anchor":"anchor","content":"subsection content"}]}`;
+
+                    const sectionJson = await generatePhase(sectionPrompt, Math.floor(wordsPerSection * 1.5));
+
+                    try {
+                        // Clean and parse section JSON
+                        let cleaned = sectionJson.replace(/```json\s*/g, '').replace(/\s*```/g, '');
+                        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) cleaned = jsonMatch[0];
+
+                        const sectionData = JSON.parse(cleaned);
+                        generatedSections.push(sectionData);
+                        console.log(`✅ Section ${i + 1} generated:`, sectionData.title);
+                    } catch (err) {
+                        console.error(`❌ Failed to parse section ${i + 1}, using fallback`);
+                        generatedSections.push({
+                            title: section.title,
+                            anchor: section.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                            content: sectionJson,
+                            subsections: []
+                        });
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+
+                updateProgressStage(2, `✓ All ${numSections} sections complete`);
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                // Phase 3: Generate Conclusion
+                updateProgressStage(3, 'Generating conclusion...');
+                progress.updateMessage('✍️ Writing conclusion...');
+
+                const conclusionWords = Math.floor(targetWordCount * 0.10); // 10% of total
+                const conclusionData = outlineStructure.outline.conclusion;
+                const conclusionPrompt = `Write ONLY the conclusion for an article about "${keyword}". ${conclusionWords} words. Year: ${new Date().getFullYear()}.
+
+Purpose: ${conclusionData.purpose}
+Key points: ${conclusionData.keyPoints.join(', ')}
+
+Return ONLY the conclusion text, no JSON, no markdown.`;
+
+                const conclusion = await generatePhase(conclusionPrompt, Math.floor(conclusionWords * 1.5));
+                console.log('✅ Conclusion generated:', conclusion.substring(0, 100));
+
+                updateProgressStage(3, '✓ Conclusion complete');
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                // Phase 4: Generate FAQ
+                updateProgressStage(4, 'Generating FAQ...');
+                progress.updateMessage('✍️ Writing FAQ section...');
+
+                const faqData = outlineStructure.outline.faq;
+                const faqPrompt = `Generate ${faqData.questions?.length || 5} FAQ items for an article about "${keyword}". Year: ${new Date().getFullYear()}.
+
+Questions to answer: ${faqData.questions?.join(', ')}
+
+Return ONLY valid JSON array:
+[{"question":"...","answer":"..."},{"question":"...","answer":"..."}]`;
+
+                const faqJson = await generatePhase(faqPrompt, 1000);
+
+                let faqItems = [];
                 try {
-                    // Parse final article data from response
-                    let content = articleData.choices[0].message.content;
-
-                    console.log('=== RAW AI RESPONSE (first 1000 chars) ===');
-                    console.log(content.substring(0, 1000));
-                    console.log('=== RESPONSE LENGTH:', content.length, 'chars ===');
-
-                    // Try multiple extraction strategies
-                    let cleanedContent = content;
-
-                    // Strategy 1: Remove markdown code blocks
-                    if (content.includes('```json')) {
-                        cleanedContent = content.replace(/```json\s*/g, '').replace(/\s*```/g, '');
-                    } else if (content.includes('```')) {
-                        cleanedContent = content.replace(/```\s*/g, '').replace(/\s*```/g, '');
-                    }
-
-                    // Strategy 2: Extract JSON from between curly braces if there's extra text
-                    if (!cleanedContent.trim().startsWith('{')) {
-                        console.log('Content does not start with {, attempting to extract JSON...');
-                        const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
-                        if (jsonMatch) {
-                            cleanedContent = jsonMatch[0];
-                            console.log('Extracted JSON from response');
-                        }
-                    }
-
-                    // Strategy 3: Remove any trailing non-JSON text
-                    const lastBrace = cleanedContent.lastIndexOf('}');
-                    if (lastBrace !== -1 && lastBrace < cleanedContent.length - 1) {
-                        cleanedContent = cleanedContent.substring(0, lastBrace + 1);
-                        console.log('Trimmed trailing text after final }');
-                    }
-
-                    console.log('=== CLEANED CONTENT (first 500 chars) ===');
-                    console.log(cleanedContent.substring(0, 500));
-
-                    // Attempt to parse
-                    finalArticle = JSON.parse(cleanedContent);
-
-                    updateProgressStage(6, '✓ Final quality check');
-                    progress.updateMessage('🎉 Article ready! Preparing display...');
-                    await new Promise(resolve => setTimeout(resolve, 400));
-
-                    // CRITICAL FIX: Force correct focus keyword (AI often uses title instead)
-                    if (finalArticle.metadata) {
-                        finalArticle.metadata.focusKeyword = keyword;
-                        console.log('✅ Focus keyword forced to:', keyword);
-                    }
-
-                    // Calculate actual word count from content
-                    let actualWordCount = 0;
-                    if (finalArticle.content) {
-                        // Count introduction words
-                        if (finalArticle.content.introduction) {
-                            actualWordCount += finalArticle.content.introduction.split(/\s+/).filter(word => word.length > 0).length;
-                        }
-                        // Count all section words
-                        if (finalArticle.content.sections) {
-                            finalArticle.content.sections.forEach(section => {
-                                if (section.content) {
-                                    actualWordCount += section.content.split(/\s+/).filter(word => word.length > 0).length;
-                                }
-                                // Count subsection words
-                                if (section.subsections) {
-                                    section.subsections.forEach(sub => {
-                                        if (sub.content) {
-                                            actualWordCount += sub.content.split(/\s+/).filter(word => word.length > 0).length;
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                        // Count conclusion words
-                        if (finalArticle.content.conclusion) {
-                            actualWordCount += finalArticle.content.conclusion.split(/\s+/).filter(word => word.length > 0).length;
-                        }
-                        // Count FAQ words
-                        if (finalArticle.content.faq) {
-                            finalArticle.content.faq.forEach(item => {
-                                if (item.answer) {
-                                    actualWordCount += item.answer.split(/\s+/).filter(word => word.length > 0).length;
-                                }
-                            });
-                        }
-                    }
-
-                    // Update metadata with actual word count
-                    if (finalArticle.metadata) {
-                        finalArticle.metadata.actualWordCount = actualWordCount;
-                        const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
-                        const variance = Math.abs(actualWordCount - targetWordCount);
-                        const percentVariance = ((variance / targetWordCount) * 100).toFixed(1);
-                        console.log('📊 Word Count Analysis:');
-                        console.log('  Target:', targetWordCount);
-                        console.log('  Actual:', actualWordCount);
-                        console.log('  Variance:', variance, `words (${percentVariance}%)`);
-                    }
-
-                    // Debug: Log the parsed article structure
-                    console.log('=== PARSED ARTICLE STRUCTURE ===');
-                    console.log('Article keys:', Object.keys(finalArticle));
-                    console.log('Metadata:', finalArticle.metadata);
-                    console.log('Content keys:', finalArticle.content ? Object.keys(finalArticle.content) : 'NO CONTENT');
-                    console.log('Full article:', JSON.stringify(finalArticle, null, 2));
-                } catch (parseError) {
-                    console.error('=== FINAL ARTICLE PARSING ERROR ===');
-                    console.error('Parse error:', parseError);
-                    console.error('Error message:', parseError.message);
-                    console.error('=== FULL RAW CONTENT ===');
-                    console.error(articleData.choices[0]?.message?.content);
-                    console.error('=== END RAW CONTENT ===');
-
-                    // Show user-friendly error with instructions
-                    progress.close();
-                    alert(`Article generation failed to parse AI response.\n\nPlease open the browser console (F12) and:\n1. Look for "=== FULL RAW CONTENT ==="\n2. Copy the content\n3. Share it for debugging\n\nError: ${parseError.message}`);
-                    throw new Error('Failed to parse final article data from AI response');
+                    let cleaned = faqJson.replace(/```json\s*/g, '').replace(/\s*```/g, '');
+                    const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
+                    if (jsonMatch) cleaned = jsonMatch[0];
+                    faqItems = JSON.parse(cleaned);
+                    console.log('✅ FAQ generated:', faqItems.length, 'items');
+                } catch (err) {
+                    console.error('❌ Failed to parse FAQ, using fallback');
+                    faqItems = (faqData.questions || []).map(q => ({
+                        question: q,
+                        answer: 'Answer content will be generated.'
+                    }));
                 }
+
+                updateProgressStage(4, '✓ FAQ complete');
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                // Phase 5: Assembly
+                updateProgressStage(5, 'Assembling article...');
+                progress.updateMessage('🔧 Combining all sections...');
+
+                const articleTitle = outlineStructure.outline.title || keyword;
+                const finalArticle = {
+                    metadata: {
+                        seoTitle: `${articleTitle} - Complete Guide ${new Date().getFullYear()}`,
+                        metaDescription: `Comprehensive guide about ${keyword}. ${introduction.substring(0, 100)}...`,
+                        focusKeyword: keyword,
+                        relatedKeywords: outlineStructure.metadata?.relatedKeywords || [],
+                        wordCount: targetWordCount
+                    },
+                    content: {
+                        title: articleTitle,
+                        introduction: introduction,
+                        sections: generatedSections,
+                        conclusion: conclusion,
+                        faq: faqItems
+                    }
+                };
+
+                // Calculate actual word count
+                let actualWordCount = 0;
+                actualWordCount += introduction.split(/\s+/).filter(w => w.length > 0).length;
+
+                if (finalArticle.content.sections) {
+                    finalArticle.content.sections.forEach(section => {
+                        if (section.content) {
+                            actualWordCount += section.content.split(/\s+/).filter(word => word.length > 0).length;
+                        }
+                        if (section.subsections) {
+                            section.subsections.forEach(sub => {
+                                if (sub.content) {
+                                    actualWordCount += sub.content.split(/\s+/).filter(word => word.length > 0).length;
+                                }
+                            });
+                        }
+                    });
+                }
+
+                actualWordCount += conclusion.split(/\s+/).filter(w => w.length > 0).length;
+
+                if (finalArticle.content.faq) {
+                    finalArticle.content.faq.forEach(item => {
+                        if (item.answer) {
+                            actualWordCount += item.answer.split(/\s+/).filter(word => word.length > 0).length;
+                        }
+                    });
+                }
+
+                finalArticle.metadata.actualWordCount = actualWordCount;
+                console.log('📊 Word Count:', actualWordCount, '/', targetWordCount);
+
+                updateProgressStage(5, '✓ Assembly complete');
+                progress.updateMessage('✅ Article ready!');
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                updateProgressStage(6, '✓ Complete');
+                console.log('=== MULTI-PHASE ARTICLE COMPLETE ===');
+                console.log('Sections:', finalArticle.content.sections.length);
+                console.log('FAQs:', finalArticle.content.faq.length);
+                console.log('Word count:', actualWordCount)
 
                 // Update progress to complete
                 progress.updateIcon('✅');
