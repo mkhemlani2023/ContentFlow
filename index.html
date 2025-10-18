@@ -7420,37 +7420,29 @@ Make the content engaging, informative, and optimized for search engines. Includ
                             </div>
 
                             <!-- Action Buttons -->
-                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                                <button onclick="addInternalLinks()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Add Internal Links
-                                </button>
-                                <button onclick="enterEditMode()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Edit Article
-                                </button>
-                                <button onclick="copyArticleToClipboard()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Copy HTML
-                                </button>
-                                <button onclick="saveGeneratedArticle()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Save to Library
-                                </button>
-                                <button onclick="exportArticleMarkdown()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Export Markdown
-                                </button>
-                                <button onclick="publishToWebsite()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Publish Now
-                                </button>
+                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; max-width: 600px; margin: 0 auto;">
+                                    <button onclick="copyArticleToClipboard()"
+                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
+                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                        Copy HTML
+                                    </button>
+                                    <button onclick="exportArticleMarkdown()"
+                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
+                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                        Export MD
+                                    </button>
+                                    <button onclick="enterEditMode()"
+                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
+                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                        Edit
+                                    </button>
+                                    <button onclick="publishToWebsite()"
+                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
+                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                        Publish
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -7653,37 +7645,34 @@ Make the content engaging, informative, and optimized for search engines. Includ
                             </div>
 
                             <!-- Enhanced Action Buttons -->
-                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                                <button onclick="enterEditMode()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Edit Article
-                                </button>
-                                <button onclick="copyArticleToClipboard()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Copy HTML
-                                </button>
-                                <button onclick="saveGeneratedArticle()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Save Article
-                                </button>
-                                <button onclick="exportArticleMarkdown()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Export Markdown
-                                </button>
-                                <button onclick="downloadImages()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Download Images
-                                </button>
-                                <button onclick="publishToWebsite()"
-                                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
-                                    Publish Now
-                                </button>
+                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; max-width: 700px; margin: 0 auto;">
+                                    <button onclick="copyArticleToClipboard()"
+                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
+                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                        Copy HTML
+                                    </button>
+                                    <button onclick="exportArticleMarkdown()"
+                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
+                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                        Export MD
+                                    </button>
+                                    <button onclick="downloadImages()"
+                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
+                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                        Images
+                                    </button>
+                                    <button onclick="enterEditMode()"
+                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
+                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                        Edit
+                                    </button>
+                                    <button onclick="publishToWebsite()"
+                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
+                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                        Publish
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
