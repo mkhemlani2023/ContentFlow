@@ -884,10 +884,14 @@
         function showCreditDashboard() {
             const creditDashboard = document.getElementById('creditDashboard');
             const blogManagement = document.getElementById('blogManagement');
+            const websiteTracking = document.getElementById('websiteTracking');
             const results = document.getElementById('results');
+            const container = document.querySelector('.container');
 
             // Hide other sections
+            if (container) container.style.display = 'none';
             blogManagement.style.display = 'none';
+            websiteTracking.style.display = 'none';
             results.innerHTML = '';
 
             // Calculate usage statistics
@@ -971,10 +975,13 @@
             `;
 
             creditDashboard.style.display = 'block';
+            creditDashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function hideCreditDashboard() {
             document.getElementById('creditDashboard').style.display = 'none';
+            const container = document.querySelector('.container');
+            if (container) container.style.display = 'grid';
         }
 
         function resetCreditDemo() {
@@ -1009,7 +1016,17 @@
 
         function showWebsiteTracking() {
             const trackingDiv = document.getElementById('websiteTracking');
+            const creditDashboard = document.getElementById('creditDashboard');
+            const blogManagement = document.getElementById('blogManagement');
+            const results = document.getElementById('results');
+            const container = document.querySelector('.container');
             const trackedWebsites = getTrackedWebsites();
+
+            // Hide other sections
+            if (container) container.style.display = 'none';
+            creditDashboard.style.display = 'none';
+            blogManagement.style.display = 'none';
+            results.innerHTML = '';
 
             trackingDiv.style.display = 'block';
             trackingDiv.innerHTML = `
@@ -1060,6 +1077,8 @@
 
         function hideWebsiteTracking() {
             document.getElementById('websiteTracking').style.display = 'none';
+            const container = document.querySelector('.container');
+            if (container) container.style.display = 'grid';
         }
 
         function addWebsiteToTrack() {
@@ -5089,11 +5108,23 @@
 
         // Blog Management System
         function showBlogManagement() {
-            document.getElementById('blogManagement').style.display = 'block';
+            const blogManagement = document.getElementById('blogManagement');
+            const creditDashboard = document.getElementById('creditDashboard');
+            const websiteTracking = document.getElementById('websiteTracking');
+            const results = document.getElementById('results');
+            const container = document.querySelector('.container');
+
+            // Hide other sections
+            if (container) container.style.display = 'none';
+            creditDashboard.style.display = 'none';
+            websiteTracking.style.display = 'none';
+            results.innerHTML = '';
+
+            blogManagement.style.display = 'block';
             displayBlogManagement();
 
             // Scroll to blog management section
-            document.getElementById('blogManagement').scrollIntoView({ behavior: 'smooth' });
+            blogManagement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function displayBlogManagement() {
@@ -5102,7 +5133,12 @@
 
             document.getElementById('blogManagement').innerHTML = `
                 <div class="card" style="margin-bottom: 20px;">
-                    <h2>🚀 Blog & Website Management</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0;">🚀 Blog & Website Management</h2>
+                        <button onclick="hideBlogManagement()" style="background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                            ← Back
+                        </button>
+                    </div>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
                         <!-- Add New Blog -->
@@ -5200,6 +5236,12 @@
                     </div>
                 </div>
             `;
+        }
+
+        function hideBlogManagement() {
+            document.getElementById('blogManagement').style.display = 'none';
+            const container = document.querySelector('.container');
+            if (container) container.style.display = 'grid';
         }
 
         function generateBlogsList(blogs) {
