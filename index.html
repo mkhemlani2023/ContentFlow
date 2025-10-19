@@ -378,12 +378,12 @@
         }
 
         .action-btn.primary {
-            background: #4CAF50;
+            background: #667eea;
             color: white;
         }
 
         .action-btn.primary:hover {
-            background: #45a049;
+            background: #5568d3;
             transform: translateY(-1px);
         }
 
@@ -5162,9 +5162,21 @@
                                 <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Website URL</label>
                                 <input type="url" id="blogUrl" placeholder="https://myblog.com" style="width: 100%; margin: 0;">
                             </div>
+                            <div style="margin-bottom: 10px;">
+                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Sign in URL</label>
+                                <input type="url" id="blogSigninUrl" placeholder="https://myblog.com/wp-login.php" style="width: 100%; margin: 0;">
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Username</label>
+                                <input type="text" id="blogUsername" placeholder="admin" style="width: 100%; margin: 0;">
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Password</label>
+                                <input type="password" id="blogPassword" placeholder="Enter password" style="width: 100%; margin: 0;">
+                            </div>
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">API Key/Token</label>
-                                <input type="password" id="blogApiKey" placeholder="Enter API credentials" style="width: 100%; margin: 0;">
+                                <input type="password" id="blogApiKey" placeholder="Enter API credentials (if required)" style="width: 100%; margin: 0;">
                             </div>
                             <button onclick="addBlog()" class="action-btn primary" style="width: 100%; margin: 0;">
                                 <span class="btn-icon">✅</span>Add Blog
@@ -5261,9 +5273,9 @@
                             </div>
                         </div>
                         <div style="display: flex; gap: 5px;">
-                            <button onclick="testBlogConnection(${index})" style="background: #4299e1; color: white; border: none; padding: 6px 10px; border-radius: 3px; font-size: 11px; cursor: pointer;">Test</button>
-                            <button onclick="editBlog(${index})" style="background: #ed8936; color: white; border: none; padding: 6px 10px; border-radius: 3px; font-size: 11px; cursor: pointer;">Edit</button>
-                            <button onclick="deleteBlog(${index})" style="background: #f56565; color: white; border: none; padding: 6px 10px; border-radius: 3px; font-size: 11px; cursor: pointer;">Delete</button>
+                            <button onclick="testBlogConnection(${index})" style="background: #667eea; color: white; border: none; padding: 6px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">Test</button>
+                            <button onclick="editBlog(${index})" style="background: #7c3aed; color: white; border: none; padding: 6px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">Edit</button>
+                            <button onclick="deleteBlog(${index})" style="background: #9333ea; color: white; border: none; padding: 6px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#7e22ce'" onmouseout="this.style.background='#9333ea'">Delete</button>
                         </div>
                     </div>
                 </div>
@@ -5302,10 +5314,13 @@
             const name = document.getElementById('blogName').value.trim();
             const platform = document.getElementById('blogPlatform').value;
             const url = document.getElementById('blogUrl').value.trim();
+            const signinUrl = document.getElementById('blogSigninUrl').value.trim();
+            const username = document.getElementById('blogUsername').value.trim();
+            const password = document.getElementById('blogPassword').value.trim();
             const apiKey = document.getElementById('blogApiKey').value.trim();
 
-            if (!name || !url || !apiKey) {
-                alert('Please fill in all required fields');
+            if (!name || !url || !signinUrl || !username || !password) {
+                alert('Please fill in all required fields (Blog Name, Website URL, Sign in URL, Username, and Password)');
                 return;
             }
 
@@ -5316,7 +5331,10 @@
                 name,
                 platform,
                 url,
-                apiKey: btoa(apiKey), // Basic encoding (not secure, just for demo)
+                signinUrl,
+                username: btoa(username), // Basic encoding (not secure, just for demo)
+                password: btoa(password), // Basic encoding (not secure, just for demo)
+                apiKey: apiKey ? btoa(apiKey) : '', // Basic encoding (not secure, just for demo)
                 status: 'active',
                 dateAdded: new Date().toISOString(),
                 domainAuthority: Math.floor(Math.random() * 40) + 20, // Mock DA
@@ -5329,6 +5347,9 @@
             // Clear form
             document.getElementById('blogName').value = '';
             document.getElementById('blogUrl').value = '';
+            document.getElementById('blogSigninUrl').value = '';
+            document.getElementById('blogUsername').value = '';
+            document.getElementById('blogPassword').value = '';
             document.getElementById('blogApiKey').value = '';
 
             alert(`✅ Blog "${name}" added successfully!`);
