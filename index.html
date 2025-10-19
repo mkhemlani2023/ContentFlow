@@ -7248,25 +7248,46 @@ Make the content engaging, informative, and optimized for search engines. Includ
 
             // Extract most specific/relevant keywords from title
             // Remove generic words like "guide", "tips", "how to", people words
-            const genericWords = ['guide', 'ultimate', 'complete', 'comprehensive', 'tips', 'how to', 'what', 'why', 'when', 'where', 'best', 'top', 'essential', 'important', 'a', 'an', 'the', 'for', 'on', 'in', 'with', 'and', 'or', 'think', 'say', 'nutritionist', 'nutritionists', 'expert', 'experts', 'people', 'healthy', 'health', 'it', 'is', 'to', 'be'];
+            const genericWords = ['guide', 'ultimate', 'complete', 'comprehensive', 'tips', 'how to', 'what', 'why', 'when', 'where', 'best', 'top', 'essential', 'important', 'a', 'an', 'the', 'for', 'on', 'in', 'with', 'and', 'or', 'think', 'say', 'nutritionist', 'nutritionists', 'expert', 'experts', 'people', 'it', 'is', 'to', 'be', 'your', 'about', 'need', 'know', 'should', 'could', 'would', 'will', 'can', 'do', 'does', 'did', 'have', 'has', 'had'];
             const words = keyword.toLowerCase().split(/\s+/);
             const relevantWords = words.filter(w => !genericWords.includes(w) && w.length > 3);
 
-            // For diet-related articles, use specific food imagery
-            let imageQuery = relevantWords.slice(0, 2).join(' ') || keyword;
+            // Build contextual image query based on article type
+            let imageQuery = '';
+            const fullKeywordLower = keyword.toLowerCase();
 
-            // Special handling for diet types
-            if (imageQuery.includes('carnivore')) {
-                imageQuery = 'steak meat beef protein meal plate';
-            } else if (imageQuery.includes('keto')) {
-                imageQuery = 'ketogenic diet healthy food plate';
-            } else if (imageQuery.includes('vegan')) {
-                imageQuery = 'vegan food vegetables plant based meal';
-            } else if (imageQuery.includes('diet') || imageQuery.includes('nutrition') || imageQuery.includes('food')) {
-                imageQuery += ' healthy food meal plate nutrition';
+            // Special handling for diet/nutrition articles
+            if (fullKeywordLower.includes('carnivore')) {
+                imageQuery = 'grilled steak meat beef protein meal cooked food';
+            } else if (fullKeywordLower.includes('keto') || fullKeywordLower.includes('ketogenic')) {
+                imageQuery = 'keto diet food avocado salmon healthy meal low carb';
+            } else if (fullKeywordLower.includes('vegan') || fullKeywordLower.includes('plant based')) {
+                imageQuery = 'vegan food vegetables salad plant based meal healthy';
+            } else if (fullKeywordLower.includes('paleo')) {
+                imageQuery = 'paleo diet food meat vegetables healthy meal';
+            } else if (fullKeywordLower.includes('mediterranean')) {
+                imageQuery = 'mediterranean diet food olive oil fish vegetables';
+            } else if (fullKeywordLower.includes('diet') && relevantWords.length > 0) {
+                imageQuery = `${relevantWords[0]} diet healthy food meal nutrition plate`;
+            } else if (fullKeywordLower.includes('food') || fullKeywordLower.includes('meal') || fullKeywordLower.includes('recipe') || fullKeywordLower.includes('nutrition')) {
+                imageQuery = relevantWords.slice(0, 2).join(' ') + ' food meal healthy plate';
+            } else if (fullKeywordLower.includes('health') && relevantWords.length > 0) {
+                imageQuery = `${relevantWords.slice(0, 2).join(' ')} healthy wellness fitness`;
+            } else if (fullKeywordLower.includes('fitness') || fullKeywordLower.includes('workout') || fullKeywordLower.includes('exercise')) {
+                imageQuery = relevantWords.slice(0, 2).join(' ') + ' fitness exercise gym workout';
+            } else if (fullKeywordLower.includes('yoga') || fullKeywordLower.includes('meditation')) {
+                imageQuery = relevantWords.slice(0, 2).join(' ') + ' yoga meditation wellness';
+            } else if (fullKeywordLower.includes('business') || fullKeywordLower.includes('marketing') || fullKeywordLower.includes('entrepreneur')) {
+                imageQuery = relevantWords.slice(0, 2).join(' ') + ' business professional office work';
+            } else if (fullKeywordLower.includes('technology') || fullKeywordLower.includes('software') || fullKeywordLower.includes('coding')) {
+                imageQuery = relevantWords.slice(0, 2).join(' ') + ' technology computer software digital';
+            } else {
+                // Default: use relevant words but ensure we have context
+                imageQuery = relevantWords.slice(0, 3).join(' ') || keyword;
             }
 
             console.log('Original keyword:', keyword);
+            console.log('Relevant words extracted:', relevantWords);
             console.log('Image search query:', imageQuery);
 
             try {
