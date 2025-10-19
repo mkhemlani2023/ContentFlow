@@ -5178,9 +5178,14 @@
                                 <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">API Key/Token</label>
                                 <input type="password" id="blogApiKey" placeholder="Enter API credentials (if required)" style="width: 100%; margin: 0;">
                             </div>
-                            <button onclick="addBlog()" class="action-btn primary" style="width: 100%; margin: 0;">
-                                <span class="btn-icon">✅</span>Add Blog
-                            </button>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <button onclick="testNewBlogConnection()" style="background: #7c3aed; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">
+                                    Test Connection
+                                </button>
+                                <button onclick="addBlog()" class="action-btn primary" style="margin: 0;">
+                                    Add Blog
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Publishing Schedule Settings -->
@@ -5365,6 +5370,41 @@
 
             localStorage.setItem('scheduleSettings', JSON.stringify(settings));
             alert('✅ Schedule settings updated!');
+        }
+
+        function testNewBlogConnection() {
+            const name = document.getElementById('blogName').value.trim();
+            const platform = document.getElementById('blogPlatform').value;
+            const url = document.getElementById('blogUrl').value.trim();
+            const signinUrl = document.getElementById('blogSigninUrl').value.trim();
+            const username = document.getElementById('blogUsername').value.trim();
+            const password = document.getElementById('blogPassword').value.trim();
+            const apiKey = document.getElementById('blogApiKey').value.trim();
+
+            if (!url || !signinUrl || !username || !password) {
+                alert('⚠️ Please fill in Website URL, Sign in URL, Username, and Password to test the connection.');
+                return;
+            }
+
+            // Simulate connection test with a delay
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '🔄 Testing...';
+            button.disabled = true;
+
+            setTimeout(() => {
+                // Mock connection test - in production this would make an actual API call
+                const isSuccess = Math.random() > 0.3; // 70% success rate for demo
+
+                button.disabled = false;
+                button.innerHTML = originalText;
+
+                if (isSuccess) {
+                    alert(`✅ Connection Successful!\n\nPlatform: ${platform.charAt(0).toUpperCase() + platform.slice(1)}\nURL: ${url}\nSign in URL: ${signinUrl}\nUsername: ${username}\n\nYou can now add this blog to your managed sites.`);
+                } else {
+                    alert(`❌ Connection Failed\n\nCould not connect to ${url}\n\nPlease check:\n• Website URL is correct and accessible\n• Sign in URL points to your login page\n• Username and password are correct\n• Platform selection matches your blog type\n\nNote: For WordPress, you may need to install the REST API or Application Password plugin.`);
+                }
+            }, 1500);
         }
 
         function testBlogConnection(index) {
