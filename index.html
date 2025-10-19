@@ -5372,7 +5372,7 @@
             alert('✅ Schedule settings updated!');
         }
 
-        function testNewBlogConnection() {
+        async function testNewBlogConnection() {
             const name = document.getElementById('blogName').value.trim();
             const platform = document.getElementById('blogPlatform').value;
             const url = document.getElementById('blogUrl').value.trim();
@@ -5381,30 +5381,54 @@
             const password = document.getElementById('blogPassword').value.trim();
             const apiKey = document.getElementById('blogApiKey').value.trim();
 
-            if (!url || !signinUrl || !username || !password) {
-                alert('⚠️ Please fill in Website URL, Sign in URL, Username, and Password to test the connection.');
+            if (!url || !username || !password) {
+                alert('⚠️ Please fill in Website URL, Username, and Password to test the connection.');
                 return;
             }
 
-            // Simulate connection test with a delay
+            // Only WordPress is supported for now
+            if (platform !== 'wordpress') {
+                alert(`⚠️ Real connection testing is currently only supported for WordPress.\n\nPlatform "${platform}" integration is coming soon.`);
+                return;
+            }
+
             const button = event.target;
             const originalText = button.innerHTML;
             button.innerHTML = '🔄 Testing...';
             button.disabled = true;
 
-            setTimeout(() => {
-                // Mock connection test - in production this would make an actual API call
-                const isSuccess = Math.random() > 0.3; // 70% success rate for demo
+            try {
+                // Call WordPress test connection API
+                const response = await fetch('/api/wordpress-test-connection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: url,
+                        username: username,
+                        password: password,
+                        signinUrl: signinUrl
+                    })
+                });
+
+                const result = await response.json();
 
                 button.disabled = false;
                 button.innerHTML = originalText;
 
-                if (isSuccess) {
-                    alert(`✅ Connection Successful!\n\nPlatform: ${platform.charAt(0).toUpperCase() + platform.slice(1)}\nURL: ${url}\nSign in URL: ${signinUrl}\nUsername: ${username}\n\nYou can now add this blog to your managed sites.`);
+                if (result.success) {
+                    alert(`✅ Connection Successful!\n\nWordPress Site: ${result.data.siteUrl}\nUser: ${result.data.username} (${result.data.userLogin})\nRoles: ${result.data.roles.join(', ')}\n\nYou can now add this blog to your managed sites.`);
                 } else {
-                    alert(`❌ Connection Failed\n\nCould not connect to ${url}\n\nPlease check:\n• Website URL is correct and accessible\n• Sign in URL points to your login page\n• Username and password are correct\n• Platform selection matches your blog type\n\nNote: For WordPress, you may need to install the REST API or Application Password plugin.`);
+                    alert(`❌ Connection Failed\n\n${result.message}\n\nPlease check:\n• Website URL is correct (e.g., https://yourblog.com)\n• Username and password are correct\n• WordPress REST API is enabled\n• For WordPress 5.6+, use Application Passwords instead of your account password\n\nTo create an Application Password:\n1. Go to WordPress Admin → Users → Profile\n2. Scroll to "Application Passwords"\n3. Enter a name like "ContentFlow"\n4. Click "Add New Application Password"\n5. Copy the generated password and use it here`);
                 }
-            }, 1500);
+            } catch (error) {
+                button.disabled = false;
+                button.innerHTML = originalText;
+
+                console.error('Connection test error:', error);
+                alert(`❌ Connection Test Failed\n\nError: ${error.message}\n\nPlease verify:\n• Your WordPress site is accessible\n• The URL is correct\n• Your internet connection is working`);
+            }
         }
 
         function testBlogConnection(index) {
@@ -9937,7 +9961,7 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             document.body.appendChild(publishModal);
         }
 
-        function confirmPublish() {
+        async function confirmPublish() {
             const selectedBlogId = document.getElementById('publishBlog').value;
             const publishType = document.querySelector('input[name="publishType"]:checked').value;
             const article = window.currentGeneratedArticle;
@@ -9953,8 +9977,16 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
 
             // Decode credentials
             const username = selectedBlog.username ? atob(selectedBlog.username) : '';
+            const password = selectedBlog.password ? atob(selectedBlog.password) : '';
             const signinUrl = selectedBlog.signinUrl || '';
             const platform = selectedBlog.platform || 'wordpress';
+
+            // Check if WordPress
+            if (platform !== 'wordpress') {
+                alert(`⚠️ Publishing is currently only supported for WordPress.\n\nPlatform "${platform}" integration is coming soon.\n\nFor now, you can use "Copy HTML" or "Export MD" to manually upload the article.`);
+                closePublishModal();
+                return;
+            }
 
             // Close modal and show progress
             closePublishModal();
@@ -9977,58 +10009,104 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             `;
             document.body.appendChild(progressModal);
 
-            // Simulate publishing steps
             const statusDiv = document.getElementById('publishStatus');
             const progressBar = document.getElementById('publishProgress');
 
-            setTimeout(() => {
+            try {
+                // Prepare article content
                 statusDiv.innerHTML = `
                     <div>✅ Connected to ${selectedBlog.name}</div>
-                    <div>🔑 Authenticating with username: ${username}</div>
+                    <div>🔑 Authenticating...</div>
                 `;
-                progressBar.style.width = '33%';
-            }, 1000);
+                progressBar.style.width = '20%';
 
-            setTimeout(() => {
-                statusDiv.innerHTML = `
-                    <div>✅ Connected to ${selectedBlog.name}</div>
-                    <div>✅ Authenticated successfully</div>
-                    <div>📤 Uploading article: ${article.content.title}</div>
-                `;
-                progressBar.style.width = '66%';
-            }, 2000);
+                // Build HTML content from article
+                let htmlContent = `<p>${article.content.introduction}</p>\n\n`;
 
-            setTimeout(() => {
-                statusDiv.innerHTML = `
-                    <div>✅ Connected to ${selectedBlog.name}</div>
-                    <div>✅ Authenticated successfully</div>
-                    <div>✅ Article uploaded</div>
-                    <div>🚀 ${publishType === 'now' ? 'Publishing' : publishType === 'draft' ? 'Saving as draft' : 'Scheduling'}...</div>
-                `;
-                progressBar.style.width = '100%';
-            }, 3000);
-
-            setTimeout(() => {
-                progressModal.remove();
-
-                const publishTypeText = publishType === 'now' ? 'published' : publishType === 'draft' ? 'saved as draft' : 'scheduled';
-
-                alert(`✅ Success!\n\nArticle "${article.content.title}" has been ${publishTypeText} to ${selectedBlog.name}.\n\n📊 Publishing Details:\n• Platform: ${platform.charAt(0).toUpperCase() + platform.slice(1)}\n• Sign-in URL: ${signinUrl}\n• Username: ${username}\n• Publish Type: ${publishType}\n\nNote: This is a simulated publish. Integration with WordPress REST API, Application Passwords, and other CMS platforms is in development.`);
-
-                // Log the publishing attempt
-                const publishLog = JSON.parse(localStorage.getItem('publishHistory') || '[]');
-                publishLog.push({
-                    articleTitle: article.content.title,
-                    blogId: selectedBlogId,
-                    blogName: selectedBlog.name,
-                    platform: platform,
-                    username: username,
-                    publishType: publishType,
-                    timestamp: new Date().toISOString(),
-                    status: 'simulated'
+                article.content.sections.forEach(section => {
+                    htmlContent += `<h2>${section.title}</h2>\n`;
+                    htmlContent += `<p>${section.content}</p>\n\n`;
                 });
-                localStorage.setItem('publishHistory', JSON.stringify(publishLog));
-            }, 4000);
+
+                htmlContent += `<h2>Conclusion</h2>\n<p>${article.content.conclusion}</p>\n\n`;
+
+                if (article.content.faq && article.content.faq.length > 0) {
+                    htmlContent += `<h2>Frequently Asked Questions</h2>\n`;
+                    article.content.faq.forEach(qa => {
+                        htmlContent += `<h3>${qa.question}</h3>\n<p>${qa.answer}</p>\n\n`;
+                    });
+                }
+
+                statusDiv.innerHTML = `
+                    <div>✅ Connected to ${selectedBlog.name}</div>
+                    <div>✅ Authenticated</div>
+                    <div>📤 Uploading article...</div>
+                `;
+                progressBar.style.width = '50%';
+
+                // Call WordPress publish API
+                const response = await fetch('/api/wordpress-publish', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: selectedBlog.url,
+                        username: username,
+                        password: password,
+                        article: {
+                            title: article.content.title,
+                            content: htmlContent,
+                            excerpt: article.content.introduction.substring(0, 150) + '...'
+                        },
+                        publishType: publishType
+                    })
+                });
+
+                const result = await response.json();
+
+                progressBar.style.width = '100%';
+
+                if (result.success) {
+                    statusDiv.innerHTML = `
+                        <div>✅ Connected to ${selectedBlog.name}</div>
+                        <div>✅ Authenticated</div>
+                        <div>✅ Article uploaded</div>
+                        <div>🚀 ${publishType === 'now' ? 'Published' : publishType === 'draft' ? 'Saved as draft' : 'Scheduled'}!</div>
+                    `;
+
+                    setTimeout(() => {
+                        progressModal.remove();
+
+                        const publishTypeText = publishType === 'now' ? 'published' : publishType === 'draft' ? 'saved as draft' : 'scheduled';
+
+                        alert(`✅ Success!\n\nArticle "${result.data.title}" has been ${publishTypeText} to ${selectedBlog.name}!\n\n📊 Publishing Details:\n• Post ID: ${result.data.postId}\n• Post URL: ${result.data.postUrl}\n• Status: ${result.data.status}\n• Platform: WordPress\n• Username: ${username}\n\n🌐 View your article:\n${result.data.postUrl}`);
+
+                        // Log the publishing attempt
+                        const publishLog = JSON.parse(localStorage.getItem('publishHistory') || '[]');
+                        publishLog.push({
+                            articleTitle: article.content.title,
+                            blogId: selectedBlogId,
+                            blogName: selectedBlog.name,
+                            platform: platform,
+                            username: username,
+                            publishType: publishType,
+                            postId: result.data.postId,
+                            postUrl: result.data.postUrl,
+                            timestamp: new Date().toISOString(),
+                            status: 'success'
+                        });
+                        localStorage.setItem('publishHistory', JSON.stringify(publishLog));
+                    }, 1000);
+                } else {
+                    progressModal.remove();
+                    alert(`❌ Publishing Failed\n\n${result.message}\n\n${result.details || ''}\n\nPlease check:\n• Your WordPress credentials are correct\n• WordPress REST API is enabled\n• You have permission to publish posts\n• For WordPress 5.6+, use Application Passwords`);
+                }
+            } catch (error) {
+                progressModal.remove();
+                console.error('Publishing error:', error);
+                alert(`❌ Publishing Failed\n\nError: ${error.message}\n\nPlease verify:\n• Your WordPress site is accessible\n• Your credentials are correct\n• Your internet connection is working`);
+            }
         }
 
         function closePublishModal() {

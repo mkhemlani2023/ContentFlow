@@ -2428,6 +2428,167 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
     }
 
+    // WordPress Test Connection endpoint
+    if (path === '/api/wordpress-test-connection' && method === 'POST') {
+      const { url, username, password, signinUrl } = body;
+
+      if (!url || !username || !password) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'URL, username, and password are required'
+          })
+        };
+      }
+
+      try {
+        // Clean URL
+        const baseUrl = url.replace(/\/$/, '');
+        const wpRestUrl = `${baseUrl}/wp-json/wp/v2`;
+
+        // Test connection by getting site info
+        const testResponse = await fetch(`${wpRestUrl}/users/me`, {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (testResponse.ok) {
+          const userData = await testResponse.json();
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              message: 'Connection successful',
+              data: {
+                username: userData.name,
+                userLogin: userData.slug,
+                roles: userData.roles,
+                siteUrl: baseUrl
+              }
+            })
+          };
+        } else {
+          const errorText = await testResponse.text();
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: `Authentication failed: ${testResponse.status} ${testResponse.statusText}`,
+              details: errorText
+            })
+          };
+        }
+      } catch (error) {
+        console.error('WordPress connection test error:', error);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Connection failed',
+            error: error.message
+          })
+        };
+      }
+    }
+
+    // WordPress Publish Article endpoint
+    if (path === '/api/wordpress-publish' && method === 'POST') {
+      const { url, username, password, article, publishType = 'draft' } = body;
+
+      if (!url || !username || !password || !article) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'URL, username, password, and article are required'
+          })
+        };
+      }
+
+      try {
+        // Clean URL
+        const baseUrl = url.replace(/\/$/, '');
+        const wpRestUrl = `${baseUrl}/wp-json/wp/v2/posts`;
+
+        // Prepare article content
+        const postData = {
+          title: article.title,
+          content: article.content,
+          status: publishType === 'now' ? 'publish' : publishType === 'scheduled' ? 'future' : 'draft',
+          excerpt: article.excerpt || '',
+          meta: {
+            _generated_by: 'ContentFlow'
+          }
+        };
+
+        // Add featured image if available
+        if (article.featuredImage) {
+          // Note: This requires uploading the image first and getting media ID
+          // For now, we'll skip image upload and just publish the text
+          console.log('Featured image upload not yet implemented');
+        }
+
+        // Publish to WordPress
+        const publishResponse = await fetch(wpRestUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(postData)
+        });
+
+        if (publishResponse.ok) {
+          const postData = await publishResponse.json();
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              message: 'Article published successfully',
+              data: {
+                postId: postData.id,
+                postUrl: postData.link,
+                status: postData.status,
+                title: postData.title.rendered
+              }
+            })
+          };
+        } else {
+          const errorText = await publishResponse.text();
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: `Publishing failed: ${publishResponse.status} ${publishResponse.statusText}`,
+              details: errorText
+            })
+          };
+        }
+      } catch (error) {
+        console.error('WordPress publish error:', error);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Publishing failed',
+            error: error.message
+          })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
@@ -2447,7 +2608,9 @@ Generate a professional, actionable outline that a content writer can follow to 
           'POST /api/generate-images',
           'POST /api/generate-article',
           'POST /api/content-outline',
-          'POST /api/pexels-images'
+          'POST /api/pexels-images',
+          'POST /api/wordpress-test-connection',
+          'POST /api/wordpress-publish'
         ]
       })
     };
