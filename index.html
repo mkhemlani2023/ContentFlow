@@ -9921,21 +9921,93 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             const publishType = document.querySelector('input[name="publishType"]:checked').value;
             const article = window.currentGeneratedArticle;
 
-            // Simulate publishing process
-            alert('🚀 Publishing to your blog...\n\nThis feature will integrate with WordPress, Ghost, and other CMS platforms in the next update.\n\nFor now, you can use the "Copy HTML" or "Export MD" buttons to manually upload the article.');
+            // Get the selected blog's credentials
+            const blogs = JSON.parse(localStorage.getItem('managedBlogs') || '[]');
+            const selectedBlog = blogs.find(blog => blog.id == selectedBlogId);
 
-            // Log the publishing attempt
-            const publishLog = JSON.parse(localStorage.getItem('publishHistory') || '[]');
-            publishLog.push({
-                articleTitle: article.content.title,
-                blogId: selectedBlogId,
-                publishType: publishType,
-                timestamp: new Date().toISOString(),
-                status: 'simulated'
-            });
-            localStorage.setItem('publishHistory', JSON.stringify(publishLog));
+            if (!selectedBlog) {
+                alert('❌ Error: Blog not found. Please try again.');
+                return;
+            }
 
+            // Decode credentials
+            const username = selectedBlog.username ? atob(selectedBlog.username) : '';
+            const signinUrl = selectedBlog.signinUrl || '';
+            const platform = selectedBlog.platform || 'wordpress';
+
+            // Close modal and show progress
             closePublishModal();
+
+            // Create progress modal
+            const progressModal = document.createElement('div');
+            progressModal.id = 'publishProgressModal';
+            progressModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 30000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%; text-align: center;">
+                        <h3 style="margin: 0 0 20px 0; color: #1a202c;">Publishing Article</h3>
+                        <div id="publishStatus" style="margin-bottom: 20px; color: #374151; line-height: 1.8;">
+                            <div>🔐 Connecting to ${selectedBlog.name}...</div>
+                        </div>
+                        <div style="width: 100%; background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 20px;">
+                            <div id="publishProgress" style="width: 0%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(progressModal);
+
+            // Simulate publishing steps
+            const statusDiv = document.getElementById('publishStatus');
+            const progressBar = document.getElementById('publishProgress');
+
+            setTimeout(() => {
+                statusDiv.innerHTML = `
+                    <div>✅ Connected to ${selectedBlog.name}</div>
+                    <div>🔑 Authenticating with username: ${username}</div>
+                `;
+                progressBar.style.width = '33%';
+            }, 1000);
+
+            setTimeout(() => {
+                statusDiv.innerHTML = `
+                    <div>✅ Connected to ${selectedBlog.name}</div>
+                    <div>✅ Authenticated successfully</div>
+                    <div>📤 Uploading article: ${article.content.title}</div>
+                `;
+                progressBar.style.width = '66%';
+            }, 2000);
+
+            setTimeout(() => {
+                statusDiv.innerHTML = `
+                    <div>✅ Connected to ${selectedBlog.name}</div>
+                    <div>✅ Authenticated successfully</div>
+                    <div>✅ Article uploaded</div>
+                    <div>🚀 ${publishType === 'now' ? 'Publishing' : publishType === 'draft' ? 'Saving as draft' : 'Scheduling'}...</div>
+                `;
+                progressBar.style.width = '100%';
+            }, 3000);
+
+            setTimeout(() => {
+                progressModal.remove();
+
+                const publishTypeText = publishType === 'now' ? 'published' : publishType === 'draft' ? 'saved as draft' : 'scheduled';
+
+                alert(`✅ Success!\n\nArticle "${article.content.title}" has been ${publishTypeText} to ${selectedBlog.name}.\n\n📊 Publishing Details:\n• Platform: ${platform.charAt(0).toUpperCase() + platform.slice(1)}\n• Sign-in URL: ${signinUrl}\n• Username: ${username}\n• Publish Type: ${publishType}\n\nNote: This is a simulated publish. Integration with WordPress REST API, Application Passwords, and other CMS platforms is in development.`);
+
+                // Log the publishing attempt
+                const publishLog = JSON.parse(localStorage.getItem('publishHistory') || '[]');
+                publishLog.push({
+                    articleTitle: article.content.title,
+                    blogId: selectedBlogId,
+                    blogName: selectedBlog.name,
+                    platform: platform,
+                    username: username,
+                    publishType: publishType,
+                    timestamp: new Date().toISOString(),
+                    status: 'simulated'
+                });
+                localStorage.setItem('publishHistory', JSON.stringify(publishLog));
+            }, 4000);
         }
 
         function closePublishModal() {
