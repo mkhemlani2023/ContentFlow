@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Content Flow - Serper API Integration</title>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -604,6 +608,248 @@
     </div>
 
     <script>
+        // Supabase Configuration
+        // Note: These will be injected via Netlify environment variables in production
+        const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://your-project.supabase.co';
+        const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'your-anon-key';
+
+        // Initialize Supabase client
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Supabase Storage Service
+        const SupabaseService = {
+            // Save article to database
+            async saveArticle(article) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('articles')
+                        .insert([{
+                            title: article.content.title,
+                            keyword: article.keyword,
+                            content: JSON.stringify(article.content),
+                            metadata: JSON.stringify(article.metadata),
+                            images: JSON.stringify(article.images || []),
+                            word_count: article.wordCount,
+                            model_tier: article.modelTier,
+                            created_at: new Date().toISOString()
+                        }])
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error saving article:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load all articles
+            async loadArticles(limit = 50) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('articles')
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                        .limit(limit);
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading articles:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load single article by ID
+            async loadArticle(id) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('articles')
+                        .select('*')
+                        .eq('id', id)
+                        .single();
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading article:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Delete article
+            async deleteArticle(id) {
+                try {
+                    const { error } = await supabaseClient
+                        .from('articles')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) throw error;
+                    return { success: true };
+                } catch (error) {
+                    console.error('Error deleting article:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Save blog configuration
+            async saveBlog(blog) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('blogs')
+                        .insert([{
+                            name: blog.name,
+                            platform: blog.platform,
+                            url: blog.url,
+                            signin_url: blog.signinUrl,
+                            username: blog.username, // encrypted
+                            password: blog.password, // encrypted
+                            api_key: blog.apiKey, // encrypted
+                            status: blog.status || 'active',
+                            created_at: new Date().toISOString()
+                        }])
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error saving blog:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load all blogs
+            async loadBlogs() {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('blogs')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading blogs:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Update blog
+            async updateBlog(id, updates) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('blogs')
+                        .update(updates)
+                        .eq('id', id)
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error updating blog:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Delete blog
+            async deleteBlog(id) {
+                try {
+                    const { error } = await supabaseClient
+                        .from('blogs')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) throw error;
+                    return { success: true };
+                } catch (error) {
+                    console.error('Error deleting blog:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Save publishing log
+            async savePublishLog(log) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('publish_logs')
+                        .insert([{
+                            article_id: log.articleId,
+                            blog_id: log.blogId,
+                            blog_name: log.blogName,
+                            article_title: log.articleTitle,
+                            post_id: log.postId,
+                            post_url: log.postUrl,
+                            status: log.status,
+                            publish_type: log.publishType,
+                            created_at: new Date().toISOString()
+                        }])
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error saving publish log:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load publishing history
+            async loadPublishHistory(limit = 100) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('publish_logs')
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                        .limit(limit);
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading publish history:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Save website tracking data
+            async saveWebsiteMetrics(metrics) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('website_metrics')
+                        .insert([{
+                            url: metrics.url,
+                            title: metrics.title,
+                            metrics: JSON.stringify(metrics.data),
+                            created_at: new Date().toISOString()
+                        }])
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error saving website metrics:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load website metrics
+            async loadWebsiteMetrics() {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('website_metrics')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading website metrics:', error);
+                    return { success: false, error: error.message };
+                }
+            }
+        };
+
         let currentResults = null;
 
         // Initialize SEO Wizard credit system
