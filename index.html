@@ -5628,6 +5628,10 @@
         async function displayBlogManagement() {
             let blogs = [];
 
+            // Clear old localStorage blogs (migration to Supabase)
+            localStorage.removeItem('managedBlogs');
+            localStorage.removeItem('contentSchedules');
+
             // Load blogs from Supabase if logged in
             if (currentUser && supabaseClient) {
                 try {
@@ -5638,9 +5642,27 @@
                 } catch (error) {
                     console.error('Error loading blogs:', error);
                 }
+            } else {
+                // Show login prompt if not logged in
+                document.getElementById('blogManagement').innerHTML = `
+                    <div class="card" style="text-align: center; padding: 60px 20px;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
+                        <h2 style="color: #1e293b; margin-bottom: 15px;">Login Required</h2>
+                        <p style="color: #64748b; margin-bottom: 30px;">
+                            Please log in to manage your blogs and save credentials securely.
+                        </p>
+                        <button onclick="showAuthModal('login')" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; margin-right: 10px;">
+                            Login
+                        </button>
+                        <button onclick="hideBlogManagement()" style="background: #64748b; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px;">
+                            ← Back
+                        </button>
+                    </div>
+                `;
+                return;
             }
 
-            const schedules = JSON.parse(localStorage.getItem('contentSchedules') || '[]');
+            const schedules = [];
 
             document.getElementById('blogManagement').innerHTML = `
                 <div class="card" style="margin-bottom: 20px;">
