@@ -504,15 +504,18 @@
                 <button onclick="checkStatus()">Check System Status</button>
             </div>
             <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
-                <button onclick="showCreditDashboard()" style="background: #4CAF50; width: 100%; margin-bottom: 10px;">
+                <button onclick="showCreditDashboard()" style="background: #667eea; color: white; width: 100%; margin-bottom: 10px; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
                     💰 Credit Dashboard
                 </button>
-                <button onclick="showWebsiteTracking()" style="background: #3b82f6; width: 100%; margin-bottom: 10px;">
+                <button onclick="showWebsiteTracking()" style="background: #7c3aed; color: white; width: 100%; margin-bottom: 10px; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">
                     📈 Website Metrics Tracker
                 </button>
-                <button onclick="showBlogManagement()" style="background: #7b1fa2; width: 100%;">
+                <button onclick="showBlogManagement()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 100%; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)'">
                     🚀 Manage Blogs & Auto-Posting
                 </button>
+                <div style="margin-top: 8px; font-size: 11px; color: #64748b; text-align: center; font-style: italic;">
+                    ↑ Click here to add your WordPress blog
+                </div>
             </div>
         </div>
     </div>
