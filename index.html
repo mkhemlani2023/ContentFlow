@@ -1048,7 +1048,7 @@
                         .insert([{
                             id: currentUser.id,
                             email: currentUser.email,
-                            credits: 50000
+                            credits: 0
                         }])
                         .select()
                         .single();
@@ -1061,7 +1061,7 @@
 
                 // Sync credits from Supabase to local state
                 if (userProfile) {
-                    window.seoWizard.credits = userProfile.credits || 50000;
+                    window.seoWizard.credits = userProfile.credits || 0;
                     updateCreditDisplay();
                 }
             } catch (error) {

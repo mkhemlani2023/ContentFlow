@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
     full_name TEXT,
-    credits INTEGER DEFAULT 50000,
+    credits INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -200,7 +200,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO public.user_profiles (id, email, credits, created_at)
-    VALUES (NEW.id, NEW.email, 50000, NOW())
+    VALUES (NEW.id, NEW.email, 0, NOW())
     ON CONFLICT (id) DO NOTHING;
     RETURN NEW;
 END;
