@@ -847,6 +847,7 @@
                     const { data, error } = await supabaseClient
                         .from('blogs')
                         .insert([{
+                            user_id: blog.user_id, // CRITICAL: Required for RLS policies
                             name: blog.name,
                             platform: blog.platform,
                             url: blog.url,
