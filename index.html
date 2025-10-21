@@ -1061,7 +1061,13 @@
 
                 // Sync credits from Supabase to local state
                 if (userProfile) {
-                    window.seoWizard.credits = userProfile.credits || 0;
+                    // Admin users get unlimited credits for testing
+                    if (userProfile.role === 'admin') {
+                        window.seoWizard.credits = 999999999;
+                        console.log('🔑 Admin access granted - unlimited credits');
+                    } else {
+                        window.seoWizard.credits = userProfile.credits || 0;
+                    }
                     updateCreditDisplay();
                 }
             } catch (error) {
@@ -1287,11 +1293,23 @@
         function updateCreditDisplay() {
             const creditBalance = document.getElementById('creditBalance');
             if (creditBalance) {
-                creditBalance.textContent = window.seoWizard.credits.toLocaleString();
+                const isAdmin = userProfile && userProfile.role === 'admin';
+                if (isAdmin) {
+                    creditBalance.innerHTML = `<span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold;">∞ ADMIN</span>`;
+                } else {
+                    creditBalance.textContent = window.seoWizard.credits.toLocaleString();
+                }
             }
         }
 
         async function deductCredits(amount) {
+            // Admin users don't get charged
+            const isAdmin = userProfile && userProfile.role === 'admin';
+            if (isAdmin) {
+                console.log('🔑 Admin: Credits not deducted');
+                return true;
+            }
+
             if (window.seoWizard.credits >= amount) {
                 window.seoWizard.credits -= amount;
                 localStorage.setItem('seoWizardCredits', window.seoWizard.credits);
