@@ -6142,13 +6142,33 @@
         }
 
         async function addBlog() {
-            const name = document.getElementById('blogName').value.trim();
-            const platform = document.getElementById('blogPlatform').value;
-            const url = document.getElementById('blogUrl').value.trim();
-            const signinUrl = document.getElementById('blogSigninUrl').value.trim();
-            const username = document.getElementById('blogUsername').value.trim();
-            const password = document.getElementById('blogPassword').value.trim();
-            const apiKey = document.getElementById('blogApiKey').value.trim();
+            // Check all elements exist before trying to get values
+            const elements = {
+                blogName: document.getElementById('blogName'),
+                blogPlatform: document.getElementById('blogPlatform'),
+                blogUrl: document.getElementById('blogUrl'),
+                blogSigninUrl: document.getElementById('blogSigninUrl'),
+                blogUsername: document.getElementById('blogUsername'),
+                blogPassword: document.getElementById('blogPassword'),
+                blogApiKey: document.getElementById('blogApiKey')
+            };
+
+            // Find which element is missing
+            for (const [key, element] of Object.entries(elements)) {
+                if (!element) {
+                    console.error(`Missing element: ${key}`);
+                    alert(`Error: Form field "${key}" not found. Please try refreshing the Blog Management section.`);
+                    return;
+                }
+            }
+
+            const name = elements.blogName.value.trim();
+            const platform = elements.blogPlatform.value;
+            const url = elements.blogUrl.value.trim();
+            const signinUrl = elements.blogSigninUrl.value.trim();
+            const username = elements.blogUsername.value.trim();
+            const password = elements.blogPassword.value.trim();
+            const apiKey = elements.blogApiKey.value.trim();
 
             if (!name || !url || !signinUrl || !username || !password) {
                 alert('Please fill in all required fields (Blog Name, Website URL, Sign in URL, Username, and Password)');
