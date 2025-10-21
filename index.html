@@ -6248,20 +6248,15 @@
             }, 1000);
         }
 
-        function editBlog(index) {
-            const blogs = JSON.parse(localStorage.getItem('managedBlogs') || '[]');
-            const blog = blogs[index];
-
-            const newName = prompt('Blog Name:', blog.name);
-            const newUrl = prompt('Website URL:', blog.url);
-
-            if (newName && newUrl) {
-                blog.name = newName;
-                blog.url = newUrl;
-                blogs[index] = blog;
-                localStorage.setItem('managedBlogs', JSON.stringify(blogs));
-                displayBlogManagement();
+        async function editBlog(blogId) {
+            if (!currentUser) {
+                alert('Please log in to edit blogs');
+                return;
             }
+
+            // For now, show a message that editing is not yet implemented
+            // In the future, this could open a modal with all the fields
+            alert('Blog editing via form is coming soon!\n\nFor now, please delete and re-add the blog with updated credentials.');
         }
 
         async function deleteBlog(blogId) {
