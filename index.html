@@ -1609,9 +1609,6 @@
                             <button onclick="showCreditPurchase()" style="background: #4CAF50; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                                 💳 Buy More Credits
                             </button>
-                            <button onclick="resetCreditDemo()" style="background: #667eea; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                                🔄 Reset Demo (1000 credits)
-                            </button>
                             <button onclick="showCreditHistory()" style="background: #64748b; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                                 📊 Usage History
                             </button>
@@ -1657,29 +1654,6 @@
             if (container) container.style.display = 'grid';
         }
 
-        function resetCreditDemo() {
-            if (confirm('Reset your credit balance to 1000 credits for demo purposes?')) {
-                window.seoWizard.credits = 1000;
-                localStorage.setItem('seoWizardCredits', '1000');
-                localStorage.setItem('seoWizardTotalCreditsEver', '1000');
-                updateCreditDisplay();
-                showCreditDashboard(); // Refresh the dashboard
-
-                const statusDiv = document.getElementById('status');
-                statusDiv.innerHTML = `
-                    <div class="status success">
-                        <strong>✅ Demo Reset Complete</strong><br>
-                        Your credit balance has been reset to 1,000 credits for testing.
-                    </div>
-                `;
-
-                setTimeout(() => {
-                    if (statusDiv.innerHTML.includes('Demo Reset Complete')) {
-                        statusDiv.innerHTML = '';
-                    }
-                }, 3000);
-            }
-        }
 
         function showCreditHistory() {
             alert('Credit usage history coming soon! This will show detailed logs of all credit transactions and feature usage.');
@@ -6375,9 +6349,6 @@
                             <button onclick="showBlogAnalytics('${blog.id}')" style="background: #8b5cf6; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
                                 📊 Analytics
                             </button>
-                            <button onclick="createSampleArticle('${blog.id}')" style="background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
-                                ➕ Sample
-                            </button>
                             <button onclick="editBlog(${index})" style="background: #f59e0b; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
                                 ✏️ Edit
                             </button>
@@ -6644,40 +6615,6 @@
             },
 
             // Generate sample analytics data for demo purposes
-            generateSampleData(articleKey) {
-                const sources = ['google', 'direct', 'facebook', 'twitter', 'linkedin', 'referral'];
-                const devices = ['desktop', 'mobile', 'tablet'];
-                const countries = ['US', 'UK', 'CA', 'AU', 'DE', 'FR'];
-                const keywords = ['digital marketing', 'SEO tips', 'content strategy', 'social media', 'email marketing'];
-
-                // Generate 50-200 sample views
-                const viewCount = Math.floor(Math.random() * 150) + 50;
-
-                for (let i = 0; i < viewCount; i++) {
-                    const source = sources[Math.floor(Math.random() * sources.length)];
-                    const device = devices[Math.floor(Math.random() * devices.length)];
-                    const country = countries[Math.floor(Math.random() * countries.length)];
-                    const keyword = Math.random() > 0.6 ? keywords[Math.floor(Math.random() * keywords.length)] : '';
-
-                    let referrer = '';
-                    if (source === 'google') referrer = 'https://www.google.com/search';
-                    else if (source === 'facebook') referrer = 'https://www.facebook.com/';
-                    else if (source === 'twitter') referrer = 'https://twitter.com/';
-
-                    this.trackPageView(articleKey, source, referrer, keyword, device, country);
-                }
-
-                // Generate SERP ranking data
-                this.updateSerpRanking(articleKey);
-
-                // Generate a few historical ranking updates
-                const numUpdates = Math.floor(Math.random() * 5) + 2; // 2-6 updates
-                for (let i = 0; i < numUpdates; i++) {
-                    setTimeout(() => {
-                        this.updateSerpRanking(articleKey);
-                    }, i * 100); // Stagger the updates slightly
-                }
-            }
         };
 
         // Blog analytics dashboard
@@ -7006,50 +6943,6 @@
         }
 
         // Function to create sample article with analytics
-        function createSampleArticle(blogId) {
-            const blogs = JSON.parse(localStorage.getItem('managedBlogs') || '[]');
-            const blog = blogs.find(b => b.id === blogId);
-
-            if (!blog) {
-                alert('Blog not found!');
-                return;
-            }
-
-            const sampleTitles = [
-                'The Complete Guide to Digital Marketing in 2024',
-                'SEO Best Practices: How to Rank Higher in Google',
-                'Social Media Marketing Strategy That Actually Works',
-                'Email Marketing Automation for Beginners',
-                'Content Marketing: Creating Engaging Blog Posts',
-                'PPC Advertising: Maximize Your ROI',
-                'Influencer Marketing: Building Brand Partnerships'
-            ];
-
-            const sampleKeywords = [
-                'digital marketing',
-                'SEO best practices',
-                'social media marketing',
-                'email marketing',
-                'content marketing',
-                'PPC advertising',
-                'influencer marketing'
-            ];
-
-            const randomIndex = Math.floor(Math.random() * sampleTitles.length);
-            const articleTitle = sampleTitles[randomIndex];
-            const keyword = sampleKeywords[randomIndex];
-            const articleId = Date.now().toString();
-            const url = `${blog.url}/${articleTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
-
-            // Initialize article analytics
-            const articleKey = AnalyticsTracker.initializeArticle(blogId, articleId, articleTitle, keyword, url);
-
-            // Generate sample analytics data
-            AnalyticsTracker.generateSampleData(articleKey);
-
-            alert(`✅ Sample article "${articleTitle}" created with analytics data!\n\nClick "Analytics" to view the generated traffic data.`);
-            displayBlogManagement();
-        }
 
         // Function to manually update SERP ranking
         function updateSerpRankingManually(articleKey) {
