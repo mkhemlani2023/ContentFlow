@@ -757,6 +757,10 @@
         // Try to initialize immediately
         initializeSupabase();
 
+        // Clear old localStorage blog data (migration to Supabase)
+        localStorage.removeItem('managedBlogs');
+        localStorage.removeItem('contentSchedules');
+
         // Supabase Storage Service
         const SupabaseService = {
             // Save article to database
