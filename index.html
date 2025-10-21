@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Content Flow - Serper API Integration</title>
 
-    <!-- Load Environment Configuration -->
-    <script src="/.netlify/functions/env-config"></script>
-
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Load Environment Configuration -->
+    <script src="/.netlify/functions/env-config"></script>
 
     <style>
         body {
@@ -722,20 +722,40 @@
     <script>
         // Supabase Configuration
         // Note: These will be injected via Netlify environment variables in production
-        const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://your-project.supabase.co';
-        const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'your-anon-key';
-
-        // Initialize Supabase client - wrapped in try/catch for safety
         let supabaseClient = null;
-        try {
-            if (typeof supabase !== 'undefined' && supabase.createClient) {
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            } else {
-                console.warn('Supabase library not loaded yet');
+
+        // Function to initialize Supabase client
+        function initializeSupabase() {
+            try {
+                // Check if window.ENV is loaded
+                const SUPABASE_URL = window.ENV?.SUPABASE_URL;
+                const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY;
+
+                // Only initialize if we have valid credentials
+                if (SUPABASE_URL && SUPABASE_ANON_KEY &&
+                    SUPABASE_URL !== 'https://your-project.supabase.co' &&
+                    SUPABASE_ANON_KEY !== 'your-anon-key') {
+
+                    if (typeof supabase !== 'undefined' && supabase.createClient) {
+                        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                        console.log('✅ Supabase client initialized successfully');
+                        return true;
+                    } else {
+                        console.warn('⚠️ Supabase library not loaded');
+                        return false;
+                    }
+                } else {
+                    console.info('ℹ️ Supabase credentials not configured - using localStorage mode');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Error initializing Supabase client:', error);
+                return false;
             }
-        } catch (error) {
-            console.error('Error initializing Supabase client:', error);
         }
+
+        // Try to initialize immediately
+        initializeSupabase();
 
         // Supabase Storage Service
         const SupabaseService = {
@@ -12194,6 +12214,11 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
 
         // Load saved research on page load
         document.addEventListener('DOMContentLoaded', () => {
+            // Try to initialize Supabase again if it wasn't initialized yet
+            if (!supabaseClient) {
+                initializeSupabase();
+            }
+
             // Check authentication status
             checkAuthStatus();
 
