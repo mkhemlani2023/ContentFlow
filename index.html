@@ -1036,11 +1036,28 @@
                     .from('user_profiles')
                     .select('*')
                     .eq('id', currentUser.id)
-                    .single();
+                    .maybeSingle();
 
                 if (error) throw error;
 
-                userProfile = data;
+                // If profile doesn't exist, create it
+                if (!data) {
+                    console.log('Creating user profile...');
+                    const { data: newProfile, error: insertError } = await supabaseClient
+                        .from('user_profiles')
+                        .insert([{
+                            id: currentUser.id,
+                            email: currentUser.email,
+                            credits: 50000
+                        }])
+                        .select()
+                        .single();
+
+                    if (insertError) throw insertError;
+                    userProfile = newProfile;
+                } else {
+                    userProfile = data;
+                }
 
                 // Sync credits from Supabase to local state
                 if (userProfile) {
@@ -2015,12 +2032,15 @@
         document.addEventListener('DOMContentLoaded', () => {
             checkStatus();
             updateCreditDisplay();
-        });
 
-        // Keyword form submission
-        document.getElementById('keywordForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await searchKeywords();
+            // Keyword form submission
+            const keywordForm = document.getElementById('keywordForm');
+            if (keywordForm) {
+                keywordForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await searchKeywords();
+                });
+            }
         });
 
         async function checkStatus() {
