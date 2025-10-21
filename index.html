@@ -6411,24 +6411,7 @@
             `;
         }
 
-        function addBlog() {
-            const blogName = prompt('Enter blog name:');
-            const blogUrl = prompt('Enter blog URL (e.g., https://myblog.com):');
-
-            if (blogName && blogUrl) {
-                const blogs = JSON.parse(localStorage.getItem('managedBlogs') || '[]');
-                const newBlog = {
-                    id: Date.now().toString(),
-                    name: blogName,
-                    url: blogUrl,
-                    createdAt: new Date().toISOString()
-                };
-
-                blogs.push(newBlog);
-                localStorage.setItem('managedBlogs', JSON.stringify(blogs));
-                displayBlogManagement();
-            }
-        }
+        // Old addBlog function removed - using Supabase version above
 
         // Analytics tracking system
         const AnalyticsTracker = {
