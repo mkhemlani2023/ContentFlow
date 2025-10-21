@@ -725,14 +725,25 @@
         const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://your-project.supabase.co';
         const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'your-anon-key';
 
-        // Initialize Supabase client
-        const { createClient } = supabase;
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Initialize Supabase client - wrapped in try/catch for safety
+        let supabaseClient = null;
+        try {
+            if (typeof supabase !== 'undefined' && supabase.createClient) {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } else {
+                console.warn('Supabase library not loaded yet');
+            }
+        } catch (error) {
+            console.error('Error initializing Supabase client:', error);
+        }
 
         // Supabase Storage Service
         const SupabaseService = {
             // Save article to database
             async saveArticle(article) {
+                if (!supabaseClient) {
+                    return { success: false, error: 'Supabase client not initialized' };
+                }
                 try {
                     const { data, error } = await supabaseClient
                         .from('articles')
@@ -969,6 +980,11 @@
 
         // Check authentication status on page load
         async function checkAuthStatus() {
+            if (!supabaseClient) {
+                console.warn('Supabase client not initialized, skipping auth check');
+                updateAuthUI(false);
+                return;
+            }
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
 
@@ -987,6 +1003,10 @@
 
         // Load user profile from database
         async function loadUserProfile() {
+            if (!supabaseClient) {
+                console.warn('Supabase client not initialized, skipping profile load');
+                return;
+            }
             try {
                 const { data, error } = await supabaseClient
                     .from('user_profiles')
@@ -1068,6 +1088,13 @@
             const password = document.getElementById('loginPassword').value;
             const errorDiv = document.getElementById('loginError');
 
+            // Check if Supabase is initialized
+            if (!supabaseClient) {
+                errorDiv.textContent = 'Authentication service not available. Please check configuration.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
             // Validation
             if (!email || !password) {
                 errorDiv.textContent = 'Please enter both email and password';
@@ -1131,6 +1158,13 @@
                 return;
             }
 
+            // Check if Supabase is initialized
+            if (!supabaseClient) {
+                errorDiv.textContent = 'Authentication service not available. Please check configuration.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
             try {
                 const { data, error } = await supabaseClient.auth.signUp({
                     email,
@@ -1187,17 +1221,19 @@
         }
 
         // Listen for auth state changes
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN') {
-                currentUser = session.user;
-                loadUserProfile();
-                updateAuthUI(true);
-            } else if (event === 'SIGNED_OUT') {
-                currentUser = null;
-                userProfile = null;
-                updateAuthUI(false);
-            }
-        });
+        if (supabaseClient) {
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN') {
+                    currentUser = session.user;
+                    loadUserProfile();
+                    updateAuthUI(true);
+                } else if (event === 'SIGNED_OUT') {
+                    currentUser = null;
+                    userProfile = null;
+                    updateAuthUI(false);
+                }
+            });
+        }
 
         let currentResults = null;
 
