@@ -8979,18 +8979,18 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                                 <!-- Primary Actions -->
                                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                                     <button onclick="saveArticleToLibrary()"
-                                            style="background: #10b981; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
-                                            onmouseover="this.style.background='#059669'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#10b981'; this.style.transform='translateY(0)'">
+                                            style="background: #475569; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#334155'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#475569'; this.style.transform='translateY(0)'">
                                         💾 Save Article
                                     </button>
                                     <button onclick="addImagesToArticle()"
-                                            style="background: #3b82f6; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
-                                            onmouseover="this.style.background='#2563eb'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#3b82f6'; this.style.transform='translateY(0)'">
+                                            style="background: #64748B; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#475569'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#64748B'; this.style.transform='translateY(0)'">
                                         🖼️ Add Images
                                     </button>
                                     <button onclick="publishToWebsite()"
-                                            style="background: #667eea; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
-                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                            style="background: #2563EB; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#1D4ED8'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#2563EB'; this.style.transform='translateY(0)'">
                                         🚀 Publish Now
                                     </button>
                                 </div>
@@ -11412,6 +11412,60 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
 
             // Refresh article display with updated content
             displayGeneratedArticle(article, article.modelTier || 'basic', article.creditCost || 25);
+        }
+
+        // Save article to library
+        async function saveArticleToLibrary() {
+            if (!currentUser) {
+                alert('🔒 Please log in to save articles to your library.');
+                showAuthModal('login');
+                return;
+            }
+
+            if (!window.currentGeneratedArticle) {
+                alert('❌ No article data found. Please generate an article first.');
+                return;
+            }
+
+            try {
+                const article = window.currentGeneratedArticle;
+                const result = await SupabaseService.saveArticle({
+                    user_id: currentUser.id,
+                    title: article.content.title,
+                    keyword: article.metadata?.focusKeyword || '',
+                    content: JSON.stringify(article.content),
+                    metadata: article.metadata,
+                    model_tier: window.selectedModel || 'basic',
+                    word_count: article.metadata?.actualWordCount || article.metadata?.wordCount || 0,
+                    images: article.images || []
+                });
+
+                if (result.success) {
+                    alert('✅ Article saved successfully to your library!\n\nYou can access it anytime from "My Saved Articles".');
+                } else {
+                    throw new Error(result.error || 'Failed to save article');
+                }
+            } catch (error) {
+                console.error('Error saving article:', error);
+                alert('❌ Failed to save article: ' + error.message);
+            }
+        }
+
+        // Add images to article (separate step after generation)
+        async function addImagesToArticle() {
+            if (!window.currentGeneratedArticle) {
+                alert('❌ No article found. Please generate an article first.');
+                return;
+            }
+
+            alert('🖼️ Image Selection Coming Next!\n\nThis will open an interface to:\n• Select AI-generated images\n• Add custom images\n• Generate SEO-optimized alt text\n• Place images in article sections\n\nFor now, you can publish without images or add them manually after publishing.');
+
+            // TODO: Implement image selection UI
+            // Will show modal with:
+            // - AI image generation options
+            // - Manual image upload
+            // - Image placement in article
+            // - SEO metadata for each image
         }
 
         function publishToWebsite() {
