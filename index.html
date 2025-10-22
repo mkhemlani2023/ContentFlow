@@ -8748,12 +8748,6 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <div>
                                         <h1 style="margin: 0; font-size: 28px; color: #1a202c;">${content.title || 'Generated Article'}</h1>
-                                        <div style="display: flex; gap: 20px; margin-top: 10px; font-size: 14px; color: #64748b;">
-                                            <span>${metadata?.readingTime || 'N/A'}</span>
-                                            <span>${metadata?.actualWordCount || metadata?.wordCount || 'N/A'} words ${metadata?.actualWordCount && metadata?.wordCount ? `(target: ${metadata.wordCount})` : ''}</span>
-                                            <span>${modelTier}</span>
-                                            <span>${creditCost} credits</span>
-                                        </div>
                                     </div>
                                     <button onclick="this.closest('[style*=\\'position: fixed\\']').remove()"
                                             style="background: #f1f5f9; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 20px;">✕</button>
