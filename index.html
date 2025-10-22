@@ -4524,9 +4524,9 @@
                 <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: flex; align-items: center; justify-content: center;">
                     <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
                         <div style="text-align: center; margin-bottom: 25px;">
-                            <div style="font-size: 48px; margin-bottom: 15px;">📝</div>
-                            <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 24px;">Confirm Article Outline Generation</h3>
-                            <p style="margin: 0; color: #64748b; font-size: 14px;">Review the details below. You'll be able to edit the outline before generating the full article.</p>
+                            <div style="font-size: 48px; margin-bottom: 15px;">✍️</div>
+                            <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 24px;">Confirm Article Generation</h3>
+                            <p style="margin: 0; color: #64748b; font-size: 14px;">Review the details below and confirm to start generating your article.</p>
                         </div>
 
                         <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
@@ -4557,9 +4557,9 @@
                             </div>
                         </div>
 
-                        <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #475569;">
-                            <div style="font-size: 14px; color: #92400e;">
-                                <strong>📋 Workflow:</strong> First, an article outline will be generated for your review. You can edit the outline (title, sections, subsections) before generating the full article. Credits will be deducted immediately when you proceed.
+                        <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #334155;">
+                            <div style="font-size: 14px; color: #0369a1;">
+                                <strong>⚡ Process:</strong> Article generation typically takes 1-2 minutes. Credits will be deducted immediately when you proceed.
                             </div>
                         </div>
 
@@ -4569,7 +4569,7 @@
                             </button>
                             <button onclick="confirmArticleGeneration('${title.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}')"
                                     style="padding: 12px 24px; background: #334155; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; min-width: 160px;">
-                                📝 Start with Outline
+                                ✍️ Generate Article
                             </button>
                         </div>
                     </div>
@@ -6248,31 +6248,90 @@
                     const content = JSON.parse(article.content);
                     const metadata = article.metadata ? JSON.parse(article.metadata) : {};
 
+                    // Build article body from sections
+                    let articleBody = '';
+
+                    // Introduction
+                    if (content.introduction) {
+                        articleBody += `<div style="margin-bottom: 30px; font-size: 17px; line-height: 1.8;">${content.introduction}</div>`;
+                    }
+
+                    // Sections
+                    if (content.sections && content.sections.length > 0) {
+                        content.sections.forEach(section => {
+                            articleBody += `
+                                <div style="margin-bottom: 30px;">
+                                    <h2 style="color: #1e293b; font-size: 22px; margin: 0 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
+                                        ${section.title}
+                                    </h2>
+                                    <div style="color: #374151; line-height: 1.8; font-size: 16px;">
+                                        ${section.content || ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    // Conclusion
+                    if (content.conclusion) {
+                        articleBody += `
+                            <div style="margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #475569;">
+                                <h2 style="color: #1e293b; font-size: 22px; margin: 0 0 15px 0;">Conclusion</h2>
+                                <div style="color: #374151; line-height: 1.8; font-size: 16px;">
+                                    ${content.conclusion}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // FAQ
+                    if (content.faq && content.faq.length > 0) {
+                        articleBody += `
+                            <div style="margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #64748b;">
+                                <h2 style="color: #1e293b; font-size: 22px; margin: 0 0 20px 0;">Frequently Asked Questions</h2>
+                                ${content.faq.map(item => `
+                                    <div style="margin-bottom: 20px;">
+                                        <h3 style="color: #334155; font-size: 16px; margin: 0 0 10px 0; font-weight: 600;">${item.question}</h3>
+                                        <div style="color: #475569; line-height: 1.7;">${item.answer}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+
                     // Create a modal to display the article
                     const modal = document.createElement('div');
-                    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px;';
+                    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; overflow-y: auto;';
 
                     modal.innerHTML = `
-                        <div style="background: white; border-radius: 12px; max-width: 900px; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative;">
-                            <button onclick="this.closest('div[style*=fixed]').remove()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">×</button>
-
-                            <h1 style="color: #1e293b; font-size: 28px; margin: 0 0 20px 0; line-height: 1.3;">
-                                ${content.title}
-                            </h1>
-
-                            <div style="display: flex; gap: 15px; margin-bottom: 25px; font-size: 14px; color: #64748b; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
-                                <div>📅 ${new Date(article.created_at).toLocaleDateString()}</div>
-                                <div>📝 ${article.word_count?.toLocaleString() || 0} words</div>
-                                <div>🤖 ${metadata.model || article.model_tier}</div>
+                        <div style="max-width: 900px; margin: 20px auto; background: white; border-radius: 12px; position: relative;">
+                            <div style="padding: 30px 40px 20px; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; background: white; border-radius: 12px 12px 0 0; z-index: 100;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <h1 style="margin: 0; font-size: 28px; color: #1a202c; line-height: 1.3;">
+                                        ${content.title || 'Saved Article'}
+                                    </h1>
+                                    <button onclick="this.closest('[style*=\\'position: fixed\\']').remove()"
+                                            style="background: #f1f5f9; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 20px;">✕</button>
+                                </div>
+                                <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 14px; color: #64748b;">
+                                    <div>📅 ${new Date(article.created_at).toLocaleDateString()}</div>
+                                    <div>📝 ${article.word_count?.toLocaleString() || 0} words</div>
+                                    <div>🤖 ${article.model_tier || 'Unknown'}</div>
+                                </div>
                             </div>
 
-                            <div style="color: #374151; line-height: 1.7; font-size: 16px;">
-                                ${content.body}
+                            <div style="padding: 0 40px 40px;">
+                                ${articleBody}
                             </div>
                         </div>
                     `;
 
                     document.body.appendChild(modal);
+
+                    // Scroll to view
+                    setTimeout(() => {
+                        modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
                 } else {
                     throw new Error(result.error || 'Failed to load article');
                 }
@@ -8943,6 +9002,16 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
 
                 articleModal.className = 'modal';
                 document.body.appendChild(articleModal);
+
+                // Scroll the article modal into view
+                setTimeout(() => {
+                    articleModal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // Also scroll to top of the modal content
+                    const modalContent = articleModal.querySelector('[style*="overflow-y: auto"]');
+                    if (modalContent) {
+                        modalContent.scrollTop = 0;
+                    }
+                }, 100);
 
                 console.log('Article modal appended to body successfully');
 
