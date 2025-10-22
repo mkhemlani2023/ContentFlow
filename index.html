@@ -2565,16 +2565,14 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                             <h2>📈 Keyword Opportunities</h2>
                             <div style="display: flex; gap: 10px; align-items: center;">
-                                <button onclick="showBulkArticleGeneration()" class="action-btn primary" style="margin: 0; min-width: auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                    <span class="btn-icon">📝</span>Generate All Articles
-                                </button>
-                                <button onclick="saveKeywordResearch()" class="action-btn secondary" style="margin: 0; min-width: auto;">
-                                    <span class="btn-icon">💾</span>Save Research
+                                <button onclick="saveKeywordResearch()" style="background: #475569; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                        onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#475569'">
+                                    💾 Save Research
                                 </button>
                             </div>
                         </div>
-                        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                            <strong>💡 Next Step:</strong> Click on any keyword below to see detailed analysis and content generation options.
+                        <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0284c7;">
+                            <strong style="color: #0c4a6e;">💡 Next Step:</strong> <span style="color: #0369a1;">Click on any keyword below to generate content ideas and articles.</span>
                         </div>
 
                         <!-- Column Headers -->
@@ -11475,12 +11473,42 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 return;
             }
 
-            // Check if blog management is set up
-            const blogs = JSON.parse(localStorage.getItem('managedBlogs') || '[]');
+            // Check if blog management is set up - load from Supabase
+            let blogs = [];
+            if (currentUser && supabaseClient) {
+                try {
+                    const result = await SupabaseService.loadBlogs();
+                    if (result.success && result.data) {
+                        blogs = result.data;
+                    }
+                } catch (error) {
+                    console.error('Error loading blogs:', error);
+                }
+            }
 
             if (blogs.length === 0) {
-                alert('🚀 No blogs configured for publishing.\n\nPlease add a blog or website in the Blog Management section first.');
-                showBlogManagement();
+                // Show a modal with option to add blog instead of just alert
+                const noBlogsModal = document.createElement('div');
+                noBlogsModal.innerHTML = `
+                    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 20000; display: flex; align-items: center; justify-content: center;">
+                        <div style="background: white; padding: 40px; border-radius: 12px; max-width: 450px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 20px;">🚀</div>
+                            <h3 style="margin: 0 0 15px 0; color: #1a202c;">No Blogs Configured</h3>
+                            <p style="color: #64748b; margin-bottom: 25px;">Please add your WordPress blog or website to publish articles.</p>
+                            <div style="display: flex; gap: 12px; justify-content: center;">
+                                <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove(); showBlogManagement()"
+                                        style="background: #2563EB; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px;">
+                                    ➕ Add Blog/Website
+                                </button>
+                                <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()"
+                                        style="background: #f1f5f9; color: #475569; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px;">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(noBlogsModal);
                 return;
             }
 
