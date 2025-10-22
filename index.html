@@ -1036,17 +1036,21 @@
                 if (!supabaseClient) {
                     return { success: false, error: 'Supabase client not initialized' };
                 }
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
                 try {
-                    const { data, error } = await supabaseClient
-                        .from('articles')
+                    const { data, error} = await supabaseClient
+                        .from('generated_articles')
                         .insert([{
-                            title: article.content.title,
-                            keyword: article.keyword,
-                            content: JSON.stringify(article.content),
-                            metadata: JSON.stringify(article.metadata),
-                            images: JSON.stringify(article.images || []),
-                            word_count: article.wordCount,
-                            model_tier: article.modelTier,
+                            user_id: currentUser.id,
+                            title: article.title,
+                            keyword: article.keyword || '',
+                            content: article.content,
+                            metadata: article.metadata || {},
+                            images: article.images || [],
+                            word_count: article.word_count || 0,
+                            model_tier: article.model_tier || 'basic',
                             created_at: new Date().toISOString()
                         }])
                         .select();
@@ -1061,10 +1065,14 @@
 
             // Load all articles
             async loadArticles(limit = 50) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
                 try {
                     const { data, error } = await supabaseClient
-                        .from('articles')
+                        .from('generated_articles')
                         .select('*')
+                        .eq('user_id', currentUser.id)
                         .order('created_at', { ascending: false })
                         .limit(limit);
 
@@ -1080,7 +1088,7 @@
             async loadArticle(id) {
                 try {
                     const { data, error } = await supabaseClient
-                        .from('articles')
+                        .from('generated_articles')
                         .select('*')
                         .eq('id', id)
                         .single();
@@ -1095,11 +1103,15 @@
 
             // Delete article
             async deleteArticle(id) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
                 try {
                     const { error } = await supabaseClient
-                        .from('articles')
+                        .from('generated_articles')
                         .delete()
-                        .eq('id', id);
+                        .eq('id', id)
+                        .eq('user_id', currentUser.id);
 
                     if (error) throw error;
                     return { success: true };
@@ -11428,14 +11440,13 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             try {
                 const article = window.currentGeneratedArticle;
                 const result = await SupabaseService.saveArticle({
-                    user_id: currentUser.id,
-                    title: article.content.title,
-                    keyword: article.metadata?.focusKeyword || '',
+                    title: article.content?.title || 'Untitled Article',
+                    keyword: article.metadata?.focusKeyword || article.metadata?.keyword || '',
                     content: JSON.stringify(article.content),
-                    metadata: article.metadata,
-                    model_tier: window.selectedModel || 'basic',
+                    metadata: JSON.stringify(article.metadata || {}),
+                    model_tier: article.modelTier || window.selectedModel || 'basic',
                     word_count: article.metadata?.actualWordCount || article.metadata?.wordCount || 0,
-                    images: article.images || []
+                    images: JSON.stringify(article.images || [])
                 });
 
                 if (result.success) {
