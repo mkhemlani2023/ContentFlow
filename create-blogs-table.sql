@@ -24,6 +24,12 @@ CREATE INDEX IF NOT EXISTS idx_blogs_status ON blogs(status);
 -- Enable Row Level Security
 ALTER TABLE blogs ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own blogs" ON blogs;
+DROP POLICY IF EXISTS "Users can create their own blogs" ON blogs;
+DROP POLICY IF EXISTS "Users can update their own blogs" ON blogs;
+DROP POLICY IF EXISTS "Users can delete their own blogs" ON blogs;
+
 -- RLS Policies
 CREATE POLICY "Users can view their own blogs"
 ON blogs FOR SELECT
