@@ -8976,26 +8976,46 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
 
                             <!-- Action Buttons -->
                             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; max-width: 600px; margin: 0 auto;">
-                                    <button onclick="copyArticleToClipboard()"
-                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
+                                <!-- Primary Actions -->
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                                    <button onclick="saveArticleToLibrary()"
+                                            style="background: #10b981; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#059669'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#10b981'; this.style.transform='translateY(0)'">
+                                        💾 Save Article
+                                    </button>
+                                    <button onclick="addImagesToArticle()"
+                                            style="background: #3b82f6; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#2563eb'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#3b82f6'; this.style.transform='translateY(0)'">
+                                        🖼️ Add Images
+                                    </button>
+                                    <button onclick="publishToWebsite()"
+                                            style="background: #667eea; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
                                             onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                        🚀 Publish Now
+                                    </button>
+                                </div>
+
+                                <!-- Secondary Actions -->
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px;">
+                                    <button onclick="this.closest('[style*=\\'position: fixed\\']').remove()"
+                                            style="background: #f1f5f9; color: #475569; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                        ← Back
+                                    </button>
+                                    <button onclick="copyArticleToClipboard()"
+                                            style="background: #f1f5f9; color: #475569; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
                                         Copy HTML
                                     </button>
                                     <button onclick="exportArticleMarkdown()"
-                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
-                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
+                                            style="background: #f1f5f9; color: #475569; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
                                         Export MD
                                     </button>
                                     <button onclick="enterEditMode()"
-                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
-                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
-                                        Edit
-                                    </button>
-                                    <button onclick="publishToWebsite()"
-                                            style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; white-space: nowrap;"
-                                            onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#667eea'; this.style.transform='translateY(0)'">
-                                        Publish
+                                            style="background: #f1f5f9; color: #475569; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                        ✏️ Edit
                                     </button>
                                 </div>
                             </div>
