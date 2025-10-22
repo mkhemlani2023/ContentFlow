@@ -5821,6 +5821,14 @@
 
             const schedules = [];
 
+            // Generate blog list HTML (async)
+            const blogsListHTML = blogs.length === 0 ? `
+                <div style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">📝</div>
+                    <p>No blogs added yet. Add your first blog to start auto-posting content!</p>
+                </div>
+            ` : await generateBlogsList(blogs);
+
             document.getElementById('blogManagement').innerHTML = `
                 <div class="card" style="margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -5920,12 +5928,7 @@
                     <div style="margin-bottom: 30px;">
                         <h3 style="color: #2d3748; margin-bottom: 15px;">📝 Your Managed Blogs (${blogs.length})</h3>
                         <div id="blogsList">
-                            ${blogs.length === 0 ? `
-                                <div style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
-                                    <div style="font-size: 48px; margin-bottom: 15px;">📝</div>
-                                    <p>No blogs added yet. Add your first blog to start auto-posting content!</p>
-                                </div>
-                            ` : generateBlogsList(blogs)}
+                            ${blogsListHTML}
                         </div>
                     </div>
 
@@ -6227,23 +6230,55 @@
             }
         }
 
-        function generateBlogsList(blogs) {
-            return blogs.map((blog, index) => `
+        async function generateBlogsList(blogs) {
+            // Fetch metrics for all blogs in parallel
+            const blogsWithMetrics = await Promise.all(blogs.map(async (blog) => {
+                let metrics = { domainAuthority: 'Loading...', backlinks: 'Loading...' };
+
+                try {
+                    // Try to get metrics from Supabase first
+                    if (currentUser && supabaseClient) {
+                        const { data, error } = await supabaseClient
+                            .from('website_metrics')
+                            .select('metrics')
+                            .eq('user_id', currentUser.id)
+                            .eq('url', blog.url)
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .single();
+
+                        if (data && data.metrics) {
+                            metrics = {
+                                domainAuthority: data.metrics.domainAuthority || 'N/A',
+                                backlinks: data.metrics.backlinks?.toLocaleString() || 'N/A'
+                            };
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching metrics for blog:', blog.url, error);
+                    metrics = { domainAuthority: 'N/A', backlinks: 'N/A' };
+                }
+
+                return { ...blog, ...metrics };
+            }));
+
+            return blogsWithMetrics.map((blog, index) => `
                 <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="flex: 1;">
                             <div style="font-weight: 600; color: #2d3748; margin-bottom: 5px;">${blog.name}</div>
                             <div style="font-size: 12px; color: #64748b;">
                                 📍 ${blog.platform.charAt(0).toUpperCase() + blog.platform.slice(1)} |
-                                🌐 ${blog.url} |
-                                📊 ${blog.domainAuthority || 'DA: Unknown'} |
-                                🔗 ${blog.backlinks || 'Backlinks: Unknown'}
+                                🌐 <a href="${blog.url}" target="_blank" style="color: #667eea; text-decoration: none;">${blog.url}</a> |
+                                📊 DA: ${blog.domainAuthority} |
+                                🔗 ${blog.backlinks} backlinks
                             </div>
                             <div style="font-size: 11px; color: ${blog.status === 'active' ? '#48bb78' : '#f56565'}; margin-top: 3px;">
                                 ● ${blog.status === 'active' ? 'Connected & Active' : 'Connection Issues'}
                             </div>
                         </div>
                         <div style="display: flex; gap: 5px;">
+                            <button onclick="refreshBlogMetrics('${blog.id}', '${blog.url}')" style="background: #10b981; color: white; border: none; padding: 6px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'" title="Refresh metrics">📊</button>
                             <button onclick="testBlogConnection('${blog.id}')" style="background: #667eea; color: white; border: none; padding: 6px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">Test</button>
                             <button onclick="editBlog('${blog.id}')" style="background: #7c3aed; color: white; border: none; padding: 6px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">Edit</button>
                             <button onclick="deleteBlog('${blog.id}')" style="background: #9333ea; color: white; border: none; padding: 6px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#7e22ce'" onmouseout="this.style.background='#9333ea'">Delete</button>
@@ -6279,6 +6314,51 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Refresh blog metrics on demand
+        async function refreshBlogMetrics(blogId, url) {
+            try {
+                // Show loading state
+                alert('🔄 Refreshing metrics... This may take a few seconds.');
+
+                // Fetch fresh metrics from API
+                const response = await fetch('/.netlify/functions/api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'trackWebsite',
+                        url: url
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.metrics) {
+                    // Update metrics in Supabase
+                    if (currentUser && supabaseClient) {
+                        await supabaseClient
+                            .from('website_metrics')
+                            .insert([{
+                                user_id: currentUser.id,
+                                url: url,
+                                title: '',
+                                metrics: data.metrics,
+                                created_at: new Date().toISOString()
+                            }]);
+
+                        alert(`✅ Metrics updated successfully!\n\nDomain Authority: ${data.metrics.domainAuthority || 'N/A'}\nBacklinks: ${data.metrics.backlinks?.toLocaleString() || 'N/A'}`);
+
+                        // Refresh the blog list
+                        displayBlogManagement();
+                    }
+                } else {
+                    alert('⚠️ Could not fetch metrics. Please try again later.');
+                }
+            } catch (error) {
+                console.error('Error refreshing metrics:', error);
+                alert('❌ Failed to refresh metrics: ' + error.message);
+            }
         }
 
         // Auto-track blog metrics when a blog is added
