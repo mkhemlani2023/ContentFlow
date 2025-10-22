@@ -7726,11 +7726,9 @@ CRITICAL:
                 progress.updateMessage('Outline generated successfully! Opening editor...');
                 progress.updateTechnicalInfo(`Sections created: ${outlineStructure.outline?.sections?.length || 0}\nWord count target: ${outlineStructure.metadata?.wordCount || wordCount}\nReady for review and editing`);
 
-                // Close progress modal
-                progress.close();
-
-                // Skip outline review - go directly to article generation
-                await generateArticleFromOutline(outlineStructure, keyword, modelTier, config);
+                // Close progress modal and show outline for review
+                setTimeout(() => progress.close(), 1500);
+                await showOutlineForReviewAndEdit(outlineStructure, keyword, wordCount, difficulty, intent, modelTier, config);
 
             } catch (error) {
                 console.error('Article generation error:', error);
