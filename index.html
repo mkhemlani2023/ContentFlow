@@ -18,14 +18,15 @@
         /* ===================================
            PROFESSIONAL CORPORATE DESIGN SYSTEM
            ===================================
-           Color Palette:
-           - Primary: #2563EB (Professional Blue)
-           - Secondary: #1E293B (Slate Gray)
-           - Accent: #3B82F6 (Bright Blue)
+           Color Palette - Grayscale & Black:
+           - Primary: #334155 (Slate)
+           - Dark: #1E293B (Dark Slate)
+           - Secondary: #475569 (Medium Slate)
            - Background: #F8FAFC (Light Gray)
            - White: #FFFFFF
            - Text: #0F172A (Dark Slate)
            - Muted: #64748B (Medium Gray)
+           - Light: #94A3B8 (Light Slate)
         */
 
         * {
@@ -60,7 +61,7 @@
         .header h1 {
             font-size: 24px;
             font-weight: 600;
-            color: #2563EB;
+            color: #1E293B;
             letter-spacing: -0.5px;
             margin: 0;
         }
@@ -137,8 +138,8 @@
 
         input:focus, select:focus, textarea:focus {
             outline: none;
-            border-color: #2563EB;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            border-color: #334155;
+            box-shadow: 0 0 0 3px rgba(51, 65, 85, 0.1);
         }
 
         input::placeholder {
@@ -176,12 +177,12 @@
 
         /* Primary Button */
         button, .btn-primary {
-            background: #2563EB;
+            background: #334155;
             color: #FFFFFF;
         }
 
         button:not(:disabled):hover, .btn-primary:not(:disabled):hover {
-            background: #1D4ED8;
+            background: #1E293B;
         }
 
         /* Secondary Button */
@@ -617,7 +618,7 @@
                     <button onclick="showAuthModal('login')" style="background: #FFFFFF; color: #334155; border: 1px solid #E2E8F0; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin-right: 10px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='#FFFFFF'">
                         Login
                     </button>
-                    <button onclick="showAuthModal('signup')" style="background: #2563EB; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1D4ED8'" onmouseout="this.style.background='#2563EB'">
+                    <button onclick="showAuthModal('signup')" style="background: #334155; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
                         Sign Up
                     </button>
                 </div>
@@ -626,7 +627,7 @@
                     <div style="background: #F8FAFC; padding: 15px; border-radius: 10px; border: 2px solid #E2E8F0;">
                         <div style="font-size: 14px; margin-bottom: 5px; color: #64748B;">Your Credits</div>
                         <div id="creditBalance" style="font-size: 28px; font-weight: bold; margin-bottom: 8px; color: #1E293B;">-</div>
-                        <button onclick="showCreditPurchase()" style="background: #2563EB; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1D4ED8'" onmouseout="this.style.background='#2563EB'">
+                        <button onclick="showCreditPurchase()" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
                             💳 Buy Credits
                         </button>
                     </div>
@@ -648,7 +649,7 @@
 
     <!-- SEO Wizard Guided Workflow -->
     <div id="wizardFlow" style="max-width: 1200px; margin: 0 auto 30px;">
-        <div style="background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%); padding: 30px; border-radius: 12px; color: white; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);">
+        <div style="background: linear-gradient(135deg, #1E293B 0%, #334155 100%); padding: 30px; border-radius: 12px; color: white; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
             <h2 style="margin: 0 0 10px 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">SEO Content Workflow</h2>
             <p style="margin: 0; opacity: 0.9; font-size: 15px; font-weight: 400;">Follow this simple 5-step process to create and publish SEO-optimized content</p>
         </div>
@@ -657,14 +658,14 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px;">
 
             <!-- Step 1: Keyword Research -->
-            <div class="wizard-step" id="step1" style="background: white; border: 2px solid #2563EB; border-radius: 12px; padding: 25px; position: relative; transition: all 0.3s; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);">
-                <div style="position: absolute; top: -15px; left: 20px; background: #2563EB; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px;">1</div>
-                <h3 style="color: #2563EB; margin: 15px 0 10px 0; font-weight: 600;">🔍 Keyword Research</h3>
+            <div class="wizard-step" id="step1" style="background: white; border: 2px solid #334155; border-radius: 12px; padding: 25px; position: relative; transition: all 0.3s;">
+                <div style="position: absolute; top: -15px; left: 20px; background: #1E293B; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px;">1</div>
+                <h3 style="color: #1E293B; margin: 15px 0 10px 0; font-weight: 600;">🔍 Keyword Research</h3>
                 <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 15px;">Discover high-impact keywords with search volume, competition data, and ranking potential</p>
 
                 <div style="background: #f8fafc; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
                     <input type="text" id="wizardKeyword" placeholder="Enter your topic or keyword..." style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; margin-bottom: 10px;">
-                    <button onclick="wizardStartKeywordResearch()" style="background: #2563EB; color: white; width: 100%; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#1E40AF'" onmouseout="this.style.background='#2563EB'">
+                    <button onclick="wizardStartKeywordResearch()" style="background: #334155; color: white; width: 100%; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
                         Start Research (5 credits)
                     </button>
                 </div>
@@ -767,7 +768,7 @@
 
         <!-- Quick Links -->
         <div style="background: #f8fafc; border-radius: 12px; padding: 25px; border: 1px solid #e2e8f0;">
-            <h3 style="margin: 0 0 15px 0; color: #2563EB; font-weight: 600;">⚡ Quick Actions</h3>
+            <h3 style="margin: 0 0 15px 0; color: #1e293b; font-weight: 600;">⚡ Quick Actions</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
                 <button onclick="showSavedArticlesLibrary()" style="background: #334155; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
                     📚 My Saved Articles
@@ -8999,8 +9000,8 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                                         🖼️ Add Images
                                     </button>
                                     <button onclick="publishToWebsite()"
-                                            style="background: #2563EB; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
-                                            onmouseover="this.style.background='#1D4ED8'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#2563EB'; this.style.transform='translateY(0)'">
+                                            style="background: #334155; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#1E293B'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#334155'; this.style.transform='translateY(0)'">
                                         🚀 Publish Now
                                     </button>
                                 </div>
@@ -11508,7 +11509,7 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                             <p style="color: #64748b; margin-bottom: 25px;">Please add your WordPress blog or website to publish articles.</p>
                             <div style="display: flex; gap: 12px; justify-content: center;">
                                 <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove(); showBlogManagement()"
-                                        style="background: #2563EB; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px;">
+                                        style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px;">
                                     ➕ Add Blog/Website
                                 </button>
                                 <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()"
