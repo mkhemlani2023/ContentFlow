@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Content Flow - Serper API Integration</title>
+    <title>SEO Wizard - Professional Content Platform</title>
 
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,62 +11,209 @@
     <!-- Load Environment Configuration -->
     <script src="/.netlify/functions/env-config"></script>
 
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
+        /* ===================================
+           PROFESSIONAL CORPORATE DESIGN SYSTEM
+           ===================================
+           Color Palette:
+           - Primary: #2563EB (Professional Blue)
+           - Secondary: #1E293B (Slate Gray)
+           - Accent: #3B82F6 (Bright Blue)
+           - Background: #F8FAFC (Light Gray)
+           - White: #FFFFFF
+           - Text: #0F172A (Dark Slate)
+           - Muted: #64748B (Medium Gray)
+        */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #F8FAFC;
+            color: #0F172A;
             line-height: 1.6;
+            font-size: 14px;
+            font-weight: 400;
         }
+
+        /* ===================================
+           HEADER - MINIMALISTIC & PROFESSIONAL
+           =================================== */
         .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 10px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
+            padding: 20px 40px;
+            margin: 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1E293B;
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: #64748B;
+            font-weight: 400;
+            margin: 2px 0 0 0;
+        }
+        /* ===================================
+           LAYOUT & CONTAINERS
+           =================================== */
         .container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px;
         }
+
         .card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            background: #f9f9f9;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
         }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .card h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1E293B;
+            margin-bottom: 20px;
+            letter-spacing: -0.3px;
+        }
+
+        .card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1E293B;
+            margin-bottom: 12px;
+        }
+        /* ===================================
+           FORMS & INPUTS
+           =================================== */
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
+
         label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 13px;
+            color: #334155;
+            letter-spacing: 0.01em;
         }
-        input, select, button {
+
+        input, select, textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 11px 14px;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
             font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: #1E293B;
+            background: #FFFFFF;
+            transition: all 0.2s ease;
         }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        input::placeholder {
+            color: #94A3B8;
+        }
+
+        /* ===================================
+           BUTTONS - MINIMALISTIC & PROFESSIONAL
+           =================================== */
         button {
-            background: #667eea;
-            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 11px 20px;
+            border-radius: 8px;
             border: none;
             cursor: pointer;
-            font-weight: bold;
+            transition: all 0.2s ease;
+            letter-spacing: 0.01em;
         }
-        button:hover {
-            background: #5a6fd8;
+
+        button:not(:disabled):hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
         }
+
+        button:not(:disabled):active {
+            transform: translateY(0);
+        }
+
         button:disabled {
-            background: #ccc;
+            opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        /* Primary Button */
+        button, .btn-primary {
+            background: #2563EB;
+            color: #FFFFFF;
+        }
+
+        button:not(:disabled):hover, .btn-primary:not(:disabled):hover {
+            background: #1D4ED8;
+        }
+
+        /* Secondary Button */
+        .btn-secondary {
+            background: #FFFFFF;
+            color: #334155;
+            border: 1px solid #CBD5E1;
+        }
+
+        .btn-secondary:not(:disabled):hover {
+            background: #F8FAFC;
+            border-color: #94A3B8;
+        }
+
+        /* Success Button */
+        .btn-success {
+            background: #10B981;
+            color: #FFFFFF;
+        }
+
+        .btn-success:not(:disabled):hover {
+            background: #059669;
+        }
+
+        /* Danger Button */
+        .btn-danger {
+            background: #EF4444;
+            color: #FFFFFF;
+        }
+
+        .btn-danger:not(:disabled):hover {
+            background: #DC2626;
         }
         .results {
             grid-column: 1 / -1;
