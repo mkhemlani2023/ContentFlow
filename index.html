@@ -2366,6 +2366,10 @@
 
         async function checkStatus() {
             const statusDiv = document.getElementById('apiStatus');
+            if (!statusDiv) {
+                console.log('API status check: apiStatus element not found (skipping UI update)');
+                return;
+            }
             statusDiv.innerHTML = '<p>🔄 Checking API status...</p>';
 
             try {
