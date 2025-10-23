@@ -596,47 +596,66 @@
 </head>
 <body>
     <div class="header">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <img src="/seo-wizard-logo.png" alt="SEO Wizard" style="height: 80px; width: auto;">
-                <div>
-                    <p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Content Research & Strategy Platform</p>
+        <!-- Top Row: Auth and Credits -->
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 25px; gap: 20px;">
+            <!-- User Authentication Section -->
+            <div id="authSection" style="display: none;">
+                <div style="background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; gap: 15px;">
+                    <div style="text-align: left;">
+                        <div style="font-size: 12px; opacity: 0.9;">Logged in as</div>
+                        <div id="userEmail" style="font-size: 14px; font-weight: 600;"></div>
+                    </div>
+                    <button onclick="logout()" style="background: rgba(255,255,255,0.3); color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.3)'">
+                        Logout
+                    </button>
                 </div>
             </div>
-            <div style="display: flex; gap: 20px; align-items: center;">
-                <!-- User Authentication Section -->
-                <div id="authSection" style="display: none;">
-                    <div style="background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; gap: 15px;">
-                        <div style="text-align: left;">
-                            <div style="font-size: 12px; opacity: 0.9;">Logged in as</div>
-                            <div id="userEmail" style="font-size: 14px; font-weight: 600;"></div>
-                        </div>
-                        <button onclick="logout()" style="background: rgba(255,255,255,0.3); color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.3)'">
-                            Logout
-                        </button>
-                    </div>
-                </div>
-                <div id="guestSection">
-                    <button onclick="showAuthModal('login')" style="background: #FFFFFF; color: #334155; border: 1px solid #E2E8F0; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin-right: 10px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='#FFFFFF'">
-                        Login
+            <div id="guestSection">
+                <button onclick="showAuthModal('login')" style="background: #FFFFFF; color: #334155; border: 1px solid #E2E8F0; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin-right: 10px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='#FFFFFF'">
+                    Login
+                </button>
+                <button onclick="showAuthModal('signup')" style="background: #334155; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
+                    Sign Up
+                </button>
+            </div>
+            <!-- Credit Display -->
+            <div class="credit-display" style="text-align: right;">
+                <div style="background: #F8FAFC; padding: 15px; border-radius: 10px; border: 2px solid #E2E8F0;">
+                    <div style="font-size: 14px; margin-bottom: 5px; color: #64748B;">Your Credits</div>
+                    <div id="creditBalance" style="font-size: 28px; font-weight: bold; margin-bottom: 8px; color: #1E293B;">-</div>
+                    <button onclick="showCreditPurchase()" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
+                        💳 Buy Credits
                     </button>
-                    <button onclick="showAuthModal('signup')" style="background: #334155; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
-                        Sign Up
-                    </button>
-                </div>
-                <!-- Credit Display -->
-                <div class="credit-display" style="text-align: right;">
-                    <div style="background: #F8FAFC; padding: 15px; border-radius: 10px; border: 2px solid #E2E8F0;">
-                        <div style="font-size: 14px; margin-bottom: 5px; color: #64748B;">Your Credits</div>
-                        <div id="creditBalance" style="font-size: 28px; font-weight: bold; margin-bottom: 8px; color: #1E293B;">-</div>
-                        <button onclick="showCreditPurchase()" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
-                            💳 Buy Credits
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
-        <p><strong>Discover High-Impact Keywords & Generate Winning Content Ideas</strong></p>
+
+        <!-- Center Row: Logo and Branding -->
+        <div style="text-align: center; margin-bottom: 25px;">
+            <img src="/seo-wizard-logo.png" alt="SEO Wizard" style="height: 120px; width: auto; margin-bottom: 10px;">
+            <div>
+                <p style="margin: 0; font-size: 18px; color: rgba(255,255,255,0.95); font-weight: 600; letter-spacing: 0.5px;">Content Research & Strategy Platform</p>
+                <p style="margin: 5px 0 0 0; font-size: 14px; color: rgba(255,255,255,0.85); font-weight: 400;">Discover High-Impact Keywords & Generate Winning Content Ideas</p>
+            </div>
+        </div>
+
+        <!-- Navigation Menu (visible only when logged in) -->
+        <div id="mainNavigation" style="display: none; text-align: center; margin-bottom: 15px;">
+            <div style="display: inline-flex; gap: 15px; background: rgba(255,255,255,0.15); padding: 12px 20px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.25); flex-wrap: wrap; justify-content: center;">
+                <button onclick="showSavedArticlesLibrary()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    📚 My Saved Articles
+                </button>
+                <button onclick="showBlogManagement()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    🌐 Blog Management
+                </button>
+                <button onclick="showSavedContentIdeas()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    💡 Saved Content Ideas
+                </button>
+                <button onclick="showWebsiteMetrics()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    📊 Website Metrics
+                </button>
+            </div>
+        </div>
     </div>
 
     <div id="status"></div>
@@ -1367,14 +1386,17 @@
             const authSection = document.getElementById('authSection');
             const guestSection = document.getElementById('guestSection');
             const userEmail = document.getElementById('userEmail');
+            const mainNavigation = document.getElementById('mainNavigation');
 
             if (isAuthenticated && currentUser) {
                 authSection.style.display = 'block';
                 guestSection.style.display = 'none';
                 userEmail.textContent = currentUser.email;
+                mainNavigation.style.display = 'block';
             } else {
                 authSection.style.display = 'none';
                 guestSection.style.display = 'block';
+                mainNavigation.style.display = 'none';
             }
         }
 
@@ -6205,6 +6227,9 @@
                             <button onclick="editSavedArticle('${article.id}')" style="background: #475569; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#475569'">
                                 ✏️ Edit
                             </button>
+                            <button onclick="addImagesToSavedArticle('${article.id}')" style="background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#475569'" onmouseout="this.style.background='#64748b'">
+                                🖼️ Images
+                            </button>
                             <button onclick="publishSavedArticle('${article.id}')" style="background: #1E293B; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#0F172A'" onmouseout="this.style.background='#1E293B'">
                                 🚀 Publish
                             </button>
@@ -9913,6 +9938,27 @@ ${item.answer}
                 console.error('Error deleting content ideas:', error);
                 alert('❌ Failed to delete content ideas: ' + error.message);
             }
+        }
+
+        // Show Website Metrics (placeholder)
+        function showWebsiteMetrics() {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div style="background: white; padding: 40px; border-radius: 12px; max-width: 600px; width: 90%; text-align: center;">
+                    <h2 style="color: #1E293B; margin-bottom: 20px;">📊 Website Metrics</h2>
+                    <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+                        Website analytics and performance metrics will be available here soon.
+                    </p>
+                    <p style="color: #64748b; font-size: 14px; margin-bottom: 30px;">
+                        Track your content performance, traffic sources, and engagement metrics all in one place.
+                    </p>
+                    <button onclick="this.closest('.modal').remove()" style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
+                        Close
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
         }
 
         // Update credit cost calculation with enhanced styling
