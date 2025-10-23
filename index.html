@@ -6199,16 +6199,25 @@
                         </div>
 
                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <button onclick="viewSavedArticle('${article.id}')" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                            <button onclick="viewSavedArticle('${article.id}')" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
                                 👁️ View
                             </button>
-                            <button onclick="copySavedArticle('${article.id}')" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                            <button onclick="editSavedArticle('${article.id}')" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+                                ✏️ Edit
+                            </button>
+                            <button onclick="addImagesToSavedArticle('${article.id}')" style="background: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#7c3aed'" onmouseout="this.style.background='#8b5cf6'">
+                                🖼️ Images
+                            </button>
+                            <button onclick="publishSavedArticle('${article.id}')" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                                🚀 Publish
+                            </button>
+                            <button onclick="copySavedArticle('${article.id}')" style="background: #475569; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#475569'">
                                 📋 Copy
                             </button>
-                            <button onclick="downloadSavedArticle('${article.id}', '${content.title.replace(/'/g, "\\'")}')" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                            <button onclick="downloadSavedArticle('${article.id}', '${content.title.replace(/'/g, "\\'")}')" style="background: #475569; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#475569'">
                                 📥 Download
                             </button>
-                            <button onclick="deleteSavedArticle('${article.id}')" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                            <button onclick="deleteSavedArticle('${article.id}')" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
                                 🗑️ Delete
                             </button>
                         </div>
@@ -6411,6 +6420,96 @@
             } catch (error) {
                 console.error('Error deleting article:', error);
                 alert('Failed to delete article: ' + error.message);
+            }
+        }
+
+        async function editSavedArticle(articleId) {
+            try {
+                const result = await SupabaseService.loadArticle(articleId);
+
+                if (result.success && result.data) {
+                    const article = result.data;
+                    const content = JSON.parse(article.content);
+
+                    // Set as current article for editing
+                    window.currentGeneratedArticle = {
+                        content: content,
+                        metadata: article.metadata ? JSON.parse(article.metadata) : {},
+                        modelTier: article.model_tier,
+                        savedArticleId: articleId // Track that this is a saved article
+                    };
+
+                    // Close the saved articles library
+                    hideSavedArticlesLibrary();
+
+                    // Open edit mode (reuse existing edit function)
+                    enterEditMode();
+                } else {
+                    throw new Error(result.error || 'Failed to load article');
+                }
+            } catch (error) {
+                console.error('Error editing article:', error);
+                alert('Failed to load article for editing: ' + error.message);
+            }
+        }
+
+        async function addImagesToSavedArticle(articleId) {
+            try {
+                const result = await SupabaseService.loadArticle(articleId);
+
+                if (result.success && result.data) {
+                    const article = result.data;
+                    const content = JSON.parse(article.content);
+
+                    // Set as current article
+                    window.currentGeneratedArticle = {
+                        content: content,
+                        metadata: article.metadata ? JSON.parse(article.metadata) : {},
+                        modelTier: article.model_tier,
+                        savedArticleId: articleId
+                    };
+
+                    // Close the saved articles library
+                    hideSavedArticlesLibrary();
+
+                    // Open add images modal
+                    addImagesToArticle();
+                } else {
+                    throw new Error(result.error || 'Failed to load article');
+                }
+            } catch (error) {
+                console.error('Error loading article for images:', error);
+                alert('Failed to load article: ' + error.message);
+            }
+        }
+
+        async function publishSavedArticle(articleId) {
+            try {
+                const result = await SupabaseService.loadArticle(articleId);
+
+                if (result.success && result.data) {
+                    const article = result.data;
+                    const content = JSON.parse(article.content);
+
+                    // Set as current article for publishing
+                    window.currentGeneratedArticle = {
+                        content: content,
+                        metadata: article.metadata ? JSON.parse(article.metadata) : {},
+                        modelTier: article.model_tier,
+                        savedArticleId: articleId
+                    };
+
+                    // Close the saved articles library
+                    hideSavedArticlesLibrary();
+
+                    // Open publish modal
+                    publishToWebsite();
+                } else {
+                    throw new Error(result.error || 'Failed to load article');
+                }
+            } catch (error) {
+                console.error('Error loading article for publishing:', error);
+                alert('Failed to load article for publishing: ' + error.message);
             }
         }
 
