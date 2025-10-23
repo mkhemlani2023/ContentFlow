@@ -12116,9 +12116,19 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             const publishType = document.querySelector('input[name="publishType"]:checked').value;
             const article = window.currentGeneratedArticle;
 
-            // Get the selected blog's credentials
-            const blogs = JSON.parse(localStorage.getItem('managedBlogs') || '[]');
-            const selectedBlog = blogs.find(blog => blog.id == selectedBlogId);
+            // Get the selected blog's credentials from Supabase
+            let selectedBlog = null;
+
+            if (currentUser && supabaseClient) {
+                try {
+                    const result = await SupabaseService.loadBlogs();
+                    if (result.success && result.data) {
+                        selectedBlog = result.data.find(blog => blog.id === selectedBlogId);
+                    }
+                } catch (error) {
+                    console.error('Error loading blog:', error);
+                }
+            }
 
             if (!selectedBlog) {
                 alert('❌ Error: Blog not found. Please try again.');
@@ -12128,7 +12138,7 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             // Decode credentials
             const username = selectedBlog.username ? atob(selectedBlog.username) : '';
             const password = selectedBlog.password ? atob(selectedBlog.password) : '';
-            const signinUrl = selectedBlog.signinUrl || '';
+            const signinUrl = selectedBlog.signin_url || '';
             const platform = selectedBlog.platform || 'wordpress';
 
             // Check if WordPress
