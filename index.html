@@ -6276,11 +6276,31 @@
 
                 if (result.success && result.data) {
                     const article = result.data;
-                    const content = JSON.parse(article.content);
-                    const metadata = article.metadata ? JSON.parse(article.metadata) : {};
+                    const savedData = JSON.parse(article.content);
+
+                    // Handle both old and new save formats
+                    const content = savedData.content || savedData;
+                    const metadata = savedData.metadata || (article.metadata ? JSON.parse(article.metadata) : {});
+                    const tableOfContents = savedData.tableOfContents || [];
 
                     // Build article body from sections
                     let articleBody = '';
+
+                    // Table of Contents
+                    if (tableOfContents && tableOfContents.length > 0) {
+                        articleBody += `
+                            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #e2e8f0;">
+                                <h2 style="color: #1e293b; font-size: 18px; margin: 0 0 15px 0;">📋 Table of Contents</h2>
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    ${tableOfContents.map(item => `
+                                        <a href="${item.anchor}" style="color: #334155; text-decoration: none; font-size: 14px; padding-left: ${(item.level - 1) * 20}px; transition: color 0.2s;" onmouseover="this.style.color='#1e293b'" onmouseout="this.style.color='#334155'">
+                                            ${item.title || item.text}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
 
                     // Introduction
                     if (content.introduction) {
@@ -6449,13 +6469,17 @@
 
                 if (result.success && result.data) {
                     const article = result.data;
-                    const content = JSON.parse(article.content);
+                    const savedData = JSON.parse(article.content);
 
-                    // Set as current article for editing
+                    // Handle both old and new save formats
+                    // Set as current article for editing with complete data including TOC
                     window.currentGeneratedArticle = {
-                        content: content,
-                        metadata: article.metadata ? JSON.parse(article.metadata) : {},
-                        modelTier: article.model_tier,
+                        content: savedData.content || savedData,
+                        metadata: savedData.metadata || (article.metadata ? JSON.parse(article.metadata) : {}),
+                        tableOfContents: savedData.tableOfContents || [],
+                        images: savedData.images || [],
+                        modelTier: savedData.modelTier || article.model_tier,
+                        modelConfig: savedData.modelConfig,
                         savedArticleId: articleId // Track that this is a saved article
                     };
 
@@ -6479,13 +6503,16 @@
 
                 if (result.success && result.data) {
                     const article = result.data;
-                    const content = JSON.parse(article.content);
+                    const savedData = JSON.parse(article.content);
 
-                    // Set as current article
+                    // Set as current article with complete data including TOC
                     window.currentGeneratedArticle = {
-                        content: content,
-                        metadata: article.metadata ? JSON.parse(article.metadata) : {},
-                        modelTier: article.model_tier,
+                        content: savedData.content || savedData,
+                        metadata: savedData.metadata || (article.metadata ? JSON.parse(article.metadata) : {}),
+                        tableOfContents: savedData.tableOfContents || [],
+                        images: savedData.images || [],
+                        modelTier: savedData.modelTier || article.model_tier,
+                        modelConfig: savedData.modelConfig,
                         savedArticleId: articleId
                     };
 
@@ -9195,10 +9222,20 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
 
                 console.log('🔄 Auto-saving article to library...');
 
+                // Save complete article data including TOC
+                const completeArticleData = {
+                    content: article.content,
+                    metadata: article.metadata || {},
+                    tableOfContents: article.tableOfContents || [],
+                    images: article.images || [],
+                    modelTier: article.modelTier,
+                    modelConfig: article.modelConfig
+                };
+
                 const result = await SupabaseService.saveArticle({
                     title: article.content?.title || 'Untitled Article',
                     keyword: article.metadata?.focusKeyword || article.metadata?.keyword || '',
-                    content: JSON.stringify(article.content),
+                    content: JSON.stringify(completeArticleData),
                     metadata: JSON.stringify(article.metadata || {}),
                     model_tier: article.modelTier || window.selectedModel || 'basic',
                     word_count: article.metadata?.actualWordCount || article.metadata?.wordCount || 0,
