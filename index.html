@@ -6859,24 +6859,59 @@
             }
         }
 
-        function testBlogConnection(index) {
-            const blogs = JSON.parse(localStorage.getItem('managedBlogs') || '[]');
-            const blog = blogs[index];
+        async function testBlogConnection(blogId) {
+            if (!currentUser || !supabaseClient) {
+                alert('Please log in to test blog connections');
+                return;
+            }
 
-            // Mock connection test
-            setTimeout(() => {
-                blog.status = Math.random() > 0.3 ? 'active' : 'error';
-                blogs[index] = blog;
-                localStorage.setItem('managedBlogs', JSON.stringify(blogs));
+            try {
+                // Load blog from Supabase
+                const result = await SupabaseService.loadBlogs();
+                if (!result.success || !result.data) {
+                    throw new Error('Failed to load blogs');
+                }
 
-                if (blog.status === 'active') {
-                    alert(`✅ Connection to "${blog.name}" successful!`);
+                const blog = result.data.find(b => b.id === blogId);
+                if (!blog) {
+                    throw new Error('Blog not found');
+                }
+
+                alert(`🔄 Testing connection to "${blog.name}"...\n\nThis may take a few seconds.`);
+
+                // Test WordPress XML-RPC connection
+                const response = await fetch('/api/wordpress-test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: blog.url,
+                        username: atob(blog.username),
+                        password: atob(blog.password)
+                    })
+                });
+
+                const testResult = await response.json();
+
+                if (testResult.success) {
+                    // Update blog status in Supabase
+                    await supabaseClient
+                        .from('blogs')
+                        .update({ status: 'active' })
+                        .eq('id', blogId);
+
+                    alert(`✅ Connection to "${blog.name}" successful!\n\n` +
+                          `Site: ${testResult.siteName || blog.name}\n` +
+                          `URL: ${blog.url}\n\n` +
+                          `WordPress XML-RPC is working correctly.`);
                 } else {
-                    alert(`❌ Connection to "${blog.name}" failed. Check your API credentials.`);
+                    throw new Error(testResult.error || 'Connection test failed');
                 }
 
                 displayBlogManagement();
-            }, 1000);
+            } catch (error) {
+                console.error('Blog connection test error:', error);
+                alert(`❌ Connection test failed\n\n${error.message}\n\nPlease check:\n• Website URL is correct\n• WordPress XML-RPC is enabled\n• Username and password are correct`);
+            }
         }
 
         async function editBlog(blogId) {
@@ -9134,9 +9169,64 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
 
                 console.log('Article modal appended to body successfully');
 
+                // Auto-save article to library
+                autoSaveArticleToLibrary();
+
             } catch (error) {
                 console.error('Error in displayGeneratedArticle:', error);
                 alert(`Failed to display article: ${error.message}\n\nPlease check the console for details.`);
+            }
+        }
+
+        // Auto-save article silently in background
+        async function autoSaveArticleToLibrary() {
+            if (!currentUser || !supabaseClient) {
+                console.log('Auto-save skipped: User not logged in');
+                return;
+            }
+
+            if (!window.currentGeneratedArticle) {
+                console.log('Auto-save skipped: No article data');
+                return;
+            }
+
+            try {
+                const article = window.currentGeneratedArticle;
+
+                console.log('🔄 Auto-saving article to library...');
+
+                const result = await SupabaseService.saveArticle({
+                    title: article.content?.title || 'Untitled Article',
+                    keyword: article.metadata?.focusKeyword || article.metadata?.keyword || '',
+                    content: JSON.stringify(article.content),
+                    metadata: JSON.stringify(article.metadata || {}),
+                    model_tier: article.modelTier || window.selectedModel || 'basic',
+                    word_count: article.metadata?.actualWordCount || article.metadata?.wordCount || 0,
+                    images: JSON.stringify(article.images || [])
+                });
+
+                if (result.success) {
+                    // Store the saved article ID for future updates
+                    window.currentGeneratedArticle.savedArticleId = result.data.id;
+
+                    console.log('✅ Article auto-saved successfully (ID: ' + result.data.id + ')');
+
+                    // Show subtle success indicator
+                    const indicator = document.createElement('div');
+                    indicator.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; z-index: 10001; box-shadow: 0 4px 12px rgba(0,0,0,0.3); animation: slideIn 0.3s ease;';
+                    indicator.innerHTML = '✅ Article saved to library';
+                    document.body.appendChild(indicator);
+
+                    setTimeout(() => {
+                        indicator.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => indicator.remove(), 300);
+                    }, 3000);
+                } else {
+                    console.warn('Auto-save failed:', result.error);
+                }
+            } catch (error) {
+                console.error('Auto-save error:', error);
+                // Fail silently - don't interrupt user experience
             }
         }
 
