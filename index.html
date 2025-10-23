@@ -4382,7 +4382,7 @@
                             <button onclick="closeArticleGenerationModal()" style="padding: 12px 24px; background: #64748b; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
                                 Cancel
                             </button>
-                            <button id="generateArticleBtn" onclick="showGenerationConfirmation('${title.replace(/'/g, "\\'")}', window.selectedWordCount || ${wordCount}, '${difficulty}', '${intent}')"
+                            <button id="generateArticleBtn" onclick="confirmArticleGeneration('${title.replace(/'/g, "\\'")}', window.selectedWordCount || ${wordCount}, '${difficulty}', '${intent}')"
                                     style="padding: 12px 24px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;" disabled>
                                 Select Model First
                             </button>
@@ -4497,7 +4497,7 @@
 
             if (window.selectedModel && totalCredits > 0) {
                 btn.disabled = false;
-                btn.textContent = `📝 Generate Article Outline (${totalCredits} credits)`;
+                btn.textContent = `📝 Generate Outline (${totalCredits} credits)`;
                 btn.style.background = '#2563eb';
             } else {
                 btn.disabled = true;
