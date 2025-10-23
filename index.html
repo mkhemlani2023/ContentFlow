@@ -11963,8 +11963,281 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 return;
             }
 
-            // Simple notification that image feature is planned
-            alert('🖼️ Image Management\n\nFor now, you can add images when publishing to WordPress using the media library.\n\nAlternatively, you can manually add image URLs when editing the article HTML.');
+            const article = window.currentGeneratedArticle;
+            const content = article.content;
+
+            // Build sections array for image selection
+            const sections = [];
+
+            // Add title section
+            sections.push({
+                id: 'title',
+                title: 'Featured Image (Article Title)',
+                keyword: content.title || article.metadata?.keyword || 'featured image'
+            });
+
+            // Add introduction if exists
+            if (content.introduction) {
+                sections.push({
+                    id: 'introduction',
+                    title: 'Introduction',
+                    keyword: article.metadata?.keyword || content.title || 'introduction'
+                });
+            }
+
+            // Add content sections
+            if (content.sections && content.sections.length > 0) {
+                content.sections.forEach((section, index) => {
+                    sections.push({
+                        id: `section-${index}`,
+                        title: section.title || `Section ${index + 1}`,
+                        keyword: section.title || article.metadata?.keyword || 'section'
+                    });
+                });
+            }
+
+            // Create image management modal
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 12px; max-width: 1000px; width: 95%; max-height: 90vh; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="color: #1E293B; margin: 0;">🖼️ Add Images to Article</h2>
+                        <button onclick="this.closest('.modal').remove()" style="background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            Close
+                        </button>
+                    </div>
+
+                    <p style="color: #64748b; margin-bottom: 25px;">Select images for your article sections. AI will help generate SEO-optimized alt text.</p>
+
+                    <div id="imageSectionsList">
+                        ${sections.map(section => `
+                            <div style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px; background: #f8fafc;">
+                                <h3 style="color: #334155; margin: 0 0 15px 0; font-size: 16px;">${section.title}</h3>
+
+                                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                                    <input type="text" id="search-${section.id}" placeholder="Search keyword (e.g., ${section.keyword})" value="${section.keyword}" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                                    <button onclick="searchImagesForSection('${section.id}')" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                        Search Images
+                                    </button>
+                                </div>
+
+                                <div id="images-${section.id}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; min-height: 50px;">
+                                    <p style="color: #64748b; font-size: 14px;">Click "Search Images" to find photos</p>
+                                </div>
+
+                                <div id="selected-${section.id}" style="display: none; margin-top: 15px; padding: 15px; background: white; border-radius: 8px; border: 2px solid #10b981;">
+                                    <div style="display: flex; gap: 15px; align-items: start;">
+                                        <img id="preview-${section.id}" style="width: 120px; height: 80px; object-fit: cover; border-radius: 6px;">
+                                        <div style="flex: 1;">
+                                            <label style="display: block; color: #334155; font-size: 13px; font-weight: 600; margin-bottom: 5px;">SEO Alt Text</label>
+                                            <input type="text" id="alt-${section.id}" placeholder="Descriptive alt text for SEO..." style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 13px; margin-bottom: 8px;">
+                                            <div style="font-size: 12px; color: #64748b;" id="credit-${section.id}"></div>
+                                        </div>
+                                        <button onclick="removeImageSelection('${section.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
+                        <button onclick="this.closest('.modal').remove()" style="background: #64748b; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                            Cancel
+                        </button>
+                        <button onclick="insertImagesIntoArticle()" style="background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                            ✓ Insert Images into Article
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Store sections data for later use
+            window.imageSections = sections;
+            window.selectedImages = {};
+        }
+
+        async function searchImagesForSection(sectionId) {
+            const searchInput = document.getElementById(`search-${sectionId}`);
+            const imagesContainer = document.getElementById(`images-${sectionId}`);
+            const query = searchInput.value.trim();
+
+            if (!query) {
+                alert('Please enter a search keyword');
+                return;
+            }
+
+            imagesContainer.innerHTML = '<p style="color: #64748b; font-size: 14px;">Searching images...</p>';
+
+            try {
+                const response = await fetch('/api/pexels-images', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, count: 6 })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.images && result.images.length > 0) {
+                    imagesContainer.innerHTML = result.images.map(img => `
+                        <div onclick="selectImage('${sectionId}', '${img.url.replace(/'/g, "\\'")}', '${(img.alt || query).replace(/'/g, "\\'")}', '${img.photographer}', '${img.photographerUrl}', '${img.source}')" style="cursor: pointer; border: 2px solid #e2e8f0; border-radius: 8px; overflow: hidden; transition: all 0.2s;" onmouseover="this.style.borderColor='#334155'; this.style.transform='scale(1.05)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='scale(1)'">
+                            <img src="${img.url}" alt="${img.alt || query}" style="width: 100%; height: 150px; object-fit: cover;">
+                            <div style="padding: 8px; background: white;">
+                                <p style="margin: 0; font-size: 11px; color: #64748b;">By ${img.photographer}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    imagesContainer.innerHTML = '<p style="color: #ef4444; font-size: 14px;">No images found. Try a different keyword.</p>';
+                }
+            } catch (error) {
+                console.error('Image search error:', error);
+                imagesContainer.innerHTML = '<p style="color: #ef4444; font-size: 14px;">Error searching images. Please try again.</p>';
+            }
+        }
+
+        function selectImage(sectionId, url, alt, photographer, photographerUrl, source) {
+            // Store selection
+            window.selectedImages[sectionId] = {
+                url,
+                alt,
+                photographer,
+                photographerUrl,
+                source
+            };
+
+            // Show selection preview
+            const selectedDiv = document.getElementById(`selected-${sectionId}`);
+            const previewImg = document.getElementById(`preview-${sectionId}`);
+            const altInput = document.getElementById(`alt-${sectionId}`);
+            const creditDiv = document.getElementById(`credit-${sectionId}`);
+
+            previewImg.src = url;
+            altInput.value = alt;
+            creditDiv.innerHTML = `Photo by <a href="${photographerUrl}" target="_blank" style="color: #334155; font-weight: 600;">${photographer}</a> on ${source}`;
+
+            selectedDiv.style.display = 'block';
+
+            // Generate AI-powered SEO alt text
+            generateSEOAltText(sectionId, alt);
+        }
+
+        function removeImageSelection(sectionId) {
+            delete window.selectedImages[sectionId];
+            document.getElementById(`selected-${sectionId}`).style.display = 'none';
+        }
+
+        async function generateSEOAltText(sectionId, originalAlt) {
+            const article = window.currentGeneratedArticle;
+            const section = window.imageSections.find(s => s.id === sectionId);
+
+            if (!section) return;
+
+            const altInput = document.getElementById(`alt-${sectionId}`);
+
+            // Create AI prompt for better alt text
+            const keyword = article.metadata?.keyword || '';
+            const sectionTitle = section.title;
+
+            // Generate improved alt text with AI
+            try {
+                const prompt = `Generate a concise, SEO-optimized alt text (max 125 characters) for an image in an article about "${keyword}". The image is for the section titled "${sectionTitle}". Original description: "${originalAlt}". Return ONLY the alt text, nothing else.`;
+
+                const modelConfig = article.modelConfig || { model: 'openai/gpt-4o-mini', temperature: 0.7 };
+
+                const response = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: modelConfig.model,
+                        prompt: prompt,
+                        temperature: 0.7,
+                        max_tokens: 50
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.content) {
+                    const aiAltText = result.content.trim().replace(/^["']|["']$/g, '');
+                    if (aiAltText && aiAltText.length < 150) {
+                        altInput.value = aiAltText;
+                        window.selectedImages[sectionId].alt = aiAltText;
+                    }
+                }
+            } catch (error) {
+                console.error('Error generating AI alt text:', error);
+                // Keep original alt text if AI generation fails
+            }
+        }
+
+        async function insertImagesIntoArticle() {
+            if (Object.keys(window.selectedImages).length === 0) {
+                alert('Please select at least one image');
+                return;
+            }
+
+            const article = window.currentGeneratedArticle;
+            const content = article.content;
+
+            // Insert images into content sections
+            for (const [sectionId, imageData] of Object.entries(window.selectedImages)) {
+                const altInput = document.getElementById(`alt-${sectionId}`);
+                const finalAlt = altInput.value || imageData.alt;
+
+                const imageHTML = `<figure style="margin: 20px 0;">
+    <img src="${imageData.url}" alt="${finalAlt}" style="width: 100%; max-width: 800px; height: auto; border-radius: 8px;">
+    <figcaption style="font-size: 12px; color: #64748b; margin-top: 8px; font-style: italic;">Photo by <a href="${imageData.photographerUrl}" target="_blank" style="color: #334155;">${imageData.photographer}</a> on ${imageData.source}</figcaption>
+</figure>`;
+
+                // Insert image based on section
+                if (sectionId === 'title') {
+                    // Featured image goes before introduction
+                    if (!content.featuredImage) {
+                        content.featuredImage = imageHTML;
+                    }
+                } else if (sectionId === 'introduction') {
+                    if (content.introduction) {
+                        content.introduction = content.introduction + imageHTML;
+                    }
+                } else if (sectionId.startsWith('section-')) {
+                    const index = parseInt(sectionId.split('-')[1]);
+                    if (content.sections && content.sections[index]) {
+                        content.sections[index].content = (content.sections[index].content || '') + imageHTML;
+                    }
+                }
+            }
+
+            // Update the article
+            article.content = content;
+            window.currentGeneratedArticle = article;
+
+            // If article is saved, update it in database
+            if (article.savedArticleId && currentUser && supabaseClient) {
+                try {
+                    await SupabaseService.updateArticle(article.savedArticleId, {
+                        content: JSON.stringify(content),
+                        images: JSON.stringify(Object.values(window.selectedImages)),
+                        updated_at: new Date().toISOString()
+                    });
+                } catch (error) {
+                    console.error('Error updating article with images:', error);
+                }
+            }
+
+            alert('✅ Images added successfully!');
+
+            // Close modal
+            document.querySelector('.modal').remove();
+
+            // Refresh article display if in edit mode
+            if (document.getElementById('articleEditor')) {
+                enterEditMode();
+            }
         }
 
         async function publishToWebsite() {
