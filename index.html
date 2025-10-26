@@ -596,56 +596,72 @@
 </head>
 <body>
     <div class="header">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 30px; padding: 10px 0;">
-            <!-- Logo -->
-            <div style="display: flex; align-items: center; gap: 20px;">
-                <img src="/seo-wizard-logo.png" alt="SEO Wizard" style="height: 120px; width: auto;">
-                <div>
-                    <div style="font-size: 28px; color: white; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2;">SEO Wizard</div>
-                    <div style="font-size: 14px; color: rgba(255,255,255,0.9); font-weight: 500; margin-top: 4px;">Content Strategy Platform</div>
-                </div>
-            </div>
-
-            <!-- Navigation Menu (visible only when logged in) -->
-            <nav id="mainNavigation" style="display: none; flex: 1;">
-                <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                    <a onclick="showSavedArticlesLibrary()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 15px; font-weight: 600; padding: 12px 20px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">My Saved Articles</a>
-                    <a onclick="showBlogManagement()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 15px; font-weight: 600; padding: 12px 20px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">Blog Management</a>
-                    <a onclick="showSavedContentIdeas()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 15px; font-weight: 600; padding: 12px 20px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">Saved Content Ideas</a>
-                    <a onclick="showWebsiteMetrics()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 15px; font-weight: 600; padding: 12px 20px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">Website Metrics</a>
-                </div>
-            </nav>
-
-            <!-- Auth and Credits -->
-            <div style="display: flex; gap: 15px; align-items: center; flex-shrink: 0;">
-                <!-- User Authentication Section -->
-                <div id="authSection" style="display: none;">
-                    <div style="background: rgba(255,255,255,0.3); padding: 12px 20px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.5); display: flex; align-items: center; gap: 15px;">
-                        <div style="text-align: left;">
-                            <div style="font-size: 12px; color: white; font-weight: 600;">Logged in as</div>
-                            <div id="userEmail" style="font-size: 14px; font-weight: 700; color: white;"></div>
-                        </div>
-                        <button onclick="logout()" style="background: rgba(255,255,255,0.4); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.6)'" onmouseout="this.style.background='rgba(255,255,255,0.4)'">
-                            Logout
-                        </button>
+        <!-- Constrain header content to match app width -->
+        <div style="max-width: 1400px; margin: 0 auto; padding: 0 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 30px; padding: 10px 0;">
+                <!-- Logo -->
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <img src="/seo-wizard-logo.png" alt="SEO Wizard" style="height: 120px; width: auto;">
+                    <div>
+                        <div style="font-size: 28px; color: white; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2;">SEO Wizard</div>
+                        <div style="font-size: 14px; color: rgba(255,255,255,0.9); font-weight: 500; margin-top: 4px;">Content Strategy Platform</div>
                     </div>
                 </div>
-                <div id="guestSection">
-                    <button onclick="showAuthModal('login')" style="background: #FFFFFF; color: #334155; border: 2px solid #E2E8F0; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 700; margin-right: 10px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onmouseover="this.style.background='#F8FAFC'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#FFFFFF'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
-                        Login
-                    </button>
-                    <button onclick="showAuthModal('signup')" style="background: #FFFFFF; color: #334155; border: 2px solid #FFFFFF; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 700; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onmouseover="this.style.background='rgba(255,255,255,0.9)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#FFFFFF'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
-                        Sign Up
-                    </button>
-                </div>
-                <!-- Credit Display -->
-                <div class="credit-display">
-                    <div style="background: #FFFFFF; padding: 14px 20px; border-radius: 8px; border: 2px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-width: 140px;">
-                        <div style="font-size: 13px; margin-bottom: 4px; color: #64748B; font-weight: 700;">Your Credits</div>
-                        <div id="creditBalance" style="font-size: 28px; font-weight: 900; margin-bottom: 8px; color: #1E293B;">-</div>
-                        <button onclick="showCreditPurchase()" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 700; transition: all 0.2s; width: 100%;" onmouseover="this.style.background='#1E293B'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#334155'; this.style.transform='translateY(0)'">
-                            Buy Credits
+
+                <!-- Navigation Menu (visible only when logged in) -->
+                <nav id="mainNavigation" style="display: none; flex: 1;">
+                    <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                        <a onclick="showSavedArticlesLibrary()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">My Articles</a>
+                        <a onclick="showSavedContentIdeas()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">Saved Keywords</a>
+                        <a onclick="showBlogManagement()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">Blog Management</a>
+                        <a onclick="showWebsiteMetrics()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">Website Metrics</a>
+                        <a onclick="showAboutSEOWizard()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">About</a>
+                    </div>
+                </nav>
+
+                <!-- Auth and Profile -->
+                <div style="display: flex; gap: 15px; align-items: center; flex-shrink: 0;">
+                    <!-- Guest Section -->
+                    <div id="guestSection">
+                        <button onclick="showAuthModal('login')" style="background: #FFFFFF; color: #334155; border: 2px solid #E2E8F0; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 700; margin-right: 10px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onmouseover="this.style.background='#F8FAFC'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#FFFFFF'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+                            Login
                         </button>
+                        <button onclick="showAuthModal('signup')" style="background: #FFFFFF; color: #334155; border: 2px solid #FFFFFF; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 700; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onmouseover="this.style.background='rgba(255,255,255,0.9)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#FFFFFF'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+                            Sign Up
+                        </button>
+                    </div>
+
+                    <!-- User Profile Section (visible when logged in) -->
+                    <div id="authSection" style="display: none; position: relative;">
+                        <button onclick="toggleProfileMenu()" id="profileButton" style="background: rgba(255,255,255,0.3); padding: 12px 20px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.5); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.3)'">
+                            <div style="text-align: left;">
+                                <div style="font-size: 11px; color: white; font-weight: 600; opacity: 0.9;">Credits</div>
+                                <div id="headerCreditBalance" style="font-size: 18px; font-weight: 900; color: white;">-</div>
+                            </div>
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: white;">
+                                👤
+                            </div>
+                        </button>
+
+                        <!-- Profile Dropdown Menu -->
+                        <div id="profileMenu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); min-width: 280px; z-index: 10001; border: 1px solid #E2E8F0;">
+                            <div style="padding: 20px; border-bottom: 1px solid #E2E8F0;">
+                                <div style="font-size: 12px; color: #64748B; font-weight: 600; margin-bottom: 4px;">Logged in as</div>
+                                <div id="profileUserEmail" style="font-size: 14px; font-weight: 600; color: #1E293B; word-break: break-all;"></div>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div style="background: #F8FAFC; padding: 16px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #E2E8F0;">
+                                    <div style="font-size: 12px; color: #64748B; font-weight: 600; margin-bottom: 4px;">Available Credits</div>
+                                    <div id="profileCreditBalance" style="font-size: 32px; font-weight: 900; color: #1E293B; margin-bottom: 12px;">-</div>
+                                    <button onclick="showCreditPurchase(); toggleProfileMenu()" style="background: linear-gradient(135deg, #334155 0%, #1E293B 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 700; width: 100%; transition: all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                        💳 Purchase Credits
+                                    </button>
+                                </div>
+                                <button onclick="logout()" style="background: #F1F5F9; color: #475569; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; width: 100%; transition: all 0.2s;" onmouseover="this.style.background='#E2E8F0'" onmouseout="this.style.background='#F1F5F9'">
+                                    🚪 Logout
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1379,19 +1395,98 @@
         function updateAuthUI(isAuthenticated) {
             const authSection = document.getElementById('authSection');
             const guestSection = document.getElementById('guestSection');
-            const userEmail = document.getElementById('userEmail');
+            const profileUserEmail = document.getElementById('profileUserEmail');
             const mainNavigation = document.getElementById('mainNavigation');
 
             if (isAuthenticated && currentUser) {
                 authSection.style.display = 'block';
                 guestSection.style.display = 'none';
-                userEmail.textContent = currentUser.email;
+                if (profileUserEmail) {
+                    profileUserEmail.textContent = currentUser.email;
+                }
                 mainNavigation.style.display = 'flex';
             } else {
                 authSection.style.display = 'none';
                 guestSection.style.display = 'block';
                 mainNavigation.style.display = 'none';
             }
+        }
+
+        // Toggle profile dropdown menu
+        function toggleProfileMenu() {
+            const profileMenu = document.getElementById('profileMenu');
+            if (profileMenu.style.display === 'none' || !profileMenu.style.display) {
+                profileMenu.style.display = 'block';
+                // Update credits when opening
+                updateCreditDisplay();
+            } else {
+                profileMenu.style.display = 'none';
+            }
+        }
+
+        // Close profile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const profileButton = document.getElementById('profileButton');
+            const profileMenu = document.getElementById('profileMenu');
+            const authSection = document.getElementById('authSection');
+
+            if (authSection && profileMenu && profileButton) {
+                if (!authSection.contains(event.target)) {
+                    profileMenu.style.display = 'none';
+                }
+            }
+        });
+
+        // Show About SEO Wizard page
+        function showAboutSEOWizard() {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;';
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 40px; border-radius: 12px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto;">
+                    <h2 style="margin: 0 0 20px 0; color: #1e293b; font-size: 28px;">About SEO Wizard</h2>
+
+                    <div style="color: #475569; line-height: 1.8; font-size: 16px;">
+                        <p style="margin-bottom: 16px;"><strong>SEO Wizard</strong> is a comprehensive content strategy platform designed to help content creators, marketers, and businesses create high-quality, SEO-optimized content efficiently.</p>
+
+                        <h3 style="color: #1e293b; font-size: 20px; margin: 24px 0 12px 0;">Key Features</h3>
+                        <ul style="margin-left: 20px; margin-bottom: 16px;">
+                            <li style="margin-bottom: 8px;"><strong>Keyword Research:</strong> Discover high-impact keywords with real search volume and competition data</li>
+                            <li style="margin-bottom: 8px;"><strong>Content Ideas:</strong> AI-generated article concepts optimized for your target keywords</li>
+                            <li style="margin-bottom: 8px;"><strong>Article Generation:</strong> Create complete SEO-optimized articles with multiple quality tiers</li>
+                            <li style="margin-bottom: 8px;"><strong>Blog Management:</strong> Connect and manage multiple WordPress sites from one dashboard</li>
+                            <li style="margin-bottom: 8px;"><strong>Website Metrics:</strong> Track domain authority, backlinks, and SEO performance</li>
+                            <li style="margin-bottom: 8px;"><strong>Image Integration:</strong> AI-powered image selection and optimization for your content</li>
+                        </ul>
+
+                        <h3 style="color: #1e293b; font-size: 20px; margin: 24px 0 12px 0;">How It Works</h3>
+                        <ol style="margin-left: 20px; margin-bottom: 16px;">
+                            <li style="margin-bottom: 8px;">Start with keyword research to find opportunities</li>
+                            <li style="margin-bottom: 8px;">Generate content ideas based on your keywords</li>
+                            <li style="margin-bottom: 8px;">Review and customize article outlines</li>
+                            <li style="margin-bottom: 8px;">Generate full articles with AI assistance</li>
+                            <li style="margin-bottom: 8px;">Publish directly to your WordPress sites</li>
+                        </ol>
+
+                        <p style="margin-top: 24px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <strong>Questions or feedback?</strong> Contact us at support@seowizard.com
+                        </p>
+                    </div>
+
+                    <button onclick="this.closest('[style*=fixed]').remove()" style="margin-top: 24px; padding: 12px 32px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; width: 100%;">
+                        Close
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Close on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
         }
 
         // Show authentication modal
@@ -1594,13 +1689,32 @@
 
         // Credit System Functions
         function updateCreditDisplay() {
+            const isAdmin = userProfile && userProfile.role === 'admin';
+            const creditText = isAdmin ? '∞' : window.seoWizard.credits.toLocaleString();
+
+            // Update old credit display (if exists)
             const creditBalance = document.getElementById('creditBalance');
             if (creditBalance) {
-                const isAdmin = userProfile && userProfile.role === 'admin';
                 if (isAdmin) {
                     creditBalance.innerHTML = `<span style="background: linear-gradient(135deg, #334155 0%, #1E293B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold;">∞ ADMIN</span>`;
                 } else {
-                    creditBalance.textContent = window.seoWizard.credits.toLocaleString();
+                    creditBalance.textContent = creditText;
+                }
+            }
+
+            // Update header credit display
+            const headerCreditBalance = document.getElementById('headerCreditBalance');
+            if (headerCreditBalance) {
+                headerCreditBalance.textContent = creditText;
+            }
+
+            // Update profile menu credit display
+            const profileCreditBalance = document.getElementById('profileCreditBalance');
+            if (profileCreditBalance) {
+                if (isAdmin) {
+                    profileCreditBalance.innerHTML = `<span style="background: linear-gradient(135deg, #334155 0%, #1E293B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold;">∞ ADMIN</span>`;
+                } else {
+                    profileCreditBalance.textContent = creditText;
                 }
             }
         }
