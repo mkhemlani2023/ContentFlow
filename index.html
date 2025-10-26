@@ -611,13 +611,13 @@
                         <!-- Get Started button (visible when not logged in) -->
                         <a id="navGetStarted" onclick="showAboutSEOWizard()" style="display: none; background: linear-gradient(135deg, #334155 0%, #1E293B 100%); color: white; text-decoration: none; cursor: pointer; font-size: 15px; font-weight: 700; padding: 12px 24px; border-radius: 8px; border: 2px solid #1E293B; transition: all 0.2s; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.25)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'">🚀 Get Started with SEO Wizard</a>
 
-                        <a id="navMyArticles" onclick="handleNavClick('showSavedArticlesLibrary')" style="background: #F1F5F9; color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #E2E8F0; transition: all 0.2s; white-space: nowrap;">My Articles</a>
-                        <a id="navSavedKeywords" onclick="handleNavClick('showSavedContentIdeas')" style="background: #F1F5F9; color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #E2E8F0; transition: all 0.2s; white-space: nowrap;">Saved Keywords</a>
-                        <a id="navBlogManagement" onclick="handleNavClick('showBlogManagement')" style="background: #F1F5F9; color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #E2E8F0; transition: all 0.2s; white-space: nowrap;">Blog Management</a>
-                        <a id="navWebsiteMetrics" onclick="handleNavClick('showWebsiteMetrics')" style="background: #F1F5F9; color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #E2E8F0; transition: all 0.2s; white-space: nowrap;">Website Metrics</a>
+                        <a id="navMyArticles" onclick="handleNavClick('showSavedArticlesLibrary')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">My Articles</a>
+                        <a id="navSavedKeywords" onclick="handleNavClick('showSavedContentIdeas')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Saved Keywords</a>
+                        <a id="navBlogManagement" onclick="handleNavClick('showBlogManagement')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Blog Management</a>
+                        <a id="navWebsiteMetrics" onclick="handleNavClick('showWebsiteMetrics')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Website Metrics</a>
                         <!-- Always active links -->
-                        <a onclick="showCreditPurchase()" style="background: #334155; color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #334155; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='#1E293B'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='#334155'; this.style.transform='translateY(0)'">Purchase Credits</a>
-                        <a onclick="showAboutSEOWizard()" style="background: #334155; color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #334155; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='#1E293B'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='#334155'; this.style.transform='translateY(0)'">About</a>
+                        <a onclick="showCreditPurchase()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">Purchase Credits</a>
+                        <a onclick="showAboutSEOWizard()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">About</a>
                     </div>
                 </nav>
 
@@ -1420,32 +1420,32 @@
 
                 // Enable navigation items
                 if (navMyArticles) {
-                    navMyArticles.style.background = '#334155';
-                    navMyArticles.style.color = 'white';
+                    navMyArticles.style.color = '#334155';
                     navMyArticles.style.cursor = 'pointer';
-                    navMyArticles.style.borderColor = '#334155';
                     navMyArticles.setAttribute('data-enabled', 'true');
+                    navMyArticles.onmouseover = function() { this.style.color = '#1E293B'; };
+                    navMyArticles.onmouseout = function() { this.style.color = '#334155'; };
                 }
                 if (navSavedKeywords) {
-                    navSavedKeywords.style.background = '#334155';
-                    navSavedKeywords.style.color = 'white';
+                    navSavedKeywords.style.color = '#334155';
                     navSavedKeywords.style.cursor = 'pointer';
-                    navSavedKeywords.style.borderColor = '#334155';
                     navSavedKeywords.setAttribute('data-enabled', 'true');
+                    navSavedKeywords.onmouseover = function() { this.style.color = '#1E293B'; };
+                    navSavedKeywords.onmouseout = function() { this.style.color = '#334155'; };
                 }
                 if (navBlogManagement) {
-                    navBlogManagement.style.background = '#334155';
-                    navBlogManagement.style.color = 'white';
+                    navBlogManagement.style.color = '#334155';
                     navBlogManagement.style.cursor = 'pointer';
-                    navBlogManagement.style.borderColor = '#334155';
                     navBlogManagement.setAttribute('data-enabled', 'true');
+                    navBlogManagement.onmouseover = function() { this.style.color = '#1E293B'; };
+                    navBlogManagement.onmouseout = function() { this.style.color = '#334155'; };
                 }
                 if (navWebsiteMetrics) {
-                    navWebsiteMetrics.style.background = '#334155';
-                    navWebsiteMetrics.style.color = 'white';
+                    navWebsiteMetrics.style.color = '#334155';
                     navWebsiteMetrics.style.cursor = 'pointer';
-                    navWebsiteMetrics.style.borderColor = '#334155';
                     navWebsiteMetrics.setAttribute('data-enabled', 'true');
+                    navWebsiteMetrics.onmouseover = function() { this.style.color = '#1E293B'; };
+                    navWebsiteMetrics.onmouseout = function() { this.style.color = '#334155'; };
                 }
             } else {
                 authSection.style.display = 'none';
@@ -1458,32 +1458,32 @@
 
                 // Disable navigation items (greyed out)
                 if (navMyArticles) {
-                    navMyArticles.style.background = '#F1F5F9';
                     navMyArticles.style.color = '#94A3B8';
                     navMyArticles.style.cursor = 'not-allowed';
-                    navMyArticles.style.borderColor = '#E2E8F0';
                     navMyArticles.setAttribute('data-enabled', 'false');
+                    navMyArticles.onmouseover = null;
+                    navMyArticles.onmouseout = null;
                 }
                 if (navSavedKeywords) {
-                    navSavedKeywords.style.background = '#F1F5F9';
                     navSavedKeywords.style.color = '#94A3B8';
                     navSavedKeywords.style.cursor = 'not-allowed';
-                    navSavedKeywords.style.borderColor = '#E2E8F0';
                     navSavedKeywords.setAttribute('data-enabled', 'false');
+                    navSavedKeywords.onmouseover = null;
+                    navSavedKeywords.onmouseout = null;
                 }
                 if (navBlogManagement) {
-                    navBlogManagement.style.background = '#F1F5F9';
                     navBlogManagement.style.color = '#94A3B8';
                     navBlogManagement.style.cursor = 'not-allowed';
-                    navBlogManagement.style.borderColor = '#E2E8F0';
                     navBlogManagement.setAttribute('data-enabled', 'false');
+                    navBlogManagement.onmouseover = null;
+                    navBlogManagement.onmouseout = null;
                 }
                 if (navWebsiteMetrics) {
-                    navWebsiteMetrics.style.background = '#F1F5F9';
                     navWebsiteMetrics.style.color = '#94A3B8';
                     navWebsiteMetrics.style.cursor = 'not-allowed';
-                    navWebsiteMetrics.style.borderColor = '#E2E8F0';
                     navWebsiteMetrics.setAttribute('data-enabled', 'false');
+                    navWebsiteMetrics.onmouseover = null;
+                    navWebsiteMetrics.onmouseout = null;
                 }
             }
         }
