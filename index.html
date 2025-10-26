@@ -608,13 +608,15 @@
                     </div>
                 </div>
 
-                <!-- Navigation Menu (visible only when logged in) -->
-                <nav id="mainNavigation" style="display: none; flex: 1;">
-                    <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                        <a onclick="showSavedArticlesLibrary()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">My Articles</a>
-                        <a onclick="showSavedContentIdeas()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">Saved Keywords</a>
-                        <a onclick="showBlogManagement()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">Blog Management</a>
-                        <a onclick="showWebsiteMetrics()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">Website Metrics</a>
+                <!-- Navigation Menu -->
+                <nav style="flex: 1;">
+                    <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center;">
+                        <a id="navMyArticles" onclick="handleNavClick('showSavedArticlesLibrary')" style="background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); transition: all 0.2s; white-space: nowrap;">My Articles</a>
+                        <a id="navSavedKeywords" onclick="handleNavClick('showSavedContentIdeas')" style="background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); transition: all 0.2s; white-space: nowrap;">Saved Keywords</a>
+                        <a id="navBlogManagement" onclick="handleNavClick('showBlogManagement')" style="background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); transition: all 0.2s; white-space: nowrap;">Blog Management</a>
+                        <a id="navWebsiteMetrics" onclick="handleNavClick('showWebsiteMetrics')" style="background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); transition: all 0.2s; white-space: nowrap;">Website Metrics</a>
+                        <!-- Always active links -->
+                        <a onclick="showCreditPurchase()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">Purchase Credits</a>
                         <a onclick="showAboutSEOWizard()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">About</a>
                     </div>
                 </nav>
@@ -1396,7 +1398,12 @@
             const authSection = document.getElementById('authSection');
             const guestSection = document.getElementById('guestSection');
             const profileUserEmail = document.getElementById('profileUserEmail');
-            const mainNavigation = document.getElementById('mainNavigation');
+
+            // Navigation items that require login
+            const navMyArticles = document.getElementById('navMyArticles');
+            const navSavedKeywords = document.getElementById('navSavedKeywords');
+            const navBlogManagement = document.getElementById('navBlogManagement');
+            const navWebsiteMetrics = document.getElementById('navWebsiteMetrics');
 
             if (isAuthenticated && currentUser) {
                 authSection.style.display = 'block';
@@ -1404,11 +1411,91 @@
                 if (profileUserEmail) {
                     profileUserEmail.textContent = currentUser.email;
                 }
-                mainNavigation.style.display = 'flex';
+
+                // Enable navigation items
+                if (navMyArticles) {
+                    navMyArticles.style.background = 'rgba(255,255,255,0.25)';
+                    navMyArticles.style.color = 'white';
+                    navMyArticles.style.cursor = 'pointer';
+                    navMyArticles.style.borderColor = 'rgba(255,255,255,0.4)';
+                    navMyArticles.setAttribute('data-enabled', 'true');
+                }
+                if (navSavedKeywords) {
+                    navSavedKeywords.style.background = 'rgba(255,255,255,0.25)';
+                    navSavedKeywords.style.color = 'white';
+                    navSavedKeywords.style.cursor = 'pointer';
+                    navSavedKeywords.style.borderColor = 'rgba(255,255,255,0.4)';
+                    navSavedKeywords.setAttribute('data-enabled', 'true');
+                }
+                if (navBlogManagement) {
+                    navBlogManagement.style.background = 'rgba(255,255,255,0.25)';
+                    navBlogManagement.style.color = 'white';
+                    navBlogManagement.style.cursor = 'pointer';
+                    navBlogManagement.style.borderColor = 'rgba(255,255,255,0.4)';
+                    navBlogManagement.setAttribute('data-enabled', 'true');
+                }
+                if (navWebsiteMetrics) {
+                    navWebsiteMetrics.style.background = 'rgba(255,255,255,0.25)';
+                    navWebsiteMetrics.style.color = 'white';
+                    navWebsiteMetrics.style.cursor = 'pointer';
+                    navWebsiteMetrics.style.borderColor = 'rgba(255,255,255,0.4)';
+                    navWebsiteMetrics.setAttribute('data-enabled', 'true');
+                }
             } else {
                 authSection.style.display = 'none';
                 guestSection.style.display = 'block';
-                mainNavigation.style.display = 'none';
+
+                // Disable navigation items (greyed out)
+                if (navMyArticles) {
+                    navMyArticles.style.background = 'rgba(255,255,255,0.15)';
+                    navMyArticles.style.color = 'rgba(255,255,255,0.5)';
+                    navMyArticles.style.cursor = 'not-allowed';
+                    navMyArticles.style.borderColor = 'rgba(255,255,255,0.2)';
+                    navMyArticles.setAttribute('data-enabled', 'false');
+                }
+                if (navSavedKeywords) {
+                    navSavedKeywords.style.background = 'rgba(255,255,255,0.15)';
+                    navSavedKeywords.style.color = 'rgba(255,255,255,0.5)';
+                    navSavedKeywords.style.cursor = 'not-allowed';
+                    navSavedKeywords.style.borderColor = 'rgba(255,255,255,0.2)';
+                    navSavedKeywords.setAttribute('data-enabled', 'false');
+                }
+                if (navBlogManagement) {
+                    navBlogManagement.style.background = 'rgba(255,255,255,0.15)';
+                    navBlogManagement.style.color = 'rgba(255,255,255,0.5)';
+                    navBlogManagement.style.cursor = 'not-allowed';
+                    navBlogManagement.style.borderColor = 'rgba(255,255,255,0.2)';
+                    navBlogManagement.setAttribute('data-enabled', 'false');
+                }
+                if (navWebsiteMetrics) {
+                    navWebsiteMetrics.style.background = 'rgba(255,255,255,0.15)';
+                    navWebsiteMetrics.style.color = 'rgba(255,255,255,0.5)';
+                    navWebsiteMetrics.style.cursor = 'not-allowed';
+                    navWebsiteMetrics.style.borderColor = 'rgba(255,255,255,0.2)';
+                    navWebsiteMetrics.setAttribute('data-enabled', 'false');
+                }
+            }
+        }
+
+        // Handle navigation clicks (only allow if logged in)
+        function handleNavClick(functionName) {
+            const element = event.currentTarget;
+            const isEnabled = element.getAttribute('data-enabled') === 'true';
+
+            if (!isEnabled) {
+                alert('Please log in to access this feature.');
+                return;
+            }
+
+            // Call the actual function
+            if (functionName === 'showSavedArticlesLibrary') {
+                showSavedArticlesLibrary();
+            } else if (functionName === 'showSavedContentIdeas') {
+                showSavedContentIdeas();
+            } else if (functionName === 'showBlogManagement') {
+                showBlogManagement();
+            } else if (functionName === 'showWebsiteMetrics') {
+                showWebsiteMetrics();
             }
         }
 
