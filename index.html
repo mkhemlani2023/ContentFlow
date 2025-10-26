@@ -6947,9 +6947,146 @@
                 return;
             }
 
-            // For now, show a message that editing is not yet implemented
-            // In the future, this could open a modal with all the fields
-            alert('Blog editing via form is coming soon!\n\nFor now, please delete and re-add the blog with updated credentials.');
+            try {
+                // Load blog from Supabase
+                const result = await SupabaseService.loadBlogs();
+                if (!result.success || !result.data) {
+                    throw new Error('Failed to load blogs');
+                }
+
+                const blog = result.data.find(b => b.id === blogId);
+                if (!blog) {
+                    throw new Error('Blog not found');
+                }
+
+                // Decode credentials
+                const username = blog.username ? atob(blog.username) : '';
+                const password = blog.password ? atob(blog.password) : '';
+                const apiKey = blog.api_key ? atob(blog.api_key) : '';
+
+                // Create edit modal
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;';
+
+                modal.innerHTML = `
+                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;">
+                        <h2 style="margin: 0 0 30px 0; color: #1e293b; font-size: 24px;">✏️ Edit Blog</h2>
+
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 500;">Blog Name *</label>
+                                <input type="text" id="editBlogName" value="${blog.name}" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;" required>
+                            </div>
+
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 500;">Platform *</label>
+                                <select id="editBlogPlatform" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;">
+                                    <option value="wordpress" ${blog.platform === 'wordpress' ? 'selected' : ''}>WordPress</option>
+                                    <option value="wix" ${blog.platform === 'wix' ? 'selected' : ''}>Wix</option>
+                                    <option value="squarespace" ${blog.platform === 'squarespace' ? 'selected' : ''}>Squarespace</option>
+                                    <option value="blogger" ${blog.platform === 'blogger' ? 'selected' : ''}>Blogger</option>
+                                    <option value="medium" ${blog.platform === 'medium' ? 'selected' : ''}>Medium</option>
+                                    <option value="ghost" ${blog.platform === 'ghost' ? 'selected' : ''}>Ghost</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 500;">Website URL *</label>
+                                <input type="url" id="editBlogUrl" value="${blog.url}" placeholder="https://yourblog.com" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;" required>
+                            </div>
+
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 500;">Sign in URL *</label>
+                                <input type="url" id="editBlogSigninUrl" value="${blog.signin_url || ''}" placeholder="https://yourblog.com/wp-admin" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;" required>
+                            </div>
+
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 500;">Username *</label>
+                                <input type="text" id="editBlogUsername" value="${username}" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;" required>
+                            </div>
+
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 500;">Password *</label>
+                                <input type="password" id="editBlogPassword" value="${password}" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;" required>
+                            </div>
+
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 500;">API Key (Optional)</label>
+                                <input type="text" id="editBlogApiKey" value="${apiKey}" placeholder="For platforms that require API keys" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; margin-top: 30px;">
+                            <button onclick="saveEditedBlog('${blogId}')" style="flex: 1; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                                💾 Save Changes
+                            </button>
+                            <button onclick="this.closest('[style*=fixed]').remove()" style="flex: 1; padding: 14px; background: #e2e8f0; color: #475569; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+
+                // Close on background click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error loading blog for editing:', error);
+                alert('❌ Failed to load blog: ' + error.message);
+            }
+        }
+
+        async function saveEditedBlog(blogId) {
+            const name = document.getElementById('editBlogName').value.trim();
+            const platform = document.getElementById('editBlogPlatform').value;
+            const url = document.getElementById('editBlogUrl').value.trim();
+            const signinUrl = document.getElementById('editBlogSigninUrl').value.trim();
+            const username = document.getElementById('editBlogUsername').value.trim();
+            const password = document.getElementById('editBlogPassword').value.trim();
+            const apiKey = document.getElementById('editBlogApiKey').value.trim();
+
+            if (!name || !url || !signinUrl || !username || !password) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            const updatedBlog = {
+                name,
+                platform,
+                url,
+                signin_url: signinUrl,
+                username: btoa(username),
+                password: btoa(password),
+                api_key: apiKey ? btoa(apiKey) : '',
+                updated_at: new Date().toISOString()
+            };
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('blogs')
+                    .update(updatedBlog)
+                    .eq('id', blogId)
+                    .select();
+
+                if (error) throw error;
+
+                alert('✅ Blog updated successfully!');
+
+                // Close modal
+                document.querySelector('[style*="position: fixed"]').remove();
+
+                // Refresh blog list
+                displayBlogManagement();
+            } catch (error) {
+                console.error('Error updating blog:', error);
+                alert('❌ Failed to update blog: ' + error.message);
+            }
         }
 
         async function deleteBlog(blogId) {
