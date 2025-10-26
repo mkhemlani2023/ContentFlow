@@ -48,14 +48,14 @@
            HEADER - MINIMALISTIC & PROFESSIONAL
            =================================== */
         .header {
-            background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
             padding: 20px 40px;
             margin: 0;
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .header h1 {
@@ -603,8 +603,8 @@
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <img src="/seo-wizard-logo.png" alt="SEO Wizard" style="height: 120px; width: auto;">
                     <div>
-                        <div style="font-size: 28px; color: white; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2;">SEO Wizard</div>
-                        <div style="font-size: 14px; color: rgba(255,255,255,0.9); font-weight: 500; margin-top: 4px;">Content Strategy Platform</div>
+                        <div style="font-size: 28px; color: #1E293B; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2;">SEO Wizard</div>
+                        <div style="font-size: 14px; color: #64748B; font-weight: 500; margin-top: 4px;">Content Strategy Platform</div>
                     </div>
                 </div>
 
@@ -612,15 +612,15 @@
                 <nav style="flex: 1;">
                     <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center;">
                         <!-- Get Started button (visible when not logged in) -->
-                        <a id="navGetStarted" onclick="showAboutSEOWizard()" style="display: none; background: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%); color: #1E293B; text-decoration: none; cursor: pointer; font-size: 15px; font-weight: 700; padding: 12px 24px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.8); transition: all 0.2s; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.25)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'">🚀 Get Started with SEO Wizard</a>
+                        <a id="navGetStarted" onclick="showAboutSEOWizard()" style="display: none; background: linear-gradient(135deg, #334155 0%, #1E293B 100%); color: white; text-decoration: none; cursor: pointer; font-size: 15px; font-weight: 700; padding: 12px 24px; border-radius: 8px; border: 2px solid #1E293B; transition: all 0.2s; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.25)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'">🚀 Get Started with SEO Wizard</a>
 
-                        <a id="navMyArticles" onclick="handleNavClick('showSavedArticlesLibrary')" style="background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); transition: all 0.2s; white-space: nowrap;">My Articles</a>
-                        <a id="navSavedKeywords" onclick="handleNavClick('showSavedContentIdeas')" style="background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); transition: all 0.2s; white-space: nowrap;">Saved Keywords</a>
-                        <a id="navBlogManagement" onclick="handleNavClick('showBlogManagement')" style="background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); transition: all 0.2s; white-space: nowrap;">Blog Management</a>
-                        <a id="navWebsiteMetrics" onclick="handleNavClick('showWebsiteMetrics')" style="background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); transition: all 0.2s; white-space: nowrap;">Website Metrics</a>
+                        <a id="navMyArticles" onclick="handleNavClick('showSavedArticlesLibrary')" style="background: #F1F5F9; color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #E2E8F0; transition: all 0.2s; white-space: nowrap;">My Articles</a>
+                        <a id="navSavedKeywords" onclick="handleNavClick('showSavedContentIdeas')" style="background: #F1F5F9; color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #E2E8F0; transition: all 0.2s; white-space: nowrap;">Saved Keywords</a>
+                        <a id="navBlogManagement" onclick="handleNavClick('showBlogManagement')" style="background: #F1F5F9; color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #E2E8F0; transition: all 0.2s; white-space: nowrap;">Blog Management</a>
+                        <a id="navWebsiteMetrics" onclick="handleNavClick('showWebsiteMetrics')" style="background: #F1F5F9; color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #E2E8F0; transition: all 0.2s; white-space: nowrap;">Website Metrics</a>
                         <!-- Always active links -->
-                        <a onclick="showCreditPurchase()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">Purchase Credits</a>
-                        <a onclick="showAboutSEOWizard()" style="background: rgba(255,255,255,0.25); color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(0)'">About</a>
+                        <a onclick="showCreditPurchase()" style="background: #334155; color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #334155; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='#1E293B'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='#334155'; this.style.transform='translateY(0)'">Purchase Credits</a>
+                        <a onclick="showAboutSEOWizard()" style="background: #334155; color: white; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 2px solid #334155; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='#1E293B'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='#334155'; this.style.transform='translateY(0)'">About</a>
                     </div>
                 </nav>
 
@@ -638,12 +638,12 @@
 
                     <!-- User Profile Section (visible when logged in) -->
                     <div id="authSection" style="display: none; position: relative;">
-                        <button onclick="toggleProfileMenu()" id="profileButton" style="background: rgba(255,255,255,0.3); padding: 12px 20px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.5); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.3)'">
+                        <button onclick="toggleProfileMenu()" id="profileButton" style="background: #F8FAFC; padding: 12px 20px; border-radius: 8px; border: 2px solid #E2E8F0; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" onmouseover="this.style.background='#F1F5F9'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.1)'" onmouseout="this.style.background='#F8FAFC'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.05)'">
                             <div style="text-align: left;">
-                                <div style="font-size: 11px; color: white; font-weight: 600; opacity: 0.9;">Credits</div>
-                                <div id="headerCreditBalance" style="font-size: 18px; font-weight: 900; color: white;">-</div>
+                                <div style="font-size: 11px; color: #64748B; font-weight: 600;">Credits</div>
+                                <div id="headerCreditBalance" style="font-size: 18px; font-weight: 900; color: #1E293B;">-</div>
                             </div>
-                            <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: white;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: white;">
                                 👤
                             </div>
                         </button>
@@ -1423,31 +1423,31 @@
 
                 // Enable navigation items
                 if (navMyArticles) {
-                    navMyArticles.style.background = 'rgba(255,255,255,0.25)';
+                    navMyArticles.style.background = '#334155';
                     navMyArticles.style.color = 'white';
                     navMyArticles.style.cursor = 'pointer';
-                    navMyArticles.style.borderColor = 'rgba(255,255,255,0.4)';
+                    navMyArticles.style.borderColor = '#334155';
                     navMyArticles.setAttribute('data-enabled', 'true');
                 }
                 if (navSavedKeywords) {
-                    navSavedKeywords.style.background = 'rgba(255,255,255,0.25)';
+                    navSavedKeywords.style.background = '#334155';
                     navSavedKeywords.style.color = 'white';
                     navSavedKeywords.style.cursor = 'pointer';
-                    navSavedKeywords.style.borderColor = 'rgba(255,255,255,0.4)';
+                    navSavedKeywords.style.borderColor = '#334155';
                     navSavedKeywords.setAttribute('data-enabled', 'true');
                 }
                 if (navBlogManagement) {
-                    navBlogManagement.style.background = 'rgba(255,255,255,0.25)';
+                    navBlogManagement.style.background = '#334155';
                     navBlogManagement.style.color = 'white';
                     navBlogManagement.style.cursor = 'pointer';
-                    navBlogManagement.style.borderColor = 'rgba(255,255,255,0.4)';
+                    navBlogManagement.style.borderColor = '#334155';
                     navBlogManagement.setAttribute('data-enabled', 'true');
                 }
                 if (navWebsiteMetrics) {
-                    navWebsiteMetrics.style.background = 'rgba(255,255,255,0.25)';
+                    navWebsiteMetrics.style.background = '#334155';
                     navWebsiteMetrics.style.color = 'white';
                     navWebsiteMetrics.style.cursor = 'pointer';
-                    navWebsiteMetrics.style.borderColor = 'rgba(255,255,255,0.4)';
+                    navWebsiteMetrics.style.borderColor = '#334155';
                     navWebsiteMetrics.setAttribute('data-enabled', 'true');
                 }
             } else {
@@ -1461,31 +1461,31 @@
 
                 // Disable navigation items (greyed out)
                 if (navMyArticles) {
-                    navMyArticles.style.background = 'rgba(255,255,255,0.15)';
-                    navMyArticles.style.color = 'rgba(255,255,255,0.5)';
+                    navMyArticles.style.background = '#F1F5F9';
+                    navMyArticles.style.color = '#94A3B8';
                     navMyArticles.style.cursor = 'not-allowed';
-                    navMyArticles.style.borderColor = 'rgba(255,255,255,0.2)';
+                    navMyArticles.style.borderColor = '#E2E8F0';
                     navMyArticles.setAttribute('data-enabled', 'false');
                 }
                 if (navSavedKeywords) {
-                    navSavedKeywords.style.background = 'rgba(255,255,255,0.15)';
-                    navSavedKeywords.style.color = 'rgba(255,255,255,0.5)';
+                    navSavedKeywords.style.background = '#F1F5F9';
+                    navSavedKeywords.style.color = '#94A3B8';
                     navSavedKeywords.style.cursor = 'not-allowed';
-                    navSavedKeywords.style.borderColor = 'rgba(255,255,255,0.2)';
+                    navSavedKeywords.style.borderColor = '#E2E8F0';
                     navSavedKeywords.setAttribute('data-enabled', 'false');
                 }
                 if (navBlogManagement) {
-                    navBlogManagement.style.background = 'rgba(255,255,255,0.15)';
-                    navBlogManagement.style.color = 'rgba(255,255,255,0.5)';
+                    navBlogManagement.style.background = '#F1F5F9';
+                    navBlogManagement.style.color = '#94A3B8';
                     navBlogManagement.style.cursor = 'not-allowed';
-                    navBlogManagement.style.borderColor = 'rgba(255,255,255,0.2)';
+                    navBlogManagement.style.borderColor = '#E2E8F0';
                     navBlogManagement.setAttribute('data-enabled', 'false');
                 }
                 if (navWebsiteMetrics) {
-                    navWebsiteMetrics.style.background = 'rgba(255,255,255,0.15)';
-                    navWebsiteMetrics.style.color = 'rgba(255,255,255,0.5)';
+                    navWebsiteMetrics.style.background = '#F1F5F9';
+                    navWebsiteMetrics.style.color = '#94A3B8';
                     navWebsiteMetrics.style.cursor = 'not-allowed';
-                    navWebsiteMetrics.style.borderColor = 'rgba(255,255,255,0.2)';
+                    navWebsiteMetrics.style.borderColor = '#E2E8F0';
                     navWebsiteMetrics.setAttribute('data-enabled', 'false');
                 }
             }
