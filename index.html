@@ -12751,10 +12751,21 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
 
             try {
                 const article = window.currentGeneratedArticle;
+
+                // Create complete save object with all article data including TOC
+                const saveData = {
+                    content: article.content,
+                    metadata: article.metadata || {},
+                    tableOfContents: article.tableOfContents || [],
+                    images: article.images || [],
+                    modelTier: article.modelTier || window.selectedModel || 'basic',
+                    modelConfig: article.modelConfig
+                };
+
                 const result = await SupabaseService.saveArticle({
                     title: article.content?.title || 'Untitled Article',
                     keyword: article.metadata?.focusKeyword || article.metadata?.keyword || '',
-                    content: JSON.stringify(article.content),
+                    content: JSON.stringify(saveData),
                     metadata: JSON.stringify(article.metadata || {}),
                     model_tier: article.modelTier || window.selectedModel || 'basic',
                     word_count: article.metadata?.actualWordCount || article.metadata?.wordCount || 0,
@@ -12762,6 +12773,8 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 });
 
                 if (result.success) {
+                    // Store the article ID for later use
+                    window.currentGeneratedArticle.savedArticleId = result.data.id;
                     alert('✅ Article saved successfully to your library!\n\nYou can access it anytime from "My Saved Articles".');
                 } else {
                     throw new Error(result.error || 'Failed to save article');
@@ -13032,28 +13045,63 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             article.content = content;
             window.currentGeneratedArticle = article;
 
-            // If article is saved, update it in database
+            // If article is saved, update it in database with complete article data
             if (article.savedArticleId && currentUser && supabaseClient) {
                 try {
+                    // Create complete save object with all article data
+                    const saveData = {
+                        content: content,
+                        metadata: article.metadata || {},
+                        tableOfContents: article.tableOfContents || [],
+                        images: Object.values(window.selectedImages),
+                        modelTier: article.modelTier,
+                        modelConfig: article.modelConfig
+                    };
+
                     await SupabaseService.updateArticle(article.savedArticleId, {
-                        content: JSON.stringify(content),
+                        content: JSON.stringify(saveData),
                         images: JSON.stringify(Object.values(window.selectedImages)),
                         updated_at: new Date().toISOString()
                     });
                 } catch (error) {
                     console.error('Error updating article with images:', error);
+                    alert('⚠️ Images added but failed to save to database. Please try again.');
+                    return;
                 }
             }
-
-            alert('✅ Images added successfully!');
 
             // Close modal
             document.querySelector('.modal').remove();
 
-            // Refresh article display if in edit mode
-            if (document.getElementById('articleEditor')) {
-                enterEditMode();
-            }
+            // Show success modal with action buttons
+            const successModal = document.createElement('div');
+            successModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 50000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%; text-align: center;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+                        <h2 style="color: #1e293b; margin: 0 0 15px 0;">Images Added Successfully!</h2>
+                        <p style="color: #64748b; margin: 0 0 30px 0; line-height: 1.6;">
+                            ${Object.keys(window.selectedImages).length} image${Object.keys(window.selectedImages).length !== 1 ? 's' : ''} added to your article with SEO-optimized alt text.
+                        </p>
+
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <button onclick="this.closest('[style*=\\'position: fixed\\']').remove(); viewSavedArticle('${article.savedArticleId}')" style="width: 100%; background: #334155; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
+                                👁️ View Article with Images
+                            </button>
+
+                            <button onclick="this.closest('[style*=\\'position: fixed\\']').remove(); publishSavedArticle('${article.savedArticleId}')" style="width: 100%; background: #10b981; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                                🚀 Publish to Website
+                            </button>
+
+                            <button onclick="this.closest('[style*=\\'position: fixed\\']').remove()" style="width: 100%; background: #64748b; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#475569'" onmouseout="this.style.background='#64748b'">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(successModal);
         }
 
         async function publishToWebsite() {
