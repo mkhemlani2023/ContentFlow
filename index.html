@@ -737,9 +737,6 @@
                 <!-- Navigation Menu -->
                 <nav style="flex: 1;">
                     <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center;">
-                        <!-- Get Started button (visible when not logged in) -->
-                        <a id="navGetStarted" onclick="showAboutSEOWizard()" style="display: none; background: linear-gradient(135deg, #334155 0%, #1E293B 100%); color: white; text-decoration: none; cursor: pointer; font-size: 15px; font-weight: 700; padding: 12px 24px; border-radius: 8px; border: 2px solid #1E293B; transition: all 0.2s; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.25)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'">🚀 Get Started with SEO Wizard</a>
-
                         <a id="navMyArticles" onclick="handleNavClick('showSavedArticlesLibrary')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">My Articles</a>
                         <a id="navSavedKeywords" onclick="handleNavClick('showSavedContentIdeas')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Saved Keywords</a>
                         <a id="navBlogManagement" onclick="handleNavClick('showBlogManagement')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Blog Management</a>
@@ -1768,9 +1765,14 @@
                         </p>
                     </div>
 
-                    <button onclick="this.closest('[style*=fixed]').remove()" style="margin-top: 24px; padding: 12px 32px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; width: 100%;">
-                        Close
-                    </button>
+                    <div style="display: flex; gap: 12px; margin-top: 24px;">
+                        <button onclick="this.closest('[style*=fixed]').remove(); showAuthModal('signup');" style="flex: 1; padding: 14px 24px; background: linear-gradient(135deg, #334155 0%, #1E293B 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.25)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'">
+                            🚀 Get Started - Sign Up Now
+                        </button>
+                        <button onclick="this.closest('[style*=fixed]').remove()" style="flex: 0 0 auto; padding: 14px 24px; background: #F8FAFC; color: #334155; border: 2px solid #E2E8F0; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='#F8FAFC'">
+                            Close
+                        </button>
+                    </div>
                 </div>
             `;
 
