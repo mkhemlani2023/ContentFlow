@@ -1069,7 +1069,10 @@
 
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 14px;">Password</label>
-                    <input type="password" id="loginPassword" placeholder="Enter your password" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;" onfocus="this.style.borderColor='#334155'" onblur="this.style.borderColor='#e2e8f0'">
+                    <div style="position: relative;">
+                        <input type="password" id="loginPassword" placeholder="Enter your password" style="width: 100%; padding: 12px 45px 12px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;" onfocus="this.style.borderColor='#334155'" onblur="this.style.borderColor='#e2e8f0'">
+                        <button type="button" onclick="togglePasswordVisibility('loginPassword', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #64748b; padding: 5px;" title="Show password">👁️</button>
+                    </div>
                     <div style="text-align: right; margin-top: 8px;">
                         <a href="#" onclick="showAuthModal('forgot'); return false;" style="color: #334155; font-size: 13px; text-decoration: none; font-weight: 500;">Forgot password?</a>
                     </div>
@@ -1105,7 +1108,10 @@
 
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 14px;">Password</label>
-                    <input type="password" id="signupPassword" placeholder="Min 6 characters" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;" onfocus="this.style.borderColor='#334155'" onblur="this.style.borderColor='#e2e8f0'">
+                    <div style="position: relative;">
+                        <input type="password" id="signupPassword" placeholder="Min 6 characters" style="width: 100%; padding: 12px 45px 12px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;" onfocus="this.style.borderColor='#334155'" onblur="this.style.borderColor='#e2e8f0'">
+                        <button type="button" onclick="togglePasswordVisibility('signupPassword', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #64748b; padding: 5px;" title="Show password">👁️</button>
+                    </div>
                     <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Minimum 6 characters</div>
                 </div>
 
@@ -1903,6 +1909,22 @@
             }
 
             modal.style.display = 'flex';
+        }
+
+        // Toggle password visibility
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.innerHTML = '🙈'; // Closed eye emoji
+                button.title = 'Hide password';
+            } else {
+                input.type = 'password';
+                button.innerHTML = '👁️'; // Open eye emoji
+                button.title = 'Show password';
+            }
         }
 
         // Hide authentication modal
@@ -6584,11 +6606,17 @@
                             </div>
                             <div style="margin-bottom: 10px;">
                                 <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Password</label>
-                                <input type="password" id="blogPassword" placeholder="Enter password" style="width: 100%; margin: 0;">
+                                <div style="position: relative;">
+                                    <input type="password" id="blogPassword" placeholder="Enter password" style="width: 100%; margin: 0; padding-right: 40px;">
+                                    <button type="button" onclick="togglePasswordVisibility('blogPassword', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: #64748b; padding: 4px;" title="Show password">👁️</button>
+                                </div>
                             </div>
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">API Key/Token</label>
-                                <input type="password" id="blogApiKey" placeholder="Enter API credentials (if required)" style="width: 100%; margin: 0;">
+                                <div style="position: relative;">
+                                    <input type="password" id="blogApiKey" placeholder="Enter API credentials (if required)" style="width: 100%; margin: 0; padding-right: 40px;">
+                                    <button type="button" onclick="togglePasswordVisibility('blogApiKey', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: #64748b; padding: 4px;" title="Show API key">👁️</button>
+                                </div>
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <button onclick="testNewBlogConnection()" style="background: #1E293B; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#1E293B'">
@@ -7581,7 +7609,10 @@
 
                             <div>
                                 <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 500;">Password *</label>
-                                <input type="password" id="editBlogPassword" value="${password}" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;" required>
+                                <div style="position: relative;">
+                                    <input type="password" id="editBlogPassword" value="${password}" style="width: 100%; padding: 12px 45px 12px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;" required>
+                                    <button type="button" onclick="togglePasswordVisibility('editBlogPassword', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #64748b; padding: 5px;" title="Show password">👁️</button>
+                                </div>
                             </div>
 
                             <div>
