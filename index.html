@@ -1447,6 +1447,30 @@
                     console.error('Error loading website metrics:', error);
                     return { success: false, error: error.message };
                 }
+            },
+
+            // Update article
+            async updateArticle(id, updates) {
+                if (!supabaseClient) {
+                    return { success: false, error: 'Supabase client not initialized' };
+                }
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('generated_articles')
+                        .update(updates)
+                        .eq('id', id)
+                        .eq('user_id', currentUser.id)
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error updating article:', error);
+                    return { success: false, error: error.message };
+                }
             }
         };
 
