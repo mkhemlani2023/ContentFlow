@@ -1162,6 +1162,38 @@
                     Remember your password? <a href="#" onclick="showAuthModal('login'); return false;" style="color: #334155; font-weight: 600; text-decoration: none;">Login</a>
                 </div>
             </div>
+
+            <!-- Reset Password Form (shown when user clicks email link) -->
+            <div id="resetPasswordForm" style="display: none;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h2 style="margin: 0 0 10px 0; color: #1e293b;">Set New Password</h2>
+                    <p style="color: #64748b; margin: 0;">Enter your new password below</p>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 14px;">New Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="resetPassword" placeholder="Enter new password (min 6 characters)" style="width: 100%; padding: 12px 45px 12px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;" onfocus="this.style.borderColor='#334155'" onblur="this.style.borderColor='#e2e8f0'">
+                        <button type="button" onclick="togglePasswordVisibility('resetPassword', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #64748b; padding: 5px;" title="Show password">👁️</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 14px;">Confirm New Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="resetPasswordConfirm" placeholder="Confirm new password" style="width: 100%; padding: 12px 45px 12px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;" onfocus="this.style.borderColor='#334155'" onblur="this.style.borderColor='#e2e8f0'">
+                        <button type="button" onclick="togglePasswordVisibility('resetPasswordConfirm', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #64748b; padding: 5px;" title="Show password">👁️</button>
+                    </div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Minimum 6 characters</div>
+                </div>
+
+                <div id="resetError" style="display: none; background: #fee; color: #c33; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;"></div>
+                <div id="resetSuccess" style="display: none; background: #d1fae5; color: #065f46; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;"></div>
+
+                <button onclick="handleResetPassword()" style="width: 100%; background: #334155; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 16px;">
+                    Update Password
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1892,12 +1924,14 @@
             const signupForm = document.getElementById('signupForm');
             const confirmationMessage = document.getElementById('confirmationMessage');
             const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+            const resetPasswordForm = document.getElementById('resetPasswordForm');
 
             // Hide all forms
             loginForm.style.display = 'none';
             signupForm.style.display = 'none';
             confirmationMessage.style.display = 'none';
             forgotPasswordForm.style.display = 'none';
+            resetPasswordForm.style.display = 'none';
 
             // Show requested form
             if (type === 'login') {
@@ -1906,6 +1940,8 @@
                 signupForm.style.display = 'block';
             } else if (type === 'forgot') {
                 forgotPasswordForm.style.display = 'block';
+            } else if (type === 'reset') {
+                resetPasswordForm.style.display = 'block';
             }
 
             modal.style.display = 'flex';
@@ -1938,12 +1974,16 @@
             document.getElementById('signupEmail').value = '';
             document.getElementById('signupPassword').value = '';
             document.getElementById('forgotEmail').value = '';
+            document.getElementById('resetPassword').value = '';
+            document.getElementById('resetPasswordConfirm').value = '';
 
             // Hide error/success messages
             document.getElementById('loginError').style.display = 'none';
             document.getElementById('signupError').style.display = 'none';
             document.getElementById('forgotError').style.display = 'none';
             document.getElementById('forgotSuccess').style.display = 'none';
+            document.getElementById('resetError').style.display = 'none';
+            document.getElementById('resetSuccess').style.display = 'none';
         }
 
         // Handle login
@@ -2089,7 +2129,7 @@
 
             try {
                 const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-                    redirectTo: `${window.location.origin}/reset-password`
+                    redirectTo: window.location.origin
                 });
 
                 if (error) throw error;
@@ -2109,6 +2149,71 @@
             } catch (error) {
                 console.error('Password reset error:', error);
                 errorDiv.textContent = error.message || 'Failed to send reset link. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // Handle password reset (when user clicks email link and sets new password)
+        async function handleResetPassword() {
+            const password = document.getElementById('resetPassword').value;
+            const confirmPassword = document.getElementById('resetPasswordConfirm').value;
+            const errorDiv = document.getElementById('resetError');
+            const successDiv = document.getElementById('resetSuccess');
+
+            // Hide previous messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // Check if Supabase is initialized
+            if (!supabaseClient) {
+                errorDiv.textContent = 'Authentication service not available. Please check configuration.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Validation
+            if (!password) {
+                errorDiv.textContent = 'Please enter a new password';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (password.length < 6) {
+                errorDiv.textContent = 'Password must be at least 6 characters';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                errorDiv.textContent = 'Passwords do not match';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient.auth.updateUser({
+                    password: password
+                });
+
+                if (error) throw error;
+
+                // Show success message
+                successDiv.textContent = 'Password updated successfully! Redirecting to login...';
+                successDiv.style.display = 'block';
+
+                // Clear the form fields
+                document.getElementById('resetPassword').value = '';
+                document.getElementById('resetPasswordConfirm').value = '';
+
+                // Auto-close and redirect to login after 2 seconds
+                setTimeout(() => {
+                    hideAuthModal();
+                    location.reload(); // Reload to clear any hash params
+                }, 2000);
+
+            } catch (error) {
+                console.error('Password update error:', error);
+                errorDiv.textContent = error.message || 'Failed to update password. Please try again.';
                 errorDiv.style.display = 'block';
             }
         }
@@ -14341,14 +14446,29 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
         }
 
         // Load saved research on page load
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // Try to initialize Supabase again if it wasn't initialized yet
             if (!supabaseClient) {
                 initializeSupabase();
             }
 
+            // Check for password reset token in URL hash
+            // Supabase sends users back with hash params like: #access_token=...&type=recovery
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const accessToken = hashParams.get('access_token');
+            const type = hashParams.get('type');
+
+            // If this is a password reset redirect, show the reset password form
+            if (accessToken && type === 'recovery' && supabaseClient) {
+                console.log('Password recovery detected, showing reset form');
+                showAuthModal('reset');
+                // Note: Supabase automatically sets the session when the page loads with these params
+            }
+
             // Check authentication status
-            checkAuthStatus();
+            if (typeof checkAuthStatus === 'function') {
+                checkAuthStatus();
+            }
 
             // Update credit display
             updateCreditDisplay();
