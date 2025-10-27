@@ -6855,6 +6855,11 @@
                     // Build article body from sections
                     let articleBody = '';
 
+                    // Featured Image (if exists)
+                    if (content.featuredImage) {
+                        articleBody += `<div style="margin-bottom: 30px;">${content.featuredImage}</div>`;
+                    }
+
                     // Table of Contents
                     if (tableOfContents && tableOfContents.length > 0) {
                         articleBody += `
