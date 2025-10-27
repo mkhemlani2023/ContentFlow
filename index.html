@@ -740,7 +740,6 @@
                         <a id="navMyArticles" onclick="handleNavClick('showSavedArticlesLibrary')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">My Articles</a>
                         <a id="navSavedKeywords" onclick="handleNavClick('showSavedContentIdeas')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Saved Keywords</a>
                         <a id="navBlogManagement" onclick="handleNavClick('showBlogManagement')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Blog Management</a>
-                        <a id="navWebsiteMetrics" onclick="handleNavClick('showWebsiteMetrics')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Website Metrics</a>
                         <!-- Always active links -->
                         <a onclick="showCreditPurchase()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">Purchase Credits</a>
                         <a onclick="showAboutSEOWizard()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">About</a>
@@ -1747,7 +1746,6 @@
                             <li style="margin-bottom: 8px;"><strong>Content Ideas:</strong> AI-generated article concepts optimized for your target keywords</li>
                             <li style="margin-bottom: 8px;"><strong>Article Generation:</strong> Create complete SEO-optimized articles with multiple quality tiers</li>
                             <li style="margin-bottom: 8px;"><strong>Blog Management:</strong> Connect and manage multiple WordPress sites from one dashboard</li>
-                            <li style="margin-bottom: 8px;"><strong>Website Metrics:</strong> Track domain authority, backlinks, and SEO performance</li>
                             <li style="margin-bottom: 8px;"><strong>Image Integration:</strong> AI-powered image selection and optimization for your content</li>
                         </ul>
 
@@ -6734,43 +6732,6 @@
                                 </button>
                             </div>
                         </div>
-
-                        <!-- Publishing Schedule Settings -->
-                        <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                            <h3 style="margin: 0 0 15px 0; color: #2d3748;">⏰ Smart Scheduling</h3>
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Posts Per Day</label>
-                                <select id="postsPerDay" style="width: 100%; margin: 0;">
-                                    <option value="1">1 post per day</option>
-                                    <option value="2" selected>2 posts per day</option>
-                                    <option value="3">3 posts per day</option>
-                                    <option value="4">4 posts per day (max)</option>
-                                </select>
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Time Between Posts</label>
-                                <select id="timeBetweenPosts" style="width: 100%; margin: 0;">
-                                    <option value="4">4 hours minimum</option>
-                                    <option value="6" selected>6 hours minimum</option>
-                                    <option value="8">8 hours minimum</option>
-                                    <option value="12">12 hours minimum</option>
-                                </select>
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Time Randomization</label>
-                                <select id="timeRandomization" style="width: 100%; margin: 0;">
-                                    <option value="30">±30 minutes</option>
-                                    <option value="60" selected>±1 hour</option>
-                                    <option value="120">±2 hours</option>
-                                </select>
-                            </div>
-                            <div style="background: #fff3cd; padding: 10px; border-radius: 4px; font-size: 12px; color: #856404; margin-bottom: 15px;">
-                                ⚠️ Smart scheduling prevents AI detection by varying posting times and distributing content across your blogs naturally.
-                            </div>
-                            <button onclick="updateScheduleSettings()" class="action-btn secondary" style="width: 100%; margin: 0;">
-                                <span class="btn-icon">⚙️</span>Update Settings
-                            </button>
-                        </div>
                     </div>
 
                     <!-- Managed Blogs List -->
@@ -7503,9 +7464,6 @@
                 const result = await SupabaseService.saveBlog(newBlog);
 
                 if (result.success) {
-                    // Automatically track this website's metrics (DA, backlinks, etc.)
-                    await autoTrackBlogMetrics(url, name);
-
                     // Clear form
                     document.getElementById('blogName').value = '';
                     document.getElementById('blogUrl').value = '';
@@ -7514,7 +7472,7 @@
                     document.getElementById('blogPassword').value = '';
                     document.getElementById('blogApiKey').value = '';
 
-                    alert(`✅ Blog "${name}" added successfully!\n\n📊 Website metrics tracking has been automatically set up.\n\nYou can view Domain Authority, backlinks, and other metrics in the Website Metrics Tracker.`);
+                    alert(`✅ Blog "${name}" added successfully!\n\nYou can now publish articles directly to this blog from your saved articles.`);
                     displayBlogManagement();
                 } else {
                     throw new Error(result.error || 'Failed to save blog');
@@ -10935,27 +10893,6 @@ ${item.answer}
                 console.error('Error deleting content ideas:', error);
                 alert('❌ Failed to delete content ideas: ' + error.message);
             }
-        }
-
-        // Show Website Metrics (placeholder)
-        function showWebsiteMetrics() {
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.innerHTML = `
-                <div style="background: white; padding: 40px; border-radius: 12px; max-width: 600px; width: 90%; text-align: center;">
-                    <h2 style="color: #1E293B; margin-bottom: 20px;">📊 Website Metrics</h2>
-                    <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
-                        Website analytics and performance metrics will be available here soon.
-                    </p>
-                    <p style="color: #64748b; font-size: 14px; margin-bottom: 30px;">
-                        Track your content performance, traffic sources, and engagement metrics all in one place.
-                    </p>
-                    <button onclick="this.closest('.modal').remove()" style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
-                        Close
-                    </button>
-                </div>
-            `;
-            document.body.appendChild(modal);
         }
 
         // Update credit cost calculation with enhanced styling
