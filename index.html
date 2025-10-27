@@ -7613,20 +7613,34 @@
                     throw new Error('Blog not found');
                 }
 
-                alert(`🔄 Testing connection to "${blog.name}"...\n\nThis may take a few seconds.`);
+                // Show loading message
+                const button = event?.target;
+                let originalText = '';
+                if (button) {
+                    originalText = button.innerHTML;
+                    button.innerHTML = '🔄 Testing...';
+                    button.disabled = true;
+                }
 
-                // Test WordPress XML-RPC connection
-                const response = await fetch('/api/wordpress-test', {
+                // Test WordPress REST API connection
+                const response = await fetch('/api/wordpress-test-connection', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         url: blog.url,
                         username: atob(blog.username),
-                        password: atob(blog.password)
+                        password: atob(blog.password),
+                        signinUrl: blog.signin_url
                     })
                 });
 
                 const testResult = await response.json();
+
+                // Restore button
+                if (button) {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
 
                 if (testResult.success) {
                     // Update blog status in Supabase
@@ -7635,18 +7649,27 @@
                         .update({ status: 'active' })
                         .eq('id', blogId);
 
-                    alert(`✅ Connection to "${blog.name}" successful!\n\n` +
-                          `Site: ${testResult.siteName || blog.name}\n` +
+                    alert(`✅ Connection Successful!\n\n` +
+                          `Blog: ${blog.name}\n` +
+                          `User: ${testResult.data.username} (${testResult.data.userLogin})\n` +
+                          `Roles: ${testResult.data.roles.join(', ')}\n` +
                           `URL: ${blog.url}\n\n` +
-                          `WordPress XML-RPC is working correctly.`);
+                          `WordPress REST API is working correctly.`);
                 } else {
-                    throw new Error(testResult.error || 'Connection test failed');
+                    throw new Error(testResult.message || testResult.error || 'Connection test failed');
                 }
 
                 displayBlogManagement();
             } catch (error) {
                 console.error('Blog connection test error:', error);
-                alert(`❌ Connection test failed\n\n${error.message}\n\nPlease check:\n• Website URL is correct\n• WordPress XML-RPC is enabled\n• Username and password are correct`);
+
+                // Restore button on error
+                if (button && originalText) {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
+
+                alert(`❌ Connection Test Failed\n\n${error.message}\n\nPlease check:\n• Website URL is correct (e.g., https://yourblog.com)\n• Username and password are correct\n• WordPress REST API is enabled\n• For WordPress 5.6+, use Application Passwords instead of your account password\n\nTo create an Application Password:\n1. Go to WordPress Admin → Users → Profile\n2. Scroll to "Application Passwords"\n3. Enter a name like "ContentFlow"\n4. Click "Add New Application Password"\n5. Copy the generated password and use it here`);
             }
         }
 
