@@ -13916,17 +13916,51 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                         fullResult: result
                     });
 
-                    // Check if it's an Application Password error
+                    // Parse error details more carefully
                     const errorMessage = result.message || '';
                     const errorDetails = result.details || '';
                     const errorCode = result.code || '';
-                    const isAppPasswordError = errorCode === 'incorrect_password' ||
-                                              errorMessage.includes('invalid application password') ||
-                                              errorMessage.includes('401') ||
-                                              errorMessage.includes('Unauthorized') ||
-                                              errorDetails.includes('401');
 
-                    if (isAppPasswordError) {
+                    // Check if it's a permissions error (authenticated but not authorized)
+                    const isPermissionsError = errorCode === 'rest_cannot_create' ||
+                                               errorCode === 'rest_forbidden' ||
+                                               errorMessage.includes('not allowed to create') ||
+                                               errorMessage.includes('not allowed to publish') ||
+                                               errorMessage.includes('forbidden') ||
+                                               (errorMessage.includes('401') && errorMessage.includes('not allowed'));
+
+                    // Check if it's an authentication error (credentials rejected)
+                    const isAppPasswordError = errorCode === 'incorrect_password' ||
+                                              errorCode === 'rest_forbidden_context' ||
+                                              errorMessage.includes('invalid application password') ||
+                                              errorMessage.includes('Invalid username') ||
+                                              (errorMessage.includes('401') && errorMessage.includes('Unauthorized') && !isPermissionsError);
+
+                    if (isPermissionsError) {
+                        alert(`❌ Permission Denied - User Role Issue\n\n` +
+                              `✅ Authentication successful!\n` +
+                              `❌ But your WordPress user doesn't have permission to create posts via the REST API.\n\n` +
+                              `🔍 DIAGNOSTIC INFO:\n` +
+                              `• Blog URL: ${selectedBlog.url}\n` +
+                              `• Username: ${username}\n` +
+                              `• Error: ${errorMessage}\n` +
+                              `• Error Code: ${errorCode}\n\n` +
+                              `✅ HOW TO FIX:\n\n` +
+                              `1. Log in to WordPress Admin\n` +
+                              `2. Go to Users → All Users\n` +
+                              `3. Find user: ${username}\n` +
+                              `4. Check their role - needs to be:\n` +
+                              `   • Administrator (recommended)\n` +
+                              `   • Editor\n` +
+                              `   • Author (minimum)\n` +
+                              `5. If role is "Subscriber" or "Contributor", change to "Author" or higher\n\n` +
+                              `⚠️ OTHER POSSIBLE CAUSES:\n` +
+                              `• Security plugin blocking REST API post creation\n` +
+                              `• Custom user role without "publish_posts" capability\n` +
+                              `• WordPress Multisite restrictions\n\n` +
+                              `💡 QUICK TEST:\n` +
+                              `Log into WordPress admin and try creating a post manually. If that works, it's likely a REST API restriction from a security plugin (like Wordfence, iThemes Security, etc.).`);
+                    } else if (isAppPasswordError) {
                         alert(`❌ Authentication Failed - Application Password Required\n\n` +
                               `WordPress rejected your credentials. You need to use an Application Password, not your regular password.\n\n` +
                               `🔍 DIAGNOSTIC INFO (check browser console for more details):\n` +
