@@ -12339,11 +12339,16 @@ ${item.answer}
 
                             <!-- Action Buttons -->
                             <div style="padding-top: 20px; border-top: 1px solid #e2e8f0;">
-                                <div style="margin-bottom: 15px; text-align: center;">
+                                <div style="margin-bottom: 15px; text-align: center; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
                                     <button onclick="showAIEditingPrompt()"
                                             style="background: #475569; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
                                             onmouseover="this.style.background='#334155'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#475569'; this.style.transform='translateY(0)'">
                                         ✨ AI Edit with Prompt
+                                    </button>
+                                    <button onclick="showHumanizePrompt()"
+                                            style="background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#059669'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#10b981'; this.style.transform='translateY(0)'">
+                                        👤 Humanize Text
                                     </button>
                                 </div>
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; max-width: 700px; margin: 0 auto;">
@@ -12636,6 +12641,243 @@ EDITED VERSION (complete, no abbreviations):`;
                 alert('❌ AI editing failed: ' + error.message);
                 // Refund credits on error
                 updateCreditsDisplay(getUserCredits() + editCost);
+            }
+        }
+
+        async function showHumanizePrompt() {
+            const article = window.currentGeneratedArticle;
+            if (!article) {
+                alert('No article available for humanization');
+                return;
+            }
+
+            // Check credits first
+            if (!currentUser) {
+                alert('🔒 Please log in to use text humanization');
+                showAuthModal('login');
+                return;
+            }
+
+            const humanizeCost = 25; // 25 credits for humanization
+            if (!checkCreditRequirement('Text Humanization', humanizeCost)) {
+                return;
+            }
+
+            // Show humanization options modal
+            const humanizeModal = document.createElement('div');
+            humanizeModal.id = 'humanizeModal';
+            humanizeModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 600px; width: 90%;">
+                        <h3 style="margin: 0 0 20px 0; color: #1a202c;">👤 Humanize Text</h3>
+
+                        <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #065f46;">
+                            <strong>✨ What this does:</strong><br>
+                            • Rewrites content to sound more natural and human<br>
+                            • Reduces AI detection scores<br>
+                            • Improves readability and flow<br>
+                            • Maintains all key information and SEO value<br>
+                            • Helps avoid potential SERP penalties
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Section to Humanize:</label>
+                            <select id="humanizeSection" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                                <option value="all">Entire Article</option>
+                                <option value="introduction">Introduction Only</option>
+                                ${article.content.sections ? article.content.sections.map((section, index) =>
+                                    `<option value="section-${index}">${section.title}</option>`
+                                ).join('') : ''}
+                                <option value="conclusion">Conclusion Only</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Humanization Style:</label>
+                            <select id="humanizeStyle" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                                <option value="balanced">Balanced (Recommended)</option>
+                                <option value="conversational">More Conversational</option>
+                                <option value="professional">Professional & Natural</option>
+                                <option value="storytelling">Storytelling Approach</option>
+                            </select>
+                        </div>
+
+                        <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #92400e;">
+                            <strong>💳 Cost:</strong> ${humanizeCost} credits (using ${article.modelTier || 'basic'} model)
+                        </div>
+
+                        <div style="display: flex; gap: 12px; justify-content: center;">
+                            <button onclick="applyHumanization()"
+                                    style="background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s;"
+                                    onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                                Humanize Text
+                            </button>
+                            <button onclick="document.getElementById('humanizeModal').remove()"
+                                    style="background: #f1f5f9; color: #475569; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s;"
+                                    onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(humanizeModal);
+        }
+
+        async function applyHumanization() {
+            const selectedSection = document.getElementById('humanizeSection').value;
+            const humanizeStyle = document.getElementById('humanizeStyle').value;
+            const article = window.currentGeneratedArticle;
+
+            // Deduct credits
+            const humanizeCost = 25;
+            if (!deductCredits(humanizeCost)) {
+                alert('Unable to deduct credits. Please try again.');
+                return;
+            }
+
+            // Close humanize modal
+            document.getElementById('humanizeModal').remove();
+
+            // Show progress
+            const progressModal = document.createElement('div');
+            progressModal.id = 'humanizeProgressModal';
+            progressModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 30000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">👤</div>
+                        <h3 style="margin: 0 0 15px 0; color: #1a202c;">Humanizing your content...</h3>
+                        <div style="color: #64748b; margin-bottom: 20px;">Making it sound more natural and authentic</div>
+                        <div style="width: 100%; background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #10b981, #059669); animation: pulse 1.5s ease-in-out infinite;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(progressModal);
+
+            try {
+                // Get content to humanize
+                let contentToHumanize = '';
+                let sectionIndex = -1;
+
+                if (selectedSection === 'all') {
+                    contentToHumanize = document.getElementById('editContent').value;
+                } else if (selectedSection === 'introduction') {
+                    contentToHumanize = document.getElementById('editIntroduction').value;
+                } else if (selectedSection === 'conclusion') {
+                    contentToHumanize = document.getElementById('editConclusion').value;
+                } else if (selectedSection.startsWith('section-')) {
+                    sectionIndex = parseInt(selectedSection.split('-')[1]);
+                    contentToHumanize = document.getElementById('editContent').value;
+                }
+
+                // Prepare humanization prompt based on style
+                let styleInstructions = '';
+                switch (humanizeStyle) {
+                    case 'conversational':
+                        styleInstructions = 'Use a friendly, conversational tone as if talking to a friend. Add personal touches, contractions, and casual expressions while maintaining professionalism.';
+                        break;
+                    case 'professional':
+                        styleInstructions = 'Maintain a professional yet natural tone. Use clear, direct language that sounds like an expert speaking naturally, not a robot.';
+                        break;
+                    case 'storytelling':
+                        styleInstructions = 'Use storytelling elements with vivid examples, anecdotes, and narrative flow. Make it engaging and relatable while keeping the facts.';
+                        break;
+                    default: // balanced
+                        styleInstructions = 'Balance professionalism with natural human expression. Use varied sentence structures, occasional contractions, and conversational phrases.';
+                }
+
+                const humanizePrompt = `You are an expert content writer specializing in making AI-generated text sound completely natural and human-written.
+
+TASK: Rewrite the following content to bypass AI detection while maintaining ALL information and SEO value.
+
+HUMANIZATION REQUIREMENTS:
+- ${styleInstructions}
+- Vary sentence length and structure (mix short, medium, and long sentences)
+- Use natural transitions and conversational connectors
+- Include occasional rhetorical questions or direct address to readers
+- Add subtle personal observations or relatable examples where appropriate
+- Use contractions naturally (don't, you'll, it's, we're)
+- Employ active voice predominantly
+- Include natural pauses and emphasis through formatting
+- Maintain all key facts, statistics, and SEO keywords
+- Keep the same overall structure and headings
+- Write out ALL content in full - never use placeholders or abbreviations
+
+CRITICAL: Return the COMPLETE rewritten content. Do not use "[Rest remains the same]" or any placeholders.
+
+CONTENT TO HUMANIZE:
+${contentToHumanize}
+
+HUMANIZED VERSION (complete, natural, authentic):`;
+
+                // Get model config from article
+                const modelConfig = article.modelConfig || { model: 'openai/gpt-4o-mini', temperature: 0.7 };
+
+                // Call AI API
+                const response = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: modelConfig.model,
+                        prompt: humanizePrompt,
+                        temperature: 0.9,  // Higher temperature for more natural variation
+                        max_tokens: 8000,
+                        stream: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Humanization failed');
+                }
+
+                const data = await response.json();
+                const humanizedContent = data.choices[0].message.content.trim();
+
+                // Apply humanized content back to form
+                if (selectedSection === 'all') {
+                    document.getElementById('editContent').value = humanizedContent;
+                } else if (selectedSection === 'introduction') {
+                    document.getElementById('editIntroduction').value = humanizedContent;
+                } else if (selectedSection === 'conclusion') {
+                    document.getElementById('editConclusion').value = humanizedContent;
+                } else if (selectedSection.startsWith('section-')) {
+                    document.getElementById('editContent').value = humanizedContent;
+                }
+
+                // Close progress and show success
+                document.getElementById('humanizeProgressModal').remove();
+
+                // Show success message
+                const successModal = document.createElement('div');
+                successModal.innerHTML = `
+                    <div style="position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 20px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 40000; animation: slideIn 0.3s ease-out;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="font-size: 24px;">✅</div>
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Text Humanized!</div>
+                                <div style="font-size: 13px; opacity: 0.9;">Content now sounds more natural. Review and save when ready.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <style>
+                    @keyframes slideIn {
+                        from { transform: translateX(400px); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    </style>
+                `;
+                document.body.appendChild(successModal);
+                setTimeout(() => successModal.remove(), 4000);
+
+            } catch (error) {
+                console.error('Humanization error:', error);
+                document.getElementById('humanizeProgressModal')?.remove();
+                alert('❌ Humanization failed: ' + error.message);
+                // Refund credits on error
+                updateCreditsDisplay(getUserCredits() + humanizeCost);
             }
         }
 
