@@ -7696,7 +7696,11 @@
                 button.innerHTML = originalText;
 
                 if (result.success) {
-                    alert(`✅ Connection Successful!\n\nWordPress Site: ${result.data.siteUrl}\nUser: ${result.data.username} (${result.data.userLogin})\nRoles: ${result.data.roles.join(', ')}\n\nYou can now add this blog to your managed sites.`);
+                    const roles = result.data?.roles && Array.isArray(result.data.roles)
+                        ? result.data.roles.join(', ')
+                        : 'Not available';
+
+                    alert(`✅ Connection Successful!\n\nWordPress Site: ${result.data?.siteUrl || 'N/A'}\nUser: ${result.data?.username || 'N/A'} (${result.data?.userLogin || 'N/A'})\nRoles: ${roles}\n\nYou can now add this blog to your managed sites.`);
                 } else {
                     alert(`❌ Connection Failed\n\n${result.message}\n\nPlease check:\n• Website URL is correct (e.g., https://yourblog.com)\n• Username and password are correct\n• WordPress REST API is enabled\n• For WordPress 5.6+, use Application Passwords instead of your account password\n\nTo create an Application Password:\n1. Go to WordPress Admin → Users → Profile\n2. Scroll to "Application Passwords"\n3. Enter a name like "ContentFlow"\n4. Click "Add New Application Password"\n5. Copy the generated password and use it here`);
                 }
@@ -7798,10 +7802,14 @@
                             .update({ status: 'active' })
                             .eq('id', blogId);
 
+                        const roles = testResult.data?.roles && Array.isArray(testResult.data.roles)
+                            ? testResult.data.roles.join(', ')
+                            : 'Not available';
+
                         alert(`✅ Connection Successful!\n\n` +
                               `Blog: ${blog.name}\n` +
-                              `User: ${testResult.data.username} (${testResult.data.userLogin})\n` +
-                              `Roles: ${testResult.data.roles.join(', ')}\n` +
+                              `User: ${testResult.data?.username || 'N/A'} (${testResult.data?.userLogin || 'N/A'})\n` +
+                              `Roles: ${roles}\n` +
                               `URL: ${blog.url}\n\n` +
                               `WordPress REST API is working correctly.`);
                     } else {
