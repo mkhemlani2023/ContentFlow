@@ -13689,28 +13689,117 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
 
             try {
                 // Prepare article content
+                console.log('🔍 Publishing Debug - Article structure:', {
+                    hasContent: !!article.content,
+                    hasTitle: !!article.content?.title,
+                    hasIntroduction: !!article.content?.introduction,
+                    hasSections: !!article.content?.sections,
+                    sectionsCount: article.content?.sections?.length || 0,
+                    hasImages: !!(article.images && article.images.length > 0)
+                });
+
                 statusDiv.innerHTML = `
                     <div>✅ Connected to ${selectedBlog.name}</div>
                     <div>🔑 Authenticating...</div>
                 `;
-                progressBar.style.width = '20%';
+                progressBar.style.width = '10%';
 
-                // Build HTML content from article
+                // Step 1: Upload images to WordPress media library if they exist
+                let uploadedImages = [];
+                if (article.images && article.images.length > 0) {
+                    statusDiv.innerHTML = `
+                        <div>✅ Connected to ${selectedBlog.name}</div>
+                        <div>📸 Uploading ${article.images.length} image(s) to media library...</div>
+                    `;
+                    progressBar.style.width = '20%';
+
+                    console.log('📸 Uploading images to WordPress media library:', article.images.length);
+
+                    for (let i = 0; i < article.images.length; i++) {
+                        const img = article.images[i];
+                        console.log(`📸 Uploading image ${i + 1}/${article.images.length}:`, img.url);
+
+                        try {
+                            // Download image data
+                            const imgResponse = await fetch(img.url);
+                            if (!imgResponse.ok) {
+                                console.warn(`⚠️ Failed to fetch image ${i + 1}:`, img.url);
+                                continue;
+                            }
+
+                            const imgBlob = await imgResponse.blob();
+                            const imgArrayBuffer = await imgBlob.arrayBuffer();
+                            const imgBase64 = btoa(String.fromCharCode(...new Uint8Array(imgArrayBuffer)));
+
+                            // Upload to WordPress media library
+                            const filename = `seo-wizard-${Date.now()}-${i}.jpg`;
+                            const uploadResponse = await fetch(`${selectedBlog.url}/wp-json/wp/v2/media`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Basic ' + btoa(`${username}:${password}`),
+                                    'Content-Type': 'image/jpeg',
+                                    'Content-Disposition': `attachment; filename="${filename}"`
+                                },
+                                body: imgBlob
+                            });
+
+                            if (uploadResponse.ok) {
+                                const uploadedMedia = await uploadResponse.json();
+                                uploadedImages.push({
+                                    id: uploadedMedia.id,
+                                    url: uploadedMedia.source_url,
+                                    alt: img.alt || article.content.title
+                                });
+                                console.log(`✅ Image ${i + 1} uploaded successfully:`, uploadedMedia.id);
+                            } else {
+                                const errorText = await uploadResponse.text();
+                                console.warn(`⚠️ Image upload failed for ${i + 1}:`, uploadResponse.status, errorText);
+                            }
+                        } catch (imgError) {
+                            console.error(`❌ Error uploading image ${i + 1}:`, imgError);
+                        }
+
+                        progressBar.style.width = `${20 + (i + 1) / article.images.length * 20}%`;
+                    }
+
+                    console.log(`📸 Image upload complete: ${uploadedImages.length}/${article.images.length} successful`);
+                }
+
+                statusDiv.innerHTML = `
+                    <div>✅ Connected to ${selectedBlog.name}</div>
+                    <div>✅ ${uploadedImages.length > 0 ? `Uploaded ${uploadedImages.length} image(s)` : 'No images to upload'}</div>
+                    <div>📝 Building article content...</div>
+                `;
+                progressBar.style.width = '40%';
+
+                // Step 2: Build HTML content from article
                 let htmlContent = '';
+
+                // Add featured image if uploaded
+                if (uploadedImages.length > 0) {
+                    const featuredImage = uploadedImages[0];
+                    htmlContent += `<figure class="wp-block-image"><img src="${featuredImage.url}" alt="${featuredImage.alt}" /></figure>\n\n`;
+                }
 
                 // Add introduction if exists
                 if (article.content?.introduction) {
                     htmlContent += `<p>${article.content.introduction}</p>\n\n`;
                 }
 
-                // Add sections if they exist
+                // Add sections if they exist with inline images
                 if (article.content?.sections && Array.isArray(article.content.sections)) {
-                    article.content.sections.forEach(section => {
+                    article.content.sections.forEach((section, index) => {
                         if (section.title) {
                             htmlContent += `<h2>${section.title}</h2>\n`;
                         }
                         if (section.content) {
                             htmlContent += `<p>${section.content}</p>\n\n`;
+                        }
+
+                        // Insert images between sections
+                        if (uploadedImages.length > index + 1) {
+                            const sectionImage = uploadedImages[index + 1];
+                            htmlContent += `<figure class="wp-block-image"><img src="${sectionImage.url}" alt="${sectionImage.alt}" /></figure>\n\n`;
                         }
                     });
                 }
@@ -13735,14 +13824,28 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                     throw new Error('Article content is empty or malformed. Cannot publish.');
                 }
 
+                console.log('📝 Article content built:', {
+                    contentLength: htmlContent.length,
+                    hasImages: uploadedImages.length > 0,
+                    imageCount: uploadedImages.length
+                });
+
                 statusDiv.innerHTML = `
                     <div>✅ Connected to ${selectedBlog.name}</div>
-                    <div>✅ Authenticated</div>
-                    <div>📤 Uploading article...</div>
+                    <div>✅ ${uploadedImages.length > 0 ? `Uploaded ${uploadedImages.length} image(s)` : 'No images to upload'}</div>
+                    <div>📤 Publishing article to WordPress...</div>
                 `;
-                progressBar.style.width = '50%';
+                progressBar.style.width = '60%';
 
-                // Call WordPress publish API
+                // Step 3: Publish article to WordPress
+                console.log('📤 Publishing to WordPress:', {
+                    url: selectedBlog.url,
+                    username: username,
+                    title: article.content.title,
+                    contentLength: htmlContent.length,
+                    publishType: publishType
+                });
+
                 const response = await fetch('/api/wordpress-publish', {
                     method: 'POST',
                     headers: {
@@ -13755,13 +13858,17 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                         article: {
                             title: article.content.title,
                             content: htmlContent,
-                            excerpt: article.content.introduction.substring(0, 150) + '...'
+                            excerpt: article.content.introduction?.substring(0, 150) + '...' || '',
+                            featured_media: uploadedImages.length > 0 ? uploadedImages[0].id : null
                         },
                         publishType: publishType
                     })
                 });
 
+                console.log('📡 WordPress API response status:', response.status);
+
                 const result = await response.json();
+                console.log('📡 WordPress API response:', result);
 
                 progressBar.style.width = '100%';
 
@@ -13799,17 +13906,34 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 } else {
                     progressModal.remove();
 
+                    // Enhanced error diagnostics
+                    console.error('❌ Publishing failed:', {
+                        success: result.success,
+                        message: result.message,
+                        details: result.details,
+                        code: result.code,
+                        status: response.status,
+                        fullResult: result
+                    });
+
                     // Check if it's an Application Password error
                     const errorMessage = result.message || '';
+                    const errorDetails = result.details || '';
                     const errorCode = result.code || '';
                     const isAppPasswordError = errorCode === 'incorrect_password' ||
                                               errorMessage.includes('invalid application password') ||
                                               errorMessage.includes('401') ||
-                                              errorMessage.includes('Unauthorized');
+                                              errorMessage.includes('Unauthorized') ||
+                                              errorDetails.includes('401');
 
                     if (isAppPasswordError) {
                         alert(`❌ Authentication Failed - Application Password Required\n\n` +
                               `WordPress rejected your credentials. You need to use an Application Password, not your regular password.\n\n` +
+                              `🔍 DIAGNOSTIC INFO (check browser console for more details):\n` +
+                              `• Blog URL: ${selectedBlog.url}\n` +
+                              `• Username: ${username}\n` +
+                              `• Error: ${errorMessage}\n` +
+                              `• Details: ${errorDetails}\n\n` +
                               `📝 How to Create an Application Password:\n\n` +
                               `1. Log in to WordPress Admin\n` +
                               `2. Go to Users → Profile (or Users → Your Profile)\n` +
@@ -13822,13 +13946,90 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                               `Need help? Check WordPress documentation:\n` +
                               `https://wordpress.org/support/article/application-passwords/`);
                     } else {
-                        alert(`❌ Publishing Failed\n\n${result.message}\n\n${result.details || ''}\n\nPlease check:\n• Your WordPress credentials are correct\n• WordPress REST API is enabled\n• You have permission to publish posts`);
+                        // Show detailed error with all available information
+                        alert(`❌ Publishing Failed\n\n` +
+                              `ERROR: ${errorMessage}\n\n` +
+                              `${errorDetails ? `DETAILS: ${errorDetails}\n\n` : ''}` +
+                              `🔍 DIAGNOSTIC INFO:\n` +
+                              `• Blog: ${selectedBlog.name}\n` +
+                              `• URL: ${selectedBlog.url}\n` +
+                              `• Username: ${username}\n` +
+                              `• Article Title: ${article.content.title}\n` +
+                              `• Content Length: ${htmlContent.length} chars\n` +
+                              `• Images Uploaded: ${uploadedImages.length}\n` +
+                              `• HTTP Status: ${response.status}\n` +
+                              `• Error Code: ${errorCode || 'none'}\n\n` +
+                              `✅ TROUBLESHOOTING CHECKLIST:\n` +
+                              `1. Check browser console (F12) for detailed logs\n` +
+                              `2. Verify WordPress REST API is enabled\n` +
+                              `3. Confirm you're using Application Password (not regular password)\n` +
+                              `4. Check if user has permission to publish posts\n` +
+                              `5. Verify WordPress site is accessible\n` +
+                              `6. Disable security plugins temporarily to test\n` +
+                              `7. Check WordPress error logs for more details`);
                     }
                 }
             } catch (error) {
                 progressModal.remove();
-                console.error('Publishing error:', error);
-                alert(`❌ Publishing Failed\n\nError: ${error.message}\n\nPlease verify:\n• Your WordPress site is accessible\n• Your credentials are correct\n• Your internet connection is working`);
+                console.error('❌ Publishing exception:', error);
+                console.error('Stack trace:', error.stack);
+
+                // Detailed error message with context
+                let errorType = 'Unknown Error';
+                let troubleshooting = [];
+
+                if (error.message.includes('fetch') || error.message.includes('network')) {
+                    errorType = 'Network/Connectivity Error';
+                    troubleshooting = [
+                        '• Check your internet connection',
+                        '• Verify WordPress site is accessible',
+                        '• Check if WordPress REST API is enabled',
+                        '• Firewall or security plugin may be blocking requests',
+                        '• Try testing connection to: ' + selectedBlog.url + '/wp-json/wp/v2'
+                    ];
+                } else if (error.message.includes('CORS')) {
+                    errorType = 'CORS (Cross-Origin) Error';
+                    troubleshooting = [
+                        '• WordPress may be blocking cross-origin requests',
+                        '• Install and configure CORS plugin on WordPress',
+                        '• Check WordPress .htaccess for CORS headers'
+                    ];
+                } else if (error.message.includes('empty') || error.message.includes('malformed')) {
+                    errorType = 'Content Validation Error';
+                    troubleshooting = [
+                        '• Article content structure is invalid',
+                        '• Try regenerating the article',
+                        '• Check browser console for content details'
+                    ];
+                } else if (error.message.includes('timeout')) {
+                    errorType = 'Timeout Error';
+                    troubleshooting = [
+                        '• WordPress site responding slowly',
+                        '• Large images taking too long to upload',
+                        '• Try publishing without images first',
+                        '• Contact hosting provider about performance'
+                    ];
+                } else {
+                    troubleshooting = [
+                        '• Check browser console (F12) for detailed error logs',
+                        '• Verify WordPress REST API is enabled',
+                        '• Test WordPress API manually: ' + selectedBlog.url + '/wp-json/wp/v2/users/me',
+                        '• Ensure Application Password (not regular password) is used',
+                        '• Temporarily disable WordPress security plugins',
+                        '• Check WordPress error logs'
+                    ];
+                }
+
+                alert(`❌ Publishing Failed - ${errorType}\n\n` +
+                      `ERROR: ${error.message}\n\n` +
+                      `🔍 DIAGNOSTIC INFO:\n` +
+                      `• Blog: ${selectedBlog.name}\n` +
+                      `• URL: ${selectedBlog.url}\n` +
+                      `• Username: ${username}\n` +
+                      `• Error Type: ${errorType}\n\n` +
+                      `✅ TROUBLESHOOTING:\n` +
+                      troubleshooting.join('\n') + '\n\n' +
+                      `💡 TIP: All detailed error information has been logged to the browser console (F12).`);
             }
         }
 
