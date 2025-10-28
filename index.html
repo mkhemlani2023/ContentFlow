@@ -7703,72 +7703,118 @@
         }
 
         async function testBlogConnection(event, blogId) {
+            console.log('🔍 testBlogConnection called with blogId:', blogId);
+
             if (!currentUser || !supabaseClient) {
                 alert('Please log in to test blog connections');
                 return;
             }
 
+            const button = event?.target;
+            let originalText = '';
+
             try {
-                // Load blog from Supabase
-                const result = await SupabaseService.loadBlogs();
-                if (!result.success || !result.data) {
-                    throw new Error('Failed to load blogs');
-                }
-
-                const blog = result.data.find(b => b.id === blogId);
-                if (!blog) {
-                    throw new Error('Blog not found');
-                }
-
                 // Show loading message
-                const button = event?.target;
-                let originalText = '';
                 if (button) {
                     originalText = button.innerHTML;
                     button.innerHTML = '🔄 Testing...';
                     button.disabled = true;
                 }
 
-                // Test WordPress REST API connection
-                const response = await fetch('/api/wordpress-test-connection', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        url: blog.url,
-                        username: atob(blog.username),
-                        password: atob(blog.password),
-                        signinUrl: blog.signin_url
-                    })
-                });
-
-                const testResult = await response.json();
-
-                // Restore button
-                if (button) {
-                    button.innerHTML = originalText;
-                    button.disabled = false;
+                // Load blog from Supabase
+                console.log('📦 Loading blogs from Supabase...');
+                const result = await SupabaseService.loadBlogs();
+                if (!result.success || !result.data) {
+                    throw new Error('Failed to load blogs from database');
                 }
 
-                if (testResult.success) {
-                    // Update blog status in Supabase
-                    await supabaseClient
-                        .from('blogs')
-                        .update({ status: 'active' })
-                        .eq('id', blogId);
-
-                    alert(`✅ Connection Successful!\n\n` +
-                          `Blog: ${blog.name}\n` +
-                          `User: ${testResult.data.username} (${testResult.data.userLogin})\n` +
-                          `Roles: ${testResult.data.roles.join(', ')}\n` +
-                          `URL: ${blog.url}\n\n` +
-                          `WordPress REST API is working correctly.`);
-                } else {
-                    throw new Error(testResult.message || testResult.error || 'Connection test failed');
+                const blog = result.data.find(b => b.id === blogId);
+                if (!blog) {
+                    throw new Error('Blog not found in database');
                 }
 
-                displayBlogManagement();
+                console.log('✅ Blog loaded:', { name: blog.name, url: blog.url });
+
+                // Decode credentials
+                const username = atob(blog.username);
+                const password = atob(blog.password);
+
+                console.log('🔐 Testing connection to:', blog.url);
+                console.log('👤 Username:', username);
+
+                // Create fetch with timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    console.error('⏱️ Request timed out after 30 seconds');
+                    controller.abort();
+                }, 30000); // 30 second timeout
+
+                try {
+                    // Test WordPress REST API connection
+                    const response = await fetch('/api/wordpress-test-connection', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            url: blog.url,
+                            username: username,
+                            password: password,
+                            signinUrl: blog.signin_url
+                        }),
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    console.log('📡 Response status:', response.status);
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('❌ Response not OK:', errorText);
+                        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                    }
+
+                    const testResult = await response.json();
+                    console.log('📥 Test result:', testResult);
+
+                    // Restore button
+                    if (button) {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }
+
+                    if (testResult.success) {
+                        console.log('✅ Connection successful!');
+
+                        // Update blog status in Supabase
+                        await supabaseClient
+                            .from('blogs')
+                            .update({ status: 'active' })
+                            .eq('id', blogId);
+
+                        alert(`✅ Connection Successful!\n\n` +
+                              `Blog: ${blog.name}\n` +
+                              `User: ${testResult.data.username} (${testResult.data.userLogin})\n` +
+                              `Roles: ${testResult.data.roles.join(', ')}\n` +
+                              `URL: ${blog.url}\n\n` +
+                              `WordPress REST API is working correctly.`);
+                    } else {
+                        throw new Error(testResult.message || testResult.error || 'Connection test failed');
+                    }
+
+                    displayBlogManagement();
+
+                } catch (fetchError) {
+                    clearTimeout(timeoutId);
+
+                    if (fetchError.name === 'AbortError') {
+                        throw new Error('Connection timed out after 30 seconds. Your WordPress site may be slow or unreachable.');
+                    }
+                    throw fetchError;
+                }
+
             } catch (error) {
-                console.error('Blog connection test error:', error);
+                console.error('❌ Blog connection test error:', error);
+                console.error('Error stack:', error.stack);
 
                 // Restore button on error
                 if (button && originalText) {
@@ -7776,7 +7822,31 @@
                     button.disabled = false;
                 }
 
-                alert(`❌ Connection Test Failed\n\n${error.message}\n\nPlease check:\n• Website URL is correct (e.g., https://yourblog.com)\n• Username and password are correct\n• WordPress REST API is enabled\n• For WordPress 5.6+, use Application Passwords instead of your account password\n\nTo create an Application Password:\n1. Go to WordPress Admin → Users → Profile\n2. Scroll to "Application Passwords"\n3. Enter a name like "ContentFlow"\n4. Click "Add New Application Password"\n5. Copy the generated password and use it here`);
+                // Determine error type and show appropriate message
+                let errorMessage = error.message;
+                let suggestions = [];
+
+                if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+                    suggestions.push('• Your WordPress site might be slow or down');
+                    suggestions.push('• Check if your site is accessible in a browser');
+                    suggestions.push('• Contact your hosting provider if site is slow');
+                } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+                    suggestions.push('• Use an Application Password, not your regular password');
+                    suggestions.push('• Verify username is correct');
+                    suggestions.push('• Check Application Password was copied correctly');
+                } else if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+                    suggestions.push('• Verify Website URL is correct');
+                    suggestions.push('• Make sure URL doesn\'t include /wp-admin');
+                    suggestions.push('• WordPress REST API might be disabled');
+                } else {
+                    suggestions.push('• Check your internet connection');
+                    suggestions.push('• Verify WordPress site is accessible');
+                    suggestions.push('• Try again in a few moments');
+                }
+
+                alert(`❌ Connection Test Failed\n\n${errorMessage}\n\n` +
+                      `Suggestions:\n${suggestions.join('\n')}\n\n` +
+                      `Check browser console (F12) for detailed error information.`);
             }
         }
 
