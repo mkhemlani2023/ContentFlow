@@ -12350,6 +12350,11 @@ ${item.answer}
                                             onmouseover="this.style.background='#059669'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#10b981'; this.style.transform='translateY(0)'">
                                         👤 Humanize Text
                                     </button>
+                                    <button onclick="checkAIDetection()"
+                                            style="background: #8b5cf6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#7c3aed'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#8b5cf6'; this.style.transform='translateY(0)'">
+                                        🔍 Check AI Score
+                                    </button>
                                 </div>
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; max-width: 700px; margin: 0 auto;">
                                     <button onclick="previewEditedArticle()"
@@ -12879,6 +12884,309 @@ HUMANIZED VERSION (complete, natural, authentic):`;
                 // Refund credits on error
                 updateCreditsDisplay(getUserCredits() + humanizeCost);
             }
+        }
+
+        async function checkAIDetection() {
+            const article = window.currentGeneratedArticle;
+            if (!article) {
+                alert('No article available for AI detection check');
+                return;
+            }
+
+            // Show checking modal
+            const checkingModal = document.createElement('div');
+            checkingModal.id = 'aiDetectionCheckModal';
+            checkingModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(4px);">
+                    <div style="background: white; padding: 40px; border-radius: 16px; max-width: 500px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
+                        <h3 style="margin-bottom: 10px; color: #1e293b;">Analyzing Content...</h3>
+                        <div style="color: #64748b; margin-bottom: 20px;">Checking for AI detection patterns</div>
+                        <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                            <div style="width: 30%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #7c3aed); animation: slideRight 1.5s ease-in-out infinite;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(checkingModal);
+
+            try {
+                // Get all content
+                const introduction = document.getElementById('editIntroduction')?.value || '';
+                const mainContent = document.getElementById('editContent')?.value || '';
+                const conclusion = document.getElementById('editConclusion')?.value || '';
+                const fullContent = introduction + '\n\n' + mainContent + '\n\n' + conclusion;
+
+                // Perform heuristic analysis
+                const heuristicScore = analyzeAIPatterns(fullContent);
+
+                // Call AI detection API for deeper analysis
+                const apiScore = await callAIDetectionAPI(fullContent);
+
+                // Combine scores (weighted average)
+                const finalScore = Math.round((heuristicScore * 0.4) + (apiScore * 0.6));
+
+                document.getElementById('aiDetectionCheckModal').remove();
+
+                // Show results modal
+                showAIDetectionResults(finalScore, heuristicScore, apiScore, fullContent);
+
+            } catch (error) {
+                console.error('AI Detection check error:', error);
+                document.getElementById('aiDetectionCheckModal')?.remove();
+                alert('❌ AI Detection check failed: ' + error.message);
+            }
+        }
+
+        function analyzeAIPatterns(content) {
+            // Heuristic analysis for AI-like patterns
+            let aiScore = 0;
+            let totalChecks = 0;
+
+            // 1. Check sentence length variation (AI tends to be more uniform)
+            const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+            const sentenceLengths = sentences.map(s => s.trim().split(/\s+/).length);
+            const avgLength = sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length;
+            const variance = sentenceLengths.reduce((sum, len) => sum + Math.pow(len - avgLength, 2), 0) / sentenceLengths.length;
+            const stdDev = Math.sqrt(variance);
+
+            // Low variation = more AI-like
+            if (stdDev < 5) aiScore += 20;
+            else if (stdDev < 8) aiScore += 10;
+            totalChecks++;
+
+            // 2. Check for repetitive patterns
+            const words = content.toLowerCase().split(/\s+/);
+            const uniqueWords = new Set(words);
+            const vocabularyDiversity = uniqueWords.size / words.length;
+
+            // Low diversity = more AI-like
+            if (vocabularyDiversity < 0.4) aiScore += 20;
+            else if (vocabularyDiversity < 0.5) aiScore += 10;
+            totalChecks++;
+
+            // 3. Check for common AI phrases
+            const aiPhrases = [
+                'it is important to note',
+                'in conclusion',
+                'furthermore',
+                'moreover',
+                'it should be noted',
+                'in summary',
+                'overall',
+                'in today\'s',
+                'dive into',
+                'let\'s explore',
+                'delve into',
+                'realm of',
+                'landscape of',
+                'tapestry',
+                'multifaceted'
+            ];
+
+            let phraseCount = 0;
+            const lowerContent = content.toLowerCase();
+            aiPhrases.forEach(phrase => {
+                if (lowerContent.includes(phrase)) phraseCount++;
+            });
+
+            if (phraseCount > 5) aiScore += 20;
+            else if (phraseCount > 3) aiScore += 10;
+            else if (phraseCount > 1) aiScore += 5;
+            totalChecks++;
+
+            // 4. Check for contractions (human writing uses more)
+            const contractionPattern = /\b(don't|won't|can't|shouldn't|wouldn't|couldn't|isn't|aren't|wasn't|weren't|haven't|hasn't|hadn't|I'm|you're|we're|they're|it's|that's|what's|who's|let's)\b/gi;
+            const contractions = content.match(contractionPattern) || [];
+            const contractionRate = contractions.length / sentences.length;
+
+            // Low contraction rate = more AI-like
+            if (contractionRate < 0.05) aiScore += 15;
+            else if (contractionRate < 0.1) aiScore += 5;
+            totalChecks++;
+
+            // 5. Check paragraph length uniformity
+            const paragraphs = content.split(/\n\n+/).filter(p => p.trim().length > 50);
+            const paragraphLengths = paragraphs.map(p => p.split(/\s+/).length);
+            const avgParaLength = paragraphLengths.reduce((a, b) => a + b, 0) / paragraphLengths.length;
+            const paraVariance = paragraphLengths.reduce((sum, len) => sum + Math.pow(len - avgParaLength, 2), 0) / paragraphLengths.length;
+            const paraStdDev = Math.sqrt(paraVariance);
+
+            // Low variation = more AI-like
+            if (paraStdDev < 20) aiScore += 15;
+            else if (paraStdDev < 40) aiScore += 5;
+            totalChecks++;
+
+            // 6. Check for passive voice (AI uses more)
+            const passivePattern = /\b(is|are|was|were|be|been|being)\s+\w+ed\b/gi;
+            const passiveMatches = content.match(passivePattern) || [];
+            const passiveRate = passiveMatches.length / sentences.length;
+
+            if (passiveRate > 0.3) aiScore += 10;
+            else if (passiveRate > 0.2) aiScore += 5;
+            totalChecks++;
+
+            // Normalize score to 0-100
+            return Math.min(100, Math.round(aiScore));
+        }
+
+        async function callAIDetectionAPI(content) {
+            try {
+                // Use AI model to analyze the content for AI detection patterns
+                const analysisPrompt = `Analyze the following text and determine how likely it is to be detected as AI-generated. Consider:
+- Sentence structure variation
+- Natural flow and transitions
+- Use of personal voice and contractions
+- Vocabulary diversity
+- Presence of cliché AI phrases
+- Overall authenticity
+
+Respond ONLY with a number between 0-100, where:
+- 0-20 = Very human-like, unlikely to be detected
+- 21-40 = Mostly human-like with some AI patterns
+- 41-60 = Mixed signals, moderate detection risk
+- 61-80 = Clearly AI patterns, high detection risk
+- 81-100 = Obviously AI-generated
+
+TEXT TO ANALYZE:
+${content.substring(0, 4000)}
+
+AI DETECTION SCORE (number only):`;
+
+                const response = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'openai/gpt-4o-mini',
+                        prompt: analysisPrompt,
+                        temperature: 0.3,
+                        max_tokens: 50,
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API analysis failed');
+                }
+
+                const data = await response.json();
+                const scoreText = data.choices[0].message.content.trim();
+                const score = parseInt(scoreText.match(/\d+/)?.[0] || '50');
+
+                return Math.min(100, Math.max(0, score));
+
+            } catch (error) {
+                console.error('API detection error:', error);
+                // Return neutral score on error
+                return 50;
+            }
+        }
+
+        function showAIDetectionResults(finalScore, heuristicScore, apiScore, content) {
+            let scoreColor, scoreEmoji, scoreText, recommendation;
+
+            if (finalScore <= 20) {
+                scoreColor = '#10b981';
+                scoreEmoji = '✅';
+                scoreText = 'Very Human-Like';
+                recommendation = 'Excellent! Your content appears very natural and is unlikely to be flagged by AI detectors.';
+            } else if (finalScore <= 40) {
+                scoreColor = '#84cc16';
+                scoreEmoji = '👍';
+                scoreText = 'Mostly Human-Like';
+                recommendation = 'Good! Minor AI patterns detected, but overall appears human-written. Consider using the Humanize feature for improvement.';
+            } else if (finalScore <= 60) {
+                scoreColor = '#f59e0b';
+                scoreEmoji = '⚠️';
+                scoreText = 'Mixed Signals';
+                recommendation = 'Moderate risk. Notable AI patterns detected. Strongly recommend using the Humanize feature to improve authenticity.';
+            } else if (finalScore <= 80) {
+                scoreColor = '#f97316';
+                scoreEmoji = '⚠️';
+                scoreText = 'High AI Detection Risk';
+                recommendation = 'High risk! Clear AI patterns present. Use the Humanize feature immediately to avoid potential SERP penalties.';
+            } else {
+                scoreColor = '#ef4444';
+                scoreEmoji = '❌';
+                scoreText = 'Obviously AI-Generated';
+                recommendation = 'Very high risk! Content shows obvious AI patterns. Multiple humanization passes strongly recommended.';
+            }
+
+            // Calculate word count and reading time
+            const wordCount = content.split(/\s+/).length;
+            const readingTime = Math.ceil(wordCount / 200);
+
+            const resultsModal = document.createElement('div');
+            resultsModal.id = 'aiDetectionResults';
+            resultsModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(4px);">
+                    <div style="background: white; padding: 40px; border-radius: 16px; max-width: 600px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <div style="font-size: 64px; margin-bottom: 15px;">${scoreEmoji}</div>
+                            <h2 style="margin: 0 0 10px 0; color: #1e293b;">AI Detection Score</h2>
+                            <div style="font-size: 48px; font-weight: 700; color: ${scoreColor}; margin-bottom: 5px;">${finalScore}%</div>
+                            <div style="font-size: 18px; color: ${scoreColor}; font-weight: 600;">${scoreText}</div>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 5px;">Pattern Analysis</div>
+                                    <div style="font-size: 24px; font-weight: 600; color: #334155;">${heuristicScore}%</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 5px;">AI Model Analysis</div>
+                                    <div style="font-size: 24px; font-weight: 600; color: #334155;">${apiScore}%</div>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                                <div>
+                                    <div style="font-size: 11px; color: #64748b; margin-bottom: 3px;">Word Count</div>
+                                    <div style="font-weight: 600; color: #334155;">${wordCount.toLocaleString()}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; color: #64748b; margin-bottom: 3px;">Reading Time</div>
+                                    <div style="font-weight: 600; color: #334155;">${readingTime} min</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: ${scoreColor}15; border-left: 4px solid ${scoreColor}; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                            <div style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">📊 Recommendation</div>
+                            <div style="color: #475569; line-height: 1.6;">${recommendation}</div>
+                        </div>
+
+                        ${finalScore > 40 ? `
+                            <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                <div style="font-weight: 600; color: #059669; margin-bottom: 8px;">💡 Quick Tip</div>
+                                <div style="color: #047857; font-size: 14px;">Click the "👤 Humanize Text" button above to automatically rewrite your content with more natural, human-like patterns.</div>
+                            </div>
+                        ` : ''}
+
+                        <div style="display: flex; gap: 12px; justify-content: center;">
+                            ${finalScore > 40 ? `
+                                <button onclick="document.getElementById('aiDetectionResults').remove(); showHumanizePrompt();"
+                                        style="background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                                    👤 Humanize Now
+                                </button>
+                            ` : ''}
+                            <button onclick="document.getElementById('aiDetectionResults').remove();"
+                                    style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                                Close
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
+                            <div style="font-size: 12px; color: #64748b;">
+                                💡 <strong>Note:</strong> This is an estimate. Different AI detectors may give different results.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(resultsModal);
         }
 
         function previewEditedArticle() {
