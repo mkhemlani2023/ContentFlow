@@ -13036,13 +13036,29 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
 
         // Add images to article (separate step after generation)
         async function addImagesToArticle() {
+            console.log('addImagesToArticle called');
+            console.log('currentGeneratedArticle:', window.currentGeneratedArticle);
+
             if (!window.currentGeneratedArticle) {
-                alert('❌ No article found. Please generate an article first.');
+                alert('❌ No article found. Please generate an article first before adding images.');
                 return;
             }
 
             const article = window.currentGeneratedArticle;
+
+            if (!article.content) {
+                console.error('Article has no content:', article);
+                alert('❌ Article content is missing. Please regenerate the article.');
+                return;
+            }
+
             const content = article.content;
+            console.log('Article content structure:', {
+                hasTitle: !!content.title,
+                hasIntroduction: !!content.introduction,
+                hasSections: !!content.sections,
+                sectionsCount: content.sections?.length || 0
+            });
 
             // Build sections array for image selection
             const sections = [];
