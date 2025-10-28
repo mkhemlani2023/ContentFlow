@@ -13562,13 +13562,20 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 return;
             }
 
+            // Suggest a category based on article content
+            const suggestedCategory = suggestCategoryFromArticle(article);
+
             // Show publishing options
             const publishModal = document.createElement('div');
             publishModal.id = 'publishModal';
             publishModal.innerHTML = `
                 <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 20000; display: flex; align-items: center; justify-content: center;">
                     <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
-                        <h3 style="margin: 0 0 20px 0; color: #1a202c;">Publish Article</h3>
+                        <h3 style="margin: 0 0 10px 0; color: #1a202c;">Publish Article</h3>
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #334155;">
+                            <div style="font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Article Title:</div>
+                            <div style="font-size: 14px; color: #1a202c; font-weight: 500;">${article.content.title}</div>
+                        </div>
 
                         <div style="margin-bottom: 20px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -13587,6 +13594,20 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                                     + New Category
                                 </button>
                             </div>
+                            ${suggestedCategory ? `
+                            <div style="background: #ecfdf5; border: 1px solid #10b981; border-radius: 6px; padding: 10px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 16px;">💡</span>
+                                    <div>
+                                        <div style="font-size: 11px; color: #059669; font-weight: 500; text-transform: uppercase;">Suggested Category</div>
+                                        <div style="font-size: 13px; color: #065f46; font-weight: 500;">${suggestedCategory}</div>
+                                    </div>
+                                </div>
+                                <button onclick="createCategoryFromSuggestion('${suggestedCategory.replace(/'/g, "\\'")}'); return false;" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: 500; white-space: nowrap;">
+                                    Use This
+                                </button>
+                            </div>
+                            ` : ''}
                             <select id="publishCategory" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
                                 <option value="">Loading categories...</option>
                             </select>
@@ -13631,6 +13652,144 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             // Load categories for the first blog automatically
             if (blogs.length > 0) {
                 loadWordPressCategories(blogs[0].id);
+            }
+        }
+
+        function suggestCategoryFromArticle(article) {
+            if (!article || !article.content || !article.content.title) return null;
+
+            const title = article.content.title.toLowerCase();
+            const introduction = article.content.introduction?.toLowerCase() || '';
+            const fullText = title + ' ' + introduction;
+
+            // Category mapping based on common keywords
+            const categoryMap = {
+                'Health & Wellness': ['health', 'wellness', 'fitness', 'nutrition', 'diet', 'exercise', 'medical', 'healthy', 'body', 'mental health', 'therapy', 'mindfulness'],
+                'Technology': ['technology', 'tech', 'software', 'digital', 'app', 'ai', 'artificial intelligence', 'machine learning', 'computer', 'programming', 'code', 'development'],
+                'Business': ['business', 'entrepreneur', 'startup', 'marketing', 'sales', 'finance', 'strategy', 'management', 'company', 'corporate', 'leadership'],
+                'Lifestyle': ['lifestyle', 'life', 'living', 'home', 'decor', 'fashion', 'style', 'beauty', 'travel', 'food', 'cooking', 'recipe'],
+                'Education': ['education', 'learning', 'school', 'teaching', 'student', 'course', 'study', 'tutorial', 'guide', 'how to learn'],
+                'Science': ['science', 'research', 'study', 'brain', 'biology', 'chemistry', 'physics', 'scientific', 'experiment', 'discovery'],
+                'Personal Development': ['personal development', 'self improvement', 'productivity', 'habits', 'goals', 'success', 'motivation', 'growth mindset'],
+                'Finance': ['money', 'investment', 'investing', 'savings', 'financial', 'budget', 'wealth', 'stocks', 'crypto', 'retirement'],
+                'Parenting': ['parenting', 'parent', 'child', 'kids', 'baby', 'family', 'children', 'toddler', 'pregnancy'],
+                'Relationships': ['relationship', 'dating', 'marriage', 'love', 'partner', 'communication', 'family', 'friendship']
+            };
+
+            // Score each category based on keyword matches
+            const scores = {};
+            for (const [category, keywords] of Object.entries(categoryMap)) {
+                scores[category] = 0;
+                for (const keyword of keywords) {
+                    if (fullText.includes(keyword)) {
+                        scores[category] += 1;
+                    }
+                }
+            }
+
+            // Find the category with the highest score
+            let bestCategory = null;
+            let bestScore = 0;
+            for (const [category, score] of Object.entries(scores)) {
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestCategory = category;
+                }
+            }
+
+            // If no good match, extract a keyword from the title
+            if (!bestCategory || bestScore === 0) {
+                // Extract the main topic from the title
+                const words = title.split(' ').filter(w =>
+                    w.length > 3 &&
+                    !['the', 'and', 'for', 'with', 'how', 'what', 'why', 'when', 'where', 'your', 'about', 'guide', 'complete', 'ultimate'].includes(w)
+                );
+                if (words.length > 0) {
+                    // Capitalize first letter of each word
+                    bestCategory = words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                }
+            }
+
+            return bestCategory;
+        }
+
+        async function createCategoryFromSuggestion(categoryName) {
+            const selectedBlogId = document.getElementById('publishBlog').value;
+
+            try {
+                // Get blog credentials
+                const result = await SupabaseService.loadBlogs();
+                if (!result.success || !result.data) {
+                    alert('Failed to load blog information');
+                    return;
+                }
+
+                const blog = result.data.find(b => b.id === selectedBlogId);
+                if (!blog) {
+                    alert('Blog not found');
+                    return;
+                }
+
+                const username = atob(blog.username);
+                const password = atob(blog.password);
+
+                // Check if category already exists
+                const categoriesResponse = await fetch(`${blog.url}/wp-json/wp/v2/categories?per_page=100`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(`${username}:${password}`),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (categoriesResponse.ok) {
+                    const existingCategories = await categoriesResponse.json();
+                    const existingCategory = existingCategories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
+
+                    if (existingCategory) {
+                        // Category already exists, just select it
+                        await loadWordPressCategories(selectedBlogId);
+                        setTimeout(() => {
+                            const categorySelect = document.getElementById('publishCategory');
+                            if (categorySelect) {
+                                categorySelect.value = existingCategory.id;
+                            }
+                        }, 500);
+                        return;
+                    }
+                }
+
+                // Create new category
+                const createResponse = await fetch(`${blog.url}/wp-json/wp/v2/categories`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(`${username}:${password}`),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: categoryName,
+                        slug: categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+                    })
+                });
+
+                if (createResponse.ok) {
+                    const newCategory = await createResponse.json();
+                    // Reload categories to show the new one
+                    await loadWordPressCategories(selectedBlogId);
+                    // Select the newly created category
+                    setTimeout(() => {
+                        const categorySelect = document.getElementById('publishCategory');
+                        if (categorySelect) {
+                            categorySelect.value = newCategory.id;
+                        }
+                    }, 500);
+                } else {
+                    const errorData = await createResponse.json();
+                    throw new Error(errorData.message || `Failed to create category: ${createResponse.status}`);
+                }
+            } catch (error) {
+                console.error('Error creating category from suggestion:', error);
+                alert(`❌ Failed to create category:\n\n${error.message}`);
             }
         }
 
