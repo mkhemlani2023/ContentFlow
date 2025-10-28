@@ -7328,12 +7328,39 @@
 
                 if (result.success && result.data) {
                     const article = result.data;
-                    const content = JSON.parse(article.content);
+                    const savedData = JSON.parse(article.content);
+
+                    console.log('Publishing saved article - raw data:', savedData);
+
+                    // Handle both old and new save formats
+                    // New format: { content: {...}, metadata: {...}, tableOfContents: [...] }
+                    // Old format: { title, introduction, sections, ... }
+                    let articleContent, articleMetadata, articleTOC;
+
+                    if (savedData.content && typeof savedData.content === 'object') {
+                        // New format - nested structure
+                        articleContent = savedData.content;
+                        articleMetadata = savedData.metadata || {};
+                        articleTOC = savedData.tableOfContents || [];
+                    } else {
+                        // Old format - flat structure
+                        articleContent = savedData;
+                        articleMetadata = article.metadata ? JSON.parse(article.metadata) : {};
+                        articleTOC = savedData.tableOfContents || [];
+                    }
+
+                    console.log('Article content structure:', {
+                        hasTitle: !!articleContent.title,
+                        hasIntroduction: !!articleContent.introduction,
+                        hasSections: !!articleContent.sections,
+                        sectionsCount: articleContent.sections?.length || 0
+                    });
 
                     // Set as current article for publishing
                     window.currentGeneratedArticle = {
-                        content: content,
-                        metadata: article.metadata ? JSON.parse(article.metadata) : {},
+                        content: articleContent,
+                        metadata: articleMetadata,
+                        tableOfContents: articleTOC,
                         modelTier: article.model_tier,
                         savedArticleId: articleId
                     };
