@@ -664,6 +664,8 @@ Create article ideas that:
 - Commercial angles where they don't naturally fit
 - Overly broad or vague titles
 - Topics that don't match user search intent
+- Generic title patterns like "Complete Guide", "Comprehensive Guide", "Ultimate Guide", "Everything You Need to Know"
+- Word counts over 2500 (keep articles focused and realistic)
 
 ARTICLE TYPES TO CONSIDER (where naturally relevant):
 - How-to guides and tutorials
@@ -679,9 +681,9 @@ ARTICLE TYPES TO CONSIDER (where naturally relevant):
 
 OUTPUT REQUIREMENTS:
 For each article idea, provide:
-- title: Compelling, specific, naturally includes "${keyword}", addresses real user need
+- title: Compelling, specific, naturally includes "${keyword}", addresses real user need (avoid "Complete Guide", "Comprehensive Guide", "Ultimate Guide" patterns)
 - audience: Specific demographic who would genuinely search for this
-- wordCount: Realistic length based on topic complexity (800-2500 words)
+- wordCount: Realistic length based on topic complexity (1000-2000 words max, shorter is better)
 - intent: Actual search intent (informational, commercial, navigational, transactional)
 - description: Clear explanation of what problem this solves or value it provides
 
@@ -759,11 +761,11 @@ Generate ideas that users would actually find valuable when searching for "${key
     if (articles.length === 0) {
       // Return a fallback response instead of throwing an error
       articles = [{
-        title: `Complete Guide to ${keyword}`,
-        audience: 'General users interested in ' + keyword,
-        wordCount: 1500,
+        title: `How to Get Started with ${keyword}`,
+        audience: 'Beginners and enthusiasts',
+        wordCount: 1200,
         intent: 'informational',
-        description: `Comprehensive overview covering everything you need to know about ${keyword}`
+        description: `Practical introduction to ${keyword} with actionable tips and real-world examples`
       }];
     }
 
