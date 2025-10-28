@@ -13027,7 +13027,7 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 return;
             }
 
-            imagesContainer.innerHTML = '<p style="color: #64748b; font-size: 14px;">Searching images...</p>';
+            imagesContainer.innerHTML = '<p style="color: #64748b; font-size: 14px;">🔍 Searching royalty-free images...</p>';
 
             try {
                 const response = await fetch('/api/pexels-images', {
@@ -13036,7 +13036,12 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                     body: JSON.stringify({ query, count: 6 })
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const result = await response.json();
+                console.log('Image search result:', result); // Debug logging
 
                 if (result.success && result.images && result.images.length > 0) {
                     imagesContainer.innerHTML = result.images.map(img => `
@@ -13047,12 +13052,41 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                             </div>
                         </div>
                     `).join('');
+                } else if (result.error) {
+                    // API returned an error
+                    console.error('Image API error:', result.error);
+                    imagesContainer.innerHTML = `
+                        <div style="padding: 20px; text-align: center; color: #64748b;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">📷</div>
+                            <p style="margin: 0 0 10px 0; font-weight: 600; color: #334155;">Image service unavailable</p>
+                            <p style="margin: 0; font-size: 13px;">The image search service is temporarily unavailable. You can:</p>
+                            <ul style="text-align: left; margin: 10px 0; padding-left: 20px; font-size: 13px;">
+                                <li>Skip images for now and add them later in WordPress</li>
+                                <li>Try again in a few moments</li>
+                                <li>Contact support if this persists</li>
+                            </ul>
+                        </div>
+                    `;
                 } else {
-                    imagesContainer.innerHTML = '<p style="color: #ef4444; font-size: 14px;">No images found. Try a different keyword.</p>';
+                    imagesContainer.innerHTML = `
+                        <div style="padding: 15px; text-align: center; color: #64748b;">
+                            <p style="margin: 0; font-size: 14px;">No images found for "${query}"</p>
+                            <p style="margin: 5px 0 0 0; font-size: 12px;">Try a different keyword or skip images for this section</p>
+                        </div>
+                    `;
                 }
             } catch (error) {
                 console.error('Image search error:', error);
-                imagesContainer.innerHTML = '<p style="color: #ef4444; font-size: 14px;">Error searching images. Please try again.</p>';
+                imagesContainer.innerHTML = `
+                    <div style="padding: 20px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; color: #991b1b;">
+                        <div style="font-size: 36px; margin-bottom: 10px;">⚠️</div>
+                        <p style="margin: 0 0 8px 0; font-weight: 600;">Image Search Error</p>
+                        <p style="margin: 0 0 15px 0; font-size: 13px;">${error.message}</p>
+                        <button onclick="searchImagesForSection('${sectionId}')" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                            Try Again
+                        </button>
+                    </div>
+                `;
             }
         }
 
@@ -13481,7 +13515,32 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                     }, 1000);
                 } else {
                     progressModal.remove();
-                    alert(`❌ Publishing Failed\n\n${result.message}\n\n${result.details || ''}\n\nPlease check:\n• Your WordPress credentials are correct\n• WordPress REST API is enabled\n• You have permission to publish posts\n• For WordPress 5.6+, use Application Passwords`);
+
+                    // Check if it's an Application Password error
+                    const errorMessage = result.message || '';
+                    const errorCode = result.code || '';
+                    const isAppPasswordError = errorCode === 'incorrect_password' ||
+                                              errorMessage.includes('invalid application password') ||
+                                              errorMessage.includes('401') ||
+                                              errorMessage.includes('Unauthorized');
+
+                    if (isAppPasswordError) {
+                        alert(`❌ Authentication Failed - Application Password Required\n\n` +
+                              `WordPress rejected your credentials. You need to use an Application Password, not your regular password.\n\n` +
+                              `📝 How to Create an Application Password:\n\n` +
+                              `1. Log in to WordPress Admin\n` +
+                              `2. Go to Users → Profile (or Users → Your Profile)\n` +
+                              `3. Scroll to "Application Passwords" section\n` +
+                              `4. Enter name: "ContentFlow" or "SEO Wizard"\n` +
+                              `5. Click "Add New Application Password"\n` +
+                              `6. Copy the generated password (e.g., "abcd 1234 efgh 5678")\n` +
+                              `7. Use that password in Blog Management\n\n` +
+                              `⚠️ Do NOT use your regular WordPress password!\n\n` +
+                              `Need help? Check WordPress documentation:\n` +
+                              `https://wordpress.org/support/article/application-passwords/`);
+                    } else {
+                        alert(`❌ Publishing Failed\n\n${result.message}\n\n${result.details || ''}\n\nPlease check:\n• Your WordPress credentials are correct\n• WordPress REST API is enabled\n• You have permission to publish posts`);
+                    }
                 }
             } catch (error) {
                 progressModal.remove();
