@@ -6728,10 +6728,30 @@
                         </button>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                        <!-- Add New Blog -->
+                    <!-- Managed Blogs List -->
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #2d3748; margin-bottom: 15px;">📝 Your Managed Blogs (${blogs.length})</h3>
+                        <div id="blogsList">
+                            ${blogsListHTML}
+                        </div>
+                    </div>
+
+                    <!-- Add Blog Button -->
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <button id="showAddBlogFormBtn" onclick="toggleAddBlogForm()" style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#334155'">
+                            ➕ Add New Blog
+                        </button>
+                    </div>
+
+                    <!-- Add New Blog Form (Hidden by default) -->
+                    <div id="addBlogForm" style="display: none; margin-bottom: 30px;">
                         <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                            <h3 style="margin: 0 0 15px 0; color: #2d3748;">➕ Add New Blog</h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h3 style="margin: 0; color: #2d3748;">➕ Add New Blog</h3>
+                                <button onclick="toggleAddBlogForm()" style="background: #64748b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                    Cancel
+                                </button>
+                            </div>
                             <div style="margin-bottom: 10px;">
                                 <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Blog Name</label>
                                 <input type="text" id="blogName" placeholder="My Marketing Blog" style="width: 100%; margin: 0;">
@@ -6778,14 +6798,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Managed Blogs List -->
-                    <div>
-                        <h3 style="color: #2d3748; margin-bottom: 15px;">📝 Your Managed Blogs (${blogs.length})</h3>
-                        <div id="blogsList">
-                            ${blogsListHTML}
-                        </div>
-                    </div>
                 </div>
             `;
         }
@@ -6794,6 +6806,27 @@
             document.getElementById('blogManagement').style.display = 'none';
             const container = document.querySelector('.container');
             if (container) container.style.display = 'grid';
+        }
+
+        function toggleAddBlogForm() {
+            const form = document.getElementById('addBlogForm');
+            const button = document.getElementById('showAddBlogFormBtn');
+
+            if (form.style.display === 'none') {
+                form.style.display = 'block';
+                button.style.display = 'none';
+                // Scroll to the form
+                form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                form.style.display = 'none';
+                button.style.display = 'block';
+                // Clear form fields
+                document.getElementById('blogName').value = '';
+                document.getElementById('blogUrl').value = '';
+                document.getElementById('blogSigninUrl').value = '';
+                document.getElementById('blogUsername').value = '';
+                document.getElementById('blogPassword').value = '';
+            }
         }
 
         // ===== SAVED ARTICLES LIBRARY =====
@@ -7590,15 +7623,14 @@
                 const result = await SupabaseService.saveBlog(newBlog);
 
                 if (result.success) {
-                    // Clear form
-                    document.getElementById('blogName').value = '';
-                    document.getElementById('blogUrl').value = '';
-                    document.getElementById('blogSigninUrl').value = '';
-                    document.getElementById('blogUsername').value = '';
-                    document.getElementById('blogPassword').value = '';
-
                     alert(`✅ Blog "${name}" added successfully!\n\nYou can now publish articles directly to this blog from your saved articles.`);
-                    displayBlogManagement();
+                    await displayBlogManagement();
+
+                    // Hide the form and show the button again
+                    const form = document.getElementById('addBlogForm');
+                    const button = document.getElementById('showAddBlogFormBtn');
+                    if (form) form.style.display = 'none';
+                    if (button) button.style.display = 'block';
                 } else {
                     throw new Error(result.error || 'Failed to save blog');
                 }
