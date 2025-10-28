@@ -6761,18 +6761,14 @@
                                 <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Username</label>
                                 <input type="text" id="blogUsername" placeholder="admin" style="width: 100%; margin: 0;">
                             </div>
-                            <div style="margin-bottom: 10px;">
-                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Password</label>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Application Password</label>
                                 <div style="position: relative;">
-                                    <input type="password" id="blogPassword" placeholder="Enter password" style="width: 100%; margin: 0; padding-right: 40px;">
+                                    <input type="password" id="blogPassword" placeholder="WordPress Application Password (e.g., abcd 1234 efgh 5678)" style="width: 100%; margin: 0; padding-right: 40px;">
                                     <button type="button" onclick="togglePasswordVisibility('blogPassword', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: #64748b; padding: 4px;" title="Show password">👁️</button>
                                 </div>
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">API Key/Token</label>
-                                <div style="position: relative;">
-                                    <input type="password" id="blogApiKey" placeholder="Enter API credentials (if required)" style="width: 100%; margin: 0; padding-right: 40px;">
-                                    <button type="button" onclick="togglePasswordVisibility('blogApiKey', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: #64748b; padding: 4px;" title="Show API key">👁️</button>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                                    ℹ️ Generate this in WordPress: Users → Profile → Application Passwords
                                 </div>
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -7564,8 +7560,7 @@
                 blogUrl: document.getElementById('blogUrl'),
                 blogSigninUrl: document.getElementById('blogSigninUrl'),
                 blogUsername: document.getElementById('blogUsername'),
-                blogPassword: document.getElementById('blogPassword'),
-                blogApiKey: document.getElementById('blogApiKey')
+                blogPassword: document.getElementById('blogPassword')
             };
 
             // Find which element is missing
@@ -7583,10 +7578,9 @@
             const signinUrl = elements.blogSigninUrl.value.trim();
             const username = elements.blogUsername.value.trim();
             const password = elements.blogPassword.value.trim();
-            const apiKey = elements.blogApiKey.value.trim();
 
             if (!name || !url || !signinUrl || !username || !password) {
-                alert('Please fill in all required fields (Blog Name, Website URL, Sign in URL, Username, and Password)');
+                alert('Please fill in all required fields (Blog Name, Website URL, Sign in URL, Username, and Application Password)');
                 return;
             }
 
@@ -7603,7 +7597,6 @@
                 signinUrl,
                 username: btoa(username), // Basic encoding
                 password: btoa(password), // Basic encoding
-                apiKey: apiKey ? btoa(apiKey) : '',
                 status: 'active',
                 user_id: currentUser.id
             };
@@ -7619,7 +7612,6 @@
                     document.getElementById('blogSigninUrl').value = '';
                     document.getElementById('blogUsername').value = '';
                     document.getElementById('blogPassword').value = '';
-                    document.getElementById('blogApiKey').value = '';
 
                     alert(`✅ Blog "${name}" added successfully!\n\nYou can now publish articles directly to this blog from your saved articles.`);
                     displayBlogManagement();
@@ -7650,10 +7642,9 @@
             const signinUrl = document.getElementById('blogSigninUrl').value.trim();
             const username = document.getElementById('blogUsername').value.trim();
             const password = document.getElementById('blogPassword').value.trim();
-            const apiKey = document.getElementById('blogApiKey').value.trim();
 
             if (!url || !username || !password) {
-                alert('⚠️ Please fill in Website URL, Username, and Password to test the connection.');
+                alert('⚠️ Please fill in Website URL, Username, and Application Password to test the connection.');
                 return;
             }
 
