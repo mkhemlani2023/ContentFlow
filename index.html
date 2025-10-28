@@ -7091,20 +7091,31 @@
                         articleBody += `<div style="margin-bottom: 30px;">${content.featuredImage}</div>`;
                     }
 
-                    // Table of Contents
+                    // Table of Contents (filter out self-referential or invalid entries)
                     if (tableOfContents && tableOfContents.length > 0) {
-                        articleBody += `
-                            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #e2e8f0;">
-                                <h2 style="color: #1e293b; font-size: 18px; margin: 0 0 15px 0;">📋 Table of Contents</h2>
-                                <div style="display: flex; flex-direction: column; gap: 8px;">
-                                    ${tableOfContents.map(item => `
-                                        <a href="${item.anchor}" style="color: #334155; text-decoration: none; font-size: 14px; padding-left: ${(item.level - 1) * 20}px; transition: color 0.2s;" onmouseover="this.style.color='#1e293b'" onmouseout="this.style.color='#334155'">
-                                            ${item.title || item.text}
-                                        </a>
-                                    `).join('')}
+                        const validTOCItems = tableOfContents.filter(item => {
+                            const title = (item.title || item.text || '').toLowerCase();
+                            // Exclude "table of contents" itself and empty entries
+                            return title &&
+                                   title !== 'table of contents' &&
+                                   title !== 'toc' &&
+                                   title.trim() !== '';
+                        });
+
+                        if (validTOCItems.length > 0) {
+                            articleBody += `
+                                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #e2e8f0;">
+                                    <h2 style="color: #1e293b; font-size: 18px; margin: 0 0 15px 0;">📋 Table of Contents</h2>
+                                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                                        ${validTOCItems.map(item => `
+                                            <a href="${item.anchor}" style="color: #334155; text-decoration: none; font-size: 14px; padding-left: ${((item.level || 2) - 2) * 20}px; transition: color 0.2s;" onmouseover="this.style.color='#1e293b'" onmouseout="this.style.color='#334155'">
+                                                ${item.title || item.text}
+                                            </a>
+                                        `).join('')}
+                                    </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
+                        }
                     }
 
                     // Introduction
@@ -12437,6 +12448,10 @@ ${item.answer}
                             • "Make it more conversational and friendly"
                         </div>
 
+                        <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #065f46;">
+                            <strong>ℹ️ Note:</strong> Table of Contents is automatically generated from your sections. You don't need to ask the AI to add one - it's already included when you view or publish your article!
+                        </div>
+
                         <div style="margin-bottom: 20px;">
                             <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Section to Edit:</label>
                             <select id="aiEditSection" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
@@ -12541,16 +12556,20 @@ ${item.answer}
                 // Prepare AI prompt
                 const aiPrompt = `You are an expert content editor. Edit the following content based on these instructions: "${userPrompt}"
 
-INSTRUCTIONS:
+CRITICAL INSTRUCTIONS:
 - Keep the same structure and format
 - Maintain the core message and information
 - Apply the user's requested changes
-- Return ONLY the edited content, no explanations
+- Return the COMPLETE edited content - DO NOT use placeholders like "[Rest remains the same...]" or "[Content continues...]"
+- Write out ALL sections in full - never abbreviate or summarize
+- If adding a table of contents, place it ONLY at the very beginning after the introduction
+- Do not duplicate any sections
+- Return ONLY the edited content, no explanations or meta-commentary
 
 CONTENT TO EDIT:
 ${contentToEdit}
 
-EDITED VERSION:`;
+EDITED VERSION (complete, no abbreviations):`;
 
                 // Get model config from article
                 const modelConfig = article.modelConfig || { model: 'openai/gpt-4o-mini', temperature: 0.7 };
@@ -12563,7 +12582,7 @@ EDITED VERSION:`;
                         model: modelConfig.model,
                         prompt: aiPrompt,
                         temperature: 0.7,
-                        max_tokens: 2000,
+                        max_tokens: 8000,  // Increased to allow full article edits
                         stream: true
                     })
                 });
