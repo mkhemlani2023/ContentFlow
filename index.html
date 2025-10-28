@@ -9938,6 +9938,9 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                     }
                 }
 
+                // Add generated TOC to articleData so it gets saved
+                articleData.tableOfContents = toc || [];
+
                 // Store globally for edit functions
                 window.currentGeneratedArticle = articleData;
 
@@ -13596,20 +13599,43 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 progressBar.style.width = '20%';
 
                 // Build HTML content from article
-                let htmlContent = `<p>${article.content.introduction}</p>\n\n`;
+                let htmlContent = '';
 
-                article.content.sections.forEach(section => {
-                    htmlContent += `<h2>${section.title}</h2>\n`;
-                    htmlContent += `<p>${section.content}</p>\n\n`;
-                });
+                // Add introduction if exists
+                if (article.content?.introduction) {
+                    htmlContent += `<p>${article.content.introduction}</p>\n\n`;
+                }
 
-                htmlContent += `<h2>Conclusion</h2>\n<p>${article.content.conclusion}</p>\n\n`;
+                // Add sections if they exist
+                if (article.content?.sections && Array.isArray(article.content.sections)) {
+                    article.content.sections.forEach(section => {
+                        if (section.title) {
+                            htmlContent += `<h2>${section.title}</h2>\n`;
+                        }
+                        if (section.content) {
+                            htmlContent += `<p>${section.content}</p>\n\n`;
+                        }
+                    });
+                }
 
-                if (article.content.faq && article.content.faq.length > 0) {
+                // Add conclusion if exists
+                if (article.content?.conclusion) {
+                    htmlContent += `<h2>Conclusion</h2>\n<p>${article.content.conclusion}</p>\n\n`;
+                }
+
+                // Add FAQ if exists
+                if (article.content?.faq && Array.isArray(article.content.faq) && article.content.faq.length > 0) {
                     htmlContent += `<h2>Frequently Asked Questions</h2>\n`;
                     article.content.faq.forEach(qa => {
-                        htmlContent += `<h3>${qa.question}</h3>\n<p>${qa.answer}</p>\n\n`;
+                        if (qa.question && qa.answer) {
+                            htmlContent += `<h3>${qa.question}</h3>\n<p>${qa.answer}</p>\n\n`;
+                        }
                     });
+                }
+
+                // Validate we have content to publish
+                if (!htmlContent.trim()) {
+                    throw new Error('Article content is empty or malformed. Cannot publish.');
                 }
 
                 statusDiv.innerHTML = `
