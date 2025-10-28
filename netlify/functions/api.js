@@ -2533,10 +2533,13 @@ Generate a professional, actionable outline that a content writer can follow to 
         };
 
         // Add featured image if available
-        if (article.featuredImage) {
-          // Note: This requires uploading the image first and getting media ID
-          // For now, we'll skip image upload and just publish the text
-          console.log('Featured image upload not yet implemented');
+        if (article.featured_media) {
+          postData.featured_media = article.featured_media;
+        }
+
+        // Add categories if provided
+        if (article.categories && Array.isArray(article.categories) && article.categories.length > 0) {
+          postData.categories = article.categories;
         }
 
         // Publish to WordPress

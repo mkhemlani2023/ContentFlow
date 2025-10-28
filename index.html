@@ -13576,7 +13576,7 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             publishModal.id = 'publishModal';
             publishModal.innerHTML = `
                 <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 20000; display: flex; align-items: center; justify-content: center;">
-                    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%;">
+                    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
                         <h3 style="margin: 0 0 20px 0; color: #1a202c;">Publish Article</h3>
 
                         <div style="margin-bottom: 20px;">
@@ -13584,8 +13584,20 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                                 <label style="font-weight: 500; color: #374151;">Select Blog/Website:</label>
                                 <a href="#" onclick="closePublishModal(); showBlogManagement(); return false;" style="color: #334155; text-decoration: none; font-size: 13px;">Manage Blogs</a>
                             </div>
-                            <select id="publishBlog" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                            <select id="publishBlog" onchange="loadWordPressCategories(this.value)" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
                                 ${blogs.map(blog => `<option value="${blog.id}">${blog.name} (${blog.platform})</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <label style="font-weight: 500; color: #374151;">Category:</label>
+                                <button onclick="createNewCategory(); return false;" style="background: #10b981; color: white; border: none; padding: 4px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 500;">
+                                    + New Category
+                                </button>
+                            </div>
+                            <select id="publishCategory" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                                <option value="">Loading categories...</option>
                             </select>
                         </div>
 
@@ -13624,11 +13636,118 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             `;
 
             document.body.appendChild(publishModal);
+
+            // Load categories for the first blog automatically
+            if (blogs.length > 0) {
+                loadWordPressCategories(blogs[0].id);
+            }
+        }
+
+        async function loadWordPressCategories(blogId) {
+            const categorySelect = document.getElementById('publishCategory');
+            if (!categorySelect) return;
+
+            categorySelect.innerHTML = '<option value="">Loading categories...</option>';
+            categorySelect.disabled = true;
+
+            try {
+                // Get blog credentials
+                const result = await SupabaseService.loadBlogs();
+                if (!result.success || !result.data) return;
+
+                const blog = result.data.find(b => b.id === blogId);
+                if (!blog) return;
+
+                const username = atob(blog.username);
+                const password = atob(blog.password);
+
+                // Fetch categories from WordPress
+                const response = await fetch(`${blog.url}/wp-json/wp/v2/categories?per_page=100`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(`${username}:${password}`),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const categories = await response.json();
+                    categorySelect.innerHTML = '<option value="">Select a category (optional)</option>' +
+                        categories.map(cat => `<option value="${cat.id}">${cat.name} (${cat.count} posts)</option>`).join('');
+                    categorySelect.disabled = false;
+                    console.log(`✅ Loaded ${categories.length} categories from WordPress`);
+                } else {
+                    throw new Error(`Failed to load categories: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                categorySelect.innerHTML = '<option value="">No category (Uncategorized)</option>';
+                categorySelect.disabled = false;
+            }
+        }
+
+        async function createNewCategory() {
+            const categoryName = prompt('Enter new category name:');
+            if (!categoryName || !categoryName.trim()) return;
+
+            const selectedBlogId = document.getElementById('publishBlog').value;
+
+            try {
+                // Get blog credentials
+                const result = await SupabaseService.loadBlogs();
+                if (!result.success || !result.data) {
+                    alert('Failed to load blog information');
+                    return;
+                }
+
+                const blog = result.data.find(b => b.id === selectedBlogId);
+                if (!blog) {
+                    alert('Blog not found');
+                    return;
+                }
+
+                const username = atob(blog.username);
+                const password = atob(blog.password);
+
+                // Create category in WordPress
+                const response = await fetch(`${blog.url}/wp-json/wp/v2/categories`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(`${username}:${password}`),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: categoryName.trim(),
+                        slug: categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+                    })
+                });
+
+                if (response.ok) {
+                    const newCategory = await response.json();
+                    alert(`✅ Category "${newCategory.name}" created successfully!`);
+                    // Reload categories to show the new one
+                    loadWordPressCategories(selectedBlogId);
+                    // Select the newly created category
+                    setTimeout(() => {
+                        const categorySelect = document.getElementById('publishCategory');
+                        if (categorySelect) {
+                            categorySelect.value = newCategory.id;
+                        }
+                    }, 500);
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `Failed to create category: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Error creating category:', error);
+                alert(`❌ Failed to create category:\n\n${error.message}`);
+            }
         }
 
         async function confirmPublish() {
             const selectedBlogId = document.getElementById('publishBlog').value;
             const publishType = document.querySelector('input[name="publishType"]:checked').value;
+            const selectedCategoryId = document.getElementById('publishCategory').value;
             const article = window.currentGeneratedArticle;
 
             // Get the selected blog's credentials from Supabase
@@ -13885,7 +14004,8 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                             title: article.content.title,
                             content: htmlContent,
                             excerpt: article.content.introduction?.substring(0, 150) + '...' || '',
-                            featured_media: uploadedImages.length > 0 ? uploadedImages[0].id : null
+                            featured_media: uploadedImages.length > 0 ? uploadedImages[0].id : null,
+                            categories: selectedCategoryId ? [parseInt(selectedCategoryId)] : []
                         },
                         publishType: publishType
                     })
