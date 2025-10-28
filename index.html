@@ -13775,10 +13775,12 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 // Step 2: Build HTML content from article
                 let htmlContent = '';
 
-                // Add featured image if uploaded
+                // Add featured image if uploaded (inline at top)
                 if (uploadedImages.length > 0) {
                     const featuredImage = uploadedImages[0];
-                    htmlContent += `<figure class="wp-block-image"><img src="${featuredImage.url}" alt="${featuredImage.alt}" /></figure>\n\n`;
+                    htmlContent += `<!-- wp:image {"id":${featuredImage.id},"sizeSlug":"large","linkDestination":"none"} -->\n`;
+                    htmlContent += `<figure class="wp-block-image size-large"><img src="${featuredImage.url}" alt="${featuredImage.alt}" class="wp-image-${featuredImage.id}"/></figure>\n`;
+                    htmlContent += `<!-- /wp:image -->\n\n`;
                 }
 
                 // Add introduction if exists
@@ -13786,11 +13788,30 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                     htmlContent += `<p>${article.content.introduction}</p>\n\n`;
                 }
 
+                // Add Table of Contents if exists
+                if (article.tableOfContents && article.tableOfContents.length > 0) {
+                    htmlContent += `<div class="table-of-contents" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">\n`;
+                    htmlContent += `<h2 style="margin-top: 0;">Table of Contents</h2>\n`;
+                    htmlContent += `<ol style="margin-bottom: 0;">\n`;
+
+                    article.tableOfContents.forEach(item => {
+                        const indent = item.level > 2 ? `style="margin-left: ${(item.level - 2) * 20}px;"` : '';
+                        htmlContent += `<li ${indent}><a href="${item.anchor}">${item.text}</a></li>\n`;
+                    });
+
+                    htmlContent += `</ol>\n</div>\n\n`;
+                }
+
                 // Add sections if they exist with inline images
                 if (article.content?.sections && Array.isArray(article.content.sections)) {
                     article.content.sections.forEach((section, index) => {
                         if (section.title) {
-                            htmlContent += `<h2>${section.title}</h2>\n`;
+                            // Create anchor ID from title for TOC linking
+                            const anchorId = section.title.toLowerCase()
+                                .replace(/[^a-z0-9\s]/g, '')
+                                .replace(/\s+/g, '-')
+                                .substring(0, 50);
+                            htmlContent += `<h2 id="${anchorId}">${section.title}</h2>\n`;
                         }
                         if (section.content) {
                             htmlContent += `<p>${section.content}</p>\n\n`;
@@ -13799,22 +13820,25 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                         // Insert images between sections
                         if (uploadedImages.length > index + 1) {
                             const sectionImage = uploadedImages[index + 1];
-                            htmlContent += `<figure class="wp-block-image"><img src="${sectionImage.url}" alt="${sectionImage.alt}" /></figure>\n\n`;
+                            htmlContent += `<!-- wp:image {"id":${sectionImage.id},"sizeSlug":"large"} -->\n`;
+                            htmlContent += `<figure class="wp-block-image size-large"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/></figure>\n`;
+                            htmlContent += `<!-- /wp:image -->\n\n`;
                         }
                     });
                 }
 
                 // Add conclusion if exists
                 if (article.content?.conclusion) {
-                    htmlContent += `<h2>Conclusion</h2>\n<p>${article.content.conclusion}</p>\n\n`;
+                    htmlContent += `<h2 id="conclusion">Conclusion</h2>\n<p>${article.content.conclusion}</p>\n\n`;
                 }
 
                 // Add FAQ if exists
                 if (article.content?.faq && Array.isArray(article.content.faq) && article.content.faq.length > 0) {
-                    htmlContent += `<h2>Frequently Asked Questions</h2>\n`;
-                    article.content.faq.forEach(qa => {
+                    htmlContent += `<h2 id="faq">Frequently Asked Questions</h2>\n`;
+                    article.content.faq.forEach((qa, faqIndex) => {
                         if (qa.question && qa.answer) {
-                            htmlContent += `<h3>${qa.question}</h3>\n<p>${qa.answer}</p>\n\n`;
+                            const faqAnchor = `faq-${faqIndex + 1}`;
+                            htmlContent += `<h3 id="${faqAnchor}">${qa.question}</h3>\n<p>${qa.answer}</p>\n\n`;
                         }
                     });
                 }
@@ -13827,7 +13851,9 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 console.log('📝 Article content built:', {
                     contentLength: htmlContent.length,
                     hasImages: uploadedImages.length > 0,
-                    imageCount: uploadedImages.length
+                    imageCount: uploadedImages.length,
+                    hasTOC: !!(article.tableOfContents && article.tableOfContents.length > 0),
+                    tocItems: article.tableOfContents?.length || 0
                 });
 
                 statusDiv.innerHTML = `
