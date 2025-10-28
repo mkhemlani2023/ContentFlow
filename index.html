@@ -12649,7 +12649,7 @@ EDITED VERSION:`;
             }, 100);
         }
 
-        function saveEditedArticle() {
+        async function saveEditedArticle() {
             const editedArticle = collectEditedData();
             window.currentGeneratedArticle = editedArticle;
 
@@ -12675,6 +12675,58 @@ EDITED VERSION:`;
 
             localStorage.setItem('generatedArticles', JSON.stringify(savedArticles));
 
+            // Save to Supabase if user is logged in
+            if (currentUser && supabaseClient) {
+                try {
+                    const completeArticleData = {
+                        content: editedArticle.content,
+                        metadata: editedArticle.metadata || {},
+                        tableOfContents: editedArticle.tableOfContents || [],
+                        images: editedArticle.images || [],
+                        modelTier: editedArticle.modelTier,
+                        modelConfig: editedArticle.modelConfig
+                    };
+
+                    if (editedArticle.savedArticleId) {
+                        // Update existing article in Supabase
+                        const result = await SupabaseService.updateArticle(editedArticle.savedArticleId, {
+                            title: editedArticle.content?.title || 'Untitled Article',
+                            keyword: editedArticle.metadata?.focusKeyword || editedArticle.metadata?.keyword || '',
+                            content: JSON.stringify(completeArticleData),
+                            metadata: JSON.stringify(editedArticle.metadata || {}),
+                            word_count: editedArticle.metadata?.actualWordCount || editedArticle.metadata?.wordCount || 0,
+                            images: JSON.stringify(editedArticle.images || [])
+                        });
+
+                        if (result.success) {
+                            console.log('✅ Article updated in Supabase');
+                        } else {
+                            console.warn('Failed to update article in Supabase:', result.error);
+                        }
+                    } else {
+                        // Create new article in Supabase
+                        const result = await SupabaseService.saveArticle({
+                            title: editedArticle.content?.title || 'Untitled Article',
+                            keyword: editedArticle.metadata?.focusKeyword || editedArticle.metadata?.keyword || '',
+                            content: JSON.stringify(completeArticleData),
+                            metadata: JSON.stringify(editedArticle.metadata || {}),
+                            model_tier: editedArticle.modelTier || 'basic',
+                            word_count: editedArticle.metadata?.actualWordCount || editedArticle.metadata?.wordCount || 0,
+                            images: JSON.stringify(editedArticle.images || [])
+                        });
+
+                        if (result.success) {
+                            window.currentGeneratedArticle.savedArticleId = result.data.id;
+                            console.log('✅ Article saved to Supabase');
+                        } else {
+                            console.warn('Failed to save article to Supabase:', result.error);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error saving to Supabase:', error);
+                }
+            }
+
             closeEditMode();
             alert('✅ Article changes saved successfully!');
         }
@@ -12692,13 +12744,55 @@ EDITED VERSION:`;
             const contentText = document.getElementById('editContent').value;
             const sections = parseContentIntoSections(contentText);
 
+            // Regenerate table of contents from sections
+            const tableOfContents = [];
+
+            // Add sections to TOC
+            sections.forEach((section, index) => {
+                const anchorId = section.title.toLowerCase()
+                    .replace(/[^a-z0-9\s]/g, '')
+                    .replace(/\s+/g, '-')
+                    .substring(0, 50);
+
+                tableOfContents.push({
+                    title: section.title,
+                    text: section.title,
+                    anchor: `#${anchorId}`,
+                    level: 2
+                });
+
+                // Add anchor to section
+                section.anchor = anchorId;
+            });
+
+            // Add conclusion to TOC if it exists
+            const conclusion = document.getElementById('editConclusion').value;
+            if (conclusion && conclusion.trim()) {
+                tableOfContents.push({
+                    title: 'Conclusion',
+                    text: 'Conclusion',
+                    anchor: '#conclusion',
+                    level: 2
+                });
+            }
+
+            // Add FAQ to TOC if it exists
+            if (article.content?.faq && article.content.faq.length > 0) {
+                tableOfContents.push({
+                    title: 'Frequently Asked Questions',
+                    text: 'Frequently Asked Questions',
+                    anchor: '#faq',
+                    level: 2
+                });
+            }
+
             return {
                 ...article,
                 content: {
                     ...article.content,
                     title: document.getElementById('editTitle').value,
                     introduction: document.getElementById('editIntroduction').value,
-                    conclusion: document.getElementById('editConclusion').value,
+                    conclusion: conclusion,
                     sections: sections
                 },
                 metadata: {
@@ -12706,7 +12800,12 @@ EDITED VERSION:`;
                     seoTitle: document.getElementById('editSeoTitle').value,
                     metaDescription: document.getElementById('editMetaDescription').value,
                     focusKeyword: document.getElementById('editFocusKeyword').value
-                }
+                },
+                tableOfContents: tableOfContents,
+                images: article.images || [],
+                modelTier: article.modelTier,
+                modelConfig: article.modelConfig,
+                savedArticleId: article.savedArticleId
             };
         }
 
@@ -14084,7 +14183,7 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
 
                     article.tableOfContents.forEach(item => {
                         const indent = item.level > 2 ? `style="margin-left: ${(item.level - 2) * 20}px;"` : '';
-                        htmlContent += `<li ${indent}><a href="${item.anchor}">${item.text}</a></li>\n`;
+                        htmlContent += `<li ${indent}><a href="${item.anchor}">${item.text || item.title}</a></li>\n`;
                     });
 
                     htmlContent += `</ol>\n</div>\n\n`;
@@ -14094,8 +14193,8 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 if (article.content?.sections && Array.isArray(article.content.sections)) {
                     article.content.sections.forEach((section, index) => {
                         if (section.title) {
-                            // Create anchor ID from title for TOC linking
-                            const anchorId = section.title.toLowerCase()
+                            // Use existing anchor or create one from title for TOC linking
+                            const anchorId = section.anchor || section.title.toLowerCase()
                                 .replace(/[^a-z0-9\s]/g, '')
                                 .replace(/\s+/g, '-')
                                 .substring(0, 50);
