@@ -969,7 +969,6 @@
                 <div style="font-size: 12px; color: #64748b; line-height: 1.5;">
                     <strong style="color: #1e293b;">Publishing options:</strong><br>
                     • Auto-post to WordPress<br>
-                    • Schedule for later<br>
                     • Save as draft<br>
                     • Export HTML/Markdown
                 </div>
@@ -6712,8 +6711,6 @@
                 return;
             }
 
-            const schedules = [];
-
             // Generate blog list HTML (async)
             const blogsListHTML = blogs.length === 0 ? `
                 <div style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
@@ -6783,23 +6780,10 @@
                     </div>
 
                     <!-- Managed Blogs List -->
-                    <div style="margin-bottom: 30px;">
+                    <div>
                         <h3 style="color: #2d3748; margin-bottom: 15px;">📝 Your Managed Blogs (${blogs.length})</h3>
                         <div id="blogsList">
                             ${blogsListHTML}
-                        </div>
-                    </div>
-
-                    <!-- Content Queue -->
-                    <div>
-                        <h3 style="color: #2d3748; margin-bottom: 15px;">📅 Content Publishing Queue</h3>
-                        <div id="contentQueue">
-                            ${generateContentQueue(schedules)}
-                        </div>
-                        <div style="text-align: center; margin-top: 20px;">
-                            <button onclick="showContentScheduler()" class="action-btn primary">
-                                <span class="btn-icon">📅</span>Schedule Content from Keywords
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -13620,13 +13604,9 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                                     <input type="radio" id="publishNow" name="publishType" value="now" checked style="margin: 0; width: auto;">
                                     <label for="publishNow" style="margin-left: 8px; margin-bottom: 0; cursor: pointer;">Publish immediately</label>
                                 </div>
-                                <div style="margin-bottom: 10px; display: flex; align-items: center;">
+                                <div style="display: flex; align-items: center;">
                                     <input type="radio" id="publishDraft" name="publishType" value="draft" style="margin: 0; width: auto;">
                                     <label for="publishDraft" style="margin-left: 8px; margin-bottom: 0; cursor: pointer;">Save as draft</label>
-                                </div>
-                                <div style="display: flex; align-items: center;">
-                                    <input type="radio" id="publishScheduled" name="publishType" value="scheduled" style="margin: 0; width: auto;">
-                                    <label for="publishScheduled" style="margin-left: 8px; margin-bottom: 0; cursor: pointer;">Schedule for later</label>
                                 </div>
                             </div>
                         </div>
