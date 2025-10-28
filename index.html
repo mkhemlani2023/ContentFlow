@@ -13919,19 +13919,46 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                     // Parse error details more carefully
                     const errorMessage = result.message || '';
                     const errorDetails = result.details || '';
-                    const errorCode = result.code || '';
+                    let errorCode = result.code || '';
+
+                    // Parse WordPress error details if it's a JSON string
+                    let wpErrorCode = '';
+                    let wpErrorMessage = '';
+                    if (errorDetails && typeof errorDetails === 'string' && errorDetails.includes('{')) {
+                        try {
+                            const detailsObj = JSON.parse(errorDetails);
+                            wpErrorCode = detailsObj.code || '';
+                            wpErrorMessage = detailsObj.message || '';
+                            if (!errorCode) errorCode = wpErrorCode; // Use WordPress error code if we don't have one
+                        } catch (e) {
+                            console.warn('Could not parse error details as JSON:', e);
+                        }
+                    }
+
+                    console.log('🔍 Error analysis:', {
+                        errorCode,
+                        wpErrorCode,
+                        wpErrorMessage,
+                        errorMessage,
+                        errorDetails
+                    });
 
                     // Check if it's a permissions error (authenticated but not authorized)
                     const isPermissionsError = errorCode === 'rest_cannot_create' ||
+                                               wpErrorCode === 'rest_cannot_create' ||
                                                errorCode === 'rest_forbidden' ||
+                                               wpErrorCode === 'rest_forbidden' ||
                                                errorMessage.includes('not allowed to create') ||
+                                               wpErrorMessage.includes('not allowed to create') ||
                                                errorMessage.includes('not allowed to publish') ||
-                                               errorMessage.includes('forbidden') ||
-                                               (errorMessage.includes('401') && errorMessage.includes('not allowed'));
+                                               wpErrorMessage.includes('not allowed to publish') ||
+                                               errorDetails.includes('rest_cannot_create');
 
                     // Check if it's an authentication error (credentials rejected)
                     const isAppPasswordError = errorCode === 'incorrect_password' ||
+                                              wpErrorCode === 'incorrect_password' ||
                                               errorCode === 'rest_forbidden_context' ||
+                                              wpErrorCode === 'rest_forbidden_context' ||
                                               errorMessage.includes('invalid application password') ||
                                               errorMessage.includes('Invalid username') ||
                                               (errorMessage.includes('401') && errorMessage.includes('Unauthorized') && !isPermissionsError);
@@ -13943,8 +13970,8 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                               `🔍 DIAGNOSTIC INFO:\n` +
                               `• Blog URL: ${selectedBlog.url}\n` +
                               `• Username: ${username}\n` +
-                              `• Error: ${errorMessage}\n` +
-                              `• Error Code: ${errorCode}\n\n` +
+                              `• WordPress Error: ${wpErrorMessage || errorMessage}\n` +
+                              `• Error Code: ${wpErrorCode || errorCode}\n\n` +
                               `✅ HOW TO FIX:\n\n` +
                               `1. Log in to WordPress Admin\n` +
                               `2. Go to Users → All Users\n` +
