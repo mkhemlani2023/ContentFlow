@@ -1378,6 +1378,45 @@
                 }
             },
 
+            // Delete ALL articles for current user
+            async deleteAllArticles() {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    console.log('🗑️ Deleting all articles for user:', currentUser.id);
+
+                    // First get count of articles to delete
+                    const { data: articles, error: countError } = await supabaseClient
+                        .from('generated_articles')
+                        .select('id')
+                        .eq('user_id', currentUser.id);
+
+                    if (countError) throw countError;
+
+                    const count = articles?.length || 0;
+                    console.log(`📊 Found ${count} articles to delete`);
+
+                    if (count === 0) {
+                        return { success: true, count: 0, message: 'No articles to delete' };
+                    }
+
+                    // Delete all articles for this user
+                    const { error } = await supabaseClient
+                        .from('generated_articles')
+                        .delete()
+                        .eq('user_id', currentUser.id);
+
+                    if (error) throw error;
+
+                    console.log(`✅ Successfully deleted ${count} articles`);
+                    return { success: true, count };
+                } catch (error) {
+                    console.error('❌ Error deleting all articles:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
             // Save blog configuration
             async saveBlog(blog) {
                 try {
@@ -7052,9 +7091,16 @@
                             <h2 style="margin: 0 0 5px 0; color: #1e293b;">📚 My Saved Articles</h2>
                             <p style="margin: 0; color: #64748b; font-size: 14px;">${articles.length} article${articles.length !== 1 ? 's' : ''} in your library</p>
                         </div>
-                        <button onclick="hideSavedArticlesLibrary()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                            ← Back
-                        </button>
+                        <div style="display: flex; gap: 10px;">
+                            ${articles.length > 0 ? `
+                                <button onclick="confirmDeleteAllArticles()" style="background: #991B1B; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#7F1D1D'" onmouseout="this.style.background='#991B1B'">
+                                    🗑️ Delete All
+                                </button>
+                            ` : ''}
+                            <button onclick="hideSavedArticlesLibrary()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                ← Back
+                            </button>
+                        </div>
                     </div>
 
                     <div id="articles-list">
@@ -7365,6 +7411,75 @@
             } catch (error) {
                 console.error('Error deleting article:', error);
                 alert('Failed to delete article: ' + error.message);
+            }
+        }
+
+        async function confirmDeleteAllArticles() {
+            const confirmation = confirm(
+                '⚠️ WARNING: Delete ALL Articles?\n\n' +
+                'This will permanently delete ALL articles in your library.\n' +
+                'This action CANNOT be undone!\n\n' +
+                'Are you absolutely sure you want to continue?'
+            );
+
+            if (!confirmation) {
+                return;
+            }
+
+            // Double confirmation for safety
+            const doubleConfirm = confirm(
+                '🚨 FINAL CONFIRMATION\n\n' +
+                'This is your last chance to cancel.\n' +
+                'Click OK to DELETE ALL ARTICLES permanently.'
+            );
+
+            if (!doubleConfirm) {
+                return;
+            }
+
+            try {
+                console.log('🗑️ User confirmed - deleting all articles...');
+
+                // Show loading state
+                const savedArticlesLibrary = document.getElementById('savedArticlesLibrary');
+                savedArticlesLibrary.innerHTML = `
+                    <div class="card">
+                        <div style="text-align: center; padding: 60px;">
+                            <div style="font-size: 48px; margin-bottom: 20px;">🗑️</div>
+                            <h2 style="color: #1e293b; margin-bottom: 10px;">Deleting All Articles...</h2>
+                            <p style="color: #64748b;">Please wait while we delete all articles from your library.</p>
+                        </div>
+                    </div>
+                `;
+
+                const result = await SupabaseService.deleteAllArticles();
+
+                if (result.success) {
+                    console.log(`✅ Successfully deleted ${result.count} articles`);
+
+                    // Show success message
+                    savedArticlesLibrary.innerHTML = `
+                        <div class="card">
+                            <div style="text-align: center; padding: 60px;">
+                                <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+                                <h2 style="color: #1e293b; margin-bottom: 10px;">All Articles Deleted</h2>
+                                <p style="color: #64748b; margin-bottom: 30px;">
+                                    Successfully deleted ${result.count} article${result.count !== 1 ? 's' : ''} from your library.
+                                </p>
+                                <button onclick="hideSavedArticlesLibrary()" style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px;">
+                                    ← Back to Dashboard
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(result.error || 'Failed to delete articles');
+                }
+            } catch (error) {
+                console.error('❌ Error deleting all articles:', error);
+                alert('Failed to delete all articles: ' + error.message);
+                // Reload to show current state
+                showSavedArticlesLibrary();
             }
         }
 
@@ -9482,24 +9597,22 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                 progress.updateIcon('✅');
                 progress.updateProgress(100);
                 progress.updateMessage('Article generated successfully!');
-                progress.updateTechnicalInfo(`Article word count: ${finalArticle.metadata?.wordCount || 'N/A'}\nSections: ${finalArticle.content?.sections?.length || 0}\nFAQs: ${finalArticle.content?.faq?.length || 0}\nReady to publish!`);
+                progress.updateTechnicalInfo(`Article word count: ${finalArticle.metadata?.wordCount || 'N/A'}\nSections: ${finalArticle.content?.sections?.length || 0}\nFAQs: ${finalArticle.content?.faq?.length || 0}\nReady for optimization!`);
 
-                // Wait a moment then close
-                setTimeout(async () => {
-                    progress.close();
-                    console.log('Progress modal closed, about to display article...');
+                // Store model tier in article for later use
+                finalArticle.modelTier = modelTier;
+                finalArticle.modelConfig = config;
 
-                    // Images removed from generation flow - display article only
-                    // Clear any pending image generation flags
-                    window.pendingImageGeneration = null;
+                // Wait a moment then close and run optimization
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                progress.close();
+                console.log('=== STARTING SEO WIZARD OPTIMIZATION ===');
 
-                    // Store model tier in article for later use (editing, etc.)
-                    finalArticle.modelTier = modelTier;
-                    finalArticle.modelConfig = config;
+                // Images removed from generation flow - display article only
+                window.pendingImageGeneration = null;
 
-                    // Run SEO Wizard optimization process before displaying
-                    await optimizeAndHumanizeArticle(finalArticle, modelTier);
-                }, 2000);
+                // Run SEO Wizard optimization process before displaying (this is async and will handle display)
+                await optimizeAndHumanizeArticle(finalArticle, modelTier);
 
             } catch (error) {
                 console.error('Article generation from outline error:', error);
