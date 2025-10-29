@@ -10208,53 +10208,81 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                                 ` : ''}
                             </div>
 
+                            <!-- Dynamic SEO Score Card -->
+                            <div id="seoScoreCard" style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">SEO Health Score</div>
+                                        <div style="font-size: 36px; font-weight: 700;" id="seoScoreValue">-</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 12px; opacity: 0.8;">Readability</div>
+                                        <div style="font-size: 20px; font-weight: 600;" id="readabilityScore">-</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 12px;">
+                                    <div>
+                                        <div style="opacity: 0.8;">Keywords</div>
+                                        <div style="font-weight: 600;" id="keywordDensity">-</div>
+                                    </div>
+                                    <div>
+                                        <div style="opacity: 0.8;">Word Count</div>
+                                        <div style="font-weight: 600;" id="seoWordCount">-</div>
+                                    </div>
+                                    <div>
+                                        <div style="opacity: 0.8;">Headers</div>
+                                        <div style="font-weight: 600;" id="headerCount">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Action Buttons -->
-                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                            <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
                                 <!-- Primary Actions -->
-                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px;">
                                     <button onclick="saveArticleToLibrary()"
-                                            style="background: #475569; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
-                                            onmouseover="this.style.background='#334155'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#475569'; this.style.transform='translateY(0)'">
+                                            style="background: #475569; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                            onmouseover="this.style.background='#334155'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#475569'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
                                         💾 Save Article
                                     </button>
-                                    <button onclick="addImagesToArticle()"
-                                            style="background: #64748B; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
-                                            onmouseover="this.style.background='#475569'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#64748B'; this.style.transform='translateY(0)'">
-                                        🖼️ Add Images
+                                    <button onclick="manageArticleImages()"
+                                            style="background: #0ea5e9; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                            onmouseover="this.style.background='#0284c7'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#0ea5e9'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+                                        🖼️ Images
                                     </button>
-                                    <button onclick="removeImagesFromArticle()"
-                                            style="background: #ef4444; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
-                                            onmouseover="this.style.background='#dc2626'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#ef4444'; this.style.transform='translateY(0)'">
-                                        🗑️ Remove Images
+                                    <button onclick="showHumanizeAIPanel()"
+                                            style="background: #10b981; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                            onmouseover="this.style.background='#059669'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#10b981'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+                                        👤 Humanize & AI Score
+                                    </button>
+                                    <button onclick="enterEditMode()"
+                                            style="background: #f59e0b; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                            onmouseover="this.style.background='#d97706'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#f59e0b'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+                                        ✏️ Edit
                                     </button>
                                     <button onclick="publishToWebsite()"
-                                            style="background: #334155; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
-                                            onmouseover="this.style.background='#1E293B'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#334155'; this.style.transform='translateY(0)'">
-                                        🚀 Publish Now
+                                            style="background: #8b5cf6; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                            onmouseover="this.style.background='#7c3aed'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#8b5cf6'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+                                        🚀 Publish
                                     </button>
                                 </div>
 
                                 <!-- Secondary Actions -->
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px;">
                                     <button onclick="this.closest('[style*=\\'position: fixed\\']').remove()"
-                                            style="background: #f1f5f9; color: #475569; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;"
+                                            style="background: #f1f5f9; color: #475569; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;"
                                             onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
                                         ← Back
                                     </button>
                                     <button onclick="copyArticleToClipboard()"
-                                            style="background: #f1f5f9; color: #475569; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;"
+                                            style="background: #f1f5f9; color: #475569; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;"
                                             onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
                                         Copy HTML
                                     </button>
                                     <button onclick="exportArticleMarkdown()"
-                                            style="background: #f1f5f9; color: #475569; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;"
+                                            style="background: #f1f5f9; color: #475569; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;"
                                             onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
                                         Export MD
-                                    </button>
-                                    <button onclick="enterEditMode()"
-                                            style="background: #f1f5f9; color: #475569; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;"
-                                            onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
-                                        ✏️ Edit
                                     </button>
                                 </div>
                             </div>
@@ -10265,6 +10293,9 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
 
                 articleModal.className = 'modal';
                 document.body.appendChild(articleModal);
+
+                // Calculate and display SEO score
+                calculateAndDisplaySEOScore();
 
                 // Scroll the article modal into view
                 setTimeout(() => {
@@ -14331,6 +14362,555 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                     // Regenerate the preview
                     viewGeneratedArticle();
                 }
+            }
+        }
+
+        // Calculate and display dynamic SEO score
+        function calculateAndDisplaySEOScore() {
+            const article = window.currentGeneratedArticle;
+            if (!article || !article.content) return;
+
+            const content = article.content;
+            let fullText = '';
+
+            // Collect all text content
+            if (content.title) fullText += content.title + '\n\n';
+            if (content.introduction) fullText += content.introduction + '\n\n';
+            if (content.sections) {
+                content.sections.forEach(section => {
+                    if (section.title) fullText += section.title + '\n';
+                    if (section.content) fullText += section.content + '\n\n';
+                });
+            }
+            if (content.conclusion) fullText += content.conclusion + '\n\n';
+
+            // Calculate metrics
+            const words = fullText.split(/\s+/).filter(w => w.length > 0);
+            const wordCount = words.length;
+
+            // Header count
+            let headerCount = 0;
+            if (content.title) headerCount++;
+            if (content.sections) headerCount += content.sections.length;
+            if (content.conclusion) headerCount++;
+
+            // Keyword density
+            const keyword = article.metadata?.focusKeyword || article.metadata?.keyword || '';
+            let keywordCount = 0;
+            if (keyword) {
+                const regex = new RegExp(keyword, 'gi');
+                const matches = fullText.match(regex);
+                keywordCount = matches ? matches.length : 0;
+            }
+            const keywordDensity = keyword ? ((keywordCount / wordCount) * 100).toFixed(2) + '%' : 'N/A';
+
+            // Calculate readability (Flesch Reading Ease approximation)
+            const sentences = fullText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+            const syllables = words.reduce((count, word) => count + estimateSyllables(word), 0);
+            const fleschScore = Math.max(0, Math.min(100,
+                206.835 - 1.015 * (wordCount / sentences) - 84.6 * (syllables / wordCount)
+            ));
+            const readabilityGrade = getReadabilityGrade(fleschScore);
+
+            // Calculate overall SEO score (0-100)
+            let seoScore = 0;
+
+            // Word count (optimal 1500-2500)
+            if (wordCount >= 1500 && wordCount <= 2500) seoScore += 25;
+            else if (wordCount >= 1000) seoScore += 15;
+            else if (wordCount >= 500) seoScore += 10;
+
+            // Keyword usage (1-3% density is optimal)
+            const kdPercent = keyword ? (keywordCount / wordCount) * 100 : 0;
+            if (kdPercent >= 1 && kdPercent <= 3) seoScore += 25;
+            else if (kdPercent > 0) seoScore += 10;
+
+            // Header usage
+            if (headerCount >= 5) seoScore += 20;
+            else if (headerCount >= 3) seoScore += 15;
+            else seoScore += 5;
+
+            // Readability
+            if (fleschScore >= 60) seoScore += 20;
+            else if (fleschScore >= 50) seoScore += 15;
+            else seoScore += 5;
+
+            // Images
+            const imageCount = article.images?.length || 0;
+            if (imageCount >= 3) seoScore += 10;
+            else if (imageCount >= 1) seoScore += 5;
+
+            // Update UI
+            document.getElementById('seoScoreValue').textContent = seoScore + '/100';
+            document.getElementById('readabilityScore').textContent = readabilityGrade;
+            document.getElementById('keywordDensity').textContent = keywordDensity;
+            document.getElementById('seoWordCount').textContent = wordCount.toLocaleString();
+            document.getElementById('headerCount').textContent = headerCount;
+
+            // Color code the score
+            const scoreElement = document.getElementById('seoScoreValue');
+            if (seoScore >= 80) {
+                scoreElement.parentElement.parentElement.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            } else if (seoScore >= 60) {
+                scoreElement.parentElement.parentElement.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+            } else {
+                scoreElement.parentElement.parentElement.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+            }
+        }
+
+        function estimateSyllables(word) {
+            word = word.toLowerCase().replace(/[^a-z]/g, '');
+            if (word.length <= 3) return 1;
+            const syllableRegex = /[aeiouy]{1,2}/g;
+            const matches = word.match(syllableRegex);
+            let count = matches ? matches.length : 1;
+            if (word.endsWith('e')) count--;
+            return Math.max(1, count);
+        }
+
+        function getReadabilityGrade(score) {
+            if (score >= 90) return 'Very Easy';
+            if (score >= 80) return 'Easy';
+            if (score >= 70) return 'Fairly Easy';
+            if (score >= 60) return 'Standard';
+            if (score >= 50) return 'Fairly Difficult';
+            if (score >= 30) return 'Difficult';
+            return 'Very Difficult';
+        }
+
+        // Manage article images (add/remove/replace)
+        function manageArticleImages() {
+            if (!window.currentGeneratedArticle) {
+                alert('❌ No article found.');
+                return;
+            }
+
+            const article = window.currentGeneratedArticle;
+            const hasImages = article.images && article.images.length > 0;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; text-align: center;">
+                        <h3 style="margin: 0 0 20px 0; color: #1a202c;">🖼️ Manage Images</h3>
+                        <p style="color: #64748b; margin-bottom: 25px;">
+                            ${hasImages ? `Your article has ${article.images.length} image(s).` : 'No images in this article yet.'}
+                        </p>
+
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <button onclick="this.closest('.modal').remove(); addImagesToArticle()"
+                                    style="width: 100%; background: #0ea5e9; color: white; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s;"
+                                    onmouseover="this.style.background='#0284c7'" onmouseout="this.style.background='#0ea5e9'">
+                                ${hasImages ? '🔄 Replace Images' : '➕ Add Images'}
+                            </button>
+
+                            ${hasImages ? `
+                            <button onclick="this.closest('.modal').remove(); removeImagesFromArticle()"
+                                    style="width: 100%; background: #ef4444; color: white; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s;"
+                                    onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                                🗑️ Remove All Images
+                            </button>
+                            ` : ''}
+
+                            <button onclick="this.closest('.modal').remove()"
+                                    style="width: 100%; background: #f1f5f9; color: #475569; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s;"
+                                    onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        }
+
+        // Show combined Humanize & AI Detection Panel
+        async function showHumanizeAIPanel() {
+            const article = window.currentGeneratedArticle;
+            if (!article) {
+                alert('No article available');
+                return;
+            }
+
+            // Check credits first
+            if (!currentUser) {
+                alert('🔒 Please log in to use this feature');
+                showAuthModal('login');
+                return;
+            }
+
+            // Show loading modal while analyzing
+            const loadingModal = document.createElement('div');
+            loadingModal.id = 'humanizeAILoading';
+            loadingModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 30000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 40px; border-radius: 16px; max-width: 500px; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
+                        <h3 style="margin-bottom: 10px; color: #1e293b;">Analyzing Your Content...</h3>
+                        <div style="color: #64748b; margin-bottom: 20px;">Checking AI detection patterns</div>
+                        <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                            <div style="width: 30%; height: 100%; background: linear-gradient(90deg, #10b981, #059669); animation: slideRight 1.5s ease-in-out infinite;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loadingModal);
+
+            try {
+                // Get all content
+                let fullContent = '';
+                if (article.content.title) fullContent += article.content.title + '\n\n';
+                if (article.content.introduction) fullContent += article.content.introduction + '\n\n';
+                if (article.content.sections) {
+                    article.content.sections.forEach(section => {
+                        if (section.title) fullContent += section.title + '\n';
+                        if (section.content) fullContent += section.content + '\n\n';
+                    });
+                }
+                if (article.content.conclusion) fullContent += article.content.conclusion;
+
+                // Perform heuristic analysis
+                const heuristicScore = analyzeAIPatterns(fullContent);
+
+                // Call AI detection API
+                const apiScore = await callAIDetectionAPI(fullContent);
+
+                // Combine scores
+                const finalScore = Math.round((heuristicScore * 0.4) + (apiScore * 0.6));
+
+                // Remove loading modal
+                document.getElementById('humanizeAILoading').remove();
+
+                // Show results with humanization options
+                showHumanizeAIPanelResults(finalScore, heuristicScore, apiScore, fullContent);
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                document.getElementById('humanizeAILoading')?.remove();
+                alert('❌ Analysis failed: ' + error.message);
+            }
+        }
+
+        function showHumanizeAIPanelResults(finalScore, heuristicScore, apiScore, content) {
+            const article = window.currentGeneratedArticle;
+
+            let scoreColor, scoreEmoji, scoreText, recommendation;
+            if (finalScore <= 20) {
+                scoreColor = '#10b981';
+                scoreEmoji = '✅';
+                scoreText = 'Very Human-Like';
+                recommendation = 'Excellent! Your content appears very natural.';
+            } else if (finalScore <= 40) {
+                scoreColor = '#84cc16';
+                scoreEmoji = '👍';
+                scoreText = 'Mostly Human-Like';
+                recommendation = 'Good! Minor AI patterns detected.';
+            } else if (finalScore <= 60) {
+                scoreColor = '#f59e0b';
+                scoreEmoji = '⚠️';
+                scoreText = 'Mixed Signals';
+                recommendation = 'Moderate risk. Consider humanizing.';
+            } else if (finalScore <= 80) {
+                scoreColor = '#f97316';
+                scoreEmoji = '⚠️';
+                scoreText = 'High AI Detection Risk';
+                recommendation = 'High risk! Humanize recommended.';
+            } else {
+                scoreColor = '#ef4444';
+                scoreEmoji = '❌';
+                scoreText = 'Obviously AI-Generated';
+                recommendation = 'Very high risk! Humanize immediately.';
+            }
+
+            const modal = document.createElement('div');
+            modal.id = 'humanizeAIPanel';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 30000; display: flex; align-items: center; justify-content: center; overflow-y: auto;">
+                    <div style="background: white; padding: 35px; border-radius: 16px; max-width: 650px; width: 95%; margin: 20px; max-height: 90vh; overflow-y: auto;">
+                        <!-- AI Detection Score Section -->
+                        <div style="text-align: center; margin-bottom: 30px; padding: 25px; background: linear-gradient(135deg, ${scoreColor}20, ${scoreColor}10); border-radius: 12px; border: 2px solid ${scoreColor}40;">
+                            <div style="font-size: 64px; margin-bottom: 10px;">${scoreEmoji}</div>
+                            <h2 style="margin: 0 0 10px 0; color: #1e293b;">AI Detection Score</h2>
+                            <div style="font-size: 56px; font-weight: 700; color: ${scoreColor}; margin-bottom: 5px;">${finalScore}%</div>
+                            <div style="font-size: 18px; color: ${scoreColor}; font-weight: 600; margin-bottom: 15px;">${scoreText}</div>
+                            <div style="font-size: 14px; color: #64748b; line-height: 1.6;">${recommendation}</div>
+                        </div>
+
+                        <!-- Score Breakdown -->
+                        <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                            <h3 style="margin: 0 0 15px 0; color: #334155; font-size: 16px;">📊 Score Breakdown</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div>
+                                    <div style="font-size: 12px; color: #64748b; margin-bottom: 5px;">Pattern Analysis</div>
+                                    <div style="font-size: 24px; font-weight: 600; color: #334155;">${heuristicScore}%</div>
+                                    <div style="font-size: 11px; color: #94a3b8;">Heuristic checks</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: #64748b; margin-bottom: 5px;">AI Model Analysis</div>
+                                    <div style="font-size: 24px; font-weight: 600; color: #334155;">${apiScore}%</div>
+                                    <div style="font-size: 11px; color: #94a3b8;">Deep learning</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- What Makes Up the Score -->
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 18px; border-radius: 10px; margin-bottom: 25px;">
+                            <h4 style="margin: 0 0 12px 0; color: #1e40af; font-size: 14px;">🔍 What We Analyze:</h4>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #475569; line-height: 1.8;">
+                                <li>Sentence structure and length variation</li>
+                                <li>Vocabulary diversity and repetition</li>
+                                <li>Use of contractions and natural language</li>
+                                <li>Common AI phrases and patterns</li>
+                                <li>Paragraph uniformity and flow</li>
+                                <li>Active vs. passive voice ratio</li>
+                            </ul>
+                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #bfdbfe; font-size: 12px; color: #64748b; font-style: italic;">
+                                💡 Search engines may penalize content with obvious AI patterns. Humanizing your text improves authenticity and SEO performance.
+                            </div>
+                        </div>
+
+                        <!-- Humanization Section -->
+                        <div style="border-top: 2px solid #e2e8f0; padding-top: 25px;">
+                            <h3 style="margin: 0 0 15px 0; color: #1a202c;">👤 Humanize Your Content</h3>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 14px;">Select Section:</label>
+                                <select id="humanizeSection" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                                    <option value="all">🎯 Entire Article (Recommended)</option>
+                                    <option value="introduction">📝 Introduction Only</option>
+                                    ${article.content.sections ? article.content.sections.map((section, index) =>
+                                        `<option value="section-${index}">📄 ${section.title}</option>`
+                                    ).join('') : ''}
+                                    <option value="conclusion">🎬 Conclusion Only</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 14px;">Humanization Tone:</label>
+                                <select id="humanizeTone" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                                    <option value="professional">💼 Professional - Clear, authoritative, expert voice</option>
+                                    <option value="conversational">💬 Conversational - Friendly, engaging, relatable</option>
+                                    <option value="formal">🎩 Formal - Academic, sophisticated, structured</option>
+                                    <option value="casual">😊 Casual - Relaxed, informal, approachable</option>
+                                    <option value="storytelling">📖 Storytelling - Narrative, vivid, engaging</option>
+                                </select>
+                            </div>
+
+                            <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #92400e;">
+                                <strong>💳 Cost:</strong> 25 credits per humanization
+                            </div>
+
+                            <div style="display: flex; gap: 12px;">
+                                <button onclick="applyHumanizationFromPanel()"
+                                        style="flex: 1; background: #10b981; color: white; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s;"
+                                        onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                                    ✨ Humanize Now
+                                </button>
+                                <button onclick="document.getElementById('humanizeAIPanel').remove()"
+                                        style="flex: 1; background: #f1f5f9; color: #475569; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s;"
+                                        onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        }
+
+        async function applyHumanizationFromPanel() {
+            const selectedSection = document.getElementById('humanizeSection').value;
+            const humanizeTone = document.getElementById('humanizeTone').value;
+            const article = window.currentGeneratedArticle;
+
+            // Check credits
+            const humanizeCost = 25;
+            if (!checkCreditRequirement('Text Humanization', humanizeCost)) {
+                return;
+            }
+
+            if (!deductCredits(humanizeCost)) {
+                alert('Unable to deduct credits. Please try again.');
+                return;
+            }
+
+            // Close panel
+            document.getElementById('humanizeAIPanel').remove();
+
+            // Show progress
+            const progressModal = document.createElement('div');
+            progressModal.id = 'humanizeProgress';
+            progressModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 30000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">👤</div>
+                        <h3 style="margin: 0 0 15px 0; color: #1a202c;">Humanizing your content...</h3>
+                        <div style="color: #64748b; margin-bottom: 20px;">Making it sound natural and authentic</div>
+                        <div style="width: 100%; background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #10b981, #059669); animation: pulse 1.5s ease-in-out infinite;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(progressModal);
+
+            try {
+                // Get content to humanize
+                let contentToHumanize = '';
+                if (selectedSection === 'all') {
+                    if (article.content.introduction) contentToHumanize += article.content.introduction + '\n\n';
+                    if (article.content.sections) {
+                        article.content.sections.forEach(section => {
+                            if (section.content) contentToHumanize += section.content + '\n\n';
+                        });
+                    }
+                    if (article.content.conclusion) contentToHumanize += article.content.conclusion;
+                } else if (selectedSection === 'introduction') {
+                    contentToHumanize = article.content.introduction || '';
+                } else if (selectedSection === 'conclusion') {
+                    contentToHumanize = article.content.conclusion || '';
+                } else if (selectedSection.startsWith('section-')) {
+                    const index = parseInt(selectedSection.split('-')[1]);
+                    contentToHumanize = article.content.sections[index]?.content || '';
+                }
+
+                // Prepare tone-specific instructions
+                let toneInstructions = '';
+                switch (humanizeTone) {
+                    case 'professional':
+                        toneInstructions = 'Use a professional, authoritative tone. Write like an industry expert sharing valuable insights. Be clear, direct, and confident while maintaining natural human expression.';
+                        break;
+                    case 'conversational':
+                        toneInstructions = 'Use a warm, conversational tone as if talking to a friend over coffee. Be friendly, engaging, and relatable. Use contractions, ask rhetorical questions, and add personal touches.';
+                        break;
+                    case 'formal':
+                        toneInstructions = 'Maintain a formal, academic tone suitable for scholarly or professional publications. Use sophisticated vocabulary, complex sentence structures, and maintain objectivity while still sounding human.';
+                        break;
+                    case 'casual':
+                        toneInstructions = 'Use a relaxed, casual tone. Write in a laid-back, approachable style. Be informal but still informative. Use everyday language and keep it light.';
+                        break;
+                    case 'storytelling':
+                        toneInstructions = 'Use a narrative, storytelling approach. Paint vivid pictures with words, use anecdotes and examples, create emotional connections. Make it engaging and memorable like a great story.';
+                        break;
+                }
+
+                const humanizePrompt = `You are an expert content writer specializing in making AI-generated text sound completely natural and human-written.
+
+TASK: Rewrite the following content to bypass AI detection while maintaining ALL information and SEO value.
+
+TONE: ${toneInstructions}
+
+HUMANIZATION REQUIREMENTS:
+- Vary sentence length dramatically (mix very short, medium, and longer sentences)
+- Use natural transitions and conversational connectors
+- Include occasional rhetorical questions or direct address to readers
+- Add personal observations or relatable examples where appropriate
+- Use contractions naturally (don't, you'll, it's, we're, haven't)
+- Employ active voice predominantly
+- Include natural emphasis through word choice and phrasing
+- Maintain all key facts, statistics, and SEO keywords
+- Avoid clichéd AI phrases like "delve into", "realm of", "tapestry", "multifaceted"
+- Write out ALL content in full - never use placeholders or abbreviations
+
+CRITICAL: Return the COMPLETE rewritten content. Do not use "[Rest remains the same]" or any placeholders.
+
+CONTENT TO HUMANIZE:
+${contentToHumanize}
+
+HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
+
+                const modelConfig = article.modelConfig || { model: 'openai/gpt-4o-mini', temperature: 0.7 };
+
+                const response = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: modelConfig.model,
+                        prompt: humanizePrompt,
+                        temperature: 0.9,
+                        max_tokens: 8000
+                    })
+                });
+
+                if (!response.ok) throw new Error('Humanization failed');
+
+                const data = await response.json();
+                const humanizedContent = data.choices[0].message.content.trim();
+
+                // Apply humanized content back to article
+                if (selectedSection === 'all') {
+                    // Split back into sections (simplified - may need refinement)
+                    article.content.introduction = humanizedContent.split('\n\n')[0];
+                } else if (selectedSection === 'introduction') {
+                    article.content.introduction = humanizedContent;
+                } else if (selectedSection === 'conclusion') {
+                    article.content.conclusion = humanizedContent;
+                } else if (selectedSection.startsWith('section-')) {
+                    const index = parseInt(selectedSection.split('-')[1]);
+                    if (article.content.sections[index]) {
+                        article.content.sections[index].content = humanizedContent;
+                    }
+                }
+
+                window.currentGeneratedArticle = article;
+
+                // Save the updated article
+                if (article.savedArticleId && currentUser && supabaseClient) {
+                    try {
+                        const saveData = {
+                            content: article.content,
+                            metadata: article.metadata || {},
+                            tableOfContents: article.tableOfContents || [],
+                            images: article.images || [],
+                            modelTier: article.modelTier,
+                            modelConfig: article.modelConfig
+                        };
+
+                        await SupabaseService.updateArticle(article.savedArticleId, {
+                            content: JSON.stringify(saveData),
+                            updated_at: new Date().toISOString()
+                        });
+                    } catch (error) {
+                        console.error('Error saving humanized content:', error);
+                    }
+                }
+
+                // Remove progress modal
+                document.getElementById('humanizeProgress').remove();
+
+                // Show success and offer to re-check
+                const successModal = document.createElement('div');
+                successModal.innerHTML = `
+                    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 30000; display: flex; align-items: center; justify-content: center;">
+                        <div style="background: white; padding: 40px; border-radius: 16px; max-width: 500px; text-align: center;">
+                            <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+                            <h2 style="margin: 0 0 15px 0; color: #1e293b;">Content Humanized!</h2>
+                            <p style="color: #64748b; margin-bottom: 30px;">Your content has been rewritten with a ${humanizeTone} tone to sound more natural and human.</p>
+                            <div style="display: flex; gap: 12px;">
+                                <button onclick="this.closest('[style*=\\'position: fixed\\']').remove(); showHumanizeAIPanel()"
+                                        style="flex: 1; background: #8b5cf6; color: white; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;"
+                                        onmouseover="this.style.background='#7c3aed'" onmouseout="this.style.background='#8b5cf6'">
+                                    🔄 Re-check Score
+                                </button>
+                                <button onclick="this.closest('[style*=\\'position: fixed\\']').remove(); location.reload()"
+                                        style="flex: 1; background: #10b981; color: white; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;"
+                                        onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                                    ✓ Done
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(successModal);
+
+            } catch (error) {
+                document.getElementById('humanizeProgress')?.remove();
+                console.error('Humanization error:', error);
+                alert('❌ Humanization failed: ' + error.message);
             }
         }
 
