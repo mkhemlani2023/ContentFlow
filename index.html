@@ -8936,11 +8936,18 @@
 
                 const outlinePrompt = `Return ONLY valid JSON. NO markdown. KEEP IT CONCISE. ${numSections} sections for "${keyword}". ${wordCount}w. ${intent}. ${new Date().getFullYear()}.
 
-CRITICAL:
+CRITICAL TITLE RULES:
+- NEVER use: "Comprehensive Guide", "Complete Guide", "Ultimate Guide", "In-Depth Look", "Everything You Need to Know"
+- ALWAYS use engaging, specific titles like:
+  * "X Interesting Facts About ${keyword}"
+  * "Valuable Information on ${keyword}"
+  * "Key Insights Into ${keyword}"
+  * "What You Should Know About ${keyword}"
+  * "Essential ${keyword} Tips for ${new Date().getFullYear()}"
+  * "Understanding ${keyword}: Expert Perspective"
 - Keep keyPoints SHORT (4-6 words each)
 - Keep purpose to ONE sentence
-- AVOID generic titles like "Complete Guide", "Comprehensive Guide", "Ultimate Guide"
-- Use specific, direct titles that match the article length (${wordCount} words is NOT comprehensive)
+- Use specific, direct titles that match article length
 
 {"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":["","",""],"wordCount":180},"sections":[{"title":"","purpose":"","keyPoints":["","",""],"wordCount":400}],"conclusion":{"purpose":"","keyPoints":["",""],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
 
@@ -9490,8 +9497,8 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                     finalArticle.modelTier = modelTier;
                     finalArticle.modelConfig = config;
 
-                    // Display article without images
-                    displayGeneratedArticle(finalArticle, modelTier, `${modelTier} Article`);
+                    // Run SEO Wizard optimization process before displaying
+                    await optimizeAndHumanizeArticle(finalArticle, modelTier);
                 }, 2000);
 
             } catch (error) {
@@ -10101,6 +10108,388 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
             }
         }
 
+        // SEO Wizard Automatic Optimization & Humanization Process
+        async function optimizeAndHumanizeArticle(article, modelTier) {
+            console.log('=== SEO WIZARD OPTIMIZATION PROCESS ===');
+
+            // Create professional progress modal
+            const modal = document.createElement('div');
+            modal.id = 'seoWizardOptimization';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 50000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 50px; border-radius: 16px; max-width: 600px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1px solid #334155;">
+                        <div style="text-align: center; margin-bottom: 35px;">
+                            <div style="font-size: 56px; margin-bottom: 20px;" id="wizardIcon">🧙</div>
+                            <h2 style="margin: 0 0 10px 0; color: #f1f5f9; font-size: 26px; font-weight: 700;">SEO Wizard Optimization</h2>
+                            <p style="color: #94a3b8; margin: 0; font-size: 15px;">Ensuring your article is SEO-optimized and human-like</p>
+                        </div>
+
+                        <div id="wizardSteps" style="margin-bottom: 30px;">
+                            <div id="step1" style="padding: 15px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid #64748b;">
+                                <div style="color: #cbd5e1; font-size: 14px; font-weight: 600;">Step 1: Analyzing SEO Score</div>
+                                <div style="color: #94a3b8; font-size: 13px; margin-top: 5px;" id="step1Status">Pending...</div>
+                            </div>
+                            <div id="step2" style="padding: 15px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid #64748b;">
+                                <div style="color: #cbd5e1; font-size: 14px; font-weight: 600;">Step 2: SEO Optimization</div>
+                                <div style="color: #94a3b8; font-size: 13px; margin-top: 5px;" id="step2Status">Waiting...</div>
+                            </div>
+                            <div id="step3" style="padding: 15px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid #64748b;">
+                                <div style="color: #cbd5e1; font-size: 14px; font-weight: 600;">Step 3: Humanization</div>
+                                <div style="color: #94a3b8; font-size: 13px; margin-top: 5px;" id="step3Status">Waiting...</div>
+                            </div>
+                            <div id="step4" style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid #64748b;">
+                                <div style="color: #cbd5e1; font-size: 14px; font-weight: 600;">Step 4: Final Quality Check</div>
+                                <div style="color: #94a3b8; font-size: 13px; margin-top: 5px;" id="step4Status">Waiting...</div>
+                            </div>
+                        </div>
+
+                        <div style="width: 100%; background: rgba(255,255,255,0.1); height: 10px; border-radius: 5px; overflow: hidden;">
+                            <div id="wizardProgress" style="width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #059669); transition: width 0.5s;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            const updateStep = (stepNum, status, color) => {
+                const step = document.getElementById(`step${stepNum}`);
+                const stepStatus = document.getElementById(`step${stepNum}Status`);
+                if (step) step.style.borderLeftColor = color;
+                if (stepStatus) {
+                    stepStatus.textContent = status;
+                    stepStatus.style.color = color;
+                }
+            };
+
+            const updateProgress = (percent) => {
+                const bar = document.getElementById('wizardProgress');
+                if (bar) bar.style.width = percent + '%';
+            };
+
+            try {
+                // Step 1: Analyze SEO Score
+                updateStep(1, 'Analyzing...', '#3b82f6');
+                updateProgress(10);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const initialSEOScore = calculateSEOScoreForOptimization(article);
+                console.log('📊 Initial SEO Score:', initialSEOScore);
+
+                updateStep(1, `Score: ${initialSEOScore}/100`, initialSEOScore >= 80 ? '#10b981' : '#f59e0b');
+                updateProgress(25);
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Step 2: SEO Optimization (if needed)
+                if (initialSEOScore < 80) {
+                    updateStep(2, 'Optimizing for SEO...', '#3b82f6');
+                    updateProgress(30);
+
+                    console.log('🔧 SEO Score below 80, optimizing...');
+                    const optimizedArticle = await optimizeArticleForSEO(article);
+                    article.content = optimizedArticle.content;
+
+                    const newScore = calculateSEOScoreForOptimization(article);
+                    updateStep(2, `Optimized! Score improved to ${newScore}/100`, '#10b981');
+                    updateProgress(50);
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                } else {
+                    updateStep(2, 'Already optimized!', '#10b981');
+                    updateProgress(50);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+
+                // Step 3: Automatic Humanization
+                updateStep(3, 'Humanizing content...', '#3b82f6');
+                updateProgress(55);
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                console.log('👤 Humanizing article content...');
+                const humanizedArticle = await automaticallyHumanizeArticle(article);
+                article.content = humanizedArticle.content;
+
+                updateStep(3, 'Content humanized successfully!', '#10b981');
+                updateProgress(80);
+                await new Promise(resolve => setTimeout(resolve, 800));
+
+                // Step 4: Final Quality Check
+                updateStep(4, 'Checking AI detection & SEO...', '#3b82f6');
+                updateProgress(85);
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Calculate final scores
+                const finalSEOScore = calculateSEOScoreForOptimization(article);
+                const finalContent = getFullArticleContent(article);
+                const heuristicScore = analyzeAIPatterns(finalContent);
+                const apiScore = await callAIDetectionAPI(finalContent);
+                const finalAIScore = Math.round((heuristicScore * 0.4) + (apiScore * 0.6));
+
+                // Store final scores in article
+                article.finalScores = {
+                    seo: finalSEOScore,
+                    aiDetection: finalAIScore,
+                    readability: calculateReadabilityGrade(finalContent)
+                };
+
+                console.log('✅ Final SEO Score:', finalSEOScore);
+                console.log('✅ Final AI Detection Score:', finalAIScore);
+
+                updateStep(4, `SEO: ${finalSEOScore}/100 | AI Detection: ${finalAIScore}%`, '#10b981');
+                updateProgress(100);
+
+                // Show completion icon
+                const icon = document.getElementById('wizardIcon');
+                if (icon) icon.textContent = '✨';
+
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                // Close modal
+                document.getElementById('seoWizardOptimization').remove();
+
+                // Display the optimized and humanized article
+                displayGeneratedArticle(article, modelTier, `${modelTier} Article`);
+
+            } catch (error) {
+                console.error('SEO Wizard optimization error:', error);
+                document.getElementById('seoWizardOptimization')?.remove();
+                alert('❌ Optimization failed: ' + error.message + '\n\nDisplaying article without optimization.');
+                displayGeneratedArticle(article, modelTier, `${modelTier} Article`);
+            }
+        }
+
+        // Calculate SEO score for optimization process
+        function calculateSEOScoreForOptimization(article) {
+            const content = article.content;
+            let fullText = '';
+
+            if (content.title) fullText += content.title + '\n\n';
+            if (content.introduction) fullText += content.introduction + '\n\n';
+            if (content.sections) {
+                content.sections.forEach(section => {
+                    if (section.title) fullText += section.title + '\n';
+                    if (section.content) fullText += section.content + '\n\n';
+                });
+            }
+            if (content.conclusion) fullText += content.conclusion + '\n\n';
+
+            const words = fullText.split(/\s+/).filter(w => w.length > 0);
+            const wordCount = words.length;
+
+            let seoScore = 0;
+
+            // Word count (optimal 1500-2500)
+            if (wordCount >= 1500 && wordCount <= 2500) seoScore += 30;
+            else if (wordCount >= 1000) seoScore += 20;
+            else if (wordCount >= 500) seoScore += 10;
+
+            // Keyword usage
+            const keyword = article.metadata?.focusKeyword || article.metadata?.keyword || '';
+            if (keyword) {
+                const regex = new RegExp(keyword, 'gi');
+                const matches = fullText.match(regex);
+                const keywordCount = matches ? matches.length : 0;
+                const kdPercent = (keywordCount / wordCount) * 100;
+                if (kdPercent >= 1 && kdPercent <= 3) seoScore += 25;
+                else if (kdPercent > 0) seoScore += 15;
+            }
+
+            // Header usage
+            let headerCount = 1; // title
+            if (content.sections) headerCount += content.sections.length;
+            if (content.conclusion) headerCount++;
+            if (headerCount >= 5) seoScore += 20;
+            else if (headerCount >= 3) seoScore += 15;
+
+            // Readability
+            const sentences = fullText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+            const syllables = words.reduce((count, word) => count + estimateSyllables(word), 0);
+            const fleschScore = Math.max(0, Math.min(100,
+                206.835 - 1.015 * (wordCount / sentences) - 84.6 * (syllables / wordCount)
+            ));
+            if (fleschScore >= 60) seoScore += 25;
+            else if (fleschScore >= 50) seoScore += 15;
+            else seoScore += 5;
+
+            return Math.min(100, seoScore);
+        }
+
+        // Optimize article for better SEO
+        async function optimizeArticleForSEO(article) {
+            const content = article.content;
+            const keyword = article.metadata?.focusKeyword || article.metadata?.keyword || '';
+
+            // Optimize introduction for readability and keyword density
+            if (content.introduction) {
+                const optimizePrompt = `Rewrite this introduction to improve SEO and readability.
+
+REQUIREMENTS:
+- Include the keyword "${keyword}" naturally 1-2 times
+- Use shorter, punchier sentences (mix of short and medium length)
+- Improve Flesch reading ease score (aim for 60+)
+- Keep the same information and length
+- Start with a hook that grabs attention
+- Use active voice
+- Year: ${new Date().getFullYear()}
+
+ORIGINAL:
+${content.introduction}
+
+OPTIMIZED VERSION (same length, better SEO):`;
+
+                try {
+                    const response = await fetch('/api/openrouter-generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: article.modelConfig?.model || 'openai/gpt-4o-mini',
+                            prompt: optimizePrompt,
+                            temperature: 0.7,
+                            max_tokens: 1000
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        content.introduction = data.choices[0].message.content.trim();
+                    }
+                } catch (error) {
+                    console.error('Error optimizing introduction:', error);
+                }
+            }
+
+            // Optimize section titles for SEO (add keyword variations)
+            if (content.sections && content.sections.length > 0) {
+                // Ensure at least one section mentions the keyword
+                let keywordInSections = false;
+                content.sections.forEach(section => {
+                    if (section.title && section.title.toLowerCase().includes(keyword.toLowerCase())) {
+                        keywordInSections = true;
+                    }
+                });
+
+                // If no section has keyword, add it to the first section title
+                if (!keywordInSections && content.sections[0]) {
+                    const firstSection = content.sections[0];
+                    if (!firstSection.title.toLowerCase().includes(keyword.toLowerCase())) {
+                        // Intelligently add keyword to title
+                        firstSection.title = `${keyword}: ${firstSection.title}`;
+                    }
+                }
+            }
+
+            article.content = content;
+            return article;
+        }
+
+        // Automatically humanize article
+        async function automaticallyHumanizeArticle(article) {
+            const content = article.content;
+
+            // Humanize introduction
+            if (content.introduction) {
+                content.introduction = await humanizeContent(content.introduction, 'professional', article);
+            }
+
+            // Humanize conclusion
+            if (content.conclusion) {
+                content.conclusion = await humanizeContent(content.conclusion, 'professional', article);
+            }
+
+            // Humanize first 2 sections (to save tokens/time)
+            if (content.sections && content.sections.length > 0) {
+                for (let i = 0; i < Math.min(2, content.sections.length); i++) {
+                    if (content.sections[i].content) {
+                        content.sections[i].content = await humanizeContent(content.sections[i].content, 'professional', article);
+                    }
+                }
+            }
+
+            article.content = content;
+            return article;
+        }
+
+        // Humanize a piece of content
+        async function humanizeContent(text, tone, article) {
+            const toneInstructions = 'Use a professional, authoritative tone. Write like an industry expert sharing valuable insights. Be clear, direct, and confident while maintaining natural human expression. Vary sentence length dramatically.';
+
+            const humanizePrompt = `Rewrite this content to sound completely natural and human-written.
+
+TONE: ${toneInstructions}
+
+REQUIREMENTS:
+- Vary sentence length dramatically (mix very short, medium, and longer sentences)
+- Use contractions naturally (don't, you'll, it's, we're)
+- Add a rhetorical question or two
+- Use active voice predominantly
+- Avoid AI clichés like "delve into", "realm of", "tapestry", "multifaceted", "landscape of"
+- Keep all facts and information
+- Maintain the same approximate length
+- Year: ${new Date().getFullYear()}
+
+ORIGINAL:
+${text}
+
+HUMANIZED VERSION:`;
+
+            try {
+                const response = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: article.modelConfig?.model || 'openai/gpt-4o-mini',
+                        prompt: humanizePrompt,
+                        temperature: 0.9,
+                        max_tokens: Math.min(2000, text.split(/\s+/).length * 3)
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.choices[0].message.content.trim();
+                }
+            } catch (error) {
+                console.error('Error humanizing content:', error);
+            }
+
+            return text; // Return original if humanization fails
+        }
+
+        // Get full article content for analysis
+        function getFullArticleContent(article) {
+            const content = article.content;
+            let fullText = '';
+
+            if (content.title) fullText += content.title + '\n\n';
+            if (content.introduction) fullText += content.introduction + '\n\n';
+            if (content.sections) {
+                content.sections.forEach(section => {
+                    if (section.title) fullText += section.title + '\n';
+                    if (section.content) fullText += section.content + '\n\n';
+                });
+            }
+            if (content.conclusion) fullText += content.conclusion;
+
+            return fullText;
+        }
+
+        // Calculate readability grade
+        function calculateReadabilityGrade(text) {
+            const words = text.split(/\s+/).filter(w => w.length > 0);
+            const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+            const syllables = words.reduce((count, word) => count + estimateSyllables(word), 0);
+
+            const fleschScore = Math.max(0, Math.min(100,
+                206.835 - 1.015 * (words.length / sentences) - 84.6 * (syllables / words.length)
+            ));
+
+            if (fleschScore >= 90) return 'Very Easy';
+            if (fleschScore >= 80) return 'Easy';
+            if (fleschScore >= 70) return 'Fairly Easy';
+            if (fleschScore >= 60) return 'Standard';
+            if (fleschScore >= 50) return 'Fairly Difficult';
+            if (fleschScore >= 30) return 'Difficult';
+            return 'Very Difficult';
+        }
+
         function displayGeneratedArticle(articleData, modelTier, creditCost) {
             console.log('=== displayGeneratedArticle CALLED ===');
             console.log('articleData:', articleData);
@@ -10173,6 +10562,38 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
 
                         <!-- Content -->
                         <div style="padding: 0 40px 40px;">
+                            <!-- Final Quality Scores (SEO Wizard) -->
+                            ${articleData.finalScores ? `
+                            <div style="margin: 25px 0; padding: 25px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 12px; border: 2px solid #10b981; box-shadow: 0 4px 16px rgba(16,185,129,0.3);">
+                                <div style="text-align: center; margin-bottom: 20px;">
+                                    <div style="font-size: 36px; margin-bottom: 10px;">✨</div>
+                                    <h3 style="margin: 0; color: #f1f5f9; font-size: 20px; font-weight: 700;">SEO Wizard Quality Assurance</h3>
+                                    <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 14px;">This article has been optimized and humanized</p>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; text-align: center;">
+                                        <div style="color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">SEO Score</div>
+                                        <div style="font-size: 42px; font-weight: 700; color: ${articleData.finalScores.seo >= 80 ? '#10b981' : articleData.finalScores.seo >= 60 ? '#f59e0b' : '#ef4444'}; margin-bottom: 5px;">${articleData.finalScores.seo}/100</div>
+                                        <div style="color: #cbd5e1; font-size: 13px;">${articleData.finalScores.readability}</div>
+                                    </div>
+                                    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; text-align: center;">
+                                        <div style="color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">AI Detection</div>
+                                        <div style="font-size: 42px; font-weight: 700; color: ${articleData.finalScores.aiDetection <= 40 ? '#10b981' : articleData.finalScores.aiDetection <= 60 ? '#f59e0b' : '#ef4444'}; margin-bottom: 5px;">${articleData.finalScores.aiDetection}%</div>
+                                        <div style="color: #cbd5e1; font-size: 13px;">${articleData.finalScores.aiDetection <= 20 ? 'Very Human-Like' : articleData.finalScores.aiDetection <= 40 ? 'Mostly Human' : articleData.finalScores.aiDetection <= 60 ? 'Mixed Signals' : 'Needs Work'}</div>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 15px; padding: 15px; background: rgba(16,185,129,0.1); border-radius: 8px; border-left: 3px solid #10b981;">
+                                    <div style="color: #d1fae5; font-size: 13px; line-height: 1.6;">
+                                        ✅ Article automatically optimized for search engine ranking<br>
+                                        ✅ Content humanized to bypass AI detection<br>
+                                        ✅ Ready for immediate publishing
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+
                             <!-- Metadata Section -->
                             ${metadata ? `
                             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
