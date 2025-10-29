@@ -10421,7 +10421,7 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
             // Keyword usage - More generous
             const keyword = article.metadata?.focusKeyword || article.metadata?.keyword || '';
             if (keyword) {
-                const regex = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                const regex = new RegExp(keyword.replace(/[.*+?^${}()|\[\]\\]/g, '\\$&'), 'gi');
                 const matches = fullText.match(regex);
                 const keywordCount = matches ? matches.length : 0;
                 const kdPercent = (keywordCount / wordCount) * 100;
