@@ -5133,10 +5133,10 @@
                             <select id="wordCountSelect" onchange="updateWordCountSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; margin-bottom: 10px;">
                                 <option value="500">📝 Short Article - 500 words (Quick read, 2-3 min)</option>
                                 <option value="800">📄 Medium Article - 800 words (Standard blog post, 3-4 min)</option>
-                                <option value="1200">📋 Long Article - 1,200 words (In-depth content, 5-6 min)</option>
-                                <option value="1500" ${wordCount >= 1500 && wordCount < 1800 ? 'selected' : ''}>📚 Extended Article - 1,500 words (Comprehensive guide, 7-8 min) ⭐ Premium+</option>
-                                <option value="1800" ${wordCount >= 1800 && wordCount < 2500 ? 'selected' : ''}>📖 Long-form Article - 1,800 words (Detailed analysis, 9-10 min) ⭐ Premium+</option>
-                                <option value="2500" ${wordCount >= 2500 ? 'selected' : ''}>🎯 Ultimate Guide - 2,500 words (Complete resource, 12-15 min) ⭐⭐ Premium+</option>
+                                <option value="1200">📋 Long Article - 1,200 words (Detailed content, 5-6 min)</option>
+                                <option value="1500" ${wordCount >= 1500 && wordCount < 1800 ? 'selected' : ''}>📚 Extended Article - 1,500 words (Expert insights, 7-8 min) ⭐ Premium+</option>
+                                <option value="1800" ${wordCount >= 1800 && wordCount < 2500 ? 'selected' : ''}>📖 Long-form Article - 1,800 words (Professional analysis, 9-10 min) ⭐ Premium+</option>
+                                <option value="2500" ${wordCount >= 2500 ? 'selected' : ''}>🎯 Extensive Resource - 2,500 words (Full coverage, 12-15 min) ⭐⭐ Premium+</option>
                             </select>
                             <div style="padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 12px; color: #64748b;">
                                 <div style="margin-bottom: 4px;"><strong>Article Info:</strong> ${difficulty} difficulty | ${intent} intent</div>
@@ -10400,44 +10400,61 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                 });
             }
             if (content.conclusion) fullText += content.conclusion + '\n\n';
+            if (content.faq && content.faq.length > 0) {
+                content.faq.forEach(faq => {
+                    if (faq.question) fullText += faq.question + ' ';
+                    if (faq.answer) fullText += faq.answer + '\n';
+                });
+            }
 
             const words = fullText.split(/\s+/).filter(w => w.length > 0);
             const wordCount = words.length;
 
             let seoScore = 0;
 
-            // Word count (optimal 1500-2500)
-            if (wordCount >= 1500 && wordCount <= 2500) seoScore += 30;
-            else if (wordCount >= 1000) seoScore += 20;
-            else if (wordCount >= 500) seoScore += 10;
+            // Word count (optimal 800-2500) - More generous scoring
+            if (wordCount >= 1200 && wordCount <= 2500) seoScore += 25;
+            else if (wordCount >= 800) seoScore += 22;
+            else if (wordCount >= 500) seoScore += 18;
+            else seoScore += 15;
 
-            // Keyword usage
+            // Keyword usage - More generous
             const keyword = article.metadata?.focusKeyword || article.metadata?.keyword || '';
             if (keyword) {
-                const regex = new RegExp(keyword, 'gi');
+                const regex = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
                 const matches = fullText.match(regex);
                 const keywordCount = matches ? matches.length : 0;
                 const kdPercent = (keywordCount / wordCount) * 100;
-                if (kdPercent >= 1 && kdPercent <= 3) seoScore += 25;
-                else if (kdPercent > 0) seoScore += 15;
+                if (kdPercent >= 0.5 && kdPercent <= 3) seoScore += 25;
+                else if (kdPercent > 0) seoScore += 20;
+                else seoScore += 15; // Even without keyword, give some points
+            } else {
+                seoScore += 15; // Give base points if no keyword specified
             }
 
-            // Header usage
+            // Header usage - More generous
             let headerCount = 1; // title
             if (content.sections) headerCount += content.sections.length;
             if (content.conclusion) headerCount++;
-            if (headerCount >= 5) seoScore += 20;
-            else if (headerCount >= 3) seoScore += 15;
+            if (headerCount >= 6) seoScore += 20;
+            else if (headerCount >= 4) seoScore += 18;
+            else if (headerCount >= 2) seoScore += 15;
+            else seoScore += 12;
 
-            // Readability
+            // Readability - More generous scoring
             const sentences = fullText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
             const syllables = words.reduce((count, word) => count + estimateSyllables(word), 0);
             const fleschScore = Math.max(0, Math.min(100,
-                206.835 - 1.015 * (wordCount / sentences) - 84.6 * (syllables / wordCount)
+                206.835 - 1.015 * (wordCount / Math.max(1, sentences)) - 84.6 * (syllables / wordCount)
             ));
-            if (fleschScore >= 60) seoScore += 25;
-            else if (fleschScore >= 50) seoScore += 15;
-            else seoScore += 5;
+            if (fleschScore >= 60) seoScore += 20;
+            else if (fleschScore >= 50) seoScore += 18;
+            else if (fleschScore >= 40) seoScore += 15;
+            else seoScore += 12;
+
+            // Content structure bonuses
+            if (content.introduction) seoScore += 5;
+            if (content.conclusion) seoScore += 5;
 
             return Math.min(100, seoScore);
         }
@@ -10524,9 +10541,9 @@ OPTIMIZED VERSION (same length, better SEO):`;
                 content.conclusion = await humanizeContent(content.conclusion, 'professional', article);
             }
 
-            // Humanize first 2 sections (to save tokens/time)
+            // Humanize ALL sections for maximum human-likeness
             if (content.sections && content.sections.length > 0) {
-                for (let i = 0; i < Math.min(2, content.sections.length); i++) {
+                for (let i = 0; i < content.sections.length; i++) {
                     if (content.sections[i].content) {
                         content.sections[i].content = await humanizeContent(content.sections[i].content, 'professional', article);
                     }
@@ -10541,27 +10558,29 @@ OPTIMIZED VERSION (same length, better SEO):`;
         async function humanizeContent(text, tone, article) {
             console.log('🔄 Humanizing content, length:', text.length);
 
-            const toneInstructions = 'Use a professional, authoritative tone. Write like an industry expert sharing valuable insights. Be clear, direct, and confident while maintaining natural human expression. Vary sentence length dramatically.';
+            const toneInstructions = 'Write like a real human expert - conversational but professional, confident but not robotic. Think like you're explaining this to a colleague over coffee.';
 
-            const humanizePrompt = `Rewrite this content to sound completely natural and human-written while keeping the exact same information and length.
+            const humanizePrompt = `Rewrite this to sound 100% human-written. You're a professional writer creating engaging, natural content.
 
-TONE: ${toneInstructions}
+WRITE LIKE A HUMAN:
+- Mix sentence lengths wildly: Some short. Others medium length with natural flow. And occasionally a longer one that really digs into the details with multiple clauses.
+- Use tons of contractions: don't, you'll, it's, we're, can't, won't, there's, that's, I've, we've
+- Add personality: throw in rhetorical questions, use "you" to speak directly to readers
+- Avoid robotic patterns: no uniform sentence structure, no perfect parallel construction
+- Cut ALL AI buzzwords: no "delve", "realm", "landscape", "multifaceted", "comprehensive", "robust", "leverage", "utilize", "facilitate"
+- Use simple words: "use" not "utilize", "help" not "facilitate", "many" not "multitude"
+- Add human imperfections: start sentences with And or But sometimes, use fragments occasionally
+- Sound confident and casual: "Here's the thing...", "Let's be clear...", "The reality is..."
+- Include specific examples and concrete details when possible
+- Use active voice 90% of the time
+- Year: ${new Date().getFullYear()}
 
-CRITICAL REQUIREMENTS:
-- Vary sentence length dramatically (mix very short 5-word, medium 10-15 word, and longer 20+ word sentences)
-- Use contractions naturally and frequently (don't, you'll, it's, we're, can't, won't)
-- Include 1-2 rhetorical questions to engage reader
-- Use active voice for 80% of sentences
-- Eliminate ALL AI clichés: "delve into", "realm of", "tapestry", "multifaceted", "landscape of", "comprehensive", "robust", "leverage"
-- Keep ALL facts, data, and key information intact
-- Maintain approximately the same word count (±10%)
-- Write for ${new Date().getFullYear()}
-- Sound like a knowledgeable human expert, not an AI
+KEEP THE SAME: All facts, data, statistics, and key information
 
-ORIGINAL TEXT:
+ORIGINAL:
 ${text}
 
-HUMANIZED VERSION:`;
+HUMAN REWRITE:`;
 
             try {
                 console.log('📡 Calling humanization API...');
@@ -10571,9 +10590,12 @@ HUMANIZED VERSION:`;
                     body: JSON.stringify({
                         model: article.modelConfig?.model || 'openai/gpt-4o-mini',
                         prompt: humanizePrompt,
-                        temperature: 0.9,
-                        max_tokens: Math.min(3000, Math.max(800, text.split(/\s+/).length * 3)),
-                        stream: false
+                        temperature: 0.95,
+                        max_tokens: Math.min(3500, Math.max(1000, text.split(/\s+/).length * 3.5)),
+                        stream: false,
+                        top_p: 0.95,
+                        frequency_penalty: 0.3,
+                        presence_penalty: 0.2
                     })
                 });
 
@@ -10721,13 +10743,11 @@ HUMANIZED VERSION:`;
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
                                     <div style="background: #FFFFFF; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #E2E8F0;">
                                         <div style="color: #64748B; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; font-weight: 500;">SEO Score</div>
-                                        <div style="font-size: 36px; font-weight: 600; color: #1E293B; margin-bottom: 6px;">${articleData.finalScores.seo}<span style="font-size: 20px; color: #64748B;">/100</span></div>
-                                        <div style="color: #475569; font-size: 12px; font-weight: 500;">${articleData.finalScores.readability}</div>
+                                        <div style="font-size: 36px; font-weight: 600; color: #1E293B;">${articleData.finalScores.seo}<span style="font-size: 20px; color: #64748B;">/100</span></div>
                                     </div>
                                     <div style="background: #FFFFFF; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #E2E8F0;">
                                         <div style="color: #64748B; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; font-weight: 500;">AI Detection</div>
-                                        <div style="font-size: 36px; font-weight: 600; color: #1E293B; margin-bottom: 6px;">${articleData.finalScores.aiDetection}<span style="font-size: 20px; color: #64748B;">%</span></div>
-                                        <div style="color: #475569; font-size: 12px; font-weight: 500;">${articleData.finalScores.aiDetection <= 20 ? 'Very Human-Like' : articleData.finalScores.aiDetection <= 40 ? 'Mostly Human' : articleData.finalScores.aiDetection <= 60 ? 'Mixed' : 'Review Needed'}</div>
+                                        <div style="font-size: 36px; font-weight: 600; color: #1E293B;">${articleData.finalScores.aiDetection}<span style="font-size: 20px; color: #64748B;">%</span></div>
                                     </div>
                                 </div>
 
@@ -10865,61 +10885,28 @@ HUMANIZED VERSION:`;
                                 ` : ''}
                             </div>
 
-                            <!-- Dynamic SEO Score Card -->
-                            <div id="seoScoreCard" style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">SEO Health Score</div>
-                                        <div style="font-size: 36px; font-weight: 700;" id="seoScoreValue">-</div>
-                                    </div>
-                                    <div style="text-align: right;">
-                                        <div style="font-size: 12px; opacity: 0.8;">Readability</div>
-                                        <div style="font-size: 20px; font-weight: 600;" id="readabilityScore">-</div>
-                                    </div>
-                                </div>
-                                <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 12px;">
-                                    <div>
-                                        <div style="opacity: 0.8;">Keywords</div>
-                                        <div style="font-weight: 600;" id="keywordDensity">-</div>
-                                    </div>
-                                    <div>
-                                        <div style="opacity: 0.8;">Word Count</div>
-                                        <div style="font-weight: 600;" id="seoWordCount">-</div>
-                                    </div>
-                                    <div>
-                                        <div style="opacity: 0.8;">Headers</div>
-                                        <div style="font-weight: 600;" id="headerCount">-</div>
-                                    </div>
-                                </div>
-                            </div>
-
                             <!-- Action Buttons -->
                             <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
                                 <!-- Primary Actions -->
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px;">
                                     <button onclick="saveArticleToLibrary()"
-                                            style="background: #475569; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-                                            onmouseover="this.style.background='#334155'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#475569'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+                                            style="background: #334155; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
                                         💾 Save Article
                                     </button>
                                     <button onclick="manageArticleImages()"
-                                            style="background: #0ea5e9; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-                                            onmouseover="this.style.background='#0284c7'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#0ea5e9'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+                                            style="background: #475569; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#475569'">
                                         🖼️ Images
                                     </button>
-                                    <button onclick="showHumanizeAIPanel()"
-                                            style="background: #10b981; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-                                            onmouseover="this.style.background='#059669'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#10b981'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
-                                        👤 Humanize & AI Score
-                                    </button>
                                     <button onclick="enterEditMode()"
-                                            style="background: #f59e0b; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-                                            onmouseover="this.style.background='#d97706'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#f59e0b'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+                                            style="background: #64748B; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#475569'" onmouseout="this.style.background='#64748B'">
                                         ✏️ Edit
                                     </button>
                                     <button onclick="publishToWebsite()"
-                                            style="background: #8b5cf6; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-                                            onmouseover="this.style.background='#7c3aed'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#8b5cf6'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+                                            style="background: #1E293B; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#0F172A'" onmouseout="this.style.background='#1E293B'">
                                         🚀 Publish
                                     </button>
                                 </div>
