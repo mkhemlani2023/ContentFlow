@@ -10222,6 +10222,11 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                                             onmouseover="this.style.background='#475569'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#64748B'; this.style.transform='translateY(0)'">
                                         🖼️ Add Images
                                     </button>
+                                    <button onclick="removeImagesFromArticle()"
+                                            style="background: #ef4444; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#dc2626'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#ef4444'; this.style.transform='translateY(0)'">
+                                        🗑️ Remove Images
+                                    </button>
                                     <button onclick="publishToWebsite()"
                                             style="background: #334155; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
                                             onmouseover="this.style.background='#1E293B'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#334155'; this.style.transform='translateY(0)'">
@@ -14146,10 +14151,11 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
 
             // Update the article
             article.content = content;
+            article.images = Object.values(window.selectedImages);
             window.currentGeneratedArticle = article;
 
-            // If article is saved, update it in database with complete article data
-            if (article.savedArticleId && currentUser && supabaseClient) {
+            // Always save the article with images to database
+            if (currentUser && supabaseClient) {
                 try {
                     // Create complete save object with all article data
                     const saveData = {
@@ -14161,14 +14167,37 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                         modelConfig: article.modelConfig
                     };
 
-                    await SupabaseService.updateArticle(article.savedArticleId, {
-                        content: JSON.stringify(saveData),
-                        images: JSON.stringify(Object.values(window.selectedImages)),
-                        updated_at: new Date().toISOString()
-                    });
+                    // If article is already saved, update it; otherwise, create new save
+                    if (article.savedArticleId) {
+                        await SupabaseService.updateArticle(article.savedArticleId, {
+                            content: JSON.stringify(saveData),
+                            images: JSON.stringify(Object.values(window.selectedImages)),
+                            updated_at: new Date().toISOString()
+                        });
+                        console.log('✅ Article updated with images (ID: ' + article.savedArticleId + ')');
+                    } else {
+                        // Save as new article
+                        const result = await SupabaseService.saveArticle({
+                            title: content.title || 'Untitled Article',
+                            keyword: article.metadata?.focusKeyword || article.metadata?.keyword || '',
+                            content: JSON.stringify(saveData),
+                            metadata: JSON.stringify(article.metadata || {}),
+                            model_tier: article.modelTier || 'basic',
+                            word_count: article.metadata?.actualWordCount || article.metadata?.wordCount || 0,
+                            images: JSON.stringify(Object.values(window.selectedImages))
+                        });
+
+                        if (result.success) {
+                            article.savedArticleId = result.data.id;
+                            window.currentGeneratedArticle.savedArticleId = result.data.id;
+                            console.log('✅ Article saved with images (ID: ' + result.data.id + ')');
+                        } else {
+                            throw new Error(result.error || 'Failed to save article');
+                        }
+                    }
                 } catch (error) {
-                    console.error('Error updating article with images:', error);
-                    alert('⚠️ Images added but failed to save to database. Please try again.');
+                    console.error('Error saving article with images:', error);
+                    alert('⚠️ Images added but failed to save to database. Please try saving the article manually.');
                     return;
                 }
             }
@@ -14205,6 +14234,104 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             `;
 
             document.body.appendChild(successModal);
+        }
+
+        async function removeImagesFromArticle() {
+            if (!window.currentGeneratedArticle) {
+                alert('❌ No article found.');
+                return;
+            }
+
+            // Confirm removal
+            if (!confirm('⚠️ Remove all images from this article?\n\nThis action cannot be undone. You can add new images after removal.')) {
+                return;
+            }
+
+            const article = window.currentGeneratedArticle;
+            const content = article.content;
+
+            if (!content) {
+                alert('❌ Article content is missing.');
+                return;
+            }
+
+            // Remove featured image
+            if (content.featuredImage) {
+                delete content.featuredImage;
+            }
+
+            // Remove images from introduction
+            if (content.introduction) {
+                content.introduction = content.introduction.replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '');
+            }
+
+            // Remove images from sections
+            if (content.sections && Array.isArray(content.sections)) {
+                content.sections.forEach(section => {
+                    if (section.content) {
+                        section.content = section.content.replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '');
+                    }
+                });
+            }
+
+            // Remove images from conclusion
+            if (content.conclusion) {
+                content.conclusion = content.conclusion.replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '');
+            }
+
+            // Update article
+            article.content = content;
+            article.images = [];
+            window.currentGeneratedArticle = article;
+
+            // Clear selected images
+            window.selectedImages = {};
+
+            // Save updated article to database
+            if (currentUser && supabaseClient && article.savedArticleId) {
+                try {
+                    const saveData = {
+                        content: content,
+                        metadata: article.metadata || {},
+                        tableOfContents: article.tableOfContents || [],
+                        images: [],
+                        modelTier: article.modelTier,
+                        modelConfig: article.modelConfig
+                    };
+
+                    await SupabaseService.updateArticle(article.savedArticleId, {
+                        content: JSON.stringify(saveData),
+                        images: JSON.stringify([]),
+                        updated_at: new Date().toISOString()
+                    });
+
+                    console.log('✅ Images removed and article updated (ID: ' + article.savedArticleId + ')');
+
+                    // Show success message
+                    alert('✅ All images have been removed from the article.\n\nThe article has been saved. You can add new images anytime.');
+
+                    // Refresh the article view if it's open
+                    const existingPreview = document.querySelector('[style*="position: fixed"][style*="z-index: 10000"]');
+                    if (existingPreview) {
+                        existingPreview.remove();
+                        // Regenerate the preview
+                        viewGeneratedArticle();
+                    }
+                } catch (error) {
+                    console.error('Error removing images:', error);
+                    alert('⚠️ Images removed from display but failed to save changes. Please try again.');
+                }
+            } else {
+                alert('✅ All images have been removed from the article.');
+
+                // Refresh the article view if it's open
+                const existingPreview = document.querySelector('[style*="position: fixed"][style*="z-index: 10000"]');
+                if (existingPreview) {
+                    existingPreview.remove();
+                    // Regenerate the preview
+                    viewGeneratedArticle();
+                }
+            }
         }
 
         async function publishToWebsite() {
