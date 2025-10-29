@@ -7189,11 +7189,100 @@
 
                             <div style="padding: 0 40px 40px;">
                                 ${articleBody}
+
+                                <!-- Dynamic SEO Score Card -->
+                                <div id="seoScoreCard" style="margin: 30px 0 20px; padding: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                        <div>
+                                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">SEO Health Score</div>
+                                            <div style="font-size: 42px; font-weight: 700;" id="seoScoreValue">-</div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-size: 12px; opacity: 0.8;">Readability</div>
+                                            <div style="font-size: 22px; font-weight: 600;" id="readabilityScore">-</div>
+                                        </div>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; font-size: 13px;">
+                                        <div>
+                                            <div style="opacity: 0.8;">Keywords</div>
+                                            <div style="font-weight: 600; font-size: 16px; margin-top: 3px;" id="keywordDensity">-</div>
+                                        </div>
+                                        <div>
+                                            <div style="opacity: 0.8;">Word Count</div>
+                                            <div style="font-weight: 600; font-size: 16px; margin-top: 3px;" id="seoWordCount">-</div>
+                                        </div>
+                                        <div>
+                                            <div style="opacity: 0.8;">Headers</div>
+                                            <div style="font-weight: 600; font-size: 16px; margin-top: 3px;" id="headerCount">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div style="margin-top: 30px; padding-top: 25px; border-top: 3px solid #e2e8f0;">
+                                    <h3 style="margin: 0 0 20px 0; color: #1a202c; font-size: 18px; font-weight: 600;">📋 Article Actions</h3>
+
+                                    <!-- Primary Actions -->
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 15px;">
+                                        <button onclick="manageIndividualImages()"
+                                                style="background: #0ea5e9; color: white; border: none; padding: 16px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s; box-shadow: 0 3px 8px rgba(14,165,233,0.3);"
+                                                onmouseover="this.style.background='#0284c7'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(14,165,233,0.4)'" onmouseout="this.style.background='#0ea5e9'; this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 8px rgba(14,165,233,0.3)'">
+                                            🖼️ Manage Images
+                                        </button>
+                                        <button onclick="showHumanizeAIPanel()"
+                                                style="background: #10b981; color: white; border: none; padding: 16px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s; box-shadow: 0 3px 8px rgba(16,185,129,0.3);"
+                                                onmouseover="this.style.background='#059669'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(16,185,129,0.4)'" onmouseout="this.style.background='#10b981'; this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 8px rgba(16,185,129,0.3)'">
+                                            👤 Humanize & AI Score
+                                        </button>
+                                        <button onclick="enterEditModeFromView()"
+                                                style="background: #f59e0b; color: white; border: none; padding: 16px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s; box-shadow: 0 3px 8px rgba(245,158,11,0.3);"
+                                                onmouseover="this.style.background='#d97706'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(245,158,11,0.4)'" onmouseout="this.style.background='#f59e0b'; this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 8px rgba(245,158,11,0.3)'">
+                                            ✏️ Edit Article
+                                        </button>
+                                        <button onclick="publishToWebsite()"
+                                                style="background: #8b5cf6; color: white; border: none; padding: 16px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s; box-shadow: 0 3px 8px rgba(139,92,246,0.3);"
+                                                onmouseover="this.style.background='#7c3aed'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(139,92,246,0.4)'" onmouseout="this.style.background='#8b5cf6'; this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 8px rgba(139,92,246,0.3)'">
+                                            🚀 Publish to Website
+                                        </button>
+                                    </div>
+
+                                    <!-- Secondary Actions -->
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 15px;">
+                                        <button onclick="copyArticleToClipboard()"
+                                                style="background: #f1f5f9; color: #475569; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                                onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                            📋 Copy HTML
+                                        </button>
+                                        <button onclick="exportArticleMarkdown()"
+                                                style="background: #f1f5f9; color: #475569; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                                onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                            📥 Export MD
+                                        </button>
+                                        <button onclick="this.closest('[style*=\\'position: fixed\\']').remove()"
+                                                style="background: #f1f5f9; color: #475569; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
+                                                onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                            ← Close
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `;
 
                     document.body.appendChild(modal);
+
+                    // Set as current article for all actions to work
+                    window.currentGeneratedArticle = {
+                        content: content,
+                        metadata: metadata,
+                        tableOfContents: tableOfContents,
+                        modelTier: article.model_tier,
+                        savedArticleId: articleId,
+                        images: savedData.images || []
+                    };
+
+                    // Calculate and display SEO score
+                    calculateAndDisplaySEOScore();
 
                     // Scroll to view
                     setTimeout(() => {
@@ -16732,6 +16821,177 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
             // Load saved research
             displaySavedResearch();
         });
+
+        // Individual Image Management
+        function manageIndividualImages() {
+            const article = window.currentGeneratedArticle;
+            if (!article) {
+                alert('❌ No article found.');
+                return;
+            }
+
+            const images = article.images || [];
+
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'individualImageManager';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 30000; display: flex; align-items: center; justify-content: center; overflow-y: auto;">
+                    <div style="background: white; padding: 35px; border-radius: 16px; max-width: 900px; width: 95%; margin: 20px; max-height: 90vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                            <h2 style="margin: 0; color: #1a202c;">🖼️ Manage Article Images</h2>
+                            <button onclick="document.getElementById('individualImageManager').remove()"
+                                    style="background: #f1f5f9; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 18px;">✕</button>
+                        </div>
+
+                        <p style="color: #64748b; margin-bottom: 25px;">
+                            ${images.length > 0 ? `Your article has ${images.length} image(s). Manage them individually below.` : 'No images in this article yet.'}
+                        </p>
+
+                        ${images.length > 0 ? `
+                        <div id="imagesList" style="display: grid; gap: 20px; margin-bottom: 25px;">
+                            ${images.map((img, index) => `
+                                <div style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 20px; background: #f8fafc;">
+                                    <div style="display: flex; gap: 20px; align-items: start;">
+                                        <img src="${img.url}" style="width: 200px; height: 140px; object-fit: cover; border-radius: 8px; flex-shrink: 0;">
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 600; color: #1e293b; margin-bottom: 10px;">Image ${index + 1}</div>
+                                            <div style="margin-bottom: 12px;">
+                                                <label style="display: block; font-size: 13px; color: #64748b; margin-bottom: 5px;">Alt Text (SEO):</label>
+                                                <input type="text" id="imgAlt${index}" value="${img.alt || ''}"
+                                                       style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                                            </div>
+                                            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
+                                                Photo by <a href="${img.photographerUrl || '#'}" target="_blank" style="color: #0ea5e9;">${img.photographer || 'Unknown'}</a>
+                                            </div>
+                                            <div style="display: flex; gap: 8px;">
+                                                <button onclick="updateImageAlt(${index})"
+                                                        style="background: #0ea5e9; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                                                    💾 Update Alt Text
+                                                </button>
+                                                <button onclick="removeIndividualImage(${index})"
+                                                        style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                                                    🗑️ Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ` : ''}
+
+                        <div style="display: flex; gap: 12px; margin-top: 25px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
+                            <button onclick="document.getElementById('individualImageManager').remove(); addImagesToArticle()"
+                                    style="flex: 1; background: #10b981; color: white; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;">
+                                ➕ Add More Images
+                            </button>
+                            <button onclick="document.getElementById('individualImageManager').remove()"
+                                    style="flex: 1; background: #f1f5f9; color: #475569; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;">
+                                ✓ Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        }
+
+        async function updateImageAlt(imageIndex) {
+            const article = window.currentGeneratedArticle;
+            if (!article || !article.images || !article.images[imageIndex]) return;
+
+            const newAlt = document.getElementById(`imgAlt${imageIndex}`).value.trim();
+            if (!newAlt) {
+                alert('❌ Please enter alt text');
+                return;
+            }
+
+            // Update the image alt text
+            article.images[imageIndex].alt = newAlt;
+            window.currentGeneratedArticle = article;
+
+            // Save to database if article is saved
+            if (article.savedArticleId && currentUser && supabaseClient) {
+                try {
+                    const saveData = {
+                        content: article.content,
+                        metadata: article.metadata || {},
+                        tableOfContents: article.tableOfContents || [],
+                        images: article.images,
+                        modelTier: article.modelTier,
+                        modelConfig: article.modelConfig
+                    };
+
+                    await SupabaseService.updateArticle(article.savedArticleId, {
+                        content: JSON.stringify(saveData),
+                        images: JSON.stringify(article.images),
+                        updated_at: new Date().toISOString()
+                    });
+
+                    alert('✅ Alt text updated successfully!');
+                } catch (error) {
+                    console.error('Error updating image:', error);
+                    alert('⚠️ Failed to save changes. Please try again.');
+                }
+            } else {
+                alert('✅ Alt text updated!');
+            }
+        }
+
+        async function removeIndividualImage(imageIndex) {
+            const article = window.currentGeneratedArticle;
+            if (!article || !article.images) return;
+
+            if (!confirm('Remove this image from the article?')) return;
+
+            // Remove the image
+            article.images.splice(imageIndex, 1);
+            window.currentGeneratedArticle = article;
+
+            // Save to database
+            if (article.savedArticleId && currentUser && supabaseClient) {
+                try {
+                    const saveData = {
+                        content: article.content,
+                        metadata: article.metadata || {},
+                        tableOfContents: article.tableOfContents || [],
+                        images: article.images,
+                        modelTier: article.modelTier,
+                        modelConfig: article.modelConfig
+                    };
+
+                    await SupabaseService.updateArticle(article.savedArticleId, {
+                        content: JSON.stringify(saveData),
+                        images: JSON.stringify(article.images),
+                        updated_at: new Date().toISOString()
+                    });
+
+                    // Refresh the image manager
+                    document.getElementById('individualImageManager').remove();
+                    manageIndividualImages();
+                } catch (error) {
+                    console.error('Error removing image:', error);
+                    alert('⚠️ Failed to remove image. Please try again.');
+                }
+            } else {
+                // Refresh the image manager
+                document.getElementById('individualImageManager').remove();
+                manageIndividualImages();
+            }
+        }
+
+        // Enter edit mode from view
+        function enterEditModeFromView() {
+            // Close the view modal
+            const viewModal = document.querySelector('[style*="position: fixed"][style*="z-index: 10001"]');
+            if (viewModal) viewModal.remove();
+
+            // Call the existing edit mode function
+            enterEditMode();
+        }
+
     </script>
 </body>
 </html>
