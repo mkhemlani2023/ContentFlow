@@ -5549,6 +5549,12 @@
         }
 
         async function confirmArticleGeneration(title, wordCount, difficulty, intent) {
+            // Show humanization settings reminder FIRST before anything else
+            const settingsReminder = await showHumanizationReminder();
+            if (!settingsReminder) {
+                return; // User cancelled
+            }
+
             const totalCredits = window.selectedCredits + window.selectedImageCredits;
             const modelTier = window.selectedModel; // 'basic', 'premium', or 'enterprise'
             const imageType = window.selectedImageType; // 'none', 'featured', or 'full'
@@ -5574,8 +5580,8 @@
                 // Determine if images are requested
                 if (imageType === 'none') {
                     // Generate article without images using the correct workflow
-                    console.log('Calling generateArticleWithModel (no images)...');
-                    await generateArticleWithModel(keyword, wordCount, difficulty, intent, modelTier, window.selectedCredits);
+                    console.log('Calling generateArticleWithOutline (no images)...');
+                    await generateArticleWithOutline(keyword, wordCount, difficulty, intent, modelTier, window.selectedCredits);
                 } else {
                     // Generate article with images
                     console.log('Calling generateArticleWithImages...');
