@@ -10590,12 +10590,9 @@ HUMAN REWRITE:`;
                     body: JSON.stringify({
                         model: article.modelConfig?.model || 'openai/gpt-4o-mini',
                         prompt: humanizePrompt,
-                        temperature: 0.95,
+                        temperature: 0.9,
                         max_tokens: Math.min(3500, Math.max(1000, text.split(/\s+/).length * 3.5)),
-                        stream: false,
-                        top_p: 0.95,
-                        frequency_penalty: 0.3,
-                        presence_penalty: 0.2
+                        stream: false
                     })
                 });
 
@@ -10659,6 +10656,12 @@ HUMAN REWRITE:`;
             return 'Very Difficult';
         }
 
+        // Helper function to capitalize first letter of text
+        function capitalizeFirstLetter(text) {
+            if (!text || typeof text !== 'string') return text;
+            return text.charAt(0).toUpperCase() + text.slice(1);
+        }
+
         function displayGeneratedArticle(articleData, modelTier, creditCost) {
             console.log('=== displayGeneratedArticle CALLED ===');
             console.log('articleData:', articleData);
@@ -10677,6 +10680,17 @@ HUMAN REWRITE:`;
 
                 if (!metadata) {
                     console.warn('No metadata in articleData, using defaults');
+                }
+
+                // Fix capitalization of first letters
+                if (content.title) content.title = capitalizeFirstLetter(content.title);
+                if (content.introduction) content.introduction = capitalizeFirstLetter(content.introduction);
+                if (content.conclusion) content.conclusion = capitalizeFirstLetter(content.conclusion);
+                if (content.sections) {
+                    content.sections.forEach(section => {
+                        if (section.title) section.title = capitalizeFirstLetter(section.title);
+                        if (section.content) section.content = capitalizeFirstLetter(section.content);
+                    });
                 }
 
                 // Generate table of contents if not provided
@@ -17439,7 +17453,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         <div style="display: flex; gap: 12px; margin-top: 25px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
                             <button onclick="document.getElementById('individualImageManager').remove(); addImagesToArticle()"
                                     style="flex: 1; background: #10b981; color: white; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;">
-                                ➕ Add More Images
+                                ➕ ${images.length > 0 ? 'Add More Images' : 'Add Images'}
                             </button>
                             <button onclick="document.getElementById('individualImageManager').remove()"
                                     style="flex: 1; background: #f1f5f9; color: #475569; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;">
