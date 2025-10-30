@@ -793,6 +793,7 @@
                         <a id="navSavedKeywords" onclick="handleNavClick('showSavedContentIdeas')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Saved Keywords</a>
                         <a id="navBlogManagement" onclick="handleNavClick('showBlogManagement')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Blog Management</a>
                         <!-- Always active links -->
+                        <a onclick="showHumanizationSettings()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">⚙️ Humanization</a>
                         <a onclick="showCreditPurchase()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">Purchase Credits</a>
                         <a onclick="showAboutSEOWizard()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">About</a>
                     </div>
@@ -1245,6 +1246,35 @@
     </div>
 
     <script>
+        // Humanization Settings
+        const humanizationSettings = {
+            temperature: parseFloat(localStorage.getItem('humanization_temperature') || '1.0'),
+            intensity: localStorage.getItem('humanization_intensity') || 'aggressive',
+            presets: {
+                light: {
+                    temperature: 0.7,
+                    description: 'Subtle changes, keeps formal tone',
+                    prompt: 'professional and polished'
+                },
+                moderate: {
+                    temperature: 0.85,
+                    description: 'Balanced, conversational but clear',
+                    prompt: 'conversational yet professional'
+                },
+                aggressive: {
+                    temperature: 1.0,
+                    description: 'Maximum humanization, ultra casual',
+                    prompt: 'ultra casual like texting a friend'
+                }
+            }
+        };
+
+        // Save settings to localStorage
+        function saveHumanizationSettings() {
+            localStorage.setItem('humanization_temperature', humanizationSettings.temperature);
+            localStorage.setItem('humanization_intensity', humanizationSettings.intensity);
+        }
+
         // Supabase Configuration
         // Note: These will be injected via Netlify environment variables in production
         let supabaseClient = null;
@@ -1872,6 +1902,130 @@
                     modal.remove();
                 }
             });
+        }
+
+        // Show Humanization Settings modal
+        function showHumanizationSettings() {
+            const modal = document.createElement('div');
+            modal.id = 'humanizationSettingsModal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;';
+
+            const currentTemp = humanizationSettings.temperature;
+            const currentIntensity = humanizationSettings.intensity;
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 40px; border-radius: 12px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; font-family: 'Inter', sans-serif;">
+                    <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 28px;">⚙️ Humanization Settings</h2>
+                    <p style="color: #64748B; margin-bottom: 30px;">Control how aggressively the AI humanizes your content</p>
+
+                    <!-- Intensity Presets -->
+                    <div style="margin-bottom: 30px;">
+                        <label style="display: block; color: #334155; font-size: 16px; font-weight: 600; margin-bottom: 15px;">Humanization Intensity</label>
+                        <div style="display: grid; gap: 12px;">
+                            ${Object.entries(humanizationSettings.presets).map(([key, preset]) => `
+                                <div class="intensity-option" data-intensity="${key}" onclick="selectIntensity('${key}')"
+                                     style="border: 2px solid ${currentIntensity === key ? '#334155' : '#E2E8F0'}; background: ${currentIntensity === key ? '#F8FAFC' : 'white'}; border-radius: 10px; padding: 16px; cursor: pointer; transition: all 0.2s;"
+                                     onmouseover="if (this.dataset.intensity !== '${currentIntensity}') this.style.borderColor='#94A3B8'"
+                                     onmouseout="if (this.dataset.intensity !== '${currentIntensity}') this.style.borderColor='#E2E8F0'">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <div style="color: #1E293B; font-size: 16px; font-weight: 600; margin-bottom: 4px; text-transform: capitalize;">${key}</div>
+                                            <div style="color: #64748B; font-size: 13px;">${preset.description}</div>
+                                        </div>
+                                        <div style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid ${currentIntensity === key ? '#334155' : '#CBD5E1'}; display: flex; align-items: center; justify-content: center;">
+                                            ${currentIntensity === key ? '<div style="width: 12px; height: 12px; border-radius: 50%; background: #334155;"></div>' : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Temperature Slider -->
+                    <div style="margin-bottom: 30px;">
+                        <label style="display: block; color: #334155; font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+                            Temperature: <span id="tempValue" style="color: #10B981; font-weight: 700;">${currentTemp.toFixed(2)}</span>
+                        </label>
+                        <p style="color: #64748B; font-size: 13px; margin-bottom: 12px;">Higher = more creative and random | Lower = more consistent and predictable</p>
+                        <input type="range" id="tempSlider" min="0.1" max="1.0" step="0.05" value="${currentTemp}"
+                               oninput="updateTempValue(this.value)"
+                               style="width: 100%; height: 8px; border-radius: 5px; background: linear-gradient(to right, #CBD5E1 0%, #10B981 50%, #EF4444 100%); outline: none; -webkit-appearance: none; appearance: none;">
+                        <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                            <span style="color: #94A3B8; font-size: 12px;">0.1 (Safe)</span>
+                            <span style="color: #94A3B8; font-size: 12px;">0.5 (Balanced)</span>
+                            <span style="color: #94A3B8; font-size: 12px;">1.0 (Maximum)</span>
+                        </div>
+                    </div>
+
+                    <!-- Info Box -->
+                    <div style="padding: 16px; background: #F0F9FF; border-radius: 8px; border-left: 4px solid #0EA5E9; margin-bottom: 24px;">
+                        <div style="color: #0C4A6E; font-size: 14px; line-height: 1.6;">
+                            <strong>💡 Tip:</strong> Higher intensity and temperature create more natural, conversational content that scores lower on AI detection tools. Start with <strong>Aggressive</strong> for best results.
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 12px; margin-top: 24px;">
+                        <button onclick="applyHumanizationSettings()" style="flex: 1; padding: 14px 24px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
+                            ✓ Apply Settings
+                        </button>
+                        <button onclick="document.getElementById('humanizationSettingsModal').remove()" style="flex: 0 0 auto; padding: 14px 24px; background: #F8FAFC; color: #334155; border: 2px solid #E2E8F0; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='#F8FAFC'">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Close on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        function updateTempValue(value) {
+            document.getElementById('tempValue').textContent = parseFloat(value).toFixed(2);
+        }
+
+        function selectIntensity(intensity) {
+            // Update all option borders
+            document.querySelectorAll('.intensity-option').forEach(option => {
+                const isSelected = option.dataset.intensity === intensity;
+                option.style.borderColor = isSelected ? '#334155' : '#E2E8F0';
+                option.style.background = isSelected ? '#F8FAFC' : 'white';
+
+                // Update radio button
+                const radio = option.querySelector('[style*="border-radius: 50%"]');
+                if (radio) {
+                    radio.style.borderColor = isSelected ? '#334155' : '#CBD5E1';
+                    radio.innerHTML = isSelected ? '<div style="width: 12px; height: 12px; border-radius: 50%; background: #334155;"></div>' : '';
+                }
+            });
+
+            // Update temperature slider to preset value
+            const preset = humanizationSettings.presets[intensity];
+            if (preset) {
+                document.getElementById('tempSlider').value = preset.temperature;
+                document.getElementById('tempValue').textContent = preset.temperature.toFixed(2);
+            }
+        }
+
+        function applyHumanizationSettings() {
+            const tempSlider = document.getElementById('tempSlider');
+            const selectedIntensity = document.querySelector('.intensity-option[style*="border-color: rgb(51, 65, 85)"]');
+
+            humanizationSettings.temperature = parseFloat(tempSlider.value);
+            humanizationSettings.intensity = selectedIntensity ? selectedIntensity.dataset.intensity : 'aggressive';
+
+            saveHumanizationSettings();
+
+            document.getElementById('humanizationSettingsModal').remove();
+
+            // Show confirmation
+            alert('✓ Humanization settings saved! Your new settings will be applied to all future articles.');
         }
 
         // Show Credit Purchase modal with PayPal integration
@@ -10566,10 +10720,13 @@ OPTIMIZED VERSION (same length, better SEO):`;
         // Humanize a piece of content
         async function humanizeContent(text, tone, article) {
             console.log('🔄 Humanizing content, length:', text.length);
+            console.log(`📊 Using humanization settings: Intensity=${humanizationSettings.intensity}, Temperature=${humanizationSettings.temperature}`);
 
-            const toneInstructions = 'Write exactly like a real person talks - casual, natural, with personality. No AI patterns at all.';
+            // Get intensity-specific prompt style
+            const preset = humanizationSettings.presets[humanizationSettings.intensity];
+            const toneStyle = preset ? preset.prompt : 'ultra casual like texting a friend';
 
-            const humanizePrompt = `Transform this into 100% authentic human writing. Write like you are texting a smart friend who wants real talk, not corporate speak.
+            const humanizePrompt = `Transform this into 100% authentic human writing. Write ${toneStyle}.
 
 CRITICAL - SOUND COMPLETELY HUMAN:
 - Mix it up: Drop in short punchy sentences. Then add medium ones with a natural conversational flow. Sometimes throw in a longer sentence that really explores the topic with extra details and thoughts.
@@ -10601,7 +10758,7 @@ YOUR HUMAN VERSION:`;
                     body: JSON.stringify({
                         model: article.modelConfig?.model || 'openai/gpt-4o-mini',
                         prompt: humanizePrompt,
-                        temperature: 1.0,
+                        temperature: humanizationSettings.temperature,
                         max_tokens: Math.min(4000, Math.max(1200, text.split(/\s+/).length * 4)),
                         stream: false
                     })
