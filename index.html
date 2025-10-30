@@ -1248,22 +1248,22 @@
     <script>
         // Humanization Settings
         const humanizationSettings = {
-            temperature: parseFloat(localStorage.getItem('humanization_temperature') || '1.0'),
-            intensity: localStorage.getItem('humanization_intensity') || 'aggressive',
+            temperature: parseFloat(localStorage.getItem('humanization_temperature') || '0.7'),
+            intensity: localStorage.getItem('humanization_intensity') || 'light',
             presets: {
                 light: {
                     temperature: 0.7,
-                    description: 'Subtle changes, keeps formal tone',
-                    prompt: 'professional and polished'
+                    description: 'Professional tone, subtle humanization (Recommended)',
+                    prompt: 'professional and polished with natural flow'
                 },
                 moderate: {
                     temperature: 0.85,
-                    description: 'Balanced, conversational but clear',
+                    description: 'Balanced conversational style, good for blogs',
                     prompt: 'conversational yet professional'
                 },
                 aggressive: {
                     temperature: 1.0,
-                    description: 'Maximum humanization, ultra casual',
+                    description: 'Very casual, may include slang (Use with caution)',
                     prompt: 'ultra casual like texting a friend'
                 }
             }
@@ -9146,8 +9146,87 @@
 
         // Article generation functions
         async function generateArticleWithModel(keyword, wordCount, difficulty, intent, modelTier, creditCost) {
+            // Show humanization settings reminder
+            const settingsReminder = await showHumanizationReminder();
+            if (!settingsReminder) {
+                return; // User cancelled
+            }
+
             // Credit check happens in generateArticleWithOutline() - no duplicate check needed here
             await generateArticleWithOutline(keyword, wordCount, difficulty, intent, modelTier, creditCost);
+        }
+
+        // Show humanization settings reminder before generation
+        function showHumanizationReminder() {
+            return new Promise((resolve) => {
+                const currentIntensity = humanizationSettings.intensity;
+                const currentTemp = humanizationSettings.temperature;
+                const preset = humanizationSettings.presets[currentIntensity];
+
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 15000; padding: 20px;';
+
+                modal.innerHTML = `
+                    <div style="background: white; padding: 35px; border-radius: 12px; max-width: 550px; width: 100%; font-family: 'Inter', sans-serif;">
+                        <div style="text-align: center; margin-bottom: 25px;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">⚙️</div>
+                            <h2 style="margin: 0 0 8px 0; color: #1e293b; font-size: 24px;">Humanization Settings</h2>
+                            <p style="color: #64748B; margin: 0; font-size: 14px;">Check your settings before generating</p>
+                        </div>
+
+                        <div style="background: #F8FAFC; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #E2E8F0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="color: #64748B; font-size: 13px; font-weight: 600;">Current Intensity:</span>
+                                <span style="color: #1E293B; font-size: 15px; font-weight: 700; text-transform: capitalize;">${currentIntensity}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="color: #64748B; font-size: 13px; font-weight: 600;">Temperature:</span>
+                                <span style="color: #1E293B; font-size: 15px; font-weight: 700;">${currentTemp.toFixed(2)}</span>
+                            </div>
+                            <div style="padding-top: 12px; border-top: 1px solid #E2E8F0;">
+                                <div style="color: #475569; font-size: 13px; line-height: 1.5;">${preset ? preset.description : 'Custom settings'}</div>
+                            </div>
+                        </div>
+
+                        <div style="padding: 16px; background: #EFF6FF; border-radius: 8px; border-left: 4px solid #3B82F6; margin-bottom: 24px;">
+                            <div style="color: #1E40AF; font-size: 13px; line-height: 1.6;">
+                                <strong>💡 Tip:</strong> <strong>Light</strong> is recommended for professional content. <strong>Moderate</strong> works well for blogs. <strong>Aggressive</strong> may include slang.
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px;">
+                            <button id="changeSettingsBtn" style="flex: 1; padding: 14px 20px; background: #F8FAFC; color: #334155; border: 2px solid #E2E8F0; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='#F8FAFC'">
+                                ⚙️ Change Settings
+                            </button>
+                            <button id="continueBtn" style="flex: 1; padding: 14px 20px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
+                                ✓ Continue
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+
+                // Handle button clicks
+                document.getElementById('changeSettingsBtn').onclick = () => {
+                    modal.remove();
+                    showHumanizationSettings();
+                    resolve(false); // Don't proceed with generation
+                };
+
+                document.getElementById('continueBtn').onclick = () => {
+                    modal.remove();
+                    resolve(true); // Proceed with generation
+                };
+
+                // Close on background click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                        resolve(false);
+                    }
+                });
+            });
         }
 
         async function generateArticleWithOutline(keyword, wordCount, difficulty, intent, modelTier, creditCost) {
