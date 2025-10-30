@@ -10550,6 +10550,15 @@ OPTIMIZED VERSION (same length, better SEO):`;
                 }
             }
 
+            // Humanize FAQ answers too
+            if (content.faq && content.faq.length > 0) {
+                for (let i = 0; i < content.faq.length; i++) {
+                    if (content.faq[i].answer) {
+                        content.faq[i].answer = await humanizeContent(content.faq[i].answer, 'professional', article);
+                    }
+                }
+            }
+
             article.content = content;
             return article;
         }
@@ -10558,29 +10567,31 @@ OPTIMIZED VERSION (same length, better SEO):`;
         async function humanizeContent(text, tone, article) {
             console.log('🔄 Humanizing content, length:', text.length);
 
-            const toneInstructions = 'Write like a real human expert - conversational but professional, confident but not robotic. Think like you are explaining this to a colleague over coffee.';
+            const toneInstructions = 'Write exactly like a real person talks - casual, natural, with personality. No AI patterns at all.';
 
-            const humanizePrompt = `Rewrite this to sound 100% human-written. You are a professional writer creating engaging, natural content.
+            const humanizePrompt = `Transform this into 100% authentic human writing. Write like you are texting a smart friend who wants real talk, not corporate speak.
 
-WRITE LIKE A HUMAN:
-- Mix sentence lengths wildly: Some short. Others medium length with natural flow. And occasionally a longer one that really digs into the details with multiple clauses.
-- Use tons of contractions: don't, you'll, it's, we're, can't, won't, there's, that's, I've, we've
-- Add personality: throw in rhetorical questions, use "you" to speak directly to readers
-- Avoid robotic patterns: no uniform sentence structure, no perfect parallel construction
-- Cut ALL AI buzzwords: no "delve", "realm", "landscape", "multifaceted", "comprehensive", "robust", "leverage", "utilize", "facilitate"
-- Use simple words: "use" not "utilize", "help" not "facilitate", "many" not "multitude"
-- Add human imperfections: start sentences with And or But sometimes, use fragments occasionally
-- Sound confident and casual: add phrases like "here is the thing", "let us be clear", "the reality is"
-- Include specific examples and concrete details when possible
-- Use active voice 90% of the time
-- Year: ${new Date().getFullYear()}
+CRITICAL - SOUND COMPLETELY HUMAN:
+- Mix it up: Drop in short punchy sentences. Then add medium ones with a natural conversational flow. Sometimes throw in a longer sentence that really explores the topic with extra details and thoughts.
+- Talk like a person: Load up on contractions - don't, you'll, it's, we're, can't, won't, there's, that's, I've, we've, here's, what's, who's
+- Be real: Ask questions like "Want to know the secret?" or "Here's the kicker" or "Ready for this?"
+- Direct address: Use "you" constantly. Make it feel like a one-on-one conversation
+- Break grammar rules: Start with And or But when it feels natural. Use sentence fragments. Break the "rules" like humans do
+- Casual filler: Add phrases like "honestly", "seriously", "trust me", "I get it", "look", "so", "now", "well"
+- Kill ALL AI tells: Ban these forever - "delve", "realm", "landscape", "multifaceted", "comprehensive", "robust", "leverage", "utilize", "facilitate", "moreover", "furthermore", "thus", "hence", "therefore"
+- Simple words only: Say "use" never "utilize", "help" never "facilitate", "lots" never "multitude", "get" never "obtain"
+- Human quirks: Add emphasis with caps or italics thinking. Include conversational asides
+- Real examples: Reference actual years, real scenarios, concrete situations
+- Kill formality: No "one must", "it is important to note", "in conclusion" - talk normally
+- Personality markers: Opinions, humor, empathy, excitement - show you are human
+- Year reference: ${new Date().getFullYear()}
 
-KEEP THE SAME: All facts, data, statistics, and key information
+KEEP EXACTLY: Every fact, number, statistic, and key point - just make it sound human
 
-ORIGINAL:
+TEXT TO HUMANIZE:
 ${text}
 
-HUMAN REWRITE:`;
+YOUR HUMAN VERSION:`;
 
             try {
                 console.log('📡 Calling humanization API...');
@@ -10590,8 +10601,8 @@ HUMAN REWRITE:`;
                     body: JSON.stringify({
                         model: article.modelConfig?.model || 'openai/gpt-4o-mini',
                         prompt: humanizePrompt,
-                        temperature: 0.9,
-                        max_tokens: Math.min(3500, Math.max(1000, text.split(/\s+/).length * 3.5)),
+                        temperature: 1.0,
+                        max_tokens: Math.min(4000, Math.max(1200, text.split(/\s+/).length * 4)),
                         stream: false
                     })
                 });
