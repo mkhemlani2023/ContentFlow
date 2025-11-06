@@ -10549,61 +10549,80 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                 await new Promise(resolve => setTimeout(resolve, 500));
 
                 // Step 2: SEO Optimization (if needed)
-                if (initialSEOScore < 80) {
-                    updateStep(2, 'Optimizing for SEO...', 'active');
-                    updateProgress(30);
+                try {
+                    if (initialSEOScore < 80) {
+                        updateStep(2, 'Optimizing for SEO...', 'active');
+                        updateProgress(30);
 
-                    console.log('🔧 SEO Score below 80, optimizing...');
-                    const optimizedArticle = await optimizeArticleForSEO(article);
-                    article.content = optimizedArticle.content;
+                        console.log('🔧 SEO Score below 80, optimizing...');
+                        const optimizedArticle = await optimizeArticleForSEO(article);
+                        article.content = optimizedArticle.content;
 
-                    const newScore = calculateSEOScoreForOptimization(article);
-                    updateStep(2, `Improved to ${newScore}/100`, 'success');
+                        const newScore = calculateSEOScoreForOptimization(article);
+                        updateStep(2, `Improved to ${newScore}/100`, 'success');
+                        updateProgress(50);
+                        await new Promise(resolve => setTimeout(resolve, 800));
+                    } else {
+                        updateStep(2, 'Score already excellent', 'success');
+                        updateProgress(50);
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                } catch (seoError) {
+                    console.error('SEO optimization failed:', seoError);
+                    updateStep(2, 'Skipped (error)', 'warning');
                     updateProgress(50);
-                    await new Promise(resolve => setTimeout(resolve, 800));
-                } else {
-                    updateStep(2, 'Score already excellent', 'success');
-                    updateProgress(50);
-                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
 
                 // Step 3: Automatic Humanization
-                updateStep(3, 'Humanizing content...', 'active');
-                updateProgress(55);
-                await new Promise(resolve => setTimeout(resolve, 500));
+                try {
+                    updateStep(3, 'Humanizing content...', 'active');
+                    updateProgress(55);
+                    await new Promise(resolve => setTimeout(resolve, 500));
 
-                console.log('👤 Humanizing article content...');
-                const humanizedArticle = await automaticallyHumanizeArticle(article);
-                article.content = humanizedArticle.content;
+                    console.log('👤 Humanizing article content...');
+                    const humanizedArticle = await automaticallyHumanizeArticle(article);
+                    article.content = humanizedArticle.content;
 
-                updateStep(3, 'Content humanized', 'success');
-                updateProgress(80);
-                await new Promise(resolve => setTimeout(resolve, 800));
+                    updateStep(3, 'Content humanized', 'success');
+                    updateProgress(80);
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                } catch (humanizeError) {
+                    console.error('Humanization failed:', humanizeError);
+                    updateStep(3, 'Skipped (error)', 'warning');
+                    updateProgress(80);
+                }
 
                 // Step 4: Final Quality Check
-                updateStep(4, 'Running final checks...', 'active');
-                updateProgress(85);
-                await new Promise(resolve => setTimeout(resolve, 500));
+                try {
+                    updateStep(4, 'Running final checks...', 'active');
+                    updateProgress(85);
+                    await new Promise(resolve => setTimeout(resolve, 500));
 
-                // Calculate final scores
-                const finalSEOScore = calculateSEOScoreForOptimization(article);
-                const finalContent = getFullArticleContent(article);
-                const heuristicScore = analyzeAIPatterns(finalContent);
-                const apiScore = await callAIDetectionAPI(finalContent);
-                const finalAIScore = Math.round((heuristicScore * 0.4) + (apiScore * 0.6));
+                    // Calculate final scores
+                    const finalSEOScore = calculateSEOScoreForOptimization(article);
+                    const finalContent = getFullArticleContent(article);
+                    const heuristicScore = analyzeAIPatterns(finalContent);
+                    const apiScore = await callAIDetectionAPI(finalContent);
+                    const finalAIScore = Math.round((heuristicScore * 0.4) + (apiScore * 0.6));
 
-                // Store final scores in article
-                article.finalScores = {
-                    seo: finalSEOScore,
-                    aiDetection: finalAIScore,
-                    readability: calculateReadabilityGrade(finalContent)
-                };
+                    // Store final scores in article
+                    article.finalScores = {
+                        seo: finalSEOScore,
+                        aiDetection: finalAIScore,
+                        readability: calculateReadabilityGrade(finalContent)
+                    };
 
-                console.log('✅ Final SEO Score:', finalSEOScore);
-                console.log('✅ Final AI Detection Score:', finalAIScore);
+                    console.log('✅ Final SEO Score:', finalSEOScore);
+                    console.log('✅ Final AI Detection Score:', finalAIScore);
 
-                updateStep(4, `SEO: ${finalSEOScore}/100, AI: ${finalAIScore}%`, 'success');
-                updateProgress(100);
+                    updateStep(4, `SEO: ${finalSEOScore}/100, AI: ${finalAIScore}%`, 'success');
+                    updateProgress(100);
+                } catch (qualityError) {
+                    console.error('Quality check failed:', qualityError);
+                    updateStep(4, 'Skipped (error)', 'warning');
+                    updateProgress(100);
+                    // Don't set finalScores if quality check fails
+                }
 
                 // Show completion icon
                 const icon = document.getElementById('wizardIcon');
@@ -10620,7 +10639,12 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
             } catch (error) {
                 console.error('SEO Wizard optimization error:', error);
                 document.getElementById('seoWizardOptimization')?.remove();
-                alert('❌ Optimization failed: ' + error.message + '\n\nDisplaying article without optimization.');
+
+                // Don't set finalScores - this will hide the quality check section
+                // Article will display without optimization scores
+                console.log('⚠️ Displaying article without optimization due to error:', error.message);
+
+                // Display the article silently without error message
                 displayGeneratedArticle(article, modelTier, `${modelTier} Article`);
             }
         }
@@ -10874,39 +10898,62 @@ YOUR HUMAN VERSION:`;
 
         // Get full article content for analysis
         function getFullArticleContent(article) {
-            const content = article.content;
-            let fullText = '';
+            try {
+                if (!article || !article.content) {
+                    return '';
+                }
 
-            if (content.title) fullText += content.title + '\n\n';
-            if (content.introduction) fullText += content.introduction + '\n\n';
-            if (content.sections) {
-                content.sections.forEach(section => {
-                    if (section.title) fullText += section.title + '\n';
-                    if (section.content) fullText += section.content + '\n\n';
-                });
+                const content = article.content;
+                let fullText = '';
+
+                if (content.title) fullText += content.title + '\n\n';
+                if (content.introduction) fullText += content.introduction + '\n\n';
+                if (content.sections) {
+                    content.sections.forEach(section => {
+                        if (section.title) fullText += section.title + '\n';
+                        if (section.content) fullText += section.content + '\n\n';
+                    });
+                }
+                if (content.conclusion) fullText += content.conclusion;
+
+                return fullText || 'No content available';
+            } catch (error) {
+                console.error('Error getting full article content:', error);
+                return 'Error retrieving content';
             }
-            if (content.conclusion) fullText += content.conclusion;
-
-            return fullText;
         }
 
         // Calculate readability grade
         function calculateReadabilityGrade(text) {
-            const words = text.split(/\s+/).filter(w => w.length > 0);
-            const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-            const syllables = words.reduce((count, word) => count + estimateSyllables(word), 0);
+            try {
+                if (!text || typeof text !== 'string' || text.length < 10) {
+                    return 'N/A';
+                }
 
-            const fleschScore = Math.max(0, Math.min(100,
-                206.835 - 1.015 * (words.length / sentences) - 84.6 * (syllables / words.length)
-            ));
+                const words = text.split(/\s+/).filter(w => w.length > 0);
+                const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
 
-            if (fleschScore >= 90) return 'Very Easy';
-            if (fleschScore >= 80) return 'Easy';
-            if (fleschScore >= 70) return 'Fairly Easy';
-            if (fleschScore >= 60) return 'Standard';
-            if (fleschScore >= 50) return 'Fairly Difficult';
-            if (fleschScore >= 30) return 'Difficult';
-            return 'Very Difficult';
+                if (words.length === 0 || sentences === 0) {
+                    return 'N/A';
+                }
+
+                const syllables = words.reduce((count, word) => count + estimateSyllables(word), 0);
+
+                const fleschScore = Math.max(0, Math.min(100,
+                    206.835 - 1.015 * (words.length / sentences) - 84.6 * (syllables / words.length)
+                ));
+
+                if (fleschScore >= 90) return 'Very Easy';
+                if (fleschScore >= 80) return 'Easy';
+                if (fleschScore >= 70) return 'Fairly Easy';
+                if (fleschScore >= 60) return 'Standard';
+                if (fleschScore >= 50) return 'Fairly Difficult';
+                if (fleschScore >= 30) return 'Difficult';
+                return 'Very Difficult';
+            } catch (error) {
+                console.error('Error calculating readability:', error);
+                return 'N/A';
+            }
         }
 
         // Helper function to capitalize first letter of text
@@ -13876,31 +13923,41 @@ HUMANIZED VERSION (complete, natural, authentic):`;
         }
 
         function analyzeAIPatterns(content) {
-            // Heuristic analysis for AI-like patterns
-            let aiScore = 0;
-            let totalChecks = 0;
+            try {
+                // Heuristic analysis for AI-like patterns
+                let aiScore = 0;
+                let totalChecks = 0;
 
-            // 1. Check sentence length variation (AI tends to be more uniform)
-            const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
-            const sentenceLengths = sentences.map(s => s.trim().split(/\s+/).length);
-            const avgLength = sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length;
-            const variance = sentenceLengths.reduce((sum, len) => sum + Math.pow(len - avgLength, 2), 0) / sentenceLengths.length;
-            const stdDev = Math.sqrt(variance);
+                // Safety check
+                if (!content || typeof content !== 'string' || content.length < 50) {
+                    return 50; // Return neutral score for invalid content
+                }
 
-            // Low variation = more AI-like
-            if (stdDev < 5) aiScore += 20;
-            else if (stdDev < 8) aiScore += 10;
-            totalChecks++;
+                // 1. Check sentence length variation (AI tends to be more uniform)
+                const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+                if (sentences.length > 0) {
+                    const sentenceLengths = sentences.map(s => s.trim().split(/\s+/).length);
+                    const avgLength = sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length;
+                    const variance = sentenceLengths.reduce((sum, len) => sum + Math.pow(len - avgLength, 2), 0) / sentenceLengths.length;
+                    const stdDev = Math.sqrt(variance);
 
-            // 2. Check for repetitive patterns
-            const words = content.toLowerCase().split(/\s+/);
-            const uniqueWords = new Set(words);
-            const vocabularyDiversity = uniqueWords.size / words.length;
+                    // Low variation = more AI-like
+                    if (stdDev < 5) aiScore += 20;
+                    else if (stdDev < 8) aiScore += 10;
+                    totalChecks++;
+                }
 
-            // Low diversity = more AI-like
-            if (vocabularyDiversity < 0.4) aiScore += 20;
-            else if (vocabularyDiversity < 0.5) aiScore += 10;
-            totalChecks++;
+                // 2. Check for repetitive patterns
+                const words = content.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+                if (words.length > 0) {
+                    const uniqueWords = new Set(words);
+                    const vocabularyDiversity = uniqueWords.size / words.length;
+
+                    // Low diversity = more AI-like
+                    if (vocabularyDiversity < 0.4) aiScore += 20;
+                    else if (vocabularyDiversity < 0.5) aiScore += 10;
+                    totalChecks++;
+                }
 
             // 3. Check for common AI phrases
             const aiPhrases = [
@@ -13932,39 +13989,49 @@ HUMANIZED VERSION (complete, natural, authentic):`;
             else if (phraseCount > 1) aiScore += 5;
             totalChecks++;
 
-            // 4. Check for contractions (human writing uses more)
-            const contractionPattern = /\b(don't|won't|can't|shouldn't|wouldn't|couldn't|isn't|aren't|wasn't|weren't|haven't|hasn't|hadn't|I'm|you're|we're|they're|it's|that's|what's|who's|let's)\b/gi;
-            const contractions = content.match(contractionPattern) || [];
-            const contractionRate = contractions.length / sentences.length;
+                // 4. Check for contractions (human writing uses more)
+                if (sentences.length > 0) {
+                    const contractionPattern = /\b(don't|won't|can't|shouldn't|wouldn't|couldn't|isn't|aren't|wasn't|weren't|haven't|hasn't|hadn't|I'm|you're|we're|they're|it's|that's|what's|who's|let's)\b/gi;
+                    const contractions = content.match(contractionPattern) || [];
+                    const contractionRate = contractions.length / sentences.length;
 
-            // Low contraction rate = more AI-like
-            if (contractionRate < 0.05) aiScore += 15;
-            else if (contractionRate < 0.1) aiScore += 5;
-            totalChecks++;
+                    // Low contraction rate = more AI-like
+                    if (contractionRate < 0.05) aiScore += 15;
+                    else if (contractionRate < 0.1) aiScore += 5;
+                    totalChecks++;
+                }
 
-            // 5. Check paragraph length uniformity
-            const paragraphs = content.split(/\n\n+/).filter(p => p.trim().length > 50);
-            const paragraphLengths = paragraphs.map(p => p.split(/\s+/).length);
-            const avgParaLength = paragraphLengths.reduce((a, b) => a + b, 0) / paragraphLengths.length;
-            const paraVariance = paragraphLengths.reduce((sum, len) => sum + Math.pow(len - avgParaLength, 2), 0) / paragraphLengths.length;
-            const paraStdDev = Math.sqrt(paraVariance);
+                // 5. Check paragraph length uniformity
+                const paragraphs = content.split(/\n\n+/).filter(p => p.trim().length > 50);
+                if (paragraphs.length > 1) {
+                    const paragraphLengths = paragraphs.map(p => p.split(/\s+/).length);
+                    const avgParaLength = paragraphLengths.reduce((a, b) => a + b, 0) / paragraphLengths.length;
+                    const paraVariance = paragraphLengths.reduce((sum, len) => sum + Math.pow(len - avgParaLength, 2), 0) / paragraphLengths.length;
+                    const paraStdDev = Math.sqrt(paraVariance);
 
-            // Low variation = more AI-like
-            if (paraStdDev < 20) aiScore += 15;
-            else if (paraStdDev < 40) aiScore += 5;
-            totalChecks++;
+                    // Low variation = more AI-like
+                    if (paraStdDev < 20) aiScore += 15;
+                    else if (paraStdDev < 40) aiScore += 5;
+                    totalChecks++;
+                }
 
-            // 6. Check for passive voice (AI uses more)
-            const passivePattern = /\b(is|are|was|were|be|been|being)\s+\w+ed\b/gi;
-            const passiveMatches = content.match(passivePattern) || [];
-            const passiveRate = passiveMatches.length / sentences.length;
+                // 6. Check for passive voice (AI uses more)
+                if (sentences.length > 0) {
+                    const passivePattern = /\b(is|are|was|were|be|been|being)\s+\w+ed\b/gi;
+                    const passiveMatches = content.match(passivePattern) || [];
+                    const passiveRate = passiveMatches.length / sentences.length;
 
-            if (passiveRate > 0.3) aiScore += 10;
-            else if (passiveRate > 0.2) aiScore += 5;
-            totalChecks++;
+                    if (passiveRate > 0.3) aiScore += 10;
+                    else if (passiveRate > 0.2) aiScore += 5;
+                    totalChecks++;
+                }
 
-            // Normalize score to 0-100
-            return Math.min(100, Math.round(aiScore));
+                // Normalize score to 0-100
+                return Math.min(100, Math.round(aiScore));
+            } catch (error) {
+                console.error('Error in analyzeAIPatterns:', error);
+                return 50; // Return neutral score on error
+            }
         }
 
         async function callAIDetectionAPI(content) {
@@ -14753,6 +14820,57 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
             }
         }
 
+        // Simplify keywords using AI for better image search results
+        async function simplifyKeywordForImages(keyword, article) {
+            try {
+                const prompt = `Simplify this section header into 1-2 focused keywords for image search.
+
+Section Header: "${keyword}"
+Article Topic: "${article.metadata?.keyword || article.content?.title || ''}"
+
+Requirements:
+- Return ONLY 1-2 simple, concrete keywords
+- Choose visual, photographable concepts
+- Remove abstract or complex terms
+- Make it searchable on stock photo sites
+- No explanations, just the keywords
+
+Examples:
+"The Benefits of Regular Exercise" → "fitness"
+"How to Start Your Morning Routine" → "morning coffee"
+"Understanding Cloud Computing Infrastructure" → "data center"
+"Tips for Better Sleep Quality" → "sleeping"
+
+Simplified Keywords:`;
+
+                const response = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'openai/gpt-4o-mini',
+                        prompt: prompt,
+                        temperature: 0.3,
+                        max_tokens: 20,
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    console.warn('AI keyword simplification failed, using original');
+                    return keyword;
+                }
+
+                const result = await response.json();
+                const simplified = result.content?.trim() || keyword;
+
+                console.log(`Simplified "${keyword}" → "${simplified}"`);
+                return simplified;
+            } catch (error) {
+                console.error('Error simplifying keyword:', error);
+                return keyword; // Fallback to original
+            }
+        }
+
         // Add images to article (separate step after generation)
         async function addImagesToArticle() {
             console.log('addImagesToArticle called');
@@ -14779,14 +14897,28 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 sectionsCount: content.sections?.length || 0
             });
 
-            // Build sections array for image selection
+            // Show loading modal while simplifying keywords
+            const loadingModal = document.createElement('div');
+            loadingModal.id = 'simplifyKeywordsLoader';
+            loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 25000;';
+            loadingModal.innerHTML = `
+                <div style="background: white; padding: 40px; border-radius: 12px; text-align: center; max-width: 400px;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">🤖</div>
+                    <h3 style="margin: 0 0 10px 0; color: #1e293b;">Optimizing Keywords for Images</h3>
+                    <p style="color: #64748b; margin: 0;">AI is simplifying section headers into focused search terms...</p>
+                </div>
+            `;
+            document.body.appendChild(loadingModal);
+
+            // Build sections array for image selection and simplify keywords with AI
             const sections = [];
 
             // Add title section
             sections.push({
                 id: 'title',
                 title: 'Featured Image (Article Title)',
-                keyword: content.title || article.metadata?.keyword || 'featured image'
+                originalKeyword: content.title || article.metadata?.keyword || 'featured image',
+                keyword: await simplifyKeywordForImages(content.title || article.metadata?.keyword || 'featured image', article)
             });
 
             // Add introduction if exists
@@ -14794,44 +14926,57 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                 sections.push({
                     id: 'introduction',
                     title: 'Introduction',
-                    keyword: article.metadata?.keyword || content.title || 'introduction'
+                    originalKeyword: article.metadata?.keyword || content.title || 'introduction',
+                    keyword: await simplifyKeywordForImages(article.metadata?.keyword || content.title || 'introduction', article)
                 });
             }
 
-            // Add content sections
+            // Add content sections with simplified keywords
             if (content.sections && content.sections.length > 0) {
-                content.sections.forEach((section, index) => {
+                for (let index = 0; index < content.sections.length; index++) {
+                    const section = content.sections[index];
+                    const sectionTitle = section.title || `Section ${index + 1}`;
                     sections.push({
                         id: `section-${index}`,
-                        title: section.title || `Section ${index + 1}`,
-                        keyword: section.title || article.metadata?.keyword || 'section'
+                        title: sectionTitle,
+                        originalKeyword: sectionTitle,
+                        keyword: await simplifyKeywordForImages(sectionTitle, article)
                     });
-                });
+                }
             }
+
+            // Remove loading modal
+            loadingModal.remove();
 
             // Create image management modal
             const modal = document.createElement('div');
             modal.className = 'modal';
             modal.innerHTML = `
-                <div style="background: white; padding: 30px; border-radius: 12px; max-width: 1000px; width: 95%; max-height: 90vh; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2 style="color: #1E293B; margin: 0;">🖼️ Add Images to Article</h2>
-                        <button onclick="this.closest('.modal').remove()" style="background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
-                            Close
-                        </button>
-                    </div>
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 25000; display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 20px;">
+                    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 1000px; width: 95%; max-height: 90vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2 style="color: #1E293B; margin: 0;">🖼️ Add Images to Article</h2>
+                            <button onclick="this.closest('.modal').remove()" style="background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                                Close
+                            </button>
+                        </div>
 
                     <p style="color: #64748b; margin-bottom: 25px;">Select images for your article sections. AI will help generate SEO-optimized alt text.</p>
 
                     <div id="imageSectionsList">
                         ${sections.map(section => `
                             <div style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px; background: #f8fafc;">
-                                <h3 style="color: #334155; margin: 0 0 15px 0; font-size: 16px;">${section.title}</h3>
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                                    <div>
+                                        <h3 style="color: #334155; margin: 0 0 5px 0; font-size: 16px;">${section.title}</h3>
+                                        ${section.originalKeyword !== section.keyword ? `<p style="color: #64748b; font-size: 12px; margin: 0;">AI simplified: "${section.originalKeyword}" → "${section.keyword}"</p>` : ''}
+                                    </div>
+                                </div>
 
                                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                                    <input type="text" id="search-${section.id}" placeholder="Search keyword (e.g., ${section.keyword})" value="${section.keyword}" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                                    <input type="text" id="search-${section.id}" placeholder="Edit keyword if needed" value="${section.keyword}" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
                                     <button onclick="searchImagesForSection('${section.id}')" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                        Search Images
+                                        🔍 Search
                                     </button>
                                 </div>
 
@@ -14863,6 +15008,7 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                         <button onclick="insertImagesIntoArticle()" style="background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
                             ✓ Insert Images into Article
                         </button>
+                    </div>
                     </div>
                 </div>
             `;
@@ -14930,9 +15076,21 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
                     `;
                 } else {
                     imagesContainer.innerHTML = `
-                        <div style="padding: 15px; text-align: center; color: #64748b;">
-                            <p style="margin: 0; font-size: 14px;">No images found for "${query}"</p>
-                            <p style="margin: 5px 0 0 0; font-size: 12px;">Try a different keyword or skip images for this section</p>
+                        <div style="padding: 20px; text-align: center; color: #64748b; background: #fef3c7; border: 2px solid #fbbf24; border-radius: 8px;">
+                            <div style="font-size: 36px; margin-bottom: 10px;">🎨</div>
+                            <p style="margin: 0 0 8px 0; font-weight: 600; color: #92400e;">No stock images found for "${query}"</p>
+                            <p style="margin: 0 0 15px 0; font-size: 13px; color: #78350f;">Try one of these options:</p>
+                            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                                <button onclick="searchImagesForSection('${sectionId}')" style="background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                                    🔄 Try Different Keyword
+                                </button>
+                                <button onclick="generateAIImageForSection('${sectionId}', '${query.replace(/'/g, "\\'")}' )" style="background: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                                    ✨ Generate AI Image
+                                </button>
+                                <button onclick="document.getElementById('selected-${sectionId}').style.display='none'" style="background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                                    ⏭️ Skip Section
+                                </button>
+                            </div>
                         </div>
                     `;
                 }
