@@ -2594,6 +2594,134 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
     }
 
+    // WordPress Category Management
+    if (path === '/api/wordpress-categories' && method === 'POST') {
+      const { url, username, password } = body;
+
+      if (!url || !username || !password) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'URL, username, and password are required'
+          })
+        };
+      }
+
+      try {
+        const baseUrl = url.replace(/\/$/, '');
+        const categoriesUrl = `${baseUrl}/wp-json/wp/v2/categories?per_page=100`;
+
+        const response = await fetch(categoriesUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const categories = await response.json();
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              categories: categories
+            })
+          };
+        } else {
+          const errorText = await response.text();
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: `Failed to load categories: ${response.status}`,
+              details: errorText
+            })
+          };
+        }
+      } catch (error) {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Failed to load categories',
+            error: error.message
+          })
+        };
+      }
+    }
+
+    // WordPress Create Category
+    if (path === '/api/wordpress-create-category' && method === 'POST') {
+      const { url, username, password, categoryName } = body;
+
+      if (!url || !username || !password || !categoryName) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'URL, username, password, and categoryName are required'
+          })
+        };
+      }
+
+      try {
+        const baseUrl = url.replace(/\/$/, '');
+        const categoriesUrl = `${baseUrl}/wp-json/wp/v2/categories`;
+
+        const response = await fetch(categoriesUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: categoryName,
+            slug: categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          })
+        });
+
+        if (response.ok) {
+          const category = await response.json();
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              category: category
+            })
+          };
+        } else {
+          const errorText = await response.text();
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: `Failed to create category: ${response.status}`,
+              details: errorText
+            })
+          };
+        }
+      } catch (error) {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Failed to create category',
+            error: error.message
+          })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
@@ -2615,7 +2743,9 @@ Generate a professional, actionable outline that a content writer can follow to 
           'POST /api/content-outline',
           'POST /api/pexels-images',
           'POST /api/wordpress-test-connection',
-          'POST /api/wordpress-publish'
+          'POST /api/wordpress-publish',
+          'POST /api/wordpress-categories',
+          'POST /api/wordpress-create-category'
         ]
       })
     };
