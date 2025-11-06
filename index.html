@@ -7433,22 +7433,17 @@
                                         <button onclick="manageIndividualImages()"
                                                 style="background: #334155; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-family: 'Inter', sans-serif;"
                                                 onmouseover="this.style.background='#1E293B'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#334155'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'">
-                                            Images
-                                        </button>
-                                        <button onclick="showHumanizeAIPanel()"
-                                                style="background: #334155; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-family: 'Inter', sans-serif;"
-                                                onmouseover="this.style.background='#1E293B'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#334155'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'">
-                                            Humanize & AI
+                                            🖼️ Images
                                         </button>
                                         <button onclick="enterEditModeFromView()"
                                                 style="background: #475569; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-family: 'Inter', sans-serif;"
                                                 onmouseover="this.style.background='#334155'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#475569'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'">
-                                            Edit
+                                            ✏️ Edit
                                         </button>
                                         <button onclick="publishToWebsite()"
                                                 style="background: #1E293B; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-family: 'Inter', sans-serif;"
                                                 onmouseover="this.style.background='#0F172A'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#1E293B'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'">
-                                            Publish
+                                            🚀 Publish
                                         </button>
                                     </div>
 
@@ -16353,6 +16348,14 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
             const selectedCategoryId = document.getElementById('publishCategory').value;
             const article = window.currentGeneratedArticle;
 
+            // Warn if no category is selected
+            if (!selectedCategoryId || selectedCategoryId === '') {
+                const proceed = confirm('⚠️ No category selected\n\nYour article will be published without a category. You can add one later in WordPress.\n\nContinue publishing?');
+                if (!proceed) {
+                    return;
+                }
+            }
+
             // Get the selected blog's credentials from Supabase
             let selectedBlog = null;
 
@@ -16594,24 +16597,35 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     publishType: publishType
                 });
 
+                // Log publishing data for debugging
+                const publishData = {
+                    url: selectedBlog.url,
+                    username: username,
+                    password: password,
+                    article: {
+                        title: article.content.title,
+                        content: htmlContent,
+                        excerpt: article.content.introduction?.substring(0, 150) + '...' || '',
+                        featured_media: uploadedImages.length > 0 ? uploadedImages[0].id : null,
+                        categories: selectedCategoryId ? [parseInt(selectedCategoryId)] : []
+                    },
+                    publishType: publishType
+                };
+
+                console.log('📤 Publishing data:', {
+                    title: publishData.article.title,
+                    contentLength: publishData.article.content.length,
+                    featuredMediaId: publishData.article.featured_media,
+                    categoryIds: publishData.article.categories,
+                    publishType: publishData.publishType
+                });
+
                 const response = await fetch('/api/wordpress-publish', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        url: selectedBlog.url,
-                        username: username,
-                        password: password,
-                        article: {
-                            title: article.content.title,
-                            content: htmlContent,
-                            excerpt: article.content.introduction?.substring(0, 150) + '...' || '',
-                            featured_media: uploadedImages.length > 0 ? uploadedImages[0].id : null,
-                            categories: selectedCategoryId ? [parseInt(selectedCategoryId)] : []
-                        },
-                        publishType: publishType
-                    })
+                    body: JSON.stringify(publishData)
                 });
 
                 console.log('📡 WordPress API response status:', response.status);
