@@ -16511,34 +16511,37 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 `;
                 progressBar.style.width = '40%';
 
-                // Step 2: Build HTML content from article
+                // Step 2: Build HTML content from article using WordPress blocks
                 let htmlContent = '';
 
-                // Add featured image if uploaded (inline at top)
-                if (uploadedImages.length > 0) {
-                    const featuredImage = uploadedImages[0];
-                    htmlContent += `<!-- wp:image {"id":${featuredImage.id},"sizeSlug":"large","linkDestination":"none"} -->\n`;
-                    htmlContent += `<figure class="wp-block-image size-large"><img src="${featuredImage.url}" alt="${featuredImage.alt}" class="wp-image-${featuredImage.id}"/></figure>\n`;
-                    htmlContent += `<!-- /wp:image -->\n\n`;
-                }
+                // Don't add featured image to content - it's set via featured_media field
+                // WordPress will display it automatically based on the theme
 
                 // Add introduction if exists
                 if (article.content?.introduction) {
-                    htmlContent += `<p>${article.content.introduction}</p>\n\n`;
+                    htmlContent += `<!-- wp:paragraph -->\n`;
+                    htmlContent += `<p>${article.content.introduction}</p>\n`;
+                    htmlContent += `<!-- /wp:paragraph -->\n\n`;
                 }
 
                 // Add Table of Contents if exists
                 if (article.tableOfContents && article.tableOfContents.length > 0) {
-                    htmlContent += `<div class="table-of-contents" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">\n`;
-                    htmlContent += `<h2 style="margin-top: 0;">Table of Contents</h2>\n`;
-                    htmlContent += `<ol style="margin-bottom: 0;">\n`;
+                    htmlContent += `<!-- wp:group {"style":{"spacing":{"padding":{"top":"20px","right":"20px","bottom":"20px","left":"20px"}},"border":{"radius":"8px"}},"backgroundColor":"light-gray"} -->\n`;
+                    htmlContent += `<div class="wp-block-group has-light-gray-background-color has-background" style="border-radius:8px;padding-top:20px;padding-right:20px;padding-bottom:20px;padding-left:20px">\n`;
+                    htmlContent += `<!-- wp:heading {"level":2} -->\n`;
+                    htmlContent += `<h2>Table of Contents</h2>\n`;
+                    htmlContent += `<!-- /wp:heading -->\n`;
+                    htmlContent += `<!-- wp:list -->\n`;
+                    htmlContent += `<ul>\n`;
 
                     article.tableOfContents.forEach(item => {
-                        const indent = item.level > 2 ? `style="margin-left: ${(item.level - 2) * 20}px;"` : '';
-                        htmlContent += `<li ${indent}><a href="${item.anchor}">${item.text || item.title}</a></li>\n`;
+                        htmlContent += `<li><a href="${item.anchor}">${item.text || item.title}</a></li>\n`;
                     });
 
-                    htmlContent += `</ol>\n</div>\n\n`;
+                    htmlContent += `</ul>\n`;
+                    htmlContent += `<!-- /wp:list -->\n`;
+                    htmlContent += `</div>\n`;
+                    htmlContent += `<!-- /wp:group -->\n\n`;
                 }
 
                 // Add sections if they exist with inline images
@@ -16550,17 +16553,21 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                                 .replace(/[^a-z0-9\s]/g, '')
                                 .replace(/\s+/g, '-')
                                 .substring(0, 50);
+                            htmlContent += `<!-- wp:heading {"level":2} -->\n`;
                             htmlContent += `<h2 id="${anchorId}">${section.title}</h2>\n`;
+                            htmlContent += `<!-- /wp:heading -->\n\n`;
                         }
                         if (section.content) {
-                            htmlContent += `<p>${section.content}</p>\n\n`;
+                            htmlContent += `<!-- wp:paragraph -->\n`;
+                            htmlContent += `<p>${section.content}</p>\n`;
+                            htmlContent += `<!-- /wp:paragraph -->\n\n`;
                         }
 
                         // Insert images between sections
                         if (uploadedImages.length > index + 1) {
                             const sectionImage = uploadedImages[index + 1];
-                            htmlContent += `<!-- wp:image {"id":${sectionImage.id},"sizeSlug":"large"} -->\n`;
-                            htmlContent += `<figure class="wp-block-image size-large"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/></figure>\n`;
+                            htmlContent += `<!-- wp:image {"id":${sectionImage.id},"sizeSlug":"large","linkDestination":"none","align":"center"} -->\n`;
+                            htmlContent += `<figure class="wp-block-image aligncenter size-large"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/></figure>\n`;
                             htmlContent += `<!-- /wp:image -->\n\n`;
                         }
                     });
@@ -16568,16 +16575,28 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                 // Add conclusion if exists
                 if (article.content?.conclusion) {
-                    htmlContent += `<h2 id="conclusion">Conclusion</h2>\n<p>${article.content.conclusion}</p>\n\n`;
+                    htmlContent += `<!-- wp:heading {"level":2} -->\n`;
+                    htmlContent += `<h2 id="conclusion">Conclusion</h2>\n`;
+                    htmlContent += `<!-- /wp:heading -->\n\n`;
+                    htmlContent += `<!-- wp:paragraph -->\n`;
+                    htmlContent += `<p>${article.content.conclusion}</p>\n`;
+                    htmlContent += `<!-- /wp:paragraph -->\n\n`;
                 }
 
                 // Add FAQ if exists
                 if (article.content?.faq && Array.isArray(article.content.faq) && article.content.faq.length > 0) {
+                    htmlContent += `<!-- wp:heading {"level":2} -->\n`;
                     htmlContent += `<h2 id="faq">Frequently Asked Questions</h2>\n`;
+                    htmlContent += `<!-- /wp:heading -->\n\n`;
                     article.content.faq.forEach((qa, faqIndex) => {
                         if (qa.question && qa.answer) {
                             const faqAnchor = `faq-${faqIndex + 1}`;
-                            htmlContent += `<h3 id="${faqAnchor}">${qa.question}</h3>\n<p>${qa.answer}</p>\n\n`;
+                            htmlContent += `<!-- wp:heading {"level":3} -->\n`;
+                            htmlContent += `<h3 id="${faqAnchor}">${qa.question}</h3>\n`;
+                            htmlContent += `<!-- /wp:heading -->\n\n`;
+                            htmlContent += `<!-- wp:paragraph -->\n`;
+                            htmlContent += `<p>${qa.answer}</p>\n`;
+                            htmlContent += `<!-- /wp:paragraph -->\n\n`;
                         }
                     });
                 }
@@ -16630,8 +16649,11 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     title: publishData.article.title,
                     contentLength: publishData.article.content.length,
                     featuredMediaId: publishData.article.featured_media,
+                    featuredMediaType: typeof publishData.article.featured_media,
                     categoryIds: publishData.article.categories,
-                    publishType: publishData.publishType
+                    publishType: publishData.publishType,
+                    uploadedImagesCount: uploadedImages.length,
+                    firstImageId: uploadedImages.length > 0 ? uploadedImages[0].id : null
                 });
 
                 const response = await fetch('/api/wordpress-publish', {

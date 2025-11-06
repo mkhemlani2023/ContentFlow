@@ -2534,13 +2534,25 @@ Generate a professional, actionable outline that a content writer can follow to 
 
         // Add featured image if available
         if (article.featured_media) {
-          postData.featured_media = article.featured_media;
+          postData.featured_media = parseInt(article.featured_media);
+          console.log('Setting featured_media:', postData.featured_media, 'Type:', typeof postData.featured_media);
+        } else {
+          console.log('No featured_media provided');
         }
 
         // Add categories if provided
         if (article.categories && Array.isArray(article.categories) && article.categories.length > 0) {
           postData.categories = article.categories;
+          console.log('Setting categories:', postData.categories);
         }
+
+        console.log('Publishing to WordPress with data:', {
+          title: postData.title,
+          status: postData.status,
+          featured_media: postData.featured_media,
+          categories: postData.categories,
+          contentLength: postData.content?.length
+        });
 
         // Publish to WordPress
         const publishResponse = await fetch(wpRestUrl, {
