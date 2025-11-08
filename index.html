@@ -16504,8 +16504,13 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Step 2: Build HTML content from article using WordPress blocks
                 let htmlContent = '';
 
-                // Don't add featured image to content - it's set via featured_media field
-                // WordPress will display it automatically based on the theme
+                // Add featured image at the beginning of content
+                if (uploadedImages.length > 0) {
+                    const featuredImage = uploadedImages[0];
+                    htmlContent += `<!-- wp:image {"id":${featuredImage.id},"align":"center","sizeSlug":"large"} -->\n`;
+                    htmlContent += `<figure class="wp-block-image aligncenter size-large"><img src="${featuredImage.url}" alt="${featuredImage.alt}" class="wp-image-${featuredImage.id}"/></figure>\n`;
+                    htmlContent += `<!-- /wp:image -->\n\n`;
+                }
 
                 // Add introduction if exists
                 if (article.content?.introduction) {
@@ -16563,8 +16568,8 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         // Insert images between sections
                         if (uploadedImages.length > index + 1) {
                             const sectionImage = uploadedImages[index + 1];
-                            htmlContent += `<!-- wp:image {"id":${sectionImage.id},"sizeSlug":"full","linkDestination":"none","align":"center"} -->\n`;
-                            htmlContent += `<figure class="wp-block-image aligncenter size-full" style="text-align: center; margin: 2em auto;"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}" style="display: block; margin: 0 auto; max-width: 100%; height: auto;"/></figure>\n`;
+                            htmlContent += `<!-- wp:image {"id":${sectionImage.id},"align":"center","sizeSlug":"large"} -->\n`;
+                            htmlContent += `<figure class="wp-block-image aligncenter size-large"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/></figure>\n`;
                             htmlContent += `<!-- /wp:image -->\n\n`;
                         }
                     });
