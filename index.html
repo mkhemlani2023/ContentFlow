@@ -11463,8 +11463,8 @@ REWRITTEN VERSION (begin immediately with the content):`;
                             </div>
                         </div>
 
-                        <!-- Featured Image Section -->
-                        ${images && images.length > 0 ? `
+                        <!-- Featured Image Section (only if not already in content) -->
+                        ${images && images.length > 0 && !content.featuredImage ? `
                         <div style="padding: 0 40px 20px;">
                             <div style="text-align: center; margin-bottom: 30px;">
                                 <img src="${images[0].url}" alt="${images[0].alt}"
@@ -11528,6 +11528,9 @@ REWRITTEN VERSION (begin immediately with the content):`;
 
                             <!-- Article Content with Images -->
                             <div style="line-height: 1.7; color: #374151;">
+                                <!-- Featured Image (if embedded in content) -->
+                                ${content.featuredImage ? `<div style="margin-bottom: 30px;">${content.featuredImage}</div>` : ''}
+
                                 <!-- Introduction -->
                                 <div style="font-size: 18px; margin-bottom: 30px; padding: 20px; background: #fefce8; border-radius: 8px; border-left: 4px solid #64748b;">
                                     ${content.introduction.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('')}
@@ -11550,8 +11553,8 @@ REWRITTEN VERSION (begin immediately with the content):`;
                                             ${section.title}
                                         </h2>
 
-                                        <!-- Insert supporting image for key sections -->
-                                        ${images && images.length > index + 1 && index < 3 ? `
+                                        <!-- Insert supporting image only if not already in content -->
+                                        ${images && images.length > index + 1 && index < 3 && !sectionContent.includes('<img') ? `
                                         <div style="text-align: center; margin: 25px 0;">
                                             <img src="${images[index + 1].url}" alt="${images[index + 1].alt}"
                                                  style="width: 100%; max-width: 600px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -15420,11 +15423,11 @@ Simplified Keywords:`;
                         </p>
 
                         <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <button onclick="this.closest('[style*=\\'position: fixed\\']').remove(); viewSavedArticle('${article.savedArticleId}')" style="width: 100%; background: #334155; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
+                            <button onclick="this.closest('[style*=\\'position: fixed\\']').remove(); ${article.savedArticleId ? `viewSavedArticle('${article.savedArticleId}')` : `displayGeneratedArticleWithImages(window.currentGeneratedArticle, '${article.modelTier || 'Standard'}', 0)`}" style="width: 100%; background: #334155; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
                                 👁️ View Article with Images
                             </button>
 
-                            <button onclick="this.closest('[style*=\\'position: fixed\\']').remove(); publishSavedArticle('${article.savedArticleId}')" style="width: 100%; background: #10b981; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                            <button onclick="this.closest('[style*=\\'position: fixed\\']').remove(); ${article.savedArticleId ? `publishSavedArticle('${article.savedArticleId}')` : 'publishToWebsite()'}" style="width: 100%; background: #10b981; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
                                 🚀 Publish to Website
                             </button>
 
