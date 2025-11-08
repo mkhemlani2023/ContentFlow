@@ -15434,7 +15434,7 @@ Simplified Keywords:`;
                                 🚀 Publish to Website
                             </button>
 
-                            <button onclick="this.closest('[style*=\\'position: fixed\\']').remove()" style="width: 100%; background: #64748b; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#475569'" onmouseout="this.style.background='#64748b'">
+                            <button id="closeSuccessBtn" style="width: 100%; background: #64748b; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#475569'" onmouseout="this.style.background='#64748b'">
                                 Close
                             </button>
                         </div>
@@ -15447,6 +15447,7 @@ Simplified Keywords:`;
             // Add event listeners to buttons
             const viewBtn = document.getElementById('viewArticleBtn');
             const publishBtn = document.getElementById('publishArticleBtn');
+            const closeBtn = document.getElementById('closeSuccessBtn');
 
             viewBtn.addEventListener('click', function() {
                 successModal.remove();
@@ -15464,6 +15465,10 @@ Simplified Keywords:`;
                 } else {
                     publishToWebsite();
                 }
+            });
+
+            closeBtn.addEventListener('click', function() {
+                successModal.remove();
             });
         }
 
@@ -17098,7 +17103,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                         <div style="margin-bottom: 20px;">
                             <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Article Title:</label>
-                            <input type="text" id="editTitle" value="${title.replace(/"/g, '&quot;')}"
+                            <input type="text" id="editSavedArticleTitle" value="${title.replace(/"/g, '&quot;')}"
                                    style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 16px; font-weight: 600;">
                         </div>
 
@@ -17166,7 +17171,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
         function saveArticleEdits() {
             // Get the edited content
-            const editedTitle = document.getElementById('editTitle').value;
+            const editedTitle = document.getElementById('editSavedArticleTitle').value;
             const editedMetaDescription = document.getElementById('editMetaDescription').value;
             const editedContent = document.getElementById('editContent').value;
             const editedKeywords = document.getElementById('editKeywords').value.split(',').map(k => k.trim()).filter(k => k);
@@ -17220,7 +17225,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
         }
 
         function previewEditedArticle() {
-            const editedTitle = document.getElementById('editTitle').value;
+            const editedTitle = document.getElementById('editSavedArticleTitle').value;
             const editedContent = document.getElementById('editContent').value;
 
             if (!editedTitle || !editedContent) {
