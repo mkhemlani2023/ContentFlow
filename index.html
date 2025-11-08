@@ -16646,16 +16646,25 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             }
 
                             const imgBlob = await imgResponse.blob();
-                            const imgArrayBuffer = await imgBlob.arrayBuffer();
-                            const imgBase64 = btoa(String.fromCharCode(...new Uint8Array(imgArrayBuffer)));
 
-                            // Upload to WordPress media library
-                            const filename = `seo-wizard-${Date.now()}-${i}.jpg`;
+                            // Detect actual image type from blob
+                            const contentType = imgBlob.type || 'image/jpeg';
+                            const extension = contentType.split('/')[1] || 'jpg';
+
+                            console.log(`📸 Image ${i + 1} details:`, {
+                                url: img.url,
+                                contentType: contentType,
+                                size: imgBlob.size,
+                                alt: img.alt
+                            });
+
+                            // Upload to WordPress media library with correct content type
+                            const filename = `seo-wizard-${Date.now()}-${i}.${extension}`;
                             const uploadResponse = await fetch(`${selectedBlog.url}/wp-json/wp/v2/media`, {
                                 method: 'POST',
                                 headers: {
                                     'Authorization': 'Basic ' + btoa(`${username}:${password}`),
-                                    'Content-Type': 'image/jpeg',
+                                    'Content-Type': contentType,
                                     'Content-Disposition': `attachment; filename="${filename}"`
                                 },
                                 body: imgBlob
@@ -16663,15 +16672,50 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                             if (uploadResponse.ok) {
                                 const uploadedMedia = await uploadResponse.json();
-                                uploadedImages.push({
-                                    id: uploadedMedia.id,
+                                const mediaId = uploadedMedia.id;
+
+                                console.log(`✅ Image ${i + 1} uploaded successfully:`, {
+                                    id: mediaId,
                                     url: uploadedMedia.source_url,
-                                    alt: img.alt || article.content.title
+                                    title: uploadedMedia.title?.rendered
                                 });
-                                console.log(`✅ Image ${i + 1} uploaded successfully:`, uploadedMedia.id);
+
+                                // Set alt text for the uploaded image
+                                const altText = img.alt || article.content.title;
+                                try {
+                                    const updateAltResponse = await fetch(`${selectedBlog.url}/wp-json/wp/v2/media/${mediaId}`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Authorization': 'Basic ' + btoa(`${username}:${password}`),
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            alt_text: altText,
+                                            caption: altText
+                                        })
+                                    });
+
+                                    if (updateAltResponse.ok) {
+                                        console.log(`✅ Alt text set for image ${i + 1}:`, altText);
+                                    } else {
+                                        console.warn(`⚠️ Failed to set alt text for image ${i + 1}`);
+                                    }
+                                } catch (altError) {
+                                    console.warn(`⚠️ Error setting alt text for image ${i + 1}:`, altError);
+                                }
+
+                                uploadedImages.push({
+                                    id: mediaId,
+                                    url: uploadedMedia.source_url,
+                                    alt: altText
+                                });
                             } else {
                                 const errorText = await uploadResponse.text();
-                                console.warn(`⚠️ Image upload failed for ${i + 1}:`, uploadResponse.status, errorText);
+                                console.error(`❌ Image upload failed for ${i + 1}:`, {
+                                    status: uploadResponse.status,
+                                    statusText: uploadResponse.statusText,
+                                    error: errorText
+                                });
                             }
                         } catch (imgError) {
                             console.error(`❌ Error uploading image ${i + 1}:`, imgError);
@@ -16856,8 +16900,24 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     categoryIds: publishData.article.categories,
                     publishType: publishData.publishType,
                     uploadedImagesCount: uploadedImages.length,
-                    firstImageId: uploadedImages.length > 0 ? uploadedImages[0].id : null
+                    firstImageId: uploadedImages.length > 0 ? uploadedImages[0].id : null,
+                    allUploadedImageIds: uploadedImages.map(img => img.id)
                 });
+
+                // Critical validation before sending
+                if (publishData.article.featured_media) {
+                    console.log('✅ FEATURED IMAGE WILL BE SET:', {
+                        id: publishData.article.featured_media,
+                        isValid: publishData.article.featured_media > 0,
+                        type: typeof publishData.article.featured_media
+                    });
+                } else {
+                    console.warn('⚠️ NO FEATURED IMAGE:', {
+                        uploadedImagesLength: uploadedImages.length,
+                        firstImageExists: uploadedImages.length > 0,
+                        firstImageId: uploadedImages.length > 0 ? uploadedImages[0].id : 'N/A'
+                    });
+                }
 
                 const response = await fetch('/api/wordpress-publish', {
                     method: 'POST',
