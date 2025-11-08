@@ -2533,16 +2533,31 @@ Generate a professional, actionable outline that a content writer can follow to 
         };
 
         // Add featured image if available
+        console.log('🖼️ Featured media received:', {
+          value: article.featured_media,
+          type: typeof article.featured_media,
+          isNumber: typeof article.featured_media === 'number',
+          isGreaterThanZero: article.featured_media > 0
+        });
+
         if (article.featured_media && article.featured_media > 0) {
           const mediaId = parseInt(article.featured_media, 10);
           if (!isNaN(mediaId) && mediaId > 0) {
             postData.featured_media = mediaId;
-            console.log('Setting featured_media:', postData.featured_media, 'Type:', typeof postData.featured_media);
+            console.log('✅ Setting featured_media:', postData.featured_media, 'Type:', typeof postData.featured_media);
           } else {
-            console.log('Invalid featured_media ID:', article.featured_media);
+            console.log('❌ Invalid featured_media ID after parseInt:', {
+              original: article.featured_media,
+              parsed: mediaId,
+              isNaN: isNaN(mediaId)
+            });
           }
         } else {
-          console.log('No featured_media provided:', article.featured_media);
+          console.log('❌ No valid featured_media:', {
+            value: article.featured_media,
+            hasValue: !!article.featured_media,
+            isPositive: article.featured_media > 0
+          });
         }
 
         // Add categories if provided
@@ -2570,7 +2585,16 @@ Generate a professional, actionable outline that a content writer can follow to 
         });
 
         if (publishResponse.ok) {
-          const postData = await publishResponse.json();
+          const responseData = await publishResponse.json();
+
+          // Log what WordPress actually returned
+          console.log('✅ WordPress response:', {
+            id: responseData.id,
+            link: responseData.link,
+            featured_media: responseData.featured_media,
+            featured_media_type: typeof responseData.featured_media
+          });
+
           return {
             statusCode: 200,
             headers,
@@ -2578,10 +2602,11 @@ Generate a professional, actionable outline that a content writer can follow to 
               success: true,
               message: 'Article published successfully',
               data: {
-                postId: postData.id,
-                postUrl: postData.link,
-                status: postData.status,
-                title: postData.title.rendered
+                postId: responseData.id,
+                postUrl: responseData.link,
+                status: responseData.status,
+                title: responseData.title.rendered,
+                featured_media: responseData.featured_media // Return this so frontend can verify
               }
             })
           };

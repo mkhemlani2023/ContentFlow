@@ -16864,7 +16864,12 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                         const publishTypeText = publishType === 'now' ? 'published' : publishType === 'draft' ? 'saved as draft' : 'scheduled';
 
-                        alert(`✅ Success!\n\nArticle "${result.data.title}" has been ${publishTypeText} to ${selectedBlog.name}!\n\n📊 Publishing Details:\n• Post ID: ${result.data.postId}\n• Post URL: ${result.data.postUrl}\n• Status: ${result.data.status}\n• Platform: WordPress\n• Username: ${username}\n\n🌐 View your article:\n${result.data.postUrl}`);
+                        // Build featured image status message
+                        const featuredImageStatus = result.data.featured_media && result.data.featured_media > 0
+                            ? `✅ Featured image set (ID: ${result.data.featured_media})`
+                            : '⚠️ No featured image set';
+
+                        alert(`✅ Success!\n\nArticle "${result.data.title}" has been ${publishTypeText} to ${selectedBlog.name}!\n\n📊 Publishing Details:\n• Post ID: ${result.data.postId}\n• Post URL: ${result.data.postUrl}\n• Status: ${result.data.status}\n• Platform: WordPress\n• Username: ${username}\n• ${featuredImageStatus}\n\n🌐 View your article:\n${result.data.postUrl}`);
 
                         // Log the publishing attempt
                         const publishLog = JSON.parse(localStorage.getItem('publishHistory') || '[]');
