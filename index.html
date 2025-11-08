@@ -793,7 +793,6 @@
                         <a id="navSavedKeywords" onclick="handleNavClick('showSavedContentIdeas')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Saved Keywords</a>
                         <a id="navBlogManagement" onclick="handleNavClick('showBlogManagement')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Blog Management</a>
                         <!-- Always active links -->
-                        <a onclick="showHumanizationSettings()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">⚙️ Humanization</a>
                         <a onclick="showCreditPurchase()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">Purchase Credits</a>
                         <a onclick="showAboutSEOWizard()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">About</a>
                     </div>
@@ -1248,23 +1247,13 @@
     <script>
         // Humanization Settings
         const humanizationSettings = {
-            temperature: parseFloat(localStorage.getItem('humanization_temperature') || '0.7'),
-            intensity: localStorage.getItem('humanization_intensity') || 'light',
+            temperature: 0.75, // Fixed professional temperature
+            intensity: 'professional', // Fixed to professional mode
             presets: {
-                light: {
-                    temperature: 0.7,
-                    description: 'Professional tone, subtle humanization (Recommended)',
-                    prompt: 'professional and polished with natural flow'
-                },
-                moderate: {
-                    temperature: 0.85,
-                    description: 'Balanced conversational style, good for blogs',
-                    prompt: 'conversational yet professional'
-                },
-                aggressive: {
-                    temperature: 1.0,
-                    description: 'Very casual, may include slang (Use with caution)',
-                    prompt: 'ultra casual like texting a friend'
+                professional: {
+                    temperature: 0.75,
+                    description: 'Professional, clear, and authoritative',
+                    prompt: 'professional yet natural and engaging'
                 }
             }
         };
@@ -5549,11 +5538,6 @@
         }
 
         async function confirmArticleGeneration(title, wordCount, difficulty, intent) {
-            // Show humanization settings reminder FIRST before anything else
-            const settingsReminder = await showHumanizationReminder();
-            if (!settingsReminder) {
-                return; // User cancelled
-            }
 
             const totalCredits = window.selectedCredits + window.selectedImageCredits;
             const modelTier = window.selectedModel; // 'basic', 'premium', or 'enterprise'
@@ -9147,12 +9131,6 @@
 
         // Article generation functions
         async function generateArticleWithModel(keyword, wordCount, difficulty, intent, modelTier, creditCost) {
-            // Show humanization settings reminder
-            const settingsReminder = await showHumanizationReminder();
-            if (!settingsReminder) {
-                return; // User cancelled
-            }
-
             // Credit check happens in generateArticleWithOutline() - no duplicate check needed here
             await generateArticleWithOutline(keyword, wordCount, difficulty, intent, modelTier, creditCost);
         }
@@ -10480,13 +10458,9 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                                 <div style="color: #1E293B; font-size: 13px; font-weight: 600;">Step 2: SEO Optimization</div>
                                 <div style="color: #64748B; font-size: 12px; margin-top: 4px;" id="step2Status">Waiting...</div>
                             </div>
-                            <div id="step3" style="padding: 14px 16px; margin-bottom: 10px; background: #F8FAFC; border-radius: 8px; border-left: 3px solid #94A3B8;">
-                                <div style="color: #1E293B; font-size: 13px; font-weight: 600;">Step 3: Content Humanization</div>
+                            <div id="step3" style="padding: 14px 16px; background: #F8FAFC; border-radius: 8px; border-left: 3px solid #94A3B8;">
+                                <div style="color: #1E293B; font-size: 13px; font-weight: 600;">Step 3: Final Quality Check</div>
                                 <div style="color: #64748B; font-size: 12px; margin-top: 4px;" id="step3Status">Waiting...</div>
-                            </div>
-                            <div id="step4" style="padding: 14px 16px; background: #F8FAFC; border-radius: 8px; border-left: 3px solid #94A3B8;">
-                                <div style="color: #1E293B; font-size: 13px; font-weight: 600;">Step 4: Final Quality Check</div>
-                                <div style="color: #64748B; font-size: 12px; margin-top: 4px;" id="step4Status">Waiting...</div>
                             </div>
                         </div>
 
@@ -10568,29 +10542,20 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                     updateProgress(50);
                 }
 
-                // Step 3: Automatic Humanization
+                // Automatic Humanization (running silently in background)
                 try {
-                    updateStep(3, 'Humanizing content...', 'active');
-                    updateProgress(55);
-                    await new Promise(resolve => setTimeout(resolve, 500));
-
-                    console.log('👤 Humanizing article content...');
+                    console.log('👤 Humanizing article content silently...');
                     const humanizedArticle = await automaticallyHumanizeArticle(article);
                     article.content = humanizedArticle.content;
-
-                    updateStep(3, 'Content humanized', 'success');
-                    updateProgress(80);
-                    await new Promise(resolve => setTimeout(resolve, 800));
+                    console.log('✅ Content humanized successfully');
                 } catch (humanizeError) {
-                    console.error('Humanization failed:', humanizeError);
-                    updateStep(3, 'Skipped (error)', 'warning');
-                    updateProgress(80);
+                    console.error('Humanization failed (continuing anyway):', humanizeError);
                 }
 
-                // Step 4: Final Quality Check
+                // Step 3: Final Quality Check
                 try {
-                    updateStep(4, 'Running final checks...', 'active');
-                    updateProgress(85);
+                    updateStep(3, 'Running final checks...', 'active');
+                    updateProgress(70);
                     await new Promise(resolve => setTimeout(resolve, 500));
 
                     // Calculate final scores
@@ -10610,11 +10575,11 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                     console.log('✅ Final SEO Score:', finalSEOScore);
                     console.log('✅ Final AI Detection Score:', finalAIScore);
 
-                    updateStep(4, `SEO: ${finalSEOScore}/100, AI: ${finalAIScore}%`, 'success');
+                    updateStep(3, `SEO: ${finalSEOScore}/100, AI: ${finalAIScore}%`, 'success');
                     updateProgress(100);
                 } catch (qualityError) {
                     console.error('Quality check failed:', qualityError);
-                    updateStep(4, 'Skipped (error)', 'warning');
+                    updateStep(3, 'Skipped (error)', 'warning');
                     updateProgress(100);
                     // Don't set finalScores if quality check fails
                 }
@@ -10830,29 +10795,33 @@ OPTIMIZED VERSION (same length, better SEO):`;
             const preset = humanizationSettings.presets[humanizationSettings.intensity];
             const toneStyle = preset ? preset.prompt : 'ultra casual like texting a friend';
 
-            const humanizePrompt = `Transform this into 100% authentic human writing. Write ${toneStyle}.
+            const humanizePrompt = `Rewrite this text to sound like natural human writing - professional yet engaging, clear and authoritative without being robotic.
 
-CRITICAL - SOUND COMPLETELY HUMAN:
-- Mix it up: Drop in short punchy sentences. Then add medium ones with a natural conversational flow. Sometimes throw in a longer sentence that really explores the topic with extra details and thoughts.
-- Talk like a person: Load up on contractions - don't, you'll, it's, we're, can't, won't, there's, that's, I've, we've, here's, what's, who's
-- Be real: Ask questions like "Want to know the secret?" or "Here's the kicker" or "Ready for this?"
-- Direct address: Use "you" constantly. Make it feel like a one-on-one conversation
-- Break grammar rules: Start with And or But when it feels natural. Use sentence fragments. Break the "rules" like humans do
-- Casual filler: Add phrases like "honestly", "seriously", "trust me", "I get it", "look", "so", "now", "well"
-- Kill ALL AI tells: Ban these forever - "delve", "realm", "landscape", "multifaceted", "comprehensive", "robust", "leverage", "utilize", "facilitate", "moreover", "furthermore", "thus", "hence", "therefore"
-- Simple words only: Say "use" never "utilize", "help" never "facilitate", "lots" never "multitude", "get" never "obtain"
-- Human quirks: Add emphasis with caps or italics thinking. Include conversational asides
-- Real examples: Reference actual years, real scenarios, concrete situations
-- Kill formality: No "one must", "it is important to note", "in conclusion" - talk normally
-- Personality markers: Opinions, humor, empathy, excitement - show you are human
-- Year reference: ${new Date().getFullYear()}
+STYLE REQUIREMENTS:
+- Write in a professional, knowledgeable tone that sounds genuinely human
+- Vary sentence length and structure for natural flow
+- Use contractions sparingly and naturally (don't, it's, you're) when they fit the professional tone
+- Address readers directly with "you" when appropriate, but maintain authority
+- Use clear, straightforward language - prefer simple words over complex ones
+- Maintain a confident, expert voice throughout
 
-KEEP EXACTLY: Every fact, number, statistic, and key point - just make it sound human
+STRICT PROHIBITIONS:
+- NO meta-commentary: Never write "here's my take", "let me tell you", "here's what I think", "here is my analysis"
+- NO overly casual language: Avoid phrases like "trust me", "honestly", "seriously", "look"
+- NO AI telltale words: Avoid "delve", "realm", "landscape", "multifaceted", "comprehensive", "robust", "leverage", "utilize", "facilitate", "moreover", "furthermore"
+- NO unnecessary formality: Avoid "one must", "it is important to note", "it should be noted that"
+- NO self-referential preambles or style announcements
 
-TEXT TO HUMANIZE:
+REQUIREMENTS:
+- Keep ALL statistics, facts, data points, and key information exactly as provided
+- Maintain professional credibility and expertise
+- Write directly and clearly without fluff
+- Current year: ${new Date().getFullYear()}
+
+TEXT TO REWRITE:
 ${text}
 
-YOUR HUMAN VERSION:`;
+REWRITTEN VERSION (begin immediately with the content):`;
 
             try {
                 console.log('📡 Calling humanization API...');
@@ -11063,7 +11032,7 @@ YOUR HUMAN VERSION:`;
                                 <div style="padding: 14px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #E2E8F0;">
                                     <div style="color: #475569; font-size: 12px; line-height: 1.7; font-weight: 400;">
                                         <div style="margin-bottom: 6px;">✓ Optimized for search engine ranking</div>
-                                        <div style="margin-bottom: 6px;">✓ Content humanized for authenticity</div>
+                                        <div style="margin-bottom: 6px;">✓ Professional, natural writing</div>
                                         <div>✓ Ready for publishing</div>
                                     </div>
                                 </div>
@@ -13758,44 +13727,49 @@ EDITED VERSION (complete, no abbreviations):`;
                 }
 
                 // Prepare humanization prompt based on style
-                let styleInstructions = '';
+                let styleGuidance = '';
                 switch (humanizeStyle) {
                     case 'conversational':
-                        styleInstructions = 'Use a friendly, conversational tone as if talking to a friend. Add personal touches, contractions, and casual expressions while maintaining professionalism.';
+                        styleGuidance = 'Write in a natural, approachable style while maintaining professionalism and expertise';
                         break;
                     case 'professional':
-                        styleInstructions = 'Maintain a professional yet natural tone. Use clear, direct language that sounds like an expert speaking naturally, not a robot.';
+                        styleGuidance = 'Write in a polished, authoritative style that sounds expert and natural, not robotic';
                         break;
                     case 'storytelling':
-                        styleInstructions = 'Use storytelling elements with vivid examples, anecdotes, and narrative flow. Make it engaging and relatable while keeping the facts.';
+                        styleGuidance = 'Write with narrative flow and engaging examples while maintaining professional credibility';
                         break;
                     default: // balanced
-                        styleInstructions = 'Balance professionalism with natural human expression. Use varied sentence structures, occasional contractions, and conversational phrases.';
+                        styleGuidance = 'Write professionally with natural flow and clarity';
                 }
 
-                const humanizePrompt = `You are an expert content writer specializing in making AI-generated text sound completely natural and human-written.
+                const humanizePrompt = `Rewrite this content to sound like professional human writing while preserving all facts and information.
 
-TASK: Rewrite the following content to bypass AI detection while maintaining ALL information and SEO value.
+STYLE GOAL: ${styleGuidance}
 
-HUMANIZATION REQUIREMENTS:
-- ${styleInstructions}
-- Vary sentence length and structure (mix short, medium, and long sentences)
-- Use natural transitions and conversational connectors
-- Include occasional rhetorical questions or direct address to readers
-- Add subtle personal observations or relatable examples where appropriate
-- Use contractions naturally (don't, you'll, it's, we're)
-- Employ active voice predominantly
-- Include natural pauses and emphasis through formatting
-- Maintain all key facts, statistics, and SEO keywords
-- Keep the same overall structure and headings
-- Write out ALL content in full - never use placeholders or abbreviations
+REQUIREMENTS:
+- Write in a professional, knowledgeable tone that sounds genuinely human
+- Vary sentence length and structure for natural readability
+- Use contractions sparingly when appropriate (don't, it's, you're)
+- Address readers with "you" when suitable for the context
+- Prefer clear, simple words over unnecessarily complex terms
+- Maintain confident, expert authority throughout
 
-CRITICAL: Return the COMPLETE rewritten content. Do not use "[Rest remains the same]" or any placeholders.
+PROHIBITIONS:
+- NO meta-commentary: Never write "here's my take", "let me explain", "this is my analysis", "here's what I think"
+- NO overly casual phrases: Avoid "trust me", "honestly", "seriously", "look", "here's the kicker"
+- NO AI telltale words: Avoid "delve", "realm", "landscape", "comprehensive", "robust", "leverage", "utilize", "facilitate", "moreover", "furthermore"
+- NO unnecessary formality: Avoid "one must", "it is important to note", "it should be noted that"
+- NO self-introductions or style announcements
 
-CONTENT TO HUMANIZE:
+CRITICAL:
+- Keep ALL facts, statistics, and key information exactly as provided
+- Write out ALL content in full - never use placeholders like "[Rest remains the same]"
+- Begin immediately with the actual content without preamble
+
+CONTENT TO REWRITE:
 ${contentToHumanize}
 
-HUMANIZED VERSION (complete, natural, authentic):`;
+REWRITTEN VERSION (begin immediately):`;
 
                 // Get model config from article
                 const modelConfig = article.modelConfig || { model: 'openai/gpt-4o-mini', temperature: 0.7 };
@@ -16519,9 +16493,12 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                 // Add introduction if exists
                 if (article.content?.introduction) {
-                    htmlContent += `<!-- wp:paragraph -->\n`;
-                    htmlContent += `<p>${article.content.introduction}</p>\n`;
-                    htmlContent += `<!-- /wp:paragraph -->\n\n`;
+                    const introParagraphs = article.content.introduction.split(/\n\n+/).filter(p => p.trim());
+                    introParagraphs.forEach(paragraph => {
+                        htmlContent += `<!-- wp:paragraph -->\n`;
+                        htmlContent += `<p>${paragraph.trim()}</p>\n`;
+                        htmlContent += `<!-- /wp:paragraph -->\n\n`;
+                    });
                 }
 
                 // Add Table of Contents if exists
@@ -16558,16 +16535,20 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             htmlContent += `<!-- /wp:heading -->\n\n`;
                         }
                         if (section.content) {
-                            htmlContent += `<!-- wp:paragraph -->\n`;
-                            htmlContent += `<p>${section.content}</p>\n`;
-                            htmlContent += `<!-- /wp:paragraph -->\n\n`;
+                            // Split content by double newlines for proper paragraph formatting
+                            const paragraphs = section.content.split(/\n\n+/).filter(p => p.trim());
+                            paragraphs.forEach(paragraph => {
+                                htmlContent += `<!-- wp:paragraph -->\n`;
+                                htmlContent += `<p>${paragraph.trim()}</p>\n`;
+                                htmlContent += `<!-- /wp:paragraph -->\n\n`;
+                            });
                         }
 
                         // Insert images between sections
                         if (uploadedImages.length > index + 1) {
                             const sectionImage = uploadedImages[index + 1];
-                            htmlContent += `<!-- wp:image {"id":${sectionImage.id},"sizeSlug":"large","linkDestination":"none","align":"center"} -->\n`;
-                            htmlContent += `<figure class="wp-block-image aligncenter size-large"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/></figure>\n`;
+                            htmlContent += `<!-- wp:image {"id":${sectionImage.id},"sizeSlug":"full","linkDestination":"none","align":"center"} -->\n`;
+                            htmlContent += `<figure class="wp-block-image aligncenter size-full"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/></figure>\n`;
                             htmlContent += `<!-- /wp:image -->\n\n`;
                         }
                     });
@@ -16578,9 +16559,12 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     htmlContent += `<!-- wp:heading {"level":2} -->\n`;
                     htmlContent += `<h2 id="conclusion">Conclusion</h2>\n`;
                     htmlContent += `<!-- /wp:heading -->\n\n`;
-                    htmlContent += `<!-- wp:paragraph -->\n`;
-                    htmlContent += `<p>${article.content.conclusion}</p>\n`;
-                    htmlContent += `<!-- /wp:paragraph -->\n\n`;
+                    const conclusionParagraphs = article.content.conclusion.split(/\n\n+/).filter(p => p.trim());
+                    conclusionParagraphs.forEach(paragraph => {
+                        htmlContent += `<!-- wp:paragraph -->\n`;
+                        htmlContent += `<p>${paragraph.trim()}</p>\n`;
+                        htmlContent += `<!-- /wp:paragraph -->\n\n`;
+                    });
                 }
 
                 // Add FAQ if exists

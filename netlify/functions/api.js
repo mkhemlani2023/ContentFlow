@@ -2533,11 +2533,16 @@ Generate a professional, actionable outline that a content writer can follow to 
         };
 
         // Add featured image if available
-        if (article.featured_media) {
-          postData.featured_media = parseInt(article.featured_media);
-          console.log('Setting featured_media:', postData.featured_media, 'Type:', typeof postData.featured_media);
+        if (article.featured_media && article.featured_media > 0) {
+          const mediaId = parseInt(article.featured_media, 10);
+          if (!isNaN(mediaId) && mediaId > 0) {
+            postData.featured_media = mediaId;
+            console.log('Setting featured_media:', postData.featured_media, 'Type:', typeof postData.featured_media);
+          } else {
+            console.log('Invalid featured_media ID:', article.featured_media);
+          }
         } else {
-          console.log('No featured_media provided');
+          console.log('No featured_media provided:', article.featured_media);
         }
 
         // Add categories if provided
