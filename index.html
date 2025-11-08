@@ -15412,6 +15412,9 @@ Simplified Keywords:`;
             document.querySelector('.modal').remove();
 
             // Show success modal with action buttons
+            const imageCount = Object.keys(window.selectedImages).length;
+            const imageText = imageCount === 1 ? 'image' : 'images';
+
             const successModal = document.createElement('div');
             successModal.innerHTML = `
                 <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 50000; display: flex; align-items: center; justify-content: center;">
@@ -15419,15 +15422,15 @@ Simplified Keywords:`;
                         <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
                         <h2 style="color: #1e293b; margin: 0 0 15px 0;">Images Added Successfully!</h2>
                         <p style="color: #64748b; margin: 0 0 30px 0; line-height: 1.6;">
-                            ${Object.keys(window.selectedImages).length} image${Object.keys(window.selectedImages).length !== 1 ? 's' : ''} added to your article with SEO-optimized alt text.
+                            ${imageCount} ${imageText} added to your article with SEO-optimized alt text.
                         </p>
 
                         <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <button onclick="this.closest('[style*=\\'position: fixed\\']').remove(); ${article.savedArticleId ? `viewSavedArticle('${article.savedArticleId}')` : `displayGeneratedArticleWithImages(window.currentGeneratedArticle, '${article.modelTier || 'Standard'}', 0)`}" style="width: 100%; background: #334155; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
+                            <button id="viewArticleBtn" style="width: 100%; background: #334155; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
                                 👁️ View Article with Images
                             </button>
 
-                            <button onclick="this.closest('[style*=\\'position: fixed\\']').remove(); ${article.savedArticleId ? `publishSavedArticle('${article.savedArticleId}')` : 'publishToWebsite()'}" style="width: 100%; background: #10b981; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                            <button id="publishArticleBtn" style="width: 100%; background: #10b981; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
                                 🚀 Publish to Website
                             </button>
 
@@ -15440,6 +15443,28 @@ Simplified Keywords:`;
             `;
 
             document.body.appendChild(successModal);
+
+            // Add event listeners to buttons
+            const viewBtn = document.getElementById('viewArticleBtn');
+            const publishBtn = document.getElementById('publishArticleBtn');
+
+            viewBtn.addEventListener('click', function() {
+                successModal.remove();
+                if (article.savedArticleId) {
+                    viewSavedArticle(article.savedArticleId);
+                } else {
+                    displayGeneratedArticleWithImages(window.currentGeneratedArticle, article.modelTier || 'Standard', 0);
+                }
+            });
+
+            publishBtn.addEventListener('click', function() {
+                successModal.remove();
+                if (article.savedArticleId) {
+                    publishSavedArticle(article.savedArticleId);
+                } else {
+                    publishToWebsite();
+                }
+            });
         }
 
         async function removeImagesFromArticle() {
