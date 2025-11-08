@@ -15359,6 +15359,15 @@ Simplified Keywords:`;
             }));
             window.currentGeneratedArticle = article;
 
+            console.log('✅ Images embedded into article content');
+            console.log('📊 Total images:', article.images.length);
+            console.log('📝 Article structure updated:', {
+                hasContent: !!article.content,
+                hasFeaturedImage: !!article.content.featuredImage,
+                sectionsCount: article.content.sections?.length || 0,
+                imagesCount: article.images.length
+            });
+
             // Always save the article with images to database
             if (currentUser && supabaseClient) {
                 try {
@@ -15452,11 +15461,25 @@ Simplified Keywords:`;
             const closeBtn = document.getElementById('closeSuccessBtn');
 
             viewBtn.addEventListener('click', function() {
+                console.log('🔍 View Article clicked');
+                console.log('Article savedArticleId:', article.savedArticleId);
+                console.log('window.currentGeneratedArticle:', window.currentGeneratedArticle);
+
                 successModal.remove();
+
+                // Always use the updated window.currentGeneratedArticle which has images embedded
                 if (article.savedArticleId) {
+                    console.log('✅ Loading from Supabase (ID: ' + article.savedArticleId + ')');
                     viewSavedArticle(article.savedArticleId);
                 } else {
-                    displayGeneratedArticleWithImages(window.currentGeneratedArticle, article.modelTier || 'Standard', 0);
+                    console.log('✅ Displaying article with images from memory');
+                    // Ensure we have all the required data
+                    const articleToDisplay = window.currentGeneratedArticle;
+                    if (!articleToDisplay || !articleToDisplay.content) {
+                        alert('❌ Article data is missing. Please try regenerating the article.');
+                        return;
+                    }
+                    displayGeneratedArticleWithImages(articleToDisplay, article.modelTier || 'Standard', 0);
                 }
             });
 
