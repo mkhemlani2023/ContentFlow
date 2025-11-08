@@ -750,6 +750,59 @@
             }
         }
 
+        /* Mobile Menu Styles */
+        .mobile-menu-btn {
+            display: none;
+            background: #334155;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 10001;
+        }
+
+        .mobile-menu-btn span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 5px 0;
+            transition: 0.3s;
+        }
+
+        .mobile-menu-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 10000;
+        }
+
+        .mobile-menu-content {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 80%;
+            max-width: 300px;
+            height: 100%;
+            background: white;
+            transition: right 0.3s ease;
+            z-index: 10001;
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+        }
+
+        .mobile-menu-overlay.active {
+            display: block;
+        }
+
+        .mobile-menu-overlay.active .mobile-menu-content {
+            right: 0;
+        }
+
         @media (max-width: 480px) {
             /* Small mobile adjustments */
             .header {
@@ -757,7 +810,11 @@
             }
 
             nav {
-                display: none !important; /* Hide nav on very small screens, show hamburger */
+                display: none; /* Hide nav on mobile, show hamburger instead */
+            }
+
+            .mobile-menu-btn {
+                display: block;
             }
 
             button, .action-btn {
@@ -785,6 +842,13 @@
                     <img src="/seo-wizard-logo.png" alt="SEO Wizard" style="height: 120px; width: auto;">
                     <div style="font-size: 12px; color: #64748B; font-weight: 600; text-align: center;">Content Strategy Platform</div>
                 </div>
+
+                <!-- Mobile Menu Button -->
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
 
                 <!-- Navigation Menu -->
                 <nav style="flex: 1;">
@@ -1821,6 +1885,16 @@
                 updateCreditDisplay();
             } else {
                 profileMenu.style.display = 'none';
+            }
+        }
+
+        // Toggle mobile menu
+        function toggleMobileMenu() {
+            const overlay = document.getElementById('mobileMenuOverlay');
+            if (overlay.classList.contains('active')) {
+                overlay.classList.remove('active');
+            } else {
+                overlay.classList.add('active');
             }
         }
 
@@ -7380,34 +7454,6 @@
                             <div style="padding: 0 40px 40px;">
                                 ${articleBody}
 
-                                <!-- Dynamic SEO Score Card -->
-                                <div id="seoScoreCard" style="margin: 30px 0 20px; padding: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                        <div>
-                                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">SEO Health Score</div>
-                                            <div style="font-size: 42px; font-weight: 700;" id="seoScoreValue">-</div>
-                                        </div>
-                                        <div style="text-align: right;">
-                                            <div style="font-size: 12px; opacity: 0.8;">Readability</div>
-                                            <div style="font-size: 22px; font-weight: 600;" id="readabilityScore">-</div>
-                                        </div>
-                                    </div>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; font-size: 13px;">
-                                        <div>
-                                            <div style="opacity: 0.8;">Keywords</div>
-                                            <div style="font-weight: 600; font-size: 16px; margin-top: 3px;" id="keywordDensity">-</div>
-                                        </div>
-                                        <div>
-                                            <div style="opacity: 0.8;">Word Count</div>
-                                            <div style="font-weight: 600; font-size: 16px; margin-top: 3px;" id="seoWordCount">-</div>
-                                        </div>
-                                        <div>
-                                            <div style="opacity: 0.8;">Headers</div>
-                                            <div style="font-weight: 600; font-size: 16px; margin-top: 3px;" id="headerCount">-</div>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <!-- Action Buttons -->
                                 <div style="margin-top: 32px; padding-top: 28px; border-top: 1px solid #E2E8F0;">
                                     <h3 style="margin: 0 0 18px 0; color: #0F172A; font-size: 16px; font-weight: 600; letter-spacing: -0.2px;">Article Actions</h3>
@@ -10131,6 +10177,16 @@ Make the content engaging, informative, and optimized for search engines. Includ
         function openImageSelector(cleanId, index, articleTitle) {
             const modalId = `image-selector-modal-${cleanId}-${index}`;
 
+            // Extract 2-3 key words from article title for better search results
+            const suggestedSearchTerm = articleTitle
+                ? articleTitle
+                    .replace(/^(how to|what is|why|when|where|the|a|an)\s+/i, '') // Remove common article prefixes
+                    .split(/\s+/)
+                    .slice(0, 3)
+                    .join(' ')
+                    .toLowerCase()
+                : '';
+
             // Create modal
             const modal = document.createElement('div');
             modal.id = modalId;
@@ -10145,14 +10201,14 @@ Make the content engaging, informative, and optimized for search engines. Includ
                             <div style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Article: ${articleTitle}</div>
 
                             <div style="display: flex; gap: 10px;">
-                                <input type="text" id="image-search-input-${cleanId}-${index}" placeholder="Enter image search terms (e.g., 'healthy food plate', 'workout fitness')"
+                                <input type="text" id="image-search-input-${cleanId}-${index}" placeholder="Enter image search terms (e.g., 'healthy food plate', 'workout fitness')" value="${suggestedSearchTerm}"
                                        style="flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;" />
                                 <button onclick="searchImages('${cleanId}', ${index})"
                                         style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; white-space: nowrap;">
                                     🔍 Search
                                 </button>
                             </div>
-                            <div style="font-size: 11px; color: #64748b; margin-top: 8px;">💡 Tip: Be specific with your search terms for better results</div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 8px;">💡 Tip: Edit the search term above for better results. Shorter, more specific terms work best.</div>
                         </div>
 
                         <div id="image-results-${cleanId}-${index}" style="padding: 20px;">
@@ -11009,35 +11065,6 @@ REWRITTEN VERSION (begin immediately with the content):`;
 
                         <!-- Content -->
                         <div style="padding: 0 40px 40px;">
-                            <!-- Final Quality Scores (SEO Wizard) -->
-                            ${articleData.finalScores ? `
-                            <div style="margin: 25px 0 30px; padding: 28px; background: #F8FAFC; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                                <div style="text-align: center; margin-bottom: 24px;">
-                                    <div style="font-size: 32px; margin-bottom: 12px;">✓</div>
-                                    <h3 style="margin: 0 0 6px 0; color: #0F172A; font-size: 18px; font-weight: 600; letter-spacing: -0.2px;">Quality Assurance</h3>
-                                    <p style="margin: 0; color: #64748B; font-size: 13px; font-weight: 400;">Optimized and validated for maximum performance</p>
-                                </div>
-
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                                    <div style="background: #FFFFFF; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #E2E8F0;">
-                                        <div style="color: #64748B; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; font-weight: 500;">SEO Score</div>
-                                        <div style="font-size: 36px; font-weight: 600; color: #1E293B;">${articleData.finalScores.seo}<span style="font-size: 20px; color: #64748B;">/100</span></div>
-                                    </div>
-                                    <div style="background: #FFFFFF; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #E2E8F0;">
-                                        <div style="color: #64748B; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; font-weight: 500;">AI Detection</div>
-                                        <div style="font-size: 36px; font-weight: 600; color: #1E293B;">${articleData.finalScores.aiDetection}<span style="font-size: 20px; color: #64748B;">%</span></div>
-                                    </div>
-                                </div>
-
-                                <div style="padding: 14px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #E2E8F0;">
-                                    <div style="color: #475569; font-size: 12px; line-height: 1.7; font-weight: 400;">
-                                        <div style="margin-bottom: 6px;">✓ Optimized for search engine ranking</div>
-                                        <div style="margin-bottom: 6px;">✓ Professional, natural writing</div>
-                                        <div>✓ Ready for publishing</div>
-                                    </div>
-                                </div>
-                            </div>
-                            ` : ''}
 
                             <!-- Metadata Section -->
                             ${metadata ? `
@@ -11236,7 +11263,8 @@ REWRITTEN VERSION (begin immediately with the content):`;
 
             } catch (error) {
                 console.error('Error in displayGeneratedArticle:', error);
-                alert(`Failed to display article: ${error.message}\n\nPlease check the console for details.`);
+                // Removed error alert - article will still display or fail silently
+                // alert(`Failed to display article: ${error.message}\n\nPlease check the console for details.`);
             }
         }
 
@@ -14942,11 +14970,14 @@ Simplified Keywords:`;
                                     </div>
                                 </div>
 
-                                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                                    <input type="text" id="search-${section.id}" placeholder="Edit keyword if needed" value="${section.keyword}" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
-                                    <button onclick="searchImagesForSection('${section.id}')" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                        🔍 Search
-                                    </button>
+                                <div style="margin-bottom: 15px;">
+                                    <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                                        <input type="text" id="search-${section.id}" placeholder="Edit search term for better results" value="${section.keyword}" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                                        <button onclick="searchImagesForSection('${section.id}')" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                            🔍 Search
+                                        </button>
+                                    </div>
+                                    <div style="font-size: 11px; color: #64748b;">💡 Tip: Customize the search term above for more relevant images</div>
                                 </div>
 
                                 <div id="images-${section.id}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; min-height: 50px;">
@@ -15468,22 +15499,7 @@ Simplified Keywords:`;
             if (imageCount >= 3) seoScore += 10;
             else if (imageCount >= 1) seoScore += 5;
 
-            // Update UI
-            document.getElementById('seoScoreValue').textContent = seoScore + '/100';
-            document.getElementById('readabilityScore').textContent = readabilityGrade;
-            document.getElementById('keywordDensity').textContent = keywordDensity;
-            document.getElementById('seoWordCount').textContent = wordCount.toLocaleString();
-            document.getElementById('headerCount').textContent = headerCount;
-
-            // Color code the score
-            const scoreElement = document.getElementById('seoScoreValue');
-            if (seoScore >= 80) {
-                scoreElement.parentElement.parentElement.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            } else if (seoScore >= 60) {
-                scoreElement.parentElement.parentElement.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
-            } else {
-                scoreElement.parentElement.parentElement.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
-            }
+            // SEO Score UI elements have been removed - no need to update them
         }
 
         function estimateSyllables(word) {
@@ -16496,7 +16512,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     const introParagraphs = article.content.introduction.split(/\n\n+/).filter(p => p.trim());
                     introParagraphs.forEach(paragraph => {
                         htmlContent += `<!-- wp:paragraph -->\n`;
-                        htmlContent += `<p>${paragraph.trim()}</p>\n`;
+                        htmlContent += `<p style="text-align: left;">${paragraph.trim()}</p>\n`;
                         htmlContent += `<!-- /wp:paragraph -->\n\n`;
                     });
                 }
@@ -16539,7 +16555,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             const paragraphs = section.content.split(/\n\n+/).filter(p => p.trim());
                             paragraphs.forEach(paragraph => {
                                 htmlContent += `<!-- wp:paragraph -->\n`;
-                                htmlContent += `<p>${paragraph.trim()}</p>\n`;
+                                htmlContent += `<p style="text-align: left;">${paragraph.trim()}</p>\n`;
                                 htmlContent += `<!-- /wp:paragraph -->\n\n`;
                             });
                         }
@@ -16548,7 +16564,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         if (uploadedImages.length > index + 1) {
                             const sectionImage = uploadedImages[index + 1];
                             htmlContent += `<!-- wp:image {"id":${sectionImage.id},"sizeSlug":"full","linkDestination":"none","align":"center"} -->\n`;
-                            htmlContent += `<figure class="wp-block-image aligncenter size-full"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/></figure>\n`;
+                            htmlContent += `<figure class="wp-block-image aligncenter size-full" style="text-align: center; margin: 2em auto;"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}" style="display: block; margin: 0 auto; max-width: 100%; height: auto;"/></figure>\n`;
                             htmlContent += `<!-- /wp:image -->\n\n`;
                         }
                     });
@@ -16562,7 +16578,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     const conclusionParagraphs = article.content.conclusion.split(/\n\n+/).filter(p => p.trim());
                     conclusionParagraphs.forEach(paragraph => {
                         htmlContent += `<!-- wp:paragraph -->\n`;
-                        htmlContent += `<p>${paragraph.trim()}</p>\n`;
+                        htmlContent += `<p style="text-align: left;">${paragraph.trim()}</p>\n`;
                         htmlContent += `<!-- /wp:paragraph -->\n\n`;
                     });
                 }
@@ -16579,7 +16595,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             htmlContent += `<h3 id="${faqAnchor}">${qa.question}</h3>\n`;
                             htmlContent += `<!-- /wp:heading -->\n\n`;
                             htmlContent += `<!-- wp:paragraph -->\n`;
-                            htmlContent += `<p>${qa.answer}</p>\n`;
+                            htmlContent += `<p style="text-align: left;">${qa.answer}</p>\n`;
                             htmlContent += `<!-- /wp:paragraph -->\n\n`;
                         }
                     });
@@ -17997,5 +18013,43 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
         }
 
     </script>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenuOverlay" class="mobile-menu-overlay" onclick="if(event.target === this) toggleMobileMenu()">
+        <div class="mobile-menu-content">
+            <!-- Menu Header -->
+            <div style="padding: 20px; background: linear-gradient(135deg, #334155 0%, #1E293B 100%); color: white; display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 18px; font-weight: 700;">Menu</div>
+                <button onclick="toggleMobileMenu()" style="background: transparent; border: none; color: white; font-size: 28px; cursor: pointer; padding: 0; line-height: 1;">×</button>
+            </div>
+
+            <!-- Navigation Items -->
+            <div style="padding: 20px;">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <a id="mobileNavMyArticles" onclick="handleNavClick('showSavedArticlesLibrary'); toggleMobileMenu();" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 16px; font-weight: 600; padding: 14px 16px; background: #F8FAFC; border-radius: 8px;">My Articles</a>
+                    <a id="mobileNavSavedKeywords" onclick="handleNavClick('showSavedContentIdeas'); toggleMobileMenu();" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 16px; font-weight: 600; padding: 14px 16px; background: #F8FAFC; border-radius: 8px;">Saved Keywords</a>
+                    <a id="mobileNavBlogManagement" onclick="handleNavClick('showBlogManagement'); toggleMobileMenu();" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 16px; font-weight: 600; padding: 14px 16px; background: #F8FAFC; border-radius: 8px;">Blog Management</a>
+                    <a onclick="showCreditPurchase(); toggleMobileMenu();" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 16px; font-weight: 600; padding: 14px 16px; background: #F8FAFC; border-radius: 8px;">Purchase Credits</a>
+                    <a onclick="showAboutSEOWizard(); toggleMobileMenu();" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 16px; font-weight: 600; padding: 14px 16px; background: #F8FAFC; border-radius: 8px;">About</a>
+                </div>
+
+                <!-- Mobile Auth Buttons (for guests) -->
+                <div id="mobileGuestSection" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #E2E8F0;">
+                    <button onclick="showAuthModal('login'); toggleMobileMenu();" style="width: 100%; background: #334155; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 700; margin-bottom: 10px;">Login</button>
+                    <button onclick="showAuthModal('signup'); toggleMobileMenu();" style="width: 100%; background: #1E293B; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 700;">Sign Up</button>
+                </div>
+
+                <!-- Mobile User Section (for logged in users) -->
+                <div id="mobileAuthSection" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #E2E8F0;">
+                    <div style="background: #F8FAFC; padding: 16px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
+                        <div style="font-size: 12px; color: #64748B; font-weight: 600; margin-bottom: 4px;">Credits</div>
+                        <div id="mobileCreditBalance" style="font-size: 24px; font-weight: 900; color: #1E293B;">-</div>
+                    </div>
+                    <button onclick="logout(); toggleMobileMenu();" style="width: 100%; background: #EF4444; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 700;">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
