@@ -15239,9 +15239,12 @@ Simplified Keywords:`;
                 }
             }
 
-            // Update the article
+            // Update the article - preserve sectionId for each image
             article.content = content;
-            article.images = Object.values(window.selectedImages);
+            article.images = Object.entries(window.selectedImages).map(([sectionId, imageData]) => ({
+                ...imageData,
+                sectionId: sectionId
+            }));
             window.currentGeneratedArticle = article;
 
             // Always save the article with images to database
@@ -15252,7 +15255,10 @@ Simplified Keywords:`;
                         content: content,
                         metadata: article.metadata || {},
                         tableOfContents: article.tableOfContents || [],
-                        images: Object.values(window.selectedImages),
+                        images: Object.entries(window.selectedImages).map(([sectionId, imageData]) => ({
+                            ...imageData,
+                            sectionId: sectionId
+                        })),
                         modelTier: article.modelTier,
                         modelConfig: article.modelConfig
                     };
@@ -15261,7 +15267,7 @@ Simplified Keywords:`;
                     if (article.savedArticleId) {
                         await SupabaseService.updateArticle(article.savedArticleId, {
                             content: JSON.stringify(saveData),
-                            images: JSON.stringify(Object.values(window.selectedImages)),
+                            images: JSON.stringify(article.images),
                             updated_at: new Date().toISOString()
                         });
                         console.log('✅ Article updated with images (ID: ' + article.savedArticleId + ')');
@@ -16435,18 +16441,36 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                 // Step 1: Upload images to WordPress media library if they exist
                 let uploadedImages = [];
+
+                // Reorder images to ensure featured image (type='featured' or first image) is first
+                let imagesToUpload = [];
                 if (article.images && article.images.length > 0) {
+                    // Find featured image (usually has type='featured' or is marked somehow)
+                    const featuredImg = article.images.find(img => img.type === 'featured' || img.sectionId === 'title');
+                    const otherImages = article.images.filter(img => img !== featuredImg);
+
+                    // Featured image first, then others
+                    imagesToUpload = featuredImg ? [featuredImg, ...otherImages] : article.images;
+
+                    console.log('📸 Image order:', {
+                        total: imagesToUpload.length,
+                        featured: featuredImg ? 'Found at original index ' + article.images.indexOf(featuredImg) : 'Not found',
+                        reordered: !!featuredImg
+                    });
+                }
+
+                if (imagesToUpload.length > 0) {
                     statusDiv.innerHTML = `
                         <div>✅ Connected to ${selectedBlog.name}</div>
-                        <div>📸 Uploading ${article.images.length} image(s) to media library...</div>
+                        <div>📸 Uploading ${imagesToUpload.length} image(s) to media library...</div>
                     `;
                     progressBar.style.width = '20%';
 
-                    console.log('📸 Uploading images to WordPress media library:', article.images.length);
+                    console.log('📸 Uploading images to WordPress media library:', imagesToUpload.length);
 
-                    for (let i = 0; i < article.images.length; i++) {
-                        const img = article.images[i];
-                        console.log(`📸 Uploading image ${i + 1}/${article.images.length}:`, img.url);
+                    for (let i = 0; i < imagesToUpload.length; i++) {
+                        const img = imagesToUpload[i];
+                        console.log(`📸 Uploading image ${i + 1}/${imagesToUpload.length}:`, img);
 
                         try {
                             // Download image data
@@ -16488,10 +16512,10 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             console.error(`❌ Error uploading image ${i + 1}:`, imgError);
                         }
 
-                        progressBar.style.width = `${20 + (i + 1) / article.images.length * 20}%`;
+                        progressBar.style.width = `${20 + (i + 1) / imagesToUpload.length * 20}%`;
                     }
 
-                    console.log(`📸 Image upload complete: ${uploadedImages.length}/${article.images.length} successful`);
+                    console.log(`📸 Image upload complete: ${uploadedImages.length}/${imagesToUpload.length} successful`);
                 }
 
                 statusDiv.innerHTML = `
