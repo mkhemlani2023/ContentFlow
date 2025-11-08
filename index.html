@@ -16507,9 +16507,18 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Add featured image at the beginning of content
                 if (uploadedImages.length > 0) {
                     const featuredImage = uploadedImages[0];
-                    htmlContent += `<!-- wp:image {"id":${featuredImage.id},"align":"center","sizeSlug":"large"} -->\n`;
-                    htmlContent += `<figure class="wp-block-image aligncenter size-large"><img src="${featuredImage.url}" alt="${featuredImage.alt}" class="wp-image-${featuredImage.id}"/></figure>\n`;
-                    htmlContent += `<!-- /wp:image -->\n\n`;
+                    console.log('🖼️ Adding featured image to content:', {
+                        id: featuredImage.id,
+                        url: featuredImage.url,
+                        alt: featuredImage.alt
+                    });
+
+                    // Use HTML block with inline styles to ensure visibility
+                    htmlContent += `<!-- wp:html -->\n`;
+                    htmlContent += `<div style="text-align: center; margin: 20px 0 30px 0; display: block !important; visibility: visible !important;">\n`;
+                    htmlContent += `<img src="${featuredImage.url}" alt="${featuredImage.alt}" class="wp-image-${featuredImage.id}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />\n`;
+                    htmlContent += `</div>\n`;
+                    htmlContent += `<!-- /wp:html -->\n\n`;
                 }
 
                 // Add introduction if exists
