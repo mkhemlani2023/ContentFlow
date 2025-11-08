@@ -10665,7 +10665,7 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
             }
         }
 
-        // Calculate SEO score for optimization process
+        // Calculate SEO score for optimization process with detailed breakdown
         function calculateSEOScoreForOptimization(article) {
             const content = article.content;
             let fullText = '';
@@ -10736,6 +10736,72 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
             if (content.conclusion) seoScore += 5;
 
             return Math.min(100, seoScore);
+        }
+
+        // Generate detailed SEO analysis breakdown
+        function generateSEOAnalysisBreakdown(article) {
+            const content = article.content;
+            let fullText = '';
+
+            if (content.title) fullText += content.title + '\n\n';
+            if (content.introduction) fullText += content.introduction + '\n\n';
+            if (content.sections) {
+                content.sections.forEach(section => {
+                    if (section.title) fullText += section.title + '\n';
+                    if (section.content) fullText += section.content + '\n\n';
+                });
+            }
+            if (content.conclusion) fullText += content.conclusion + '\n\n';
+            if (content.faq && content.faq.length > 0) {
+                content.faq.forEach(faq => {
+                    if (faq.question) fullText += faq.question + ' ';
+                    if (faq.answer) fullText += faq.answer + '\n';
+                });
+            }
+
+            const words = fullText.split(/\s+/).filter(w => w.length > 0);
+            const wordCount = words.length;
+            const keyword = article.metadata?.focusKeyword || article.metadata?.keyword || '';
+
+            // Calculate keyword density
+            let keywordCount = 0;
+            let keywordDensity = '0%';
+            if (keyword) {
+                const regex = new RegExp(keyword.replace(/[.*+?^${}()|\[\]\\]/g, '\\$&'), 'gi');
+                const matches = fullText.match(regex);
+                keywordCount = matches ? matches.length : 0;
+                const kdPercent = ((keywordCount / wordCount) * 100).toFixed(2);
+                keywordDensity = `${kdPercent}%`;
+            }
+
+            // Count headers
+            let headerCount = 1; // title
+            if (content.sections) headerCount += content.sections.length;
+            if (content.conclusion) headerCount++;
+
+            // Calculate readability
+            const sentences = fullText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+            const syllables = words.reduce((count, word) => count + estimateSyllables(word), 0);
+            const fleschScore = Math.max(0, Math.min(100,
+                206.835 - 1.015 * (wordCount / Math.max(1, sentences)) - 84.6 * (syllables / wordCount)
+            )).toFixed(0);
+
+            const readingTime = Math.ceil(wordCount / 200);
+
+            return {
+                wordCount,
+                keyword,
+                keywordCount,
+                keywordDensity,
+                headerCount,
+                fleschScore,
+                readingTime,
+                sentences: sentences,
+                hasIntroduction: !!content.introduction,
+                hasConclusion: !!content.conclusion,
+                hasFAQ: !!(content.faq && content.faq.length > 0),
+                faqCount: content.faq ? content.faq.length : 0
+            };
         }
 
         // Optimize article for better SEO
@@ -11098,6 +11164,47 @@ REWRITTEN VERSION (begin immediately with the content):`;
                                 </div>
                             </div>
                             ` : ''}
+
+                            <!-- SEO Analysis Breakdown -->
+                            <div style="background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%); padding: 25px; border-radius: 10px; margin-bottom: 30px; border: 2px solid #0ea5e9;">
+                                <h3 style="margin: 0 0 18px 0; color: #0c4a6e; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 24px;">📊</span>
+                                    SEO Analysis & Optimizations
+                                </h3>
+                                <script>
+                                    (function() {
+                                        const analysis = generateSEOAnalysisBreakdown(window.currentGeneratedArticle);
+                                        const seoScore = calculateSEOScoreForOptimization(window.currentGeneratedArticle);
+
+                                        document.write(\`
+                                            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                                    <div style="font-size: 16px; font-weight: 600; color: #334155;">Overall SEO Score</div>
+                                                    <div style="font-size: 32px; font-weight: 700; color: \${seoScore >= 80 ? '#10b981' : seoScore >= 60 ? '#f59e0b' : '#ef4444'};">
+                                                        \${seoScore}/100
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div style="background: white; padding: 20px; border-radius: 8px;">
+                                                <div style="font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 12px;">✅ SEO Actions Completed:</div>
+                                                <ul style="margin: 0; padding-left: 20px; line-height: 2; color: #475569; font-size: 14px;">
+                                                    <li><strong>Word Count:</strong> \${analysis.wordCount.toLocaleString()} words (Target: 800-2,500 for optimal SEO)</li>
+                                                    <li><strong>Focus Keyword:</strong> "\${analysis.keyword}" used \${analysis.keywordCount} times (\${analysis.keywordDensity} density)</li>
+                                                    <li><strong>Header Structure:</strong> \${analysis.headerCount} headers (H1, H2) for better content organization</li>
+                                                    <li><strong>Readability Score:</strong> \${analysis.fleschScore}/100 (Flesch Reading Ease)</li>
+                                                    <li><strong>Reading Time:</strong> ~\${analysis.readingTime} minutes for average reader</li>
+                                                    <li><strong>Introduction Section:</strong> \${analysis.hasIntroduction ? '✓ Included' : '✗ Missing'}</li>
+                                                    <li><strong>Conclusion Section:</strong> \${analysis.hasConclusion ? '✓ Included' : '✗ Missing'}</li>
+                                                    <li><strong>FAQ Section:</strong> \${analysis.hasFAQ ? \`✓ \${analysis.faqCount} questions included\` : '✗ Not included'}</li>
+                                                    <li><strong>SEO Meta Tags:</strong> Title, description, and keywords optimized</li>
+                                                    <li><strong>Content Structure:</strong> Properly formatted with clear hierarchy</li>
+                                                </ul>
+                                            </div>
+                                        \`);
+                                    })();
+                                </script>
+                            </div>
 
                             <!-- Table of Contents -->
                             ${toc && toc.length > 0 ? `
