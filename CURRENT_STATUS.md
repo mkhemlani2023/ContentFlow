@@ -1,12 +1,59 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2025-10-21 (Latest Session - UX Improvements & Professional Redesign)
-**Current Session:** SEO Wizard Workflow + Corporate UI Redesign
+**Last Updated:** 2025-11-08 (Latest Session - Bug Fixes & WordPress Publishing)
+**Current Session:** View Article Button & Featured Image Fixes
 **Developer:** Mary + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2025-10-21 (Supabase Backend & Production Launch)
+## 🆕 LATEST SESSION - 2025-11-08 (Bug Fixes & WordPress Publishing)
+
+**BUG FIXES:** Fixed "View Article with Images" button and WordPress featured image publishing issues.
+
+**Recent Updates:**
+- ✅ FIXED: "View Article with Images" button not working immediately after adding images
+- ✅ ENHANCED: Added defensive checks and error handling for article display
+- ✅ IMPLEMENTED: Comprehensive console logging for article state tracking
+- ✅ FIXED: WordPress featured image upload flow - now detects correct image content type
+- ✅ ENHANCED: Image upload now properly handles JPEG, PNG, WebP formats
+- ✅ IMPLEMENTED: Alt text and caption setting for uploaded WordPress media
+- ✅ ADDED: Detailed logging for WordPress image upload process
+- ✅ IMPROVED: Validation logging for featured_media parameter
+
+**Git Commits (Latest Session - Bug Fixes):**
+- `099da84`: Fix WordPress featured image upload - detect correct image type and set alt text
+- `874a563`: Fix View Article with Images button - add debugging and error handling
+
+**Technical Improvements:**
+1. **View Article Button Fix**:
+   - Added validation for `window.currentGeneratedArticle` availability
+   - Improved error messages for missing article data
+   - Enhanced console logging to track article state and savedArticleId
+   - Fixed fallback logic when article is not saved to Supabase
+
+2. **WordPress Featured Image Fix**:
+   - Detect actual image content type from blob (was hardcoded to 'image/jpeg')
+   - Use correct Content-Type header for each image format
+   - Set alt text with separate POST request to `/wp-json/wp/v2/media/{id}`
+   - Log all uploaded image IDs for debugging
+   - Validate featured_media parameter before sending to backend
+
+**What Was Broken:**
+- ❌ "View Article with Images" button didn't work immediately after adding images
+- ❌ Featured images weren't appearing on published WordPress posts
+- ❌ Image uploads used hardcoded JPEG content type (failed for PNG/WebP)
+- ❌ Alt text wasn't being set on WordPress media library uploads
+
+**What's Fixed:**
+- ✅ View Article button now works immediately with proper error handling
+- ✅ Images upload with correct content type (JPEG/PNG/WebP detected)
+- ✅ Featured images are properly set on WordPress posts
+- ✅ Alt text and captions are set on all uploaded media
+- ✅ Comprehensive logging helps diagnose any remaining issues
+
+---
+
+## 🆕 PREVIOUS SESSION - 2025-10-21 (Supabase Backend & Production Launch)
 
 **MAJOR ARCHITECTURAL CHANGE:** Complete migration to Supabase backend with cloud authentication, database storage, and production-ready configuration.
 
