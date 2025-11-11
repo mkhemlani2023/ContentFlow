@@ -16694,22 +16694,9 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Step 2: Build HTML content from article using WordPress blocks
                 let htmlContent = '';
 
-                // Add featured image at the beginning of content
-                if (uploadedImages.length > 0) {
-                    const featuredImage = uploadedImages[0];
-                    console.log('🖼️ Adding featured image to content:', {
-                        id: featuredImage.id,
-                        url: featuredImage.url,
-                        alt: featuredImage.alt
-                    });
-
-                    // Use HTML block with inline styles to ensure visibility
-                    htmlContent += `<!-- wp:html -->\n`;
-                    htmlContent += `<div style="text-align: center; margin: 20px 0 30px 0; display: block !important; visibility: visible !important;">\n`;
-                    htmlContent += `<img src="${featuredImage.url}" alt="${featuredImage.alt}" class="wp-image-${featuredImage.id}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />\n`;
-                    htmlContent += `</div>\n`;
-                    htmlContent += `<!-- /wp:html -->\n\n`;
-                }
+                // Note: Featured image is set via featured_media field (line ~16838)
+                // WordPress themes automatically display it above the title
+                // No need to embed it in content to avoid duplication
 
                 // Add introduction if exists
                 if (article.content?.introduction) {
