@@ -15227,13 +15227,15 @@ Simplified Keywords:`;
                 window.selectedImages = {};
             }
 
-            // Store selection
+            // Store selection - mark title section images as featured
             window.selectedImages[sectionId] = {
                 url,
                 alt,
                 photographer,
                 photographerUrl,
-                source
+                source,
+                type: sectionId === 'title' ? 'featured' : 'supporting',
+                sectionId: sectionId
             };
 
             console.log('Image selected for section:', sectionId, 'Total selected:', Object.keys(window.selectedImages).length);
@@ -16610,8 +16612,16 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Reorder images to ensure featured image (type='featured' or first image) is first
                 let imagesToUpload = [];
                 if (article.images && article.images.length > 0) {
-                    // Find featured image (usually has type='featured' or is marked somehow)
-                    const featuredImg = article.images.find(img => img.type === 'featured' || img.sectionId === 'title');
+                    // Find featured image (usually has type='featured' or sectionId='title')
+                    let featuredImg = article.images.find(img => img.type === 'featured' || img.sectionId === 'title');
+
+                    // If no explicit featured image found, use the first image as featured
+                    if (!featuredImg && article.images.length > 0) {
+                        featuredImg = article.images[0];
+                        featuredImg.type = 'featured'; // Mark it as featured
+                        console.log('📸 No explicit featured image found, using first image as featured');
+                    }
+
                     const otherImages = article.images.filter(img => img !== featuredImg);
 
                     // Featured image first, then others
@@ -16620,6 +16630,8 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     console.log('📸 Image order:', {
                         total: imagesToUpload.length,
                         featured: featuredImg ? 'Found at original index ' + article.images.indexOf(featuredImg) : 'Not found',
+                        featuredType: featuredImg?.type,
+                        featuredSectionId: featuredImg?.sectionId,
                         reordered: !!featuredImg
                     });
                 }
@@ -16672,43 +16684,53 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                             if (uploadResponse.ok) {
                                 const uploadedMedia = await uploadResponse.json();
-                                const mediaId = uploadedMedia.id;
 
-                                console.log(`✅ Image ${i + 1} uploaded successfully:`, {
-                                    id: mediaId,
-                                    url: uploadedMedia.source_url,
-                                    title: uploadedMedia.title?.rendered
-                                });
+                                // Validate that we got a valid media ID
+                                if (uploadedMedia.id && uploadedMedia.id > 0) {
+                                    const mediaId = uploadedMedia.id;
 
-                                // Set alt text for the uploaded image
-                                const altText = img.alt || article.content.title;
-                                try {
-                                    const updateAltResponse = await fetch(`${selectedBlog.url}/wp-json/wp/v2/media/${mediaId}`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Authorization': 'Basic ' + btoa(`${username}:${password}`),
-                                            'Content-Type': 'application/json'
-                                        },
-                                        body: JSON.stringify({
-                                            alt_text: altText,
-                                            caption: altText
-                                        })
+                                    console.log(`✅ Image ${i + 1} uploaded successfully:`, {
+                                        id: mediaId,
+                                        url: uploadedMedia.source_url,
+                                        title: uploadedMedia.title?.rendered,
+                                        type: img.type,
+                                        sectionId: img.sectionId
                                     });
 
-                                    if (updateAltResponse.ok) {
-                                        console.log(`✅ Alt text set for image ${i + 1}:`, altText);
-                                    } else {
-                                        console.warn(`⚠️ Failed to set alt text for image ${i + 1}`);
-                                    }
-                                } catch (altError) {
-                                    console.warn(`⚠️ Error setting alt text for image ${i + 1}:`, altError);
-                                }
+                                    // Set alt text for the uploaded image
+                                    const altText = img.alt || article.content.title;
+                                    try {
+                                        const updateAltResponse = await fetch(`${selectedBlog.url}/wp-json/wp/v2/media/${mediaId}`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Authorization': 'Basic ' + btoa(`${username}:${password}`),
+                                                'Content-Type': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                                alt_text: altText,
+                                                caption: altText
+                                            })
+                                        });
 
-                                uploadedImages.push({
-                                    id: mediaId,
-                                    url: uploadedMedia.source_url,
-                                    alt: altText
-                                });
+                                        if (updateAltResponse.ok) {
+                                            console.log(`✅ Alt text set for image ${i + 1}:`, altText);
+                                        } else {
+                                            console.warn(`⚠️ Failed to set alt text for image ${i + 1}`);
+                                        }
+                                    } catch (altError) {
+                                        console.warn(`⚠️ Error setting alt text for image ${i + 1}:`, altError);
+                                    }
+
+                                    uploadedImages.push({
+                                        id: mediaId,
+                                        url: uploadedMedia.source_url,
+                                        alt: altText,
+                                        type: img.type, // Preserve type (featured/supporting)
+                                        sectionId: img.sectionId
+                                    });
+                                } else {
+                                    console.error(`❌ Invalid media ID received for image ${i + 1}:`, uploadedMedia);
+                                }
                             } else {
                                 const errorText = await uploadResponse.text();
                                 console.error(`❌ Image upload failed for ${i + 1}:`, {
@@ -16737,22 +16759,9 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Step 2: Build HTML content from article using WordPress blocks
                 let htmlContent = '';
 
-                // Add featured image at the beginning of content
-                if (uploadedImages.length > 0) {
-                    const featuredImage = uploadedImages[0];
-                    console.log('🖼️ Adding featured image to content:', {
-                        id: featuredImage.id,
-                        url: featuredImage.url,
-                        alt: featuredImage.alt
-                    });
-
-                    // Use HTML block with inline styles to ensure visibility
-                    htmlContent += `<!-- wp:html -->\n`;
-                    htmlContent += `<div style="text-align: center; margin: 20px 0 30px 0; display: block !important; visibility: visible !important;">\n`;
-                    htmlContent += `<img src="${featuredImage.url}" alt="${featuredImage.alt}" class="wp-image-${featuredImage.id}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />\n`;
-                    htmlContent += `</div>\n`;
-                    htmlContent += `<!-- /wp:html -->\n\n`;
-                }
+                // Note: Featured image is set via featured_media field (line ~16838)
+                // WordPress themes automatically display it above the title
+                // No need to embed it in content to avoid duplication
 
                 // Add introduction if exists
                 if (article.content?.introduction) {
@@ -16877,6 +16886,23 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     publishType: publishType
                 });
 
+                // Find the featured image from uploaded images
+                let featuredMediaId = null;
+                if (uploadedImages.length > 0) {
+                    // Look for image marked as featured
+                    const featuredImage = uploadedImages.find(img => img.type === 'featured' || img.sectionId === 'title');
+                    // Use featured image if found, otherwise use first image
+                    featuredMediaId = (featuredImage || uploadedImages[0]).id;
+
+                    console.log('🖼️ Featured media selection:', {
+                        totalUploaded: uploadedImages.length,
+                        featuredImageFound: !!featuredImage,
+                        featuredMediaId: featuredMediaId,
+                        featuredImageType: featuredImage?.type,
+                        featuredImageSection: featuredImage?.sectionId
+                    });
+                }
+
                 // Log publishing data for debugging
                 const publishData = {
                     url: selectedBlog.url,
@@ -16886,7 +16912,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         title: article.content.title,
                         content: htmlContent,
                         excerpt: article.content.introduction?.substring(0, 150) + '...' || '',
-                        featured_media: uploadedImages.length > 0 ? uploadedImages[0].id : null,
+                        featured_media: featuredMediaId,
                         categories: selectedCategoryId ? [parseInt(selectedCategoryId)] : []
                     },
                     publishType: publishType
