@@ -15227,13 +15227,15 @@ Simplified Keywords:`;
                 window.selectedImages = {};
             }
 
-            // Store selection
+            // Store selection - mark title section images as featured
             window.selectedImages[sectionId] = {
                 url,
                 alt,
                 photographer,
                 photographerUrl,
-                source
+                source,
+                type: sectionId === 'title' ? 'featured' : 'supporting',
+                sectionId: sectionId
             };
 
             console.log('Image selected for section:', sectionId, 'Total selected:', Object.keys(window.selectedImages).length);
@@ -16587,8 +16589,16 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Reorder images to ensure featured image (type='featured' or first image) is first
                 let imagesToUpload = [];
                 if (article.images && article.images.length > 0) {
-                    // Find featured image (usually has type='featured' or is marked somehow)
-                    const featuredImg = article.images.find(img => img.type === 'featured' || img.sectionId === 'title');
+                    // Find featured image (usually has type='featured' or sectionId='title')
+                    let featuredImg = article.images.find(img => img.type === 'featured' || img.sectionId === 'title');
+
+                    // If no explicit featured image found, use the first image as featured
+                    if (!featuredImg && article.images.length > 0) {
+                        featuredImg = article.images[0];
+                        featuredImg.type = 'featured'; // Mark it as featured
+                        console.log('📸 No explicit featured image found, using first image as featured');
+                    }
+
                     const otherImages = article.images.filter(img => img !== featuredImg);
 
                     // Featured image first, then others
@@ -16597,6 +16607,8 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     console.log('📸 Image order:', {
                         total: imagesToUpload.length,
                         featured: featuredImg ? 'Found at original index ' + article.images.indexOf(featuredImg) : 'Not found',
+                        featuredType: featuredImg?.type,
+                        featuredSectionId: featuredImg?.sectionId,
                         reordered: !!featuredImg
                     });
                 }
@@ -16640,12 +16652,24 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                             if (uploadResponse.ok) {
                                 const uploadedMedia = await uploadResponse.json();
-                                uploadedImages.push({
-                                    id: uploadedMedia.id,
-                                    url: uploadedMedia.source_url,
-                                    alt: img.alt || article.content.title
-                                });
-                                console.log(`✅ Image ${i + 1} uploaded successfully:`, uploadedMedia.id);
+
+                                // Validate that we got a valid media ID
+                                if (uploadedMedia.id && uploadedMedia.id > 0) {
+                                    uploadedImages.push({
+                                        id: uploadedMedia.id,
+                                        url: uploadedMedia.source_url,
+                                        alt: img.alt || article.content.title,
+                                        type: img.type, // Preserve type (featured/supporting)
+                                        sectionId: img.sectionId
+                                    });
+                                    console.log(`✅ Image ${i + 1} uploaded successfully:`, {
+                                        id: uploadedMedia.id,
+                                        type: img.type,
+                                        sectionId: img.sectionId
+                                    });
+                                } else {
+                                    console.error(`❌ Invalid media ID received for image ${i + 1}:`, uploadedMedia);
+                                }
                             } else {
                                 const errorText = await uploadResponse.text();
                                 console.warn(`⚠️ Image upload failed for ${i + 1}:`, uploadResponse.status, errorText);
@@ -16810,6 +16834,23 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     publishType: publishType
                 });
 
+                // Find the featured image from uploaded images
+                let featuredMediaId = null;
+                if (uploadedImages.length > 0) {
+                    // Look for image marked as featured
+                    const featuredImage = uploadedImages.find(img => img.type === 'featured' || img.sectionId === 'title');
+                    // Use featured image if found, otherwise use first image
+                    featuredMediaId = (featuredImage || uploadedImages[0]).id;
+
+                    console.log('🖼️ Featured media selection:', {
+                        totalUploaded: uploadedImages.length,
+                        featuredImageFound: !!featuredImage,
+                        featuredMediaId: featuredMediaId,
+                        featuredImageType: featuredImage?.type,
+                        featuredImageSection: featuredImage?.sectionId
+                    });
+                }
+
                 // Log publishing data for debugging
                 const publishData = {
                     url: selectedBlog.url,
@@ -16819,7 +16860,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         title: article.content.title,
                         content: htmlContent,
                         excerpt: article.content.introduction?.substring(0, 150) + '...' || '',
-                        featured_media: uploadedImages.length > 0 ? uploadedImages[0].id : null,
+                        featured_media: featuredMediaId,
                         categories: selectedCategoryId ? [parseInt(selectedCategoryId)] : []
                     },
                     publishType: publishType
