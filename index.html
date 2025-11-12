@@ -14418,6 +14418,15 @@ AI DETECTION SCORE (number only):`;
 
             closeEditMode();
             alert('✅ Article changes saved successfully!');
+
+            // Re-display the article with the updated content
+            if (editedArticle.savedArticleId) {
+                viewSavedArticle(editedArticle.savedArticleId);
+            } else if (editedArticle.images && editedArticle.images.length > 0) {
+                displayGeneratedArticleWithImages(editedArticle, editedArticle.modelTier || 'Standard', 0);
+            } else {
+                displayGeneratedArticle(editedArticle, editedArticle.modelTier || 'Standard', 0);
+            }
         }
 
         function publishEditedArticle() {
@@ -15393,11 +15402,12 @@ Main Noun(s):`;
                 }
             }
 
-            // Update the article - preserve sectionId for each image
+            // Update the article - preserve sectionId and mark featured image
             article.content = content;
             article.images = Object.entries(window.selectedImages).map(([sectionId, imageData]) => ({
                 ...imageData,
-                sectionId: sectionId
+                sectionId: sectionId,
+                type: sectionId === 'title' ? 'featured' : 'supporting' // Mark title image as featured
             }));
             window.currentGeneratedArticle = article;
 
@@ -15420,7 +15430,8 @@ Main Noun(s):`;
                         tableOfContents: article.tableOfContents || [],
                         images: Object.entries(window.selectedImages).map(([sectionId, imageData]) => ({
                             ...imageData,
-                            sectionId: sectionId
+                            sectionId: sectionId,
+                            type: sectionId === 'title' ? 'featured' : 'supporting'
                         })),
                         modelTier: article.modelTier,
                         modelConfig: article.modelConfig
