@@ -7774,9 +7774,16 @@
                         content: articleContent,
                         metadata: articleMetadata,
                         tableOfContents: articleTOC,
+                        images: article.images || [], // ✅ Include images from database
                         modelTier: article.model_tier,
                         savedArticleId: articleId
                     };
+
+                    console.log('📸 Article loaded for publishing:', {
+                        hasImages: !!article.images,
+                        imageCount: article.images?.length || 0,
+                        images: article.images
+                    });
 
                     // Close the saved articles library
                     hideSavedArticlesLibrary();
