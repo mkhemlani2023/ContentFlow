@@ -16813,6 +16813,15 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             htmlContent += `<h2 id="${anchorId}">${section.title}</h2>\n`;
                             htmlContent += `<!-- /wp:heading -->\n\n`;
                         }
+
+                        // Insert image AFTER title but BEFORE content
+                        if (uploadedImages.length > index + 1) {
+                            const sectionImage = uploadedImages[index + 1];
+                            htmlContent += `<!-- wp:image {"id":${sectionImage.id},"align":"center","sizeSlug":"large"} -->\n`;
+                            htmlContent += `<figure class="wp-block-image aligncenter size-large"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/></figure>\n`;
+                            htmlContent += `<!-- /wp:image -->\n\n`;
+                        }
+
                         if (section.content) {
                             // Split content by double newlines for proper paragraph formatting
                             const paragraphs = section.content.split(/\n\n+/).filter(p => p.trim());
@@ -16821,14 +16830,6 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                                 htmlContent += `<p style="text-align: left;">${paragraph.trim()}</p>\n`;
                                 htmlContent += `<!-- /wp:paragraph -->\n\n`;
                             });
-                        }
-
-                        // Insert images between sections
-                        if (uploadedImages.length > index + 1) {
-                            const sectionImage = uploadedImages[index + 1];
-                            htmlContent += `<!-- wp:image {"id":${sectionImage.id},"align":"center","sizeSlug":"large"} -->\n`;
-                            htmlContent += `<figure class="wp-block-image aligncenter size-large"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/></figure>\n`;
-                            htmlContent += `<!-- /wp:image -->\n\n`;
                         }
                     });
                 }
