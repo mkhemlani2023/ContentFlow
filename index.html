@@ -14939,25 +14939,25 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
         // Simplify keywords using AI for better image search results
         async function simplifyKeywordForImages(keyword, article) {
             try {
-                const prompt = `Simplify this section header into 1-2 focused keywords for image search.
+                const prompt = `Extract the main noun(s) from this section header for image search.
 
 Section Header: "${keyword}"
-Article Topic: "${article.metadata?.keyword || article.content?.title || ''}"
 
 Requirements:
-- Return ONLY 1-2 simple, concrete keywords
-- Choose visual, photographable concepts
-- Remove abstract or complex terms
-- Make it searchable on stock photo sites
-- No explanations, just the keywords
+- Extract ONLY the main concrete noun(s) - no verbs, adjectives, or articles
+- Return 1-2 words maximum
+- Choose photographable, visual concepts
+- No quotes, no explanations, just the noun(s)
 
 Examples:
-"The Benefits of Regular Exercise" → "fitness"
-"How to Start Your Morning Routine" → "morning coffee"
-"Understanding Cloud Computing Infrastructure" → "data center"
-"Tips for Better Sleep Quality" → "sleeping"
+"The Benefits of Regular Exercise" → "exercise"
+"How to Start Your Morning Routine" → "morning"
+"Understanding Cloud Computing Infrastructure" → "computers"
+"Tips for Better Sleep Quality" → "sleep"
+"Building a Strong Online Presence" → "social media"
+"Managing Your Personal Finances" → "money"
 
-Simplified Keywords:`;
+Main Noun(s):`;
 
                 const response = await fetch('/api/openrouter-generate', {
                     method: 'POST',
@@ -14965,25 +14965,37 @@ Simplified Keywords:`;
                     body: JSON.stringify({
                         model: 'openai/gpt-4o-mini',
                         prompt: prompt,
-                        temperature: 0.3,
-                        max_tokens: 20,
+                        temperature: 0.2,
+                        max_tokens: 15,
                         stream: false
                     })
                 });
 
                 if (!response.ok) {
-                    console.warn('AI keyword simplification failed, using original');
-                    return keyword;
+                    console.warn('⚠️ AI keyword simplification failed, extracting first noun manually');
+                    // Fallback: extract first significant word (skip articles/prepositions)
+                    const words = keyword.toLowerCase().split(/\s+/);
+                    const skipWords = ['the', 'a', 'an', 'how', 'why', 'what', 'when', 'where', 'to', 'of', 'for', 'in', 'on', 'at', 'by', 'with'];
+                    const mainWord = words.find(w => !skipWords.includes(w) && w.length > 2) || words[0];
+                    return mainWord;
                 }
 
                 const result = await response.json();
-                const simplified = result.content?.trim() || keyword;
+                let simplified = result.content?.trim() || keyword;
 
-                console.log(`Simplified "${keyword}" → "${simplified}"`);
+                // Clean up response - remove quotes, extra words
+                simplified = simplified.replace(/['"]/g, '').split(/\s+/).slice(0, 2).join(' ');
+
+                console.log(`✅ Simplified "${keyword}" → "${simplified}"`);
                 return simplified;
             } catch (error) {
-                console.error('Error simplifying keyword:', error);
-                return keyword; // Fallback to original
+                console.error('❌ Error simplifying keyword:', error);
+                // Fallback: extract first significant word
+                const words = keyword.toLowerCase().split(/\s+/);
+                const skipWords = ['the', 'a', 'an', 'how', 'why', 'what', 'when', 'where', 'to', 'of', 'for', 'in', 'on', 'at', 'by', 'with'];
+                const mainWord = words.find(w => !skipWords.includes(w) && w.length > 2) || words[0];
+                console.log(`⚠️ Fallback: "${keyword}" → "${mainWord}"`);
+                return mainWord;
             }
         }
 
