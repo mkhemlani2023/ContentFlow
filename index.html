@@ -15084,12 +15084,12 @@ Simplified Keywords:`;
 
                                 <div style="margin-bottom: 15px;">
                                     <div style="display: flex; gap: 10px; margin-bottom: 5px;">
-                                        <input type="text" id="search-${section.id}" placeholder="Edit search term for better results" value="${section.keyword}" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                                        <input type="text" id="search-${section.id}" placeholder="Edit search term for better results" value="${section.keyword}" onkeypress="if(event.key==='Enter') searchImagesForSection('${section.id}')" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
                                         <button onclick="searchImagesForSection('${section.id}')" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
                                             🔍 Search
                                         </button>
                                     </div>
-                                    <div style="font-size: 11px; color: #64748b;">💡 Tip: Customize the search term above for more relevant images</div>
+                                    <div style="font-size: 11px; color: #64748b;">💡 Tip: Customize the search term above for more relevant images or press Enter to search</div>
                                 </div>
 
                                 <div id="images-${section.id}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; min-height: 50px;">
@@ -15454,6 +15454,8 @@ Simplified Keywords:`;
             const closeBtn = document.getElementById('closeSuccessBtn');
 
             viewBtn.addEventListener('click', function() {
+                // Close all existing modals before showing article
+                document.querySelectorAll('.modal, [style*="z-index: 25000"], [style*="z-index: 50000"]').forEach(modal => modal.remove());
                 successModal.remove();
                 if (article.savedArticleId) {
                     viewSavedArticle(article.savedArticleId);
@@ -16686,7 +16688,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                 statusDiv.innerHTML = `
                     <div>✅ Connected to ${selectedBlog.name}</div>
-                    <div>✅ ${uploadedImages.length > 0 ? `Uploaded ${uploadedImages.length} image(s)` : 'No images to upload'}</div>
+                    <div>✅ ${imagesToUpload.length > 0 ? `Uploaded ${uploadedImages.length}/${imagesToUpload.length} image(s)` : 'No images in article'}</div>
                     <div>📝 Building article content...</div>
                 `;
                 progressBar.style.width = '40%';
@@ -16807,7 +16809,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                 statusDiv.innerHTML = `
                     <div>✅ Connected to ${selectedBlog.name}</div>
-                    <div>✅ ${uploadedImages.length > 0 ? `Uploaded ${uploadedImages.length} image(s)` : 'No images to upload'}</div>
+                    <div>✅ ${imagesToUpload.length > 0 ? `Uploaded ${uploadedImages.length}/${imagesToUpload.length} image(s)` : 'No images in article'}</div>
                     <div>📤 Publishing article to WordPress...</div>
                 `;
                 progressBar.style.width = '60%';
