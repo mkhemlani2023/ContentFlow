@@ -15332,6 +15332,26 @@ Simplified Keywords:`;
 
             const content = article.content;
 
+            // Check if images are already inserted (prevent duplicates)
+            if (article.images && article.images.length > 0) {
+                const confirmReplace = confirm('⚠️ This article already has images.\n\nDo you want to replace them with new images?');
+                if (!confirmReplace) {
+                    return;
+                }
+                // Clear existing images
+                if (content.featuredImage) delete content.featuredImage;
+                if (content.introduction) {
+                    content.introduction = content.introduction.replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '');
+                }
+                if (content.sections && Array.isArray(content.sections)) {
+                    content.sections.forEach(section => {
+                        if (section.content) {
+                            section.content = section.content.replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '');
+                        }
+                    });
+                }
+            }
+
             // Insert images into content sections
             for (const [sectionId, imageData] of Object.entries(window.selectedImages)) {
                 const altInput = document.getElementById(`alt-${sectionId}`);
@@ -15342,7 +15362,7 @@ Simplified Keywords:`;
     <figcaption style="font-size: 12px; color: #64748b; margin-top: 8px; font-style: italic;">Photo by <a href="${imageData.photographerUrl}" target="_blank" style="color: #334155;">${imageData.photographer}</a> on ${imageData.source}</figcaption>
 </figure>`;
 
-                // Insert image based on section
+                // Insert image based on section - PREPEND so it appears BEFORE text
                 if (sectionId === 'title') {
                     // Featured image goes before introduction
                     if (!content.featuredImage) {
@@ -15350,12 +15370,13 @@ Simplified Keywords:`;
                     }
                 } else if (sectionId === 'introduction') {
                     if (content.introduction) {
-                        content.introduction = content.introduction + imageHTML;
+                        content.introduction = imageHTML + content.introduction; // Image BEFORE introduction text
                     }
                 } else if (sectionId.startsWith('section-')) {
                     const index = parseInt(sectionId.split('-')[1]);
                     if (content.sections && content.sections[index]) {
-                        content.sections[index].content = (content.sections[index].content || '') + imageHTML;
+                        // Prepend image so it appears AFTER title but BEFORE content
+                        content.sections[index].content = imageHTML + (content.sections[index].content || '');
                     }
                 }
             }
