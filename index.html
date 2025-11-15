@@ -10705,7 +10705,7 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                     console.log('✅ Final SEO Score:', finalSEOScore);
                     console.log('✅ Final AI Detection Score:', finalAIScore);
 
-                    updateStep(3, `SEO: ${finalSEOScore}/100, AI: ${finalAIScore}%`, 'success');
+                    updateStep(3, `SEO Score: ${finalSEOScore}/100`, 'success');
                     updateProgress(100);
                 } catch (qualityError) {
                     console.error('Quality check failed:', qualityError);
@@ -11414,7 +11414,6 @@ REWRITTEN VERSION (begin immediately with the content):`;
                             <div style="font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 12px;">✅ SEO Actions Completed:</div>
                             <ul style="margin: 0; padding-left: 20px; line-height: 2; color: #475569; font-size: 14px;">
                                 <li><strong>Word Count:</strong> ${analysis.wordCount.toLocaleString()} words (Target: 800-2,500 for optimal SEO)</li>
-                                <li><strong>Focus Keyword:</strong> "${analysis.keyword}" used ${analysis.keywordCount} times</li>
                                 <li><strong>Header Structure:</strong> ${analysis.headerCount} headers (H1, H2) for better content organization</li>
                                 <li><strong>Reading Time:</strong> ~${analysis.readingTime} minutes for average reader</li>
                                 <li><strong>Introduction Section:</strong> ${analysis.hasIntroduction ? '✓ Included' : '✗ Missing'}</li>
