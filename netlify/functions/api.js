@@ -1856,6 +1856,17 @@ CONTENT STRUCTURE REQUIREMENTS:
 - Include specific examples, case studies, statistics, and actionable insights
 - Use current ${currentYear} data and recent research when relevant
 
+RESEARCH CITATION REQUIREMENTS:
+- AVOID repetitive year mentions (e.g., "research in 2024", "study in 2025") as this can appear as keyword stuffing
+- When citing research or studies, ALWAYS provide comprehensive citations including:
+  * Author names (e.g., "Smith et al." or "Dr. Jane Smith")
+  * Study/paper name or title
+  * Publication venue (journal, conference, institution)
+  * Major findings or key conclusions
+- Example: Instead of "Research in 2024 shows...", write "A study by Dr. Smith and colleagues published in the Journal of Example Research found that..."
+- Use natural language integration: "According to recent findings by [Authors] in [Publication]..."
+- Vary your citation patterns to maintain readability while providing proper attribution
+
 STRUCTURE REQUIREMENTS:
 1. **Introduction** (200-300 words)
    - Hook with compelling statistic or question

@@ -5752,10 +5752,6 @@
                                     ).join('')}
                                 </div>
                             </div>
-                            <div>
-                                <strong style="color: #374151;">Readability:</strong>
-                                <span style="color: #64748b; font-size: 13px;">${article.seo.readabilityScore}</span>
-                            </div>
                         </div>
                     </div>
 
@@ -10530,9 +10526,44 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                         <div style="width: 100%; background: #E2E8F0; height: 8px; border-radius: 4px; overflow: hidden;">
                             <div id="wizardProgress" style="width: 0%; height: 100%; background: #334155; transition: width 0.5s ease;"></div>
                         </div>
+
+                        <div id="motivationalMessage" style="margin-top: 24px; padding: 16px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 8px; border-left: 3px solid #0ea5e9; text-align: center;">
+                            <div style="color: #0c4a6e; font-size: 13px; font-weight: 500; line-height: 1.5;">Creating something great for you...</div>
+                        </div>
                     </div>
                 </div>
             `;
+
+            // Add pulsing animation for wizard icon
+            const styleSheet = document.createElement('style');
+            styleSheet.textContent = `
+                @keyframes wizardPulse {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.1); opacity: 0.8; }
+                }
+                #wizardIcon {
+                    animation: wizardPulse 2s ease-in-out infinite;
+                }
+                #wizardProgress {
+                    position: relative;
+                    overflow: hidden;
+                }
+                #wizardProgress::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                    animation: shimmer 2s infinite;
+                }
+                @keyframes shimmer {
+                    0% { left: -100%; }
+                    100% { left: 100%; }
+                }
+            `;
+            document.head.appendChild(styleSheet);
             document.body.appendChild(modal);
 
             const updateStep = (stepNum, status, colorType) => {
@@ -10566,6 +10597,42 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                 const bar = document.getElementById('wizardProgress');
                 if (bar) bar.style.width = percent + '%';
             };
+
+            // Motivational messages to rotate through
+            const motivationalMessages = [
+                'Creating something great for you...',
+                'Optimizing every detail for maximum impact...',
+                'Your content is worth the wait...',
+                'Crafting SEO-optimized excellence...',
+                'Building content that ranks and engages...',
+                'Quality takes time, and you deserve the best...',
+                'Polishing your article to perfection...',
+                'Almost there, preparing something amazing...',
+                'Fine-tuning for search engine success...',
+                'Your masterpiece is taking shape...'
+            ];
+
+            let messageIndex = 0;
+            const updateMotivationalMessage = () => {
+                const messageDiv = document.querySelector('#motivationalMessage div');
+                if (messageDiv) {
+                    messageDiv.style.opacity = '0';
+                    setTimeout(() => {
+                        messageIndex = (messageIndex + 1) % motivationalMessages.length;
+                        messageDiv.textContent = motivationalMessages[messageIndex];
+                        messageDiv.style.opacity = '1';
+                    }, 300);
+                }
+            };
+
+            // Rotate messages every 3 seconds
+            const messageInterval = setInterval(updateMotivationalMessage, 3000);
+
+            // Add transition to message
+            const messageDiv = document.querySelector('#motivationalMessage div');
+            if (messageDiv) {
+                messageDiv.style.transition = 'opacity 0.3s ease-in-out';
+            }
 
             try {
                 // Step 1: Analyze SEO Score
@@ -10653,7 +10720,8 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
 
                 await new Promise(resolve => setTimeout(resolve, 1500));
 
-                // Close modal
+                // Clear message interval and close modal
+                clearInterval(messageInterval);
                 document.getElementById('seoWizardOptimization').remove();
 
                 // Display the optimized and humanized article
@@ -10661,6 +10729,7 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
 
             } catch (error) {
                 console.error('SEO Wizard optimization error:', error);
+                clearInterval(messageInterval);
                 document.getElementById('seoWizardOptimization')?.remove();
 
                 // Don't set finalScores - this will hide the quality check section
@@ -11345,9 +11414,8 @@ REWRITTEN VERSION (begin immediately with the content):`;
                             <div style="font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 12px;">✅ SEO Actions Completed:</div>
                             <ul style="margin: 0; padding-left: 20px; line-height: 2; color: #475569; font-size: 14px;">
                                 <li><strong>Word Count:</strong> ${analysis.wordCount.toLocaleString()} words (Target: 800-2,500 for optimal SEO)</li>
-                                <li><strong>Focus Keyword:</strong> "${analysis.keyword}" used ${analysis.keywordCount} times (${analysis.keywordDensity} density)</li>
+                                <li><strong>Focus Keyword:</strong> "${analysis.keyword}" used ${analysis.keywordCount} times</li>
                                 <li><strong>Header Structure:</strong> ${analysis.headerCount} headers (H1, H2) for better content organization</li>
-                                <li><strong>Readability Score:</strong> ${analysis.fleschScore}/100 (Flesch Reading Ease)</li>
                                 <li><strong>Reading Time:</strong> ~${analysis.readingTime} minutes for average reader</li>
                                 <li><strong>Introduction Section:</strong> ${analysis.hasIntroduction ? '✓ Included' : '✗ Missing'}</li>
                                 <li><strong>Conclusion Section:</strong> ${analysis.hasConclusion ? '✓ Included' : '✗ Missing'}</li>
@@ -12517,11 +12585,6 @@ ${item.answer}
                                     </div>
                                 </div>
                             ` : ''}
-
-                            <div>
-                                <strong style="color: #374151; font-size: 13px;">Readability:</strong>
-                                <span style="color: #64748b; font-size: 12px;">${article.seo.readabilityScore || 'Good'}</span>
-                            </div>
                         </div>
                     ` : ''}
                 </div>
@@ -15513,7 +15576,7 @@ Main Noun(s):`;
             const publishBtn = document.getElementById('publishArticleBtn');
             const closeBtn = document.getElementById('closeSuccessBtn');
 
-            viewBtn.addEventListener('click', function() {
+            const viewArticleWithImages = function() {
                 console.log('🔍 View Article clicked');
                 console.log('Article savedArticleId:', article.savedArticleId);
                 console.log('window.currentGeneratedArticle:', window.currentGeneratedArticle);
@@ -15534,7 +15597,12 @@ Main Noun(s):`;
                     }
                     displayGeneratedArticleWithImages(articleToDisplay, article.modelTier || 'Standard', 0);
                 }
-            });
+            };
+
+            viewBtn.addEventListener('click', viewArticleWithImages);
+
+            // Automatically show article after 1.5 seconds
+            setTimeout(viewArticleWithImages, 1500);
 
             publishBtn.addEventListener('click', function() {
                 successModal.remove();
