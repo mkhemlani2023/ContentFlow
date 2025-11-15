@@ -657,15 +657,18 @@ Create article ideas that:
 ✅ Consider ${currentYear} trends and current relevance
 ✅ Provide genuine value to the target audience
 
-❌ AVOID THESE MISTAKES:
+❌ STRICTLY FORBIDDEN:
 - Generic templates that could work for any keyword
 - Forcing unrelated topics together (like "fermented foods for business")
 - Outdated year references (always use ${currentYear})
 - Commercial angles where they don't naturally fit
 - Overly broad or vague titles
 - Topics that don't match user search intent
-- Generic title patterns like "Complete Guide", "Comprehensive Guide", "Ultimate Guide", "Everything You Need to Know"
+- Generic title patterns: "Complete Guide", "Comprehensive Guide", "Ultimate Guide", "Everything You Need to Know", "Key Insights", "Deep Dive", "Essential Guide"
+- Templated phrases: "in today's world", "it's no secret that", "needless to say"
+- Vague language: "experts say", "research shows", "studies indicate" (without specific attribution)
 - Word counts over 2500 (keep articles focused and realistic)
+- One-size-fits-all approaches that lack topic-specific context
 
 ARTICLE TYPES TO CONSIDER (where naturally relevant):
 - How-to guides and tutorials
@@ -681,11 +684,16 @@ ARTICLE TYPES TO CONSIDER (where naturally relevant):
 
 OUTPUT REQUIREMENTS:
 For each article idea, provide:
-- title: Compelling, specific, naturally includes "${keyword}", addresses real user need (avoid "Complete Guide", "Comprehensive Guide", "Ultimate Guide" patterns)
+- title: Specific, contextual title that naturally includes "${keyword}" and addresses real user need
+  * Must be unique and topic-specific (not a template)
+  * Must directly address searcher intent
+  * Must avoid all forbidden generic patterns
+  * Examples of GOOD titles: "How [Topic] Affects [Specific Outcome]", "Understanding [Specific Mechanism] in [Context]", "[Number] Ways [Topic] Impacts [Specific Area]"
+  * Examples of BAD titles: "Complete Guide to X", "Key Insights on X", "Everything About X"
 - audience: Specific demographic who would genuinely search for this
 - wordCount: Realistic length based on topic complexity (1000-2000 words max, shorter is better)
 - intent: Actual search intent (informational, commercial, navigational, transactional)
-- description: Clear explanation of what problem this solves or value it provides
+- description: Clear explanation of what problem this solves or value it provides (be specific, not generic)
 
 Format as clean JSON array: [{title, audience, wordCount, intent, description}, ...]
 
@@ -1856,16 +1864,17 @@ CONTENT STRUCTURE REQUIREMENTS:
 - Include specific examples, case studies, statistics, and actionable insights
 - Use current ${currentYear} data and recent research when relevant
 
-RESEARCH CITATION REQUIREMENTS:
-- AVOID repetitive year mentions (e.g., "research in 2024", "study in 2025") as this can appear as keyword stuffing
-- When citing research or studies, ALWAYS provide comprehensive citations including:
-  * Author names (e.g., "Smith et al." or "Dr. Jane Smith")
-  * Study/paper name or title
-  * Publication venue (journal, conference, institution)
-  * Major findings or key conclusions
-- Example: Instead of "Research in 2024 shows...", write "A study by Dr. Smith and colleagues published in the Journal of Example Research found that..."
-- Use natural language integration: "According to recent findings by [Authors] in [Publication]..."
-- Vary your citation patterns to maintain readability while providing proper attribution
+RESEARCH CITATION REQUIREMENTS - MANDATORY:
+- NEVER use vague phrases like "research in 2024", "studies in 2025", "recent research shows", "experts say" without proper attribution
+- If you mention ANY research, study, statistic, or expert opinion, you MUST include:
+  * Specific author names or research team (e.g., "Dr. Jane Smith and colleagues from Harvard Medical School")
+  * Complete study title or clear description
+  * Publication venue with specifics (e.g., "published in Nature Medicine, March 2024")
+  * Key findings with numbers/data when possible
+- Example of CORRECT citation: "A 2024 longitudinal study by Dr. Sarah Chen's team at Stanford, published in the Journal of Neuroscience, tracked 500 patients over 5 years and found that targeted therapy improved outcomes by 34%."
+- Example of INCORRECT citation: "Research in 2024 shows this is effective." or "Recent studies suggest..."
+- If you cannot provide specific citations, write based on established knowledge WITHOUT claiming recent research
+- Use varied citation integration: "According to [specific authors]...", "[Author name]'s research demonstrated...", "Findings from [specific study] revealed..."
 
 STRUCTURE REQUIREMENTS:
 1. **Introduction** (200-300 words)
@@ -1907,12 +1916,28 @@ FORMATTING REQUIREMENTS:
 
 CONTENT QUALITY STANDARDS:
 - Write original, valuable content that serves the reader
-- Include specific, actionable advice
-- Use real-world examples and case studies
+- Include specific, actionable advice with concrete examples
+- Use real-world examples and case studies (with specific details, not generic scenarios)
 - Include current industry insights and trends
 - Maintain consistent expert tone throughout
 - Focus on solving the reader's problems
 - Each section should provide substantial value
+
+FORBIDDEN PHRASES - DO NOT USE:
+- Generic titles: "Key Insights", "A Comprehensive Guide", "Everything You Need to Know", "The Ultimate Guide", "Complete Guide"
+- Vague claims: "recent research", "studies show", "experts say", "many believe"
+- Templated language: "in today's world", "it's no secret that", "needless to say", "at the end of the day"
+- Marketing fluff: "game-changer", "revolutionary", "cutting-edge" (unless specifically justified with evidence)
+- Generic transitions: "first and foremost", "last but not least", "moving forward"
+
+WRITING STYLE REQUIREMENTS:
+- Be specific and contextual to the exact topic (avoid one-size-fits-all statements)
+- Write with nuance - acknowledge complexity and different perspectives where appropriate
+- Maintain objectivity - present information fairly without hyperbole
+- Use clear, accessible language - avoid jargon unless necessary and defined
+- Write naturally as a human expert would, not as an AI following a template
+- Vary sentence structure and length for readability
+- Use active voice predominantly (passive voice <10% of sentences)
 
 Write the complete, detailed article now:`;
 
@@ -2157,6 +2182,10 @@ REQUIREMENTS:
 Create a comprehensive article outline that includes:
 
 1. **Article Title**: Create a compelling, SEO-friendly title that naturally includes "${keyword}"
+   FORBIDDEN title patterns: "Complete Guide", "Comprehensive Guide", "Ultimate Guide", "Everything You Need to Know", "Key Insights", "Deep Dive"
+   REQUIRED: Title must be specific, contextual, and directly address the searcher's intent
+   GOOD examples: "How Mitochondrial Dysfunction Drives Parkinson's Progression", "Understanding Mitochondrial Damage in Parkinson's Disease"
+   BAD examples: "Mitochondrial Dysfunction: A Complete Guide", "Key Insights on Mitochondrial Dysfunction"
 
 2. **Introduction Section** (150-250 words):
    - Hook with relevant statistic or compelling question
