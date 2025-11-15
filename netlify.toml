@@ -11,6 +11,17 @@
   # Ignore TypeScript build command
   ignore = "exit 0"
 
+# Functions configuration
+[functions]
+  # Increase function timeout to maximum allowed (26 seconds for Pro, 10 seconds for Free tier)
+  # Note: Free tier is limited to 10 seconds and cannot be increased
+  node_bundler = "esbuild"
+
+[[functions]]
+  # Configure the API function with extended timeout
+  path = "netlify/functions/api.js"
+  node_bundler = "esbuild"
+
 [build.environment]
   # Node.js version
   NODE_VERSION = "18"
