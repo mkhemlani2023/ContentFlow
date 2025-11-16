@@ -3967,6 +3967,18 @@
 
                 const outline = data.outline;
 
+                // DEBUG: Log what we sent vs what we received
+                console.log('🔍 OUTLINE DEBUG:');
+                console.log('   Article Idea Title (sent to API):', keyword);
+                console.log('   Outline Title (received from API):', outline.title);
+                console.log('   Match:', outline.title === keyword ? '✅ CORRECT' : '❌ WRONG - TITLE WAS CHANGED');
+
+                // FORCE OVERRIDE: Client-side backup in case API override failed
+                if (outline.title !== keyword) {
+                    console.warn(`⚠️ CLIENT-SIDE OVERRIDE: Forcing title from "${outline.title}" to "${keyword}"`);
+                    outline.title = keyword;
+                }
+
                 // Display the generated outline after a short delay
                 setTimeout(() => {
                     outlineContainer.innerHTML = `
