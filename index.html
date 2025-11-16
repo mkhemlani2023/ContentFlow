@@ -9324,10 +9324,11 @@
             }
 
             // Step 1: Generate outline first
-            await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier);
+            // keyword IS the article title from the article idea
+            await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, keyword);
         }
 
-        async function generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier) {
+        async function generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, articleTitle = null) {
             // Show comprehensive progress modal
             const progress = showProgressModal({
                 title: '📝 Step 1: Creating Article Outline',
@@ -9369,22 +9370,23 @@
                 // Calculate number of sections based on word count
                 const numSections = Math.max(3, Math.min(6, Math.floor(wordCount / 300)));
 
-                const outlinePrompt = `Return ONLY valid JSON. NO markdown. KEEP IT CONCISE. ${numSections} sections for "${keyword}". ${wordCount}w. ${intent}. ${new Date().getFullYear()}.
+                const outlinePrompt = `Return ONLY valid JSON. NO markdown. KEEP IT CONCISE. ${numSections} sections for ${articleTitle ? `the article titled "${articleTitle}"` : `"${keyword}"`}. ${wordCount}w. ${intent}. ${new Date().getFullYear()}.
 
-CRITICAL TITLE RULES:
-- NEVER use: "Comprehensive Guide", "Complete Guide", "Ultimate Guide", "In-Depth Look", "Everything You Need to Know"
-- ALWAYS use engaging, specific titles like:
-  * "X Interesting Facts About ${keyword}"
-  * "Valuable Information on ${keyword}"
-  * "Key Insights Into ${keyword}"
-  * "What You Should Know About ${keyword}"
-  * "Essential ${keyword} Tips for ${new Date().getFullYear()}"
-  * "Understanding ${keyword}: Expert Perspective"
+${articleTitle ? `
+CRITICAL: The article title is "${articleTitle}". Use this EXACT title in the "title" field.
+DO NOT create a new title. DO NOT add prefixes like "Key Insights". Just use: "${articleTitle}"
+` : `
+TITLE CREATION RULES:
+- FORBIDDEN: "Key Insights Into/About/On", "Comprehensive Guide", "Complete Guide", "Ultimate Guide", "Understanding", "Everything You Need"
+- REQUIRED: Create specific, contextual title directly related to the topic
+- Good examples: "How X Affects Y", "The Role of X in Y", "X Ways to Improve Y"
+- Bad examples: "Key Insights Into X", "Understanding X", "A Complete Guide to X"
+`}
 - Keep keyPoints SHORT (4-6 words each)
 - Keep purpose to ONE sentence
-- Use specific, direct titles that match article length
+- Use specific section titles (not generic "Main Discussion")
 
-{"metadata":{"seoTitle":"","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"wordCount":${wordCount}},"outline":{"title":"","introduction":{"purpose":"","keyPoints":["","",""],"wordCount":180},"sections":[{"title":"","purpose":"","keyPoints":["","",""],"wordCount":400}],"conclusion":{"purpose":"","keyPoints":["",""],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
+{"metadata":{"seoTitle":"${articleTitle || ''}","metaDescription":"","focusKeyword":"${keyword}","relatedKeywords":[],"wordCount":${wordCount}},"outline":{"title":"${articleTitle || ''}","introduction":{"purpose":"","keyPoints":["","",""],"wordCount":180},"sections":[{"title":"","purpose":"","keyPoints":["","",""],"wordCount":400}],"conclusion":{"purpose":"","keyPoints":["",""],"wordCount":120},"faq":[{"question":"","purpose":""}]}}`;
 
                 updateProgressStage(2, '✓ Instructions ready');
                 progress.updateMessage('🚀 Connecting to AI model...');
@@ -9996,7 +9998,8 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
 
             // Generate outline first (user can edit), then article
             // The outline workflow will eventually call generateArticleFromOutline
-            await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier);
+            // keyword IS the article title from the article idea
+            await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, keyword);
         }
 
         async function generateArticleContentWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier) {
