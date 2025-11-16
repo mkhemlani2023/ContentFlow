@@ -3942,8 +3942,30 @@
             targetCard.appendChild(outlineContainer);
 
             try {
-                // Generate outline structure directly
-                const outline = generateOutlineStructure(keyword, wordCount, difficulty, intent);
+                // Call the real API to generate outline (with title preservation)
+                const response = await fetch('/api/content-outline', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        keyword: focusKeyword,
+                        title: keyword, // This is the article title from the idea
+                        wordCount,
+                        difficulty
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate outline from API');
+                }
+
+                const data = await response.json();
+                if (!data.success || !data.outline) {
+                    throw new Error('Invalid outline response from API');
+                }
+
+                const outline = data.outline;
 
                 // Display the generated outline after a short delay
                 setTimeout(() => {
