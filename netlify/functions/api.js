@@ -2153,6 +2153,9 @@ Write the complete, detailed article now:`;
       try {
         const currentYear = new Date().getFullYear();
 
+        // Log title parameter for debugging
+        console.log('Content outline request - Keyword:', keyword, 'Title:', title || 'NOT PROVIDED');
+
         // Build context from competitor data if available
         let competitorContext = '';
         if (competitorData && competitorData.analysis) {
@@ -2169,24 +2172,59 @@ COMPETITOR ANALYSIS INSIGHTS:
 Use this data to create an outline that can outperform these competitors.`;
         }
 
-        const prompt = `You are an expert SEO content strategist. Create a detailed, SEO-optimized content outline for an article${title ? ` with the title: "${title}"` : ` about "${keyword}"`}.
+        ${title ? `
+CRITICAL INSTRUCTION - READ THIS FIRST:
+The article title is: "${title}"
+YOU MUST USE THIS EXACT TITLE WITHOUT ANY CHANGES.
+DO NOT add "Key Insights about", "Key Insights into", or ANY prefix.
+DO NOT reword, modify, or change this title in ANY way.
+The title field in your JSON response MUST be exactly: "${title}"
+
+` : ''}const prompt = `You are an expert SEO content strategist. Create a detailed, SEO-optimized content outline for an article about "${keyword}".
 
 TARGET SPECIFICATIONS:
 - Word Count Target: ${wordCount} words
 - Content Difficulty: ${difficulty}
 - Current Year: ${currentYear}
 - Search Intent: ${determineIntent(keyword)}
-${title ? `- Article Title: "${title}" (USE THIS EXACT TITLE - DO NOT CHANGE IT)` : ''}
 ${competitorContext}
 
+${title ? `
+⚠️ MANDATORY TITLE REQUIREMENT ⚠️
+ARTICLE TITLE (DO NOT CHANGE): "${title}"
+
+This title was carefully crafted and MUST be used exactly as provided.
+FORBIDDEN: "Key Insights about...", "Key Insights into...", "Understanding...", or ANY modification
+REQUIRED: Use "${title}" exactly as written in the title field of your JSON response
+` : ''}
 REQUIREMENTS:
 Create a comprehensive article outline that includes:
 
-1. **Article Title**: ${title ? `USE EXACTLY: "${title}" (DO NOT modify, reword, or add prefixes like "Key Insights into..." - use this exact title as provided)` : `Create a compelling, SEO-friendly title that naturally includes "${keyword}"`}
-   ${!title ? `FORBIDDEN title patterns: "Complete Guide", "Comprehensive Guide", "Ultimate Guide", "Everything You Need to Know", "Key Insights", "Deep Dive", "Expert Perspective"
-   REQUIRED: Title must be specific, contextual, and directly address the searcher's intent
-   GOOD examples: "How Mitochondrial Dysfunction Drives Parkinson's Progression", "Understanding Mitochondrial Damage in Parkinson's Disease"
-   BAD examples: "Mitochondrial Dysfunction: A Complete Guide", "Key Insights on Mitochondrial Dysfunction"` : ''}
+1. **Article Title**: ${title ? `"${title}" (copy this EXACTLY into your JSON response - no changes allowed)` : `Create a compelling, SEO-friendly title that naturally includes "${keyword}"`}
+   ${!title ? `STRICTLY FORBIDDEN title patterns - DO NOT USE ANY OF THESE:
+   ❌ "Key Insights about [anything]"
+   ❌ "Key Insights into [anything]"
+   ❌ "Key Insights on [anything]"
+   ❌ "Understanding [anything]"
+   ❌ "Complete Guide to [anything]"
+   ❌ "Comprehensive Guide to [anything]"
+   ❌ "Ultimate Guide to [anything]"
+   ❌ "Everything You Need to Know About [anything]"
+   ❌ "Deep Dive into [anything]"
+   ❌ "Expert Perspective on [anything]"
+   ❌ "An Expert's View of [anything]"
+   ❌ ANY title that starts with a generic phrase applicable to any topic
+
+   REQUIRED: Title must be SPECIFIC to this exact topic, not a template
+   GOOD examples (specific, contextual):
+   ✓ "How Mitochondrial Dysfunction Drives Parkinson's Disease Progression"
+   ✓ "Mitochondrial Damage in Parkinson's: Mechanisms and Therapeutic Targets"
+   ✓ "The Role of Mitochondrial Dysfunction in Neurodegenerative Disease"
+
+   BAD examples (templated, generic):
+   ✗ "Key Insights about Mitochondrial Dysfunction"
+   ✗ "Understanding Mitochondrial Dysfunction in Parkinson's"
+   ✗ "A Complete Guide to Mitochondrial Dysfunction"` : ''}
 
 2. **Introduction Section** (150-250 words):
    - Hook with relevant statistic or compelling question
