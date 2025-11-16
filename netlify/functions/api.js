@@ -2348,6 +2348,13 @@ Generate a professional, actionable outline that a content writer can follow to 
           }
         }
 
+        // FORCE OVERRIDE: If title was provided, use it EXACTLY - don't trust AI
+        if (title && outline.title) {
+          const originalAITitle = outline.title;
+          outline.title = title;
+          console.log(`⚠️ TITLE OVERRIDE - AI tried to use: "${originalAITitle}" | Forcing to use: "${title}"`);
+        }
+
         return {
           statusCode: 200,
           headers,
