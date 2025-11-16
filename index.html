@@ -6584,6 +6584,7 @@
                 progress.updateMessage('Calling AI to generate comprehensive outline...');
 
                 // Call real content outline API
+                // Note: keyword is actually the article title when coming from article ideas
                 const response = await fetch('/api/content-outline', {
                     method: 'POST',
                     headers: {
@@ -6591,6 +6592,7 @@
                     },
                     body: JSON.stringify({
                         keyword,
+                        title: keyword, // Preserve the article idea title
                         wordCount,
                         difficulty,
                         competitorData

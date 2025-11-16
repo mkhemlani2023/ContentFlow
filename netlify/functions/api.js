@@ -2125,7 +2125,7 @@ Write the complete, detailed article now:`;
 
     // Content Outline Generation endpoint
     if (path === '/api/content-outline' && method === 'POST') {
-      const { keyword, wordCount = 2000, difficulty = 'medium', competitorData } = body;
+      const { keyword, title, wordCount = 2000, difficulty = 'medium', competitorData } = body;
 
       if (!keyword) {
         return {
@@ -2169,23 +2169,24 @@ COMPETITOR ANALYSIS INSIGHTS:
 Use this data to create an outline that can outperform these competitors.`;
         }
 
-        const prompt = `You are an expert SEO content strategist. Create a detailed, SEO-optimized content outline for an article about "${keyword}".
+        const prompt = `You are an expert SEO content strategist. Create a detailed, SEO-optimized content outline for an article${title ? ` with the title: "${title}"` : ` about "${keyword}"`}.
 
 TARGET SPECIFICATIONS:
 - Word Count Target: ${wordCount} words
 - Content Difficulty: ${difficulty}
 - Current Year: ${currentYear}
 - Search Intent: ${determineIntent(keyword)}
+${title ? `- Article Title: "${title}" (USE THIS EXACT TITLE - DO NOT CHANGE IT)` : ''}
 ${competitorContext}
 
 REQUIREMENTS:
 Create a comprehensive article outline that includes:
 
-1. **Article Title**: Create a compelling, SEO-friendly title that naturally includes "${keyword}"
-   FORBIDDEN title patterns: "Complete Guide", "Comprehensive Guide", "Ultimate Guide", "Everything You Need to Know", "Key Insights", "Deep Dive"
+1. **Article Title**: ${title ? `USE EXACTLY: "${title}" (DO NOT modify, reword, or add prefixes like "Key Insights into..." - use this exact title as provided)` : `Create a compelling, SEO-friendly title that naturally includes "${keyword}"`}
+   ${!title ? `FORBIDDEN title patterns: "Complete Guide", "Comprehensive Guide", "Ultimate Guide", "Everything You Need to Know", "Key Insights", "Deep Dive", "Expert Perspective"
    REQUIRED: Title must be specific, contextual, and directly address the searcher's intent
    GOOD examples: "How Mitochondrial Dysfunction Drives Parkinson's Progression", "Understanding Mitochondrial Damage in Parkinson's Disease"
-   BAD examples: "Mitochondrial Dysfunction: A Complete Guide", "Key Insights on Mitochondrial Dysfunction"
+   BAD examples: "Mitochondrial Dysfunction: A Complete Guide", "Key Insights on Mitochondrial Dysfunction"` : ''}
 
 2. **Introduction Section** (150-250 words):
    - Hook with relevant statistic or compelling question
