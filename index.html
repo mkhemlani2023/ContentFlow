@@ -10658,11 +10658,12 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                         article.content = optimizedArticle.content;
 
                         const newScore = calculateSEOScoreForOptimization(article);
-                        updateStep(2, `Improved to ${newScore}/100`, 'success');
+                        updateStep(2, `Optimized to ${newScore}/100`, 'success');
                         updateProgress(50);
                         await new Promise(resolve => setTimeout(resolve, 800));
                     } else {
-                        updateStep(2, 'Score already excellent', 'success');
+                        const currentScore = calculateSEOScoreForOptimization(article);
+                        updateStep(2, `Score: ${currentScore}/100`, 'success');
                         updateProgress(50);
                         await new Promise(resolve => setTimeout(resolve, 500));
                     }
@@ -15112,14 +15113,6 @@ Main Noun(s):`;
             // Build sections array for image selection and simplify keywords with AI
             const sections = [];
 
-            // Add title section
-            sections.push({
-                id: 'title',
-                title: 'Featured Image (Article Title)',
-                originalKeyword: content.title || article.metadata?.keyword || 'featured image',
-                keyword: await simplifyKeywordForImages(content.title || article.metadata?.keyword || 'featured image', article)
-            });
-
             // Add introduction if exists
             if (content.introduction) {
                 sections.push({
@@ -15174,12 +15167,12 @@ Main Noun(s):`;
 
                                 <div style="margin-bottom: 15px;">
                                     <div style="display: flex; gap: 10px; margin-bottom: 5px;">
-                                        <input type="text" id="search-${section.id}" placeholder="Edit search term for better results" value="${section.keyword}" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                                        <input type="text" id="search-${section.id}" placeholder="Input text describing the image you would like to include in this section" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
                                         <button onclick="searchImagesForSection('${section.id}')" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
                                             🔍 Search
                                         </button>
                                     </div>
-                                    <div style="font-size: 11px; color: #64748b;">💡 Tip: Customize the search term above for more relevant images</div>
+                                    <div style="font-size: 11px; color: #64748b;">💡 Tip: Describe the image you want to find for this section</div>
                                 </div>
 
                                 <div id="images-${section.id}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; min-height: 50px;">
@@ -15553,7 +15546,7 @@ Main Noun(s):`;
 
                         <div style="display: flex; flex-direction: column; gap: 10px;">
                             <button id="viewArticleBtn" style="width: 100%; background: #334155; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
-                                👁️ View Article with Images
+                                💾 Save, Close and View Article with Images
                             </button>
 
                             <button id="publishArticleBtn" style="width: 100%; background: #10b981; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
@@ -15599,9 +15592,6 @@ Main Noun(s):`;
             };
 
             viewBtn.addEventListener('click', viewArticleWithImages);
-
-            // Automatically show article after 1.5 seconds
-            setTimeout(viewArticleWithImages, 1500);
 
             publishBtn.addEventListener('click', function() {
                 successModal.remove();

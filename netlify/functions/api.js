@@ -2195,17 +2195,19 @@ Create a comprehensive article outline that includes:
 
 3. **Main Content Sections** (${Math.floor(wordCount * 0.65)}-${Math.floor(wordCount * 0.75)} words total):
    Create 4-6 main sections with:
-   - Section heading (H2)
+   - Section heading (H2) - MUST be specific and contextual to the topic
+     FORBIDDEN section heading patterns: "Key Insights", "Expert Perspective", "Research Findings", "Current Research", "Latest Studies", "What the Research Says", "Expert Opinion", "Key Takeaways", "Important Considerations"
+     REQUIRED: Use descriptive, topic-specific headings like "How [Specific Process] Affects [Outcome]", "The Role of [Component] in [Context]", "[Specific Mechanism] Explained"
    - Brief description of what this section will cover
    - Key points to address (3-5 bullet points per section)
    - Suggested word count for each section
-   - Subsections (H3) where appropriate
+   - Subsections (H3) where appropriate - must also avoid templated patterns
 
 4. **Supporting Elements**:
    - FAQ section (200-300 words) with 5-7 relevant questions
-   - Key takeaways/summary box
-   - Expert tips or pro tips section
-   - Common mistakes to avoid (if relevant)
+   - Summary box (avoid calling it "Key Takeaways" - use topic-specific title)
+   - Tips section (avoid generic "Expert Tips" - be specific like "Managing [Specific Issue]" or "Optimizing [Specific Process]")
+   - Common mistakes to avoid (if relevant - use specific context, not generic "mistakes")
 
 5. **Conclusion Section** (100-150 words):
    - Summary of key points
