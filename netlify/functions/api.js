@@ -2172,7 +2172,7 @@ COMPETITOR ANALYSIS INSIGHTS:
 Use this data to create an outline that can outperform these competitors.`;
         }
 
-        ${title ? `
+        const prompt = `${title ? `
 CRITICAL INSTRUCTION - READ THIS FIRST:
 The article title is: "${title}"
 YOU MUST USE THIS EXACT TITLE WITHOUT ANY CHANGES.
@@ -2180,7 +2180,7 @@ DO NOT add "Key Insights about", "Key Insights into", or ANY prefix.
 DO NOT reword, modify, or change this title in ANY way.
 The title field in your JSON response MUST be exactly: "${title}"
 
-` : ''}const prompt = `You are an expert SEO content strategist. Create a detailed, SEO-optimized content outline for an article about "${keyword}".
+` : ''}You are an expert SEO content strategist. Create a detailed, SEO-optimized content outline for an article about "${keyword}".
 
 TARGET SPECIFICATIONS:
 - Word Count Target: ${wordCount} words
