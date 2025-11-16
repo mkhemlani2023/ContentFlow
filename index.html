@@ -5696,7 +5696,8 @@
                 if (imageType === 'none') {
                     // Generate article without images using the correct workflow
                     console.log('Calling generateArticleWithOutline (no images)...');
-                    await generateArticleWithOutline(keyword, wordCount, difficulty, intent, modelTier, window.selectedCredits);
+                    // Pass TITLE as first param (article title), not keyword
+                    await generateArticleWithOutline(title, wordCount, difficulty, intent, modelTier, window.selectedCredits);
                 } else {
                     // Generate article with images
                     console.log('Calling generateArticleWithImages...');
@@ -5708,7 +5709,8 @@
                     };
                     const imageTier = imageTierMap[imageType] || 'Featured Image';
 
-                    await generateArticleWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier, totalCredits);
+                    // Pass TITLE as first param (article title), not keyword
+                    await generateArticleWithImages(title, wordCount, difficulty, intent, modelTier, imageTier, totalCredits);
                 }
 
             } catch (error) {
