@@ -2260,8 +2260,8 @@ Create a comprehensive article outline that includes:
    - External authority sources to reference
 
 FORMAT YOUR RESPONSE AS JSON:
-{
-  "title": "Compelling article title with keyword",
+{${!title ? `
+  "title": "Compelling article title with keyword",` : ''}
   "metaDescription": "SEO-optimized meta description",
   "estimatedWordCount": ${wordCount},
   "readingTime": "X min",
@@ -2348,11 +2348,14 @@ Generate a professional, actionable outline that a content writer can follow to 
           }
         }
 
-        // FORCE OVERRIDE: If title was provided, use it EXACTLY - don't trust AI
-        if (title && outline.title) {
-          const originalAITitle = outline.title;
-          outline.title = title;
-          console.log(`⚠️ TITLE OVERRIDE - AI tried to use: "${originalAITitle}" | Forcing to use: "${title}"`);
+        // FORCE SET: If title was provided, inject it into the outline
+        if (title) {
+          if (outline.title && outline.title !== title) {
+            console.log(`⚠️ TITLE OVERRIDE - AI generated: "${outline.title}" | Using provided: "${title}"`);
+          }
+          outline.title = title; // Always use the provided title
+        } else if (!outline.title) {
+          throw new Error('No title provided and AI failed to generate one');
         }
 
         return {
