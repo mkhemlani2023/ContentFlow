@@ -16,6 +16,11 @@ const PEXELS_BASE_URL = 'https://api.pexels.com/v1';
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 const UNSPLASH_BASE_URL = 'https://api.unsplash.com';
 
+// DataForSEO credentials
+const DATAFORSEO_LOGIN = process.env.DATAFORSEO_LOGIN || 'info@getseowizard.com';
+const DATAFORSEO_PASSWORD = process.env.DATAFORSEO_PASSWORD || '380e0892107eaca7';
+const DATAFORSEO_BASE_URL = 'https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_suggestions/live';
+
 // Domain Authority and Backlink Estimation Functions
 const estimateDomainAuthority = (domain) => {
   // High authority domains (80-95 DA)
@@ -282,7 +287,176 @@ const callSerperAutocompleteAPI = async (query, location = 'us') => {
   }
 };
 
-// Process autocomplete suggestions into keyword data
+// DataForSEO API - Get real search volume, CPC, and competition data
+const callDataForSEOAPI = async (keywords, location = 2840) => {
+  try {
+    const startTime = Date.now();
+
+    // Create Basic Auth header
+    const authString = Buffer.from(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`).toString('base64');
+
+    const response = await fetch(DATAFORSEO_BASE_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${authString}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify([{
+        keywords: Array.isArray(keywords) ? keywords : [keywords],
+        location_code: location, // 2840 = USA
+        language_code: 'en',
+        include_seed_keyword: true,
+        include_serp_info: false
+      }])
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const responseTime = Date.now() - startTime;
+
+    console.log('✅ DataForSEO API response status:', data.status_message);
+    console.log('   Cost:', data.cost, '| Time:', data.time);
+
+    // CRITICAL: Correct response parsing path
+    if (data.tasks && data.tasks[0] && data.tasks[0].result && data.tasks[0].result.length > 0) {
+      const resultData = data.tasks[0].result[0];
+      if (resultData && resultData.items && resultData.items.length > 0) {
+        return {
+          data: resultData.items,
+          responseTime,
+          success: true,
+          cost: data.cost || 0
+        };
+      }
+    }
+
+    throw new Error('No items found in DataForSEO response');
+  } catch (error) {
+    console.error('❌ DataForSEO API error:', error.message);
+    throw new Error(`DataForSEO API error: ${error.message}`);
+  }
+};
+
+// Hybrid processing: Combine Serper Autocomplete + DataForSEO metrics
+const processHybridKeywords = async (autocompleteData, originalKeyword) => {
+  const keywords = [];
+  const seenKeywords = new Set();
+
+  // Collect all unique keywords from autocomplete
+  const keywordList = [originalKeyword];
+  seenKeywords.add(originalKeyword.toLowerCase());
+
+  if (autocompleteData.suggestions && Array.isArray(autocompleteData.suggestions)) {
+    autocompleteData.suggestions.forEach((suggestion) => {
+      const suggestionText = typeof suggestion === 'string' ? suggestion : suggestion.value;
+      if (suggestionText && !seenKeywords.has(suggestionText.toLowerCase())) {
+        keywordList.push(suggestionText);
+        seenKeywords.add(suggestionText.toLowerCase());
+      }
+    });
+  }
+
+  console.log(`🔍 Fetching metrics for ${keywordList.length} keywords from DataForSEO...`);
+
+  try {
+    // Get real metrics from DataForSEO for all keywords
+    const dataForSEOResult = await callDataForSEOAPI(keywordList);
+    const metricsMap = new Map();
+
+    // Create a map of keyword -> metrics
+    dataForSEOResult.data.forEach(item => {
+      const kw = item.keyword?.toLowerCase();
+      if (kw) {
+        metricsMap.set(kw, {
+          searchVolume: item.keyword_info?.search_volume || 0,
+          cpc: item.keyword_info?.cpc || 0,
+          competition: item.keyword_info?.competition || 0,
+          competitionLevel: item.keyword_info?.competition_level || 'UNKNOWN',
+          lowBid: item.keyword_info?.low_top_of_page_bid || 0,
+          highBid: item.keyword_info?.high_top_of_page_bid || 0
+        });
+      }
+    });
+
+    // Build final keyword list with real metrics
+    keywordList.forEach((keyword, index) => {
+      const metrics = metricsMap.get(keyword.toLowerCase());
+
+      if (metrics) {
+        keywords.push({
+          keyword: keyword,
+          searchVolume: metrics.searchVolume,
+          cpc: metrics.cpc > 0 ? `$${metrics.cpc.toFixed(2)}` : '$0.00',
+          difficulty: metrics.competitionLevel,
+          competition: metrics.competition,
+          intent: determineIntent(keyword),
+          opportunity: calculateOpportunityScore(metrics.searchVolume, metrics.competition),
+          source: index === 0 ? 'Original Query' : 'Google Autocomplete',
+          lowBid: metrics.lowBid,
+          highBid: metrics.highBid,
+          dataSource: 'Real data from DataForSEO'
+        });
+      } else {
+        // Fallback if DataForSEO didn't return data for this keyword
+        keywords.push({
+          keyword: keyword,
+          searchVolume: 0,
+          cpc: '$0.00',
+          difficulty: calculateKeywordDifficulty(keyword, index),
+          competition: 0,
+          intent: determineIntent(keyword),
+          opportunity: 0,
+          source: index === 0 ? 'Original Query' : 'Google Autocomplete',
+          dataSource: 'Estimated (no data available)'
+        });
+      }
+    });
+
+    console.log(`✅ Processed ${keywords.length} keywords with real DataForSEO metrics`);
+
+    return {
+      success: true,
+      keywords: keywords,
+      totalKeywords: keywords.length,
+      dataSource: 'Hybrid: Serper Autocomplete + DataForSEO Metrics',
+      cost: dataForSEOResult.cost,
+      analysis: {
+        autocompleteResults: autocompleteData.suggestions?.length || 0,
+        metricsEnriched: metricsMap.size
+      }
+    };
+  } catch (error) {
+    console.error('❌ DataForSEO enrichment failed:', error.message);
+    console.log('⚠️ Falling back to autocomplete-only data');
+
+    // Fallback to autocomplete-only if DataForSEO fails
+    keywordList.forEach((keyword, index) => {
+      keywords.push({
+        keyword: keyword,
+        difficulty: calculateKeywordDifficulty(keyword, index),
+        intent: determineIntent(keyword),
+        source: index === 0 ? 'Original Query' : 'Google Autocomplete',
+        dataSource: 'Google Autocomplete only (DataForSEO unavailable)'
+      });
+    });
+
+    return {
+      success: true,
+      keywords: keywords,
+      totalKeywords: keywords.length,
+      dataSource: 'Google Autocomplete only',
+      warning: 'DataForSEO metrics unavailable',
+      analysis: {
+        autocompleteResults: autocompleteData.suggestions?.length || 0
+      }
+    };
+  }
+};
+
+// Legacy function - kept for backward compatibility
 const processAutocompleteKeywords = (autocompleteData, responseTime, originalKeyword) => {
   const keywords = [];
   const seenKeywords = new Set();
@@ -1092,7 +1266,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Keywords endpoint - Using Google Autocomplete for real suggestions
+    // Keywords endpoint - Hybrid: Serper Autocomplete + DataForSEO Metrics
     if (path === '/api/keywords' && method === 'POST') {
       const { keyword, location = 'us', language = 'en', count = 10 } = body;
 
@@ -1108,11 +1282,17 @@ exports.handler = async (event, context) => {
       }
 
       try {
-        // Use Serper Autocomplete API for real Google suggestions
-        const result = await callSerperAutocompleteAPI(keyword, location);
-        const processedResult = processAutocompleteKeywords(result.data, result.responseTime, keyword);
+        // Step 1: Get real keyword suggestions from Google Autocomplete
+        console.log(`🔍 Step 1: Fetching autocomplete suggestions for "${keyword}"`);
+        const autocompleteResult = await callSerperAutocompleteAPI(keyword, location);
 
-        console.log(`✅ Returning ${processedResult.totalKeywords} keywords from Google Autocomplete`);
+        // Step 2: Enrich with real metrics from DataForSEO
+        console.log('📊 Step 2: Enriching with DataForSEO metrics...');
+        const processedResult = await processHybridKeywords(autocompleteResult.data, keyword);
+
+        console.log(`✅ Returning ${processedResult.totalKeywords} keywords with real metrics`);
+        console.log(`   Data source: ${processedResult.dataSource}`);
+        console.log(`   DataForSEO cost: $${processedResult.cost || 0}`);
 
         return {
           statusCode: 200,
@@ -1125,21 +1305,22 @@ exports.handler = async (event, context) => {
               language,
               requestedCount: count,
               actualCount: processedResult.totalKeywords,
-              dataSource: 'Google Autocomplete via Serper API',
-              note: 'Keywords are real Google autocomplete suggestions. Difficulty estimates are algorithmic.'
+              dataSource: processedResult.dataSource,
+              cost: processedResult.cost,
+              note: 'Keywords from Google Autocomplete enriched with real search volume, CPC, and competition data from DataForSEO.'
             },
             timestamp: new Date().toISOString()
           })
         };
       } catch (error) {
-        console.error('❌ Autocomplete API failed:', error.message);
+        console.error('❌ Hybrid keyword research failed:', error.message);
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({
-            error: 'Failed to fetch keyword suggestions',
+            error: 'Failed to fetch keyword data',
             message: error.message,
-            code: 'KEYWORD_AUTOCOMPLETE_FAILED'
+            code: 'KEYWORD_RESEARCH_FAILED'
           })
         };
       }

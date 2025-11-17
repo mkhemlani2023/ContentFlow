@@ -5,7 +5,14 @@
       "Bash(git push:*)",
       "Bash(code .)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)",
+      "Bash(git fetch:*)",
+      "WebFetch(domain:serper.dev)",
+      "WebFetch(domain:apitracker.io)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

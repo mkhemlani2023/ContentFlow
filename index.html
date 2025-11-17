@@ -3488,9 +3488,10 @@
 
             statusDiv.innerHTML = `
                 <div class="status success">
-                    <strong>✅ Google Autocomplete Results Ready</strong><br>
-                    Found ${data.totalKeywords} real keyword suggestions in ${Math.round(totalTime/100)/10} seconds<br>
-                    ${data.metadata?.note || 'Keywords are actual Google autocomplete suggestions based on real search behavior'}<br>
+                    <strong>✅ Keyword Research Complete</strong><br>
+                    Found ${data.totalKeywords} keywords with real search data in ${Math.round(totalTime/100)/10} seconds<br>
+                    ${data.metadata?.note || 'Keywords enriched with real metrics from DataForSEO'}<br>
+                    ${data.metadata?.cost ? `DataForSEO API cost: $${data.metadata.cost.toFixed(4)}` : ''}<br>
                     Click any keyword to discover content ideas
                 </div>
             `;
@@ -3525,6 +3526,11 @@
                         ? '<span style="background: #0284c7; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500;">Original</span>'
                         : '<span style="background: #475569; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500;">Google</span>';
 
+                    // Opportunity score badge (only if we have search volume data)
+                    const opportunityBadge = keyword.opportunity && keyword.searchVolume > 0
+                        ? `<span style="background: ${getOpportunityColor(keyword.opportunity)}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">${keyword.opportunity}% opportunity</span>`
+                        : '';
+
                     return `
                         <div class="keyword-list-item" ${clickHandler}
                              style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; margin: 8px 0; background: ${backgroundColor}; border: 1px solid #e2e8f0; border-radius: 8px; cursor: ${cursor}; transition: all 0.2s ease; opacity: ${opacity};"
@@ -3532,10 +3538,12 @@
                             <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
                                 <div style="font-weight: 600; color: #1e293b;">${keyword.keyword}</div>
                                 ${sourceBadge}
+                                ${opportunityBadge}
                             </div>
                             <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; color: #64748b;">
-                                <span style="width: 100px; text-align: left; color: ${getDifficultyColor(keyword.difficulty)}">⚡ ${keyword.difficulty}</span>
-                                <span style="width: 120px; text-align: left; font-size: 11px; color: #94a3b8;">${keyword.intent || 'Informational'}</span>
+                                <span style="width: 120px; text-align: left;">🔍 ${keyword.searchVolume ? keyword.searchVolume.toLocaleString() : 'N/A'}</span>
+                                <span style="width: 80px; text-align: left; color: ${getDifficultyColor(keyword.difficulty)}">⚡ ${keyword.difficulty}</span>
+                                <span style="width: 70px; text-align: left;">💰 ${keyword.cpc || 'N/A'}</span>
                                 <span style="margin-right: 20px;">${statusIndicator}</span>
                             </div>
                         </div>
@@ -3546,8 +3554,8 @@
                     <div class="card">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                             <div>
-                                <h2 style="margin: 0 0 5px 0;">📈 Keyword Suggestions from Google</h2>
-                                <p style="margin: 0; font-size: 13px; color: #64748b;">Real autocomplete data from Google Search</p>
+                                <h2 style="margin: 0 0 5px 0;">📈 Keyword Research Results</h2>
+                                <p style="margin: 0; font-size: 13px; color: #64748b;">Real Google autocomplete suggestions with actual search metrics from DataForSEO</p>
                             </div>
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <button onclick="saveKeywordResearch()" style="background: #475569; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
@@ -3557,15 +3565,16 @@
                             </div>
                         </div>
                         <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0284c7;">
-                            <strong style="color: #1e293b;">💡 Next Step:</strong> <span style="color: #334155;">Click on any keyword below to generate content ideas and articles. Keywords are from Google Autocomplete - what people actually search for!</span>
+                            <strong style="color: #1e293b;">💡 Next Step:</strong> <span style="color: #334155;">Click on any keyword below to generate content ideas and articles. All metrics are real data from Google and DataForSEO!</span>
                         </div>
 
                         <!-- Column Headers -->
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; margin-bottom: 8px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; color: #374151; font-size: 14px;">
-                            <div style="flex: 1;">Keyword & Source</div>
+                            <div style="flex: 1;">Keyword & Opportunity</div>
                             <div style="display: flex; align-items: center; gap: 16px;">
-                                <span style="width: 100px; text-align: left;">Est. Difficulty</span>
-                                <span style="width: 120px; text-align: left;">Intent</span>
+                                <span style="width: 120px; text-align: left;">Search Volume</span>
+                                <span style="width: 80px; text-align: left;">Difficulty</span>
+                                <span style="width: 70px; text-align: left;">CPC</span>
                                 <span style="margin-right: 20px;">Action</span>
                             </div>
                         </div>
@@ -3623,6 +3632,9 @@
                 return '#f44336';
             };
 
+            // Check if we have real data or estimates
+            const hasRealData = keywordData.searchVolume && keywordData.searchVolume > 0;
+
             expandedDetails.innerHTML = `
                 <div class="keyword-card" style="transform: none;">
                     <div class="keyword-card-header">
@@ -3630,30 +3642,62 @@
                             <h3 class="keyword-title">${keywordData.keyword}</h3>
                             <span class="keyword-intent ${keywordData.intent.toLowerCase()}">${keywordData.intent}</span>
                         </div>
-                        <div style="background: #0284c7; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;">
-                            ${keywordData.source}
+                        <div style="background: ${hasRealData ? '#10b981' : '#0284c7'}; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;">
+                            ${hasRealData ? '✓ Real Data' : keywordData.source}
                         </div>
                     </div>
 
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                            <div>
-                                <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Estimated Difficulty</div>
-                                <div style="font-size: 16px; font-weight: 600; color: ${getDifficultyColor(keywordData.difficulty)};">
-                                    <span class="difficulty-dot" style="background-color: ${getDifficultyColor(keywordData.difficulty)}; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px;"></span>
-                                    ${keywordData.difficulty}
+                    ${hasRealData ? `
+                        <!-- Real Metrics Grid -->
+                        <div class="keyword-metrics-grid" style="margin-bottom: 20px;">
+                            <div class="metric-item">
+                                <div class="metric-icon">🔍</div>
+                                <div class="metric-content">
+                                    <div class="metric-label">Search Volume</div>
+                                    <div class="metric-value">${keywordData.searchVolume.toLocaleString()}</div>
+                                    <div style="font-size: 10px; color: #10b981; margin-top: 2px;">Real DataForSEO data</div>
                                 </div>
-                                <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Based on keyword patterns</div>
                             </div>
-                            <div>
-                                <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Search Intent</div>
-                                <div style="font-size: 16px; font-weight: 600; color: #1e293b;">
-                                    ${keywordData.intent || 'Informational'}
+                            <div class="metric-item">
+                                <div class="metric-icon">⚡</div>
+                                <div class="metric-content">
+                                    <div class="metric-label">Difficulty</div>
+                                    <div class="metric-value" style="color: ${getDifficultyColor(keywordData.difficulty)}">
+                                        <span class="difficulty-dot" style="background-color: ${getDifficultyColor(keywordData.difficulty)}"></span>
+                                        ${keywordData.difficulty}
+                                    </div>
+                                    <div style="font-size: 10px; color: #10b981; margin-top: 2px;">Real competition data</div>
                                 </div>
-                                <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">What users are looking for</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-icon">💰</div>
+                                <div class="metric-content">
+                                    <div class="metric-label">Cost Per Click</div>
+                                    <div class="metric-value">${keywordData.cpc}</div>
+                                    <div style="font-size: 10px; color: #10b981; margin-top: 2px;">Real Google Ads data</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+
+                        <!-- Opportunity Score Bar -->
+                        <div class="opportunity-score">
+                            <div class="score-label">Opportunity Score</div>
+                            <div class="score-bar-container">
+                                <div class="score-bar" style="width: ${keywordData.opportunity}%; background-color: ${getOpportunityColor(keywordData.opportunity)}"></div>
+                            </div>
+                            <div class="score-text">${keywordData.opportunity}/100</div>
+                        </div>
+                    ` : `
+                        <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="font-size: 18px;">⚠️</span>
+                                <span style="font-weight: 600; color: #92400e;">No Volume Data Available</span>
+                            </div>
+                            <div style="font-size: 13px; color: #92400e;">
+                                DataForSEO did not return search volume data for this keyword. It may be a very low-volume or newly trending term.
+                            </div>
+                        </div>
+                    `}
 
                     <!-- Action Buttons -->
                     <div class="keyword-actions">
