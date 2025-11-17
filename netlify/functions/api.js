@@ -288,7 +288,7 @@ const callSerperAutocompleteAPI = async (query, location = 'us') => {
 };
 
 // DataForSEO API - Get real search volume, CPC, and competition data
-const callDataForSEOAPI = async (keywords, location = 2840) => {
+const callDataForSEOAPI = async (keyword, location = 2840, limit = 25) => {
   try {
     const startTime = Date.now();
 
@@ -302,9 +302,10 @@ const callDataForSEOAPI = async (keywords, location = 2840) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify([{
-        keywords: Array.isArray(keywords) ? keywords : [keywords],
+        keyword: keyword, // SINGULAR - one seed keyword
         location_code: location, // 2840 = USA
         language_code: 'en',
+        limit: limit,
         include_seed_keyword: true,
         include_serp_info: false
       }])
@@ -345,32 +346,31 @@ const processHybridKeywords = async (autocompleteData, originalKeyword) => {
   const keywords = [];
   const seenKeywords = new Set();
 
-  // Collect all unique keywords from autocomplete
-  const keywordList = [originalKeyword];
-  seenKeywords.add(originalKeyword.toLowerCase());
-
+  // Collect Google autocomplete suggestions
+  const googleSuggestions = [originalKeyword];
   if (autocompleteData.suggestions && Array.isArray(autocompleteData.suggestions)) {
     autocompleteData.suggestions.forEach((suggestion) => {
       const suggestionText = typeof suggestion === 'string' ? suggestion : suggestion.value;
       if (suggestionText && !seenKeywords.has(suggestionText.toLowerCase())) {
-        keywordList.push(suggestionText);
+        googleSuggestions.push(suggestionText);
         seenKeywords.add(suggestionText.toLowerCase());
       }
     });
   }
 
-  console.log(`🔍 Fetching metrics for ${keywordList.length} keywords from DataForSEO...`);
+  console.log(`🔍 Fetching keyword suggestions with metrics from DataForSEO for: "${originalKeyword}"`);
 
   try {
-    // Get real metrics from DataForSEO for all keywords
-    const dataForSEOResult = await callDataForSEOAPI(keywordList);
+    // Get keyword suggestions with real metrics from DataForSEO
+    const dataForSEOResult = await callDataForSEOAPI(originalKeyword);
     const metricsMap = new Map();
 
-    // Create a map of keyword -> metrics
+    // Create a map of DataForSEO keyword -> metrics
     dataForSEOResult.data.forEach(item => {
       const kw = item.keyword?.toLowerCase();
       if (kw) {
         metricsMap.set(kw, {
+          keyword: item.keyword, // Keep original casing
           searchVolume: item.keyword_info?.search_volume || 0,
           cpc: item.keyword_info?.cpc || 0,
           competition: item.keyword_info?.competition || 0,
@@ -381,41 +381,47 @@ const processHybridKeywords = async (autocompleteData, originalKeyword) => {
       }
     });
 
-    // Build final keyword list with real metrics
-    keywordList.forEach((keyword, index) => {
-      const metrics = metricsMap.get(keyword.toLowerCase());
+    console.log(`✅ DataForSEO returned ${metricsMap.size} keywords with metrics`);
 
-      if (metrics) {
+    // Priority 1: Add DataForSEO keywords with real metrics
+    metricsMap.forEach((metrics, kwLower) => {
+      const isOriginal = kwLower === originalKeyword.toLowerCase();
+      keywords.push({
+        keyword: metrics.keyword,
+        searchVolume: metrics.searchVolume,
+        cpc: metrics.cpc > 0 ? `$${metrics.cpc.toFixed(2)}` : '$0.00',
+        difficulty: metrics.competitionLevel,
+        competition: metrics.competition,
+        intent: determineIntent(metrics.keyword),
+        opportunity: calculateOpportunityScore(metrics.searchVolume, metrics.competition),
+        source: isOriginal ? 'Original Query' : 'DataForSEO Suggestion',
+        lowBid: metrics.lowBid,
+        highBid: metrics.highBid,
+        dataSource: 'Real data from DataForSEO'
+      });
+      seenKeywords.add(kwLower);
+    });
+
+    // Priority 2: Add unique Google autocomplete suggestions (without metrics)
+    googleSuggestions.forEach((suggestion) => {
+      const kwLower = suggestion.toLowerCase();
+      if (!seenKeywords.has(kwLower)) {
         keywords.push({
-          keyword: keyword,
-          searchVolume: metrics.searchVolume,
-          cpc: metrics.cpc > 0 ? `$${metrics.cpc.toFixed(2)}` : '$0.00',
-          difficulty: metrics.competitionLevel,
-          competition: metrics.competition,
-          intent: determineIntent(keyword),
-          opportunity: calculateOpportunityScore(metrics.searchVolume, metrics.competition),
-          source: index === 0 ? 'Original Query' : 'Google Autocomplete',
-          lowBid: metrics.lowBid,
-          highBid: metrics.highBid,
-          dataSource: 'Real data from DataForSEO'
-        });
-      } else {
-        // Fallback if DataForSEO didn't return data for this keyword
-        keywords.push({
-          keyword: keyword,
+          keyword: suggestion,
           searchVolume: 0,
           cpc: '$0.00',
-          difficulty: calculateKeywordDifficulty(keyword, index),
+          difficulty: 'UNKNOWN',
           competition: 0,
-          intent: determineIntent(keyword),
+          intent: determineIntent(suggestion),
           opportunity: 0,
-          source: index === 0 ? 'Original Query' : 'Google Autocomplete',
-          dataSource: 'Estimated (no data available)'
+          source: 'Google Autocomplete',
+          dataSource: 'No metrics available'
         });
+        seenKeywords.add(kwLower);
       }
     });
 
-    console.log(`✅ Processed ${keywords.length} keywords with real DataForSEO metrics`);
+    console.log(`✅ Final result: ${keywords.length} keywords (${metricsMap.size} with metrics, ${keywords.length - metricsMap.size} from autocomplete only)`);
 
     return {
       success: true,
