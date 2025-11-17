@@ -3268,6 +3268,261 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
     }
 
+    // WordPress Deploy Template - Creates essential pages for new blogs
+    if (path === '/api/wordpress-deploy-template' && method === 'POST') {
+      const { url, username, password, templateKey } = body;
+
+      if (!url || !username || !password || !templateKey) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'URL, username, password, and templateKey are required'
+          })
+        };
+      }
+
+      try {
+        const baseUrl = url.replace(/\/$/, '');
+        const authHeader = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
+
+        // Define template pages with actual content
+        const templatePages = {
+          aboutUs: {
+            title: 'About Us',
+            content: `<h2>Welcome to Our Blog</h2>
+<p>We're passionate about sharing valuable insights and knowledge with our community. Our mission is to provide high-quality, informative content that helps you achieve your goals.</p>
+
+<h3>Our Story</h3>
+<p>Founded with the vision of creating a trusted resource for readers worldwide, we've grown into a platform that values authenticity, expertise, and community engagement.</p>
+
+<h3>What We Do</h3>
+<p>We create comprehensive guides, in-depth articles, and practical resources designed to inform and inspire. Every piece of content is carefully researched and crafted to deliver real value to our readers.</p>
+
+<h3>Our Values</h3>
+<ul>
+<li><strong>Quality:</strong> We prioritize accuracy and depth in every article we publish</li>
+<li><strong>Transparency:</strong> We believe in honest, straightforward communication</li>
+<li><strong>Community:</strong> Our readers are at the heart of everything we do</li>
+<li><strong>Innovation:</strong> We stay current with the latest trends and best practices</li>
+</ul>
+
+<h3>Get In Touch</h3>
+<p>We love hearing from our readers! Whether you have questions, suggestions, or just want to say hello, feel free to reach out through our <a href="/contact">contact page</a>.</p>`,
+            slug: 'about'
+          },
+          privacy: {
+            title: 'Privacy Policy',
+            content: `<h2>Privacy Policy</h2>
+<p><em>Last updated: ${new Date().toLocaleDateString()}</em></p>
+
+<h3>Introduction</h3>
+<p>We respect your privacy and are committed to protecting your personal data. This privacy policy explains how we collect, use, and safeguard your information when you visit our website.</p>
+
+<h3>Information We Collect</h3>
+<p>We may collect the following types of information:</p>
+<ul>
+<li><strong>Personal Information:</strong> Name, email address, and other contact details you voluntarily provide</li>
+<li><strong>Usage Data:</strong> Information about how you use our website, including pages visited and time spent</li>
+<li><strong>Cookies:</strong> Small data files stored on your device to enhance your browsing experience</li>
+</ul>
+
+<h3>How We Use Your Information</h3>
+<p>We use the collected information to:</p>
+<ul>
+<li>Provide and maintain our website</li>
+<li>Send you newsletters and updates (with your consent)</li>
+<li>Improve our content and user experience</li>
+<li>Respond to your inquiries and support requests</li>
+<li>Analyze website usage and trends</li>
+</ul>
+
+<h3>Data Protection</h3>
+<p>We implement appropriate security measures to protect your personal information from unauthorized access, alteration, disclosure, or destruction.</p>
+
+<h3>Third-Party Services</h3>
+<p>We may use third-party services (such as analytics tools) that collect, monitor, and analyze data. These services have their own privacy policies.</p>
+
+<h3>Your Rights</h3>
+<p>You have the right to:</p>
+<ul>
+<li>Access your personal data</li>
+<li>Request correction of inaccurate data</li>
+<li>Request deletion of your data</li>
+<li>Opt-out of marketing communications</li>
+<li>Lodge a complaint with a supervisory authority</li>
+</ul>
+
+<h3>Contact Us</h3>
+<p>If you have questions about this Privacy Policy, please contact us through our <a href="/contact">contact page</a>.</p>`,
+            slug: 'privacy-policy'
+          },
+          terms: {
+            title: 'Terms of Service',
+            content: `<h2>Terms of Service</h2>
+<p><em>Last updated: ${new Date().toLocaleDateString()}</em></p>
+
+<h3>Agreement to Terms</h3>
+<p>By accessing our website, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using or accessing this site.</p>
+
+<h3>Use License</h3>
+<p>Permission is granted to temporarily view and download materials on our website for personal, non-commercial use only. This license shall automatically terminate if you violate any of these restrictions.</p>
+
+<h3>Content Disclaimer</h3>
+<p>The information provided on this website is for general informational purposes only. While we strive for accuracy, we make no warranties or representations about the completeness, reliability, or accuracy of this information.</p>
+
+<h3>Limitations of Liability</h3>
+<p>We shall not be held liable for any damages arising from the use or inability to use the materials on our website, even if we or our authorized representative has been notified of the possibility of such damage.</p>
+
+<h3>User Conduct</h3>
+<p>You agree not to:</p>
+<ul>
+<li>Use our website for any unlawful purpose</li>
+<li>Attempt to gain unauthorized access to any portion of the website</li>
+<li>Interfere with or disrupt the website or servers</li>
+<li>Impersonate any person or entity</li>
+<li>Transmit any viruses, malware, or harmful code</li>
+</ul>
+
+<h3>Intellectual Property</h3>
+<p>All content on this website, including text, graphics, logos, and images, is the property of the website owner and protected by copyright laws. Unauthorized use is prohibited.</p>
+
+<h3>Changes to Terms</h3>
+<p>We reserve the right to modify these terms at any time. Continued use of the website after changes constitutes acceptance of the modified terms.</p>
+
+<h3>Contact Information</h3>
+<p>For questions about these Terms of Service, please contact us through our <a href="/contact">contact page</a>.</p>`,
+            slug: 'terms-of-service'
+          },
+          contact: {
+            title: 'Contact Us',
+            content: `<h2>Get In Touch</h2>
+<p>We'd love to hear from you! Whether you have a question, feedback, or just want to say hello, feel free to reach out.</p>
+
+<h3>How to Contact Us</h3>
+<p>For general inquiries, suggestions, or feedback about our content, please email us using the form below or reach out directly.</p>
+
+<h3>Business Inquiries</h3>
+<p>For partnership opportunities, collaborations, or business-related questions, please use the contact form and indicate "Business Inquiry" in your message.</p>
+
+<h3>Response Time</h3>
+<p>We aim to respond to all inquiries within 24-48 hours during business days. Please note that response times may be longer during weekends and holidays.</p>
+
+<div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #334155; margin: 20px 0;">
+<h4 style="margin-top: 0;">Contact Form</h4>
+<p><em>Note: To add a functional contact form, please install a WordPress contact form plugin like Contact Form 7, WPForms, or Gravity Forms.</em></p>
+<p>In the meantime, you can reach us at: <strong>[Your Email]</strong></p>
+</div>
+
+<h3>Social Media</h3>
+<p>Connect with us on social media for updates, behind-the-scenes content, and community discussions:</p>
+<ul>
+<li>Twitter: @yourblog</li>
+<li>Facebook: /yourblog</li>
+<li>Instagram: @yourblog</li>
+</ul>
+
+<p>We look forward to connecting with you!</p>`,
+            slug: 'contact'
+          }
+        };
+
+        const createdPages = [];
+        let pagesCreated = 0;
+
+        // Create each page
+        for (const [key, pageData] of Object.entries(templatePages)) {
+          try {
+            const createResponse = await fetch(`${baseUrl}/wp-json/wp/v2/pages`, {
+              method: 'POST',
+              headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                title: pageData.title,
+                content: pageData.content,
+                slug: pageData.slug,
+                status: 'publish'
+              })
+            });
+
+            if (createResponse.ok) {
+              const createdPage = await createResponse.json();
+              createdPages.push({ key, id: createdPage.id, title: pageData.title });
+              pagesCreated++;
+              console.log(`✅ Created page: ${pageData.title} (ID: ${createdPage.id})`);
+            } else {
+              const errorData = await createResponse.json();
+              console.warn(`⚠️ Failed to create ${pageData.title}:`, errorData.message);
+            }
+          } catch (error) {
+            console.warn(`⚠️ Error creating ${pageData.title}:`, error.message);
+          }
+        }
+
+        // Also create some default categories based on template
+        const templateCategories = {
+          health: ['Health Tips', 'Nutrition', 'Fitness', 'Wellness', 'Mental Health'],
+          technology: ['Software', 'Hardware', 'Tutorials', 'Reviews', 'Tech News'],
+          business: ['Entrepreneurship', 'Finance', 'Marketing', 'Strategy', 'Leadership'],
+          lifestyle: ['Productivity', 'Self-Improvement', 'Minimalism', 'Habits', 'Goals'],
+          food: ['Recipes', 'Cooking Tips', 'Meal Prep', 'Healthy Eating', 'Kitchen Hacks'],
+          travel: ['Travel Guides', 'Budget Travel', 'Destinations', 'Travel Tips', 'Adventure']
+        };
+
+        const categories = templateCategories[templateKey] || ['Blog', 'Articles', 'Tips', 'Guides', 'News'];
+        let categoriesCreated = 0;
+
+        for (const categoryName of categories) {
+          try {
+            const createCatResponse = await fetch(`${baseUrl}/wp-json/wp/v2/categories`, {
+              method: 'POST',
+              headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                name: categoryName,
+                slug: categoryName.toLowerCase().replace(/\s+/g, '-')
+              })
+            });
+
+            if (createCatResponse.ok) {
+              categoriesCreated++;
+            }
+          } catch (error) {
+            console.warn(`⚠️ Error creating category ${categoryName}:`, error.message);
+          }
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            pagesCreated: pagesCreated,
+            categoriesCreated: categoriesCreated,
+            pages: createdPages,
+            message: `Successfully created ${pagesCreated} pages and ${categoriesCreated} categories`
+          })
+        };
+
+      } catch (error) {
+        console.error('Template deployment error:', error);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Failed to deploy template: ' + error.message,
+            error: error.message
+          })
+        };
+      }
+    }
+
     // WordPress Create Category
     if (path === '/api/wordpress-create-category' && method === 'POST') {
       const { url, username, password, categoryName } = body;
