@@ -17269,6 +17269,14 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
             const blogSetupKey = `blog_setup_${selectedBlogId}`;
             const hasBeenSetup = localStorage.getItem(blogSetupKey);
 
+            console.log('🔍 Template setup check:', {
+                blogId: selectedBlogId,
+                blogName: selectedBlog.name,
+                setupKey: blogSetupKey,
+                hasBeenSetup: hasBeenSetup,
+                willShowModal: !hasBeenSetup
+            });
+
             if (!hasBeenSetup) {
                 // Close current modal
                 closePublishModal();
