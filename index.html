@@ -16856,13 +16856,18 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             </div>
                         </div>
 
-                        <div style="display: flex; gap: 12px; justify-content: space-between;">
-                            <button onclick="declineBlogTemplate()" style="padding: 14px 24px; background: #f1f5f9; color: #334155; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
-                                Skip for Now
+                        <div style="display: flex; gap: 12px; justify-content: space-between; flex-wrap: wrap;">
+                            <button onclick="showWebsiteSetupGuide()" style="padding: 14px 24px; background: #f0f9ff; color: #0369a1; border: 2px solid #0ea5e9; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                                🆘 I Don't Have a Website Yet
                             </button>
-                            <button id="deployTemplateBtn" onclick="deployBlogTemplate()" disabled style="padding: 14px 32px; background: #cbd5e1; color: #64748b; border: none; border-radius: 8px; cursor: not-allowed; font-size: 14px; font-weight: 700;">
-                                Setup Blog (Select Template)
-                            </button>
+                            <div style="display: flex; gap: 12px;">
+                                <button onclick="declineBlogTemplate()" style="padding: 14px 24px; background: #f1f5f9; color: #334155; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                                    Skip for Now
+                                </button>
+                                <button id="deployTemplateBtn" onclick="deployBlogTemplate()" disabled style="padding: 14px 32px; background: #cbd5e1; color: #64748b; border: none; border-radius: 8px; cursor: not-allowed; font-size: 14px; font-weight: 700;">
+                                    Setup Blog (Select Template)
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -16900,6 +16905,76 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 window.declineBlogTemplate = () => {
                     modal.remove();
                     resolve(false);
+                };
+
+                window.showWebsiteSetupGuide = () => {
+                    modal.innerHTML = `
+                        <div style="background: white; padding: 40px; border-radius: 12px; max-width: 700px; width: 100%;">
+                            <div style="text-align: center; margin-bottom: 30px;">
+                                <div style="font-size: 64px; margin-bottom: 16px;">🚀</div>
+                                <h2 style="margin: 0 0 12px 0; color: #1e293b; font-size: 28px;">Let's Get Your Website Set Up!</h2>
+                                <p style="color: #64748b; margin: 0; font-size: 16px;">Here's everything you need to launch your blog</p>
+                            </div>
+
+                            <div style="background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                                <h3 style="margin: 0 0 16px 0; color: #0c4a6e; font-size: 18px;">📋 What You'll Need:</h3>
+                                <ol style="margin: 0; padding-left: 20px; color: #0369a1; line-height: 2;">
+                                    <li><strong>Domain Name:</strong> Your website address (e.g., yourblog.com) - $10-15/year</li>
+                                    <li><strong>Web Hosting:</strong> Where your website lives online - $3-10/month</li>
+                                    <li><strong>WordPress Installation:</strong> Free and included with most hosting</li>
+                                </ol>
+                            </div>
+
+                            <div style="margin-bottom: 24px;">
+                                <h3 style="margin: 0 0 16px 0; color: #1e293b;">🌟 Recommended Hosting Providers:</h3>
+                                <div style="display: grid; gap: 16px;">
+                                    <div style="background: #fef3c7; border: 2px solid #fbbf24; border-radius: 8px; padding: 20px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                            <strong style="color: #92400e; font-size: 16px;">Bluehost</strong>
+                                            <span style="background: #16a34a; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">⭐ BEST FOR BEGINNERS</span>
+                                        </div>
+                                        <p style="color: #78350f; margin: 0 0 8px 0; font-size: 14px;">Official WordPress recommended host. One-click WordPress install, 24/7 support.</p>
+                                        <div style="color: #92400e; font-weight: 600;">From $2.95/month • Free domain for 1 year</div>
+                                    </div>
+
+                                    <div style="background: white; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+                                        <strong style="color: #1e293b; font-size: 16px; display: block; margin-bottom: 8px;">SiteGround</strong>
+                                        <p style="color: #475569; margin: 0 0 8px 0; font-size: 14px;">Premium hosting with excellent speed. Great for growing blogs.</p>
+                                        <div style="color: #334155; font-weight: 600;">From $3.99/month • Free SSL & daily backups</div>
+                                    </div>
+
+                                    <div style="background: white; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+                                        <strong style="color: #1e293b; font-size: 16px; display: block; margin-bottom: 8px;">Hostinger</strong>
+                                        <p style="color: #475569; margin: 0 0 8px 0; font-size: 14px;">Budget-friendly with solid performance. Perfect for starting out.</p>
+                                        <div style="color: #334155; font-weight: 600;">From $1.99/month • 99.9% uptime guarantee</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                                <h3 style="margin: 0 0 16px 0; color: #1e293b; font-size: 16px;">📝 Quick Setup Steps:</h3>
+                                <ol style="margin: 0; padding-left: 20px; color: #475569; line-height: 1.8;">
+                                    <li>Choose a hosting provider and sign up</li>
+                                    <li>Pick your domain name during checkout</li>
+                                    <li>Use one-click WordPress installation (included)</li>
+                                    <li>Come back here and connect your blog</li>
+                                    <li>Select your template and we'll set everything up!</li>
+                                </ol>
+                            </div>
+
+                            <div style="background: #ecfdf5; border-left: 4px solid #10b981; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+                                <div style="color: #047857; font-size: 14px; line-height: 1.6;">
+                                    <strong>💡 Pro Tip:</strong> Most hosting providers offer WordPress pre-installed. Look for "WordPress Hosting" or "One-Click WordPress Install" options. You'll have your site ready in under 15 minutes!
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                                <button onclick="modal.remove(); resolve(false);" style="padding: 14px 24px; background: #f1f5f9; color: #334155; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                                    Got It, Thanks!
+                                </button>
+                            </div>
+                        </div>
+                    `;
                 };
 
                 window.deployBlogTemplate = async () => {
