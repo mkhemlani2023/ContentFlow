@@ -341,6 +341,134 @@ const callDataForSEOAPI = async (keyword, location = 2840, limit = 25) => {
   }
 };
 
+// DataForSEO Content Generation API - Generate SEO-optimized content
+const callDataForSEOContentAPI = async (topic, wordCount, options = {}) => {
+  try {
+    const {
+      subTopics = [],
+      metaKeywords = [],
+      description = '',
+      creativityIndex = 0.8,
+      includeConclusion = true
+    } = options;
+
+    // DataForSEO has 1000-word limit, so we need to batch for longer articles
+    const maxWordsPerRequest = 1000;
+    const needsBatching = wordCount > maxWordsPerRequest;
+
+    if (!needsBatching) {
+      // Single request for articles <= 1000 words
+      return await generateSingleDataForSEOContent(topic, wordCount, {
+        subTopics,
+        metaKeywords,
+        description,
+        creativityIndex,
+        includeConclusion
+      });
+    }
+
+    // Batch processing for longer articles
+    console.log(`📝 Article requires ${wordCount} words - batching into multiple requests`);
+
+    const numChunks = Math.ceil(wordCount / maxWordsPerRequest);
+    const wordsPerChunk = Math.floor(wordCount / numChunks);
+
+    let fullContent = '';
+    let totalCost = 0;
+    let supplementToken = null;
+
+    for (let i = 0; i < numChunks; i++) {
+      const isLastChunk = i === numChunks - 1;
+      const chunkWords = isLastChunk ? (wordCount - (wordsPerChunk * i)) : wordsPerChunk;
+
+      console.log(`   Chunk ${i + 1}/${numChunks}: Generating ${chunkWords} words...`);
+
+      const result = await generateSingleDataForSEOContent(
+        i === 0 ? topic : `Continue writing about ${topic}`,
+        chunkWords,
+        {
+          subTopics: i === 0 ? subTopics : [],
+          metaKeywords: i === 0 ? metaKeywords : [],
+          description: i === 0 ? description : '',
+          creativityIndex,
+          includeConclusion: isLastChunk && includeConclusion,
+          supplementToken
+        }
+      );
+
+      fullContent += (i > 0 ? '\n\n' : '') + result.content;
+      totalCost += result.cost;
+      supplementToken = result.supplementToken;
+    }
+
+    console.log(`✅ Batched generation complete: ${numChunks} chunks, ${wordCount} words, $${totalCost.toFixed(4)}`);
+
+    return {
+      content: fullContent,
+      cost: totalCost,
+      wordCount: wordCount,
+      chunks: numChunks
+    };
+  } catch (error) {
+    console.error('❌ DataForSEO Content API error:', error.message);
+    throw new Error(`DataForSEO Content Generation failed: ${error.message}`);
+  }
+};
+
+// Helper function for single DataForSEO content generation request
+const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
+  const authString = Buffer.from(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`).toString('base64');
+
+  const requestBody = [{
+    topic: topic,
+    word_count: wordCount,
+    creativity_index: options.creativityIndex || 0.8,
+    include_conclusion: options.includeConclusion !== false
+  }];
+
+  // Add optional parameters if provided
+  if (options.subTopics && options.subTopics.length > 0) {
+    requestBody[0].sub_topics = options.subTopics.slice(0, 10);
+  }
+  if (options.metaKeywords && options.metaKeywords.length > 0) {
+    requestBody[0].meta_keywords = options.metaKeywords.slice(0, 10);
+  }
+  if (options.description) {
+    requestBody[0].description = options.description;
+  }
+  if (options.supplementToken) {
+    requestBody[0].supplement_token = options.supplementToken;
+  }
+
+  const response = await fetch('https://api.dataforseo.com/v3/content_generation/generate_text/live', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${authString}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(requestBody)
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  if (data.tasks && data.tasks[0] && data.tasks[0].result && data.tasks[0].result.length > 0) {
+    const result = data.tasks[0].result[0];
+    return {
+      content: result.text || '',
+      cost: data.cost || 0,
+      supplementToken: result.supplement_token,
+      inputTokens: result.input_token_count,
+      outputTokens: result.output_token_count
+    };
+  }
+
+  throw new Error('No content generated from DataForSEO');
+};
+
 // Hybrid processing: Combine Serper Autocomplete + DataForSEO metrics
 const processHybridKeywords = async (autocompleteData, originalKeyword) => {
   const keywords = [];
@@ -876,19 +1004,22 @@ const getModelConfig = (modelType) => {
     'free': 'openai/gpt-3.5-turbo',
     'budget': 'openai/gpt-4o-mini',
     'premium': 'openai/gpt-4',
-    'enterprise': 'openai/gpt-4'
+    'enterprise': 'openai/gpt-4',
+    'dataforseo': 'dataforseo/content-generation' // DataForSEO Content Generation API
   };
 
   const creditCosts = {
     'free': 5,
     'budget': 10,
     'premium': 25,
-    'enterprise': 100
+    'enterprise': 100,
+    'dataforseo': 8 // Similar to budget tier
   };
 
   return {
     model: modelMap[modelType] || modelMap.free,
-    cost: creditCosts[modelType] || creditCosts.free
+    cost: creditCosts[modelType] || creditCosts.free,
+    provider: modelType === 'dataforseo' ? 'dataforseo' : 'openrouter'
   };
 };
 
@@ -2025,7 +2156,11 @@ exports.handler = async (event, context) => {
         };
       }
 
-      if (!OPENROUTER_API_KEY) {
+      // Check if using DataForSEO provider
+      const modelConfig = getModelConfig(model || 'free');
+      const isDataForSEO = modelConfig.provider === 'dataforseo';
+
+      if (!isDataForSEO && !OPENROUTER_API_KEY) {
         return {
           statusCode: 503,
           headers,
@@ -2037,11 +2172,12 @@ exports.handler = async (event, context) => {
       }
 
       try {
-        // Model configurations
+        // Model configurations (legacy - keeping for backward compatibility)
         const modelConfigs = {
           'basic': { model: 'openai/gpt-3.5-turbo', credits: 25 },
           'premium': { model: 'openai/gpt-4', credits: 50 },
-          'enterprise': { model: 'anthropic/claude-3.5-sonnet', credits: 85 }
+          'enterprise': { model: 'anthropic/claude-3.5-sonnet', credits: 85 },
+          'dataforseo': { model: 'dataforseo/content-generation', credits: modelConfig.cost }
         };
 
         const selectedModel = modelConfigs[model] || modelConfigs['basic'];
@@ -2204,8 +2340,36 @@ Write the complete, detailed article now:`;
 
         console.log('Generating article with model:', selectedModel.model);
 
-        // Make OpenRouter API request
-        const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+        let articleContent = '';
+        let apiCost = 0;
+
+        // Route to appropriate provider
+        if (isDataForSEO) {
+          console.log('📊 Using DataForSEO Content Generation API');
+
+          // Extract keywords and subtopics from title
+          const titleWords = title.split(' ').filter(w => w.length > 3);
+          const metaKeywords = [focusKeyword, ...titleWords.slice(0, 5)].filter((v, i, a) => a.indexOf(v) === i).slice(0, 10);
+
+          const dataForSEOResult = await callDataForSEOContentAPI(
+            title,
+            wordCount || 2000,
+            {
+              metaKeywords,
+              description: `Article about ${focusKeyword}`,
+              creativityIndex: 0.8,
+              includeConclusion: true
+            }
+          );
+
+          articleContent = dataForSEOResult.content;
+          apiCost = dataForSEOResult.cost;
+
+          console.log(`✅ DataForSEO generated ${dataForSEOResult.wordCount} words in ${dataForSEOResult.chunks || 1} chunk(s)`);
+          console.log(`   Cost: $${apiCost.toFixed(4)}`);
+        } else {
+          // Make OpenRouter API request
+          const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
@@ -2231,8 +2395,9 @@ Write the complete, detailed article now:`;
           throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
         }
 
-        const data = await response.json();
-        const articleContent = data.choices[0]?.message?.content || '';
+          const data = await response.json();
+          articleContent = data.choices[0]?.message?.content || '';
+        }
 
         // Generate contextually relevant images if requested
         let images = [];
