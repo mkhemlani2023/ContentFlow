@@ -8840,6 +8840,12 @@
                 const result = await SupabaseService.deleteBlog(blogId);
 
                 if (result.success) {
+                    // Clear the blog setup flag from localStorage
+                    // This ensures that if the blog is recreated, it will show the template setup modal
+                    const blogSetupKey = `blog_setup_${blogId}`;
+                    localStorage.removeItem(blogSetupKey);
+                    console.log(`🗑️ Cleared setup flag for deleted blog: ${blogId}`);
+
                     alert('✅ Blog deleted successfully!');
                     displayBlogManagement();
                 } else {
