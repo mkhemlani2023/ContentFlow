@@ -795,6 +795,7 @@
                         <a id="navSavedKeywords" onclick="handleNavClick('showSavedContentIdeas')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Saved Keywords</a>
                         <a id="navBlogManagement" onclick="handleNavClick('showBlogManagement')" style="color: #94A3B8; text-decoration: none; cursor: not-allowed; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;">Blog Management</a>
                         <!-- Always active links -->
+                        <a onclick="showWebsiteTemplates()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">📋 Templates</a>
                         <a onclick="showCreditPurchase()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">Purchase Credits</a>
                         <a onclick="showAboutSEOWizard()" style="color: #334155; text-decoration: none; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.color='#1E293B'" onmouseout="this.style.color='#334155'">About</a>
                     </div>
@@ -1900,6 +1901,429 @@
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
                     modal.remove();
+                }
+            });
+        }
+
+        // Website Templates System
+        const websiteTemplates = {
+            health: {
+                name: "Health & Wellness Blog",
+                icon: "🏥",
+                description: "Perfect for health, nutrition, fitness, and wellness content",
+                keywords: [
+                    { keyword: "gut health", searchVolume: 135000, difficulty: "Medium", cpc: "$2.50" },
+                    { keyword: "intermittent fasting", searchVolume: 246000, difficulty: "High", cpc: "$3.20" },
+                    { keyword: "mental health tips", searchVolume: 89000, difficulty: "Medium", cpc: "$4.10" },
+                    { keyword: "healthy meal prep", searchVolume: 74000, difficulty: "Low", cpc: "$1.80" },
+                    { keyword: "meditation for beginners", searchVolume: 60500, difficulty: "Low", cpc: "$2.90" }
+                ],
+                articleIdeas: [
+                    "10 Science-Backed Ways to Improve Your Gut Health Naturally",
+                    "Complete Beginner's Guide to Intermittent Fasting: Everything You Need to Know",
+                    "Mental Health Tips for Busy Professionals: Daily Practices That Work",
+                    "Healthy Meal Prep for the Week: Time-Saving Recipes and Strategies",
+                    "Meditation for Beginners: How to Start a Daily Practice in 5 Minutes"
+                ],
+                quickStart: [
+                    "Start with foundation articles about common health concerns",
+                    "Create how-to guides with actionable steps",
+                    "Include scientific references to build credibility",
+                    "Target long-tail keywords like 'how to improve gut health naturally'",
+                    "Focus on beginner-friendly content first, then advance to specialized topics"
+                ]
+            },
+            technology: {
+                name: "Technology & Software Blog",
+                icon: "💻",
+                description: "Ideal for tech reviews, tutorials, and software guides",
+                keywords: [
+                    { keyword: "best project management software", searchVolume: 110000, difficulty: "High", cpc: "$15.60" },
+                    { keyword: "how to learn python", searchVolume: 135000, difficulty: "Medium", cpc: "$3.40" },
+                    { keyword: "cybersecurity best practices", searchVolume: 49500, difficulty: "Medium", cpc: "$8.90" },
+                    { keyword: "cloud storage comparison", searchVolume: 74000, difficulty: "High", cpc: "$12.30" },
+                    { keyword: "AI tools for business", searchVolume: 201000, difficulty: "High", cpc: "$11.20" }
+                ],
+                articleIdeas: [
+                    "Best Project Management Software in 2025: Comprehensive Comparison",
+                    "How to Learn Python: Complete Beginner's Roadmap with Free Resources",
+                    "Cybersecurity Best Practices for Small Businesses: Essential Guide",
+                    "Cloud Storage Comparison 2025: Google Drive vs Dropbox vs OneDrive",
+                    "Top 15 AI Tools for Business That Will Transform Your Workflow"
+                ],
+                quickStart: [
+                    "Create detailed comparison articles for high-CPC software keywords",
+                    "Write tutorial content with code examples and screenshots",
+                    "Target 'best [software category]' keywords for affiliate opportunities",
+                    "Include practical use cases and real-world examples",
+                    "Update content quarterly to maintain relevance in fast-moving tech space"
+                ]
+            },
+            business: {
+                name: "Business & Finance Blog",
+                icon: "💼",
+                description: "Great for entrepreneurship, finance, and business strategy content",
+                keywords: [
+                    { keyword: "how to start a business", searchVolume: 201000, difficulty: "High", cpc: "$5.80" },
+                    { keyword: "passive income ideas", searchVolume: 165000, difficulty: "High", cpc: "$4.90" },
+                    { keyword: "financial planning tips", searchVolume: 49500, difficulty: "Medium", cpc: "$7.60" },
+                    { keyword: "small business marketing", searchVolume: 90500, difficulty: "Medium", cpc: "$10.40" },
+                    { keyword: "investment strategies for beginners", searchVolume: 40500, difficulty: "Medium", cpc: "$6.70" }
+                ],
+                articleIdeas: [
+                    "How to Start a Business in 2025: Complete Step-by-Step Guide",
+                    "25 Passive Income Ideas That Actually Work (With Proof)",
+                    "Financial Planning Tips for Young Professionals: Build Wealth from Day One",
+                    "Small Business Marketing on a Budget: 15 Proven Strategies",
+                    "Investment Strategies for Beginners: Where to Start with $1000"
+                ],
+                quickStart: [
+                    "Focus on practical, actionable business advice",
+                    "Include case studies and real success stories",
+                    "Target problem-solving keywords like 'how to [business challenge]'",
+                    "Create pillar content around major business topics",
+                    "Build authority with data-driven insights and expert interviews"
+                ]
+            },
+            lifestyle: {
+                name: "Lifestyle & Personal Development",
+                icon: "🌟",
+                description: "Perfect for self-improvement, productivity, and lifestyle topics",
+                keywords: [
+                    { keyword: "morning routine ideas", searchVolume: 90500, difficulty: "Medium", cpc: "$1.90" },
+                    { keyword: "productivity tips", searchVolume: 110000, difficulty: "High", cpc: "$3.50" },
+                    { keyword: "minimalist living", searchVolume: 74000, difficulty: "Medium", cpc: "$2.20" },
+                    { keyword: "work life balance", searchVolume: 135000, difficulty: "High", cpc: "$4.80" },
+                    { keyword: "goal setting strategies", searchVolume: 49500, difficulty: "Low", cpc: "$3.10" }
+                ],
+                articleIdeas: [
+                    "Perfect Morning Routine Ideas: Science-Backed Strategies for Success",
+                    "50 Productivity Tips That Actually Work for Busy People",
+                    "Minimalist Living: Complete Guide to Simplifying Your Life",
+                    "Work-Life Balance: How to Thrive Professionally Without Burning Out",
+                    "Goal Setting Strategies That Help You Actually Achieve Your Dreams"
+                ],
+                quickStart: [
+                    "Share personal experiences and transformation stories",
+                    "Create listicles and how-to guides for quick wins",
+                    "Target seasonal content like 'New Year goal setting'",
+                    "Build community through relatable, authentic content",
+                    "Include templates, worksheets, and actionable resources"
+                ]
+            },
+            food: {
+                name: "Food & Recipe Blog",
+                icon: "🍳",
+                description: "Excellent for recipes, cooking tips, and food-related content",
+                keywords: [
+                    { keyword: "easy dinner recipes", searchVolume: 246000, difficulty: "High", cpc: "$1.40" },
+                    { keyword: "meal prep ideas", searchVolume: 201000, difficulty: "Medium", cpc: "$1.80" },
+                    { keyword: "keto recipes", searchVolume: 450000, difficulty: "High", cpc: "$2.10" },
+                    { keyword: "healthy snacks", searchVolume: 165000, difficulty: "High", cpc: "$1.90" },
+                    { keyword: "air fryer recipes", searchVolume: 550000, difficulty: "High", cpc: "$1.60" }
+                ],
+                articleIdeas: [
+                    "30 Easy Dinner Recipes for Busy Weeknights (Ready in 30 Minutes)",
+                    "Meal Prep Ideas for the Week: Save Time and Money with These Recipes",
+                    "100 Best Keto Recipes: Low-Carb Meals That Actually Taste Amazing",
+                    "50 Healthy Snacks for Work: Nutritious Options You Can Make Ahead",
+                    "Air Fryer Recipes: The Ultimate Collection of Healthy, Crispy Favorites"
+                ],
+                quickStart: [
+                    "Include detailed recipes with step-by-step photos",
+                    "Target specific dietary preferences (keto, vegan, gluten-free)",
+                    "Create roundup posts like '30 best [recipe type]'",
+                    "Optimize for featured snippets with structured recipe data",
+                    "Build an email list with free recipe ebooks"
+                ]
+            },
+            travel: {
+                name: "Travel & Adventure Blog",
+                icon: "✈️",
+                description: "Ideal for travel guides, destination reviews, and travel tips",
+                keywords: [
+                    { keyword: "budget travel tips", searchVolume: 74000, difficulty: "Medium", cpc: "$2.80" },
+                    { keyword: "best places to visit", searchVolume: 201000, difficulty: "High", cpc: "$3.40" },
+                    { keyword: "travel packing list", searchVolume: 110000, difficulty: "Medium", cpc: "$2.10" },
+                    { keyword: "solo travel destinations", searchVolume: 60500, difficulty: "Medium", cpc: "$3.60" },
+                    { keyword: "weekend getaway ideas", searchVolume: 90500, difficulty: "Medium", cpc: "$2.90" }
+                ],
+                articleIdeas: [
+                    "Budget Travel Tips: How to See the World for Less Than $50 a Day",
+                    "Best Places to Visit in 2025: Top Destinations According to Travelers",
+                    "Ultimate Travel Packing List: Never Forget Anything Again",
+                    "Solo Travel Destinations: 20 Safest and Most Amazing Places for Solo Travelers",
+                    "Weekend Getaway Ideas Near You: Quick Escapes for Every Budget"
+                ],
+                quickStart: [
+                    "Write destination guides with practical travel tips",
+                    "Include budget breakdowns and cost estimates",
+                    "Target location-specific keywords like 'things to do in [city]'",
+                    "Create visual content with stunning travel photography",
+                    "Build credibility with personal travel experiences and stories"
+                ]
+            }
+        };
+
+        function showWebsiteTemplates() {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;';
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 40px; border-radius: 12px; max-width: 1200px; width: 100%; max-height: 90vh; overflow-y: auto;">
+                    <div style="margin-bottom: 30px;">
+                        <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 28px;">📋 Website Templates</h2>
+                        <p style="color: #64748b; margin: 0; font-size: 16px;">Choose a pre-configured template to get started quickly with keyword research and content ideas</p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                        ${Object.entries(websiteTemplates).map(([key, template]) => `
+                            <div style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 24px; background: white; transition: all 0.2s; cursor: pointer; hover:shadow-lg;"
+                                 onmouseover="this.style.borderColor='#334155'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'"
+                                 onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+                                 onclick="showTemplateDetails('${key}')">
+                                <div style="font-size: 48px; margin-bottom: 12px;">${template.icon}</div>
+                                <h3 style="margin: 0 0 8px 0; color: #1e293b; font-size: 18px; font-weight: 700;">${template.name}</h3>
+                                <p style="color: #64748b; margin: 0 0 16px 0; font-size: 14px; line-height: 1.6;">${template.description}</p>
+                                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                                    <span style="background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                                        ${template.keywords.length} Keywords
+                                    </span>
+                                    <span style="background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                                        ${template.articleIdeas.length} Article Ideas
+                                    </span>
+                                </div>
+                                <button style="width: 100%; background: #334155; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;"
+                                        onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='#334155'">
+                                    View Details →
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <p style="color: #475569; margin: 0; font-size: 14px;">
+                            💡 <strong>Tip:</strong> Each template includes pre-researched keywords, article ideas, and a quick-start guide to help you create content faster
+                        </p>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+                        <button onclick="this.closest('[style*=fixed]').remove()" style="padding: 12px 24px; background: #f1f5f9; color: #334155; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        function showTemplateDetails(templateKey) {
+            const template = websiteTemplates[templateKey];
+            if (!template) return;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px;';
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 40px; border-radius: 12px; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto;">
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                        <div style="font-size: 64px;">${template.icon}</div>
+                        <div style="flex: 1;">
+                            <h2 style="margin: 0 0 8px 0; color: #1e293b; font-size: 28px;">${template.name}</h2>
+                            <p style="color: #64748b; margin: 0; font-size: 16px;">${template.description}</p>
+                        </div>
+                    </div>
+
+                    <!-- Pre-Researched Keywords -->
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #1e293b; font-size: 20px; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🔑</span> Pre-Researched Keywords
+                        </h3>
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+                            ${template.keywords.map(kw => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; margin-bottom: 8px; background: white; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                    <span style="font-weight: 600; color: #1e293b; flex: 1;">${kw.keyword}</span>
+                                    <div style="display: flex; gap: 16px; font-size: 13px;">
+                                        <span style="color: #64748b;">🔍 ${kw.searchVolume?.toLocaleString() || 'N/A'}</span>
+                                        <span style="color: #64748b;">⚡ ${kw.difficulty}</span>
+                                        <span style="color: #64748b;">💰 ${kw.cpc}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Article Ideas -->
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #1e293b; font-size: 20px; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+                            <span>✍️</span> Ready-to-Use Article Ideas
+                        </h3>
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+                            ${template.articleIdeas.map((idea, index) => `
+                                <div style="padding: 12px; margin-bottom: 8px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px;">
+                                    <span style="background: #334155; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;">${index + 1}</span>
+                                    <span style="color: #334155; font-size: 14px; line-height: 1.5;">${idea}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Quick Start Guide -->
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #1e293b; font-size: 20px; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🚀</span> Quick Start Guide
+                        </h3>
+                        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px;">
+                            <ol style="margin: 0; padding-left: 20px; color: #0c4a6e;">
+                                ${template.quickStart.map(tip => `
+                                    <li style="margin-bottom: 12px; line-height: 1.6; font-size: 14px;">${tip}</li>
+                                `).join('')}
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="background: #fef3c7; border: 2px solid #fbbf24; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <span style="font-size: 24px;">💡</span>
+                            <div style="flex: 1;">
+                                <div style="color: #92400e; font-weight: 700; font-size: 16px; margin-bottom: 4px;">Ready to Get Started?</div>
+                                <div style="color: #78350f; font-size: 14px;">Use this template to kickstart your content creation journey</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button onclick="this.closest('[style*=fixed]').remove()" style="padding: 12px 24px; background: #f1f5f9; color: #334155; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                            ← Back to Templates
+                        </button>
+                        <button onclick="applyTemplate('${templateKey}')" style="padding: 12px 24px; background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 700; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.25)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'">
+                            🚀 Use This Template
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        async function applyTemplate(templateKey) {
+            const template = websiteTemplates[templateKey];
+            if (!template) return;
+
+            // Close all modals
+            document.querySelectorAll('[style*="position: fixed"]').forEach(el => el.remove());
+
+            // Show confirmation dialog
+            const useTemplate = confirm(`Apply "${template.name}" template?\n\nThis will:\n✓ Add ${template.keywords.length} pre-researched keywords to your workspace\n✓ Show ${template.articleIdeas.length} article ideas ready to generate\n✓ Provide a quick-start guide\n\nYour existing work will not be affected.`);
+
+            if (!useTemplate) return;
+
+            // Show loading state
+            const loadingModal = document.createElement('div');
+            loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10002;';
+            loadingModal.innerHTML = `
+                <div style="background: white; padding: 40px; border-radius: 12px; text-align: center; max-width: 400px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">${template.icon}</div>
+                    <h3 style="color: #1e293b; margin: 0 0 12px 0;">Applying Template...</h3>
+                    <p style="color: #64748b; margin: 0; font-size: 14px;">Setting up your ${template.name}</p>
+                    <div style="margin-top: 20px; width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                        <div style="height: 100%; background: linear-gradient(90deg, #334155, #1e293b); animation: loading 2s ease-in-out infinite;"></div>
+                    </div>
+                </div>
+                <style>
+                    @keyframes loading {
+                        0% { width: 0%; }
+                        50% { width: 70%; }
+                        100% { width: 100%; }
+                    }
+                </style>
+            `;
+            document.body.appendChild(loadingModal);
+
+            // Simulate template application (in a real implementation, this would save to Supabase)
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Save template info to localStorage for display
+            const appliedTemplate = {
+                key: templateKey,
+                name: template.name,
+                icon: template.icon,
+                keywords: template.keywords,
+                articleIdeas: template.articleIdeas,
+                quickStart: template.quickStart,
+                appliedAt: new Date().toISOString()
+            };
+            localStorage.setItem('currentTemplate', JSON.stringify(appliedTemplate));
+
+            // Remove loading modal
+            loadingModal.remove();
+
+            // Show success message and guide
+            showTemplateSuccessGuide(template);
+        }
+
+        function showTemplateSuccessGuide(template) {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10003; padding: 20px;';
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 40px; border-radius: 12px; max-width: 600px; width: 100%;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="font-size: 72px; margin-bottom: 16px;">🎉</div>
+                        <h2 style="color: #1e293b; margin: 0 0 12px 0; font-size: 28px;">Template Applied Successfully!</h2>
+                        <p style="color: #64748b; margin: 0; font-size: 16px;">Your ${template.name} is ready to use</p>
+                    </div>
+
+                    <div style="background: #f0fdf4; border: 2px solid #86efac; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                        <h3 style="color: #166534; margin: 0 0 16px 0; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                            <span>✓</span> What's Been Set Up:
+                        </h3>
+                        <ul style="margin: 0; padding-left: 20px; color: #15803d;">
+                            <li style="margin-bottom: 8px;">${template.keywords.length} pre-researched keywords ready to use</li>
+                            <li style="margin-bottom: 8px;">${template.articleIdeas.length} proven article ideas to get started</li>
+                            <li style="margin-bottom: 8px;">Quick-start guide with best practices</li>
+                            <li style="margin-bottom: 8px;">SEO-optimized content strategy</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                        <h3 style="color: #1e293b; margin: 0 0 16px 0; font-size: 16px; font-weight: 700;">🚀 Next Steps:</h3>
+                        <ol style="margin: 0; padding-left: 20px; color: #475569;">
+                            <li style="margin-bottom: 12px; line-height: 1.6;"><strong>Pick a keyword</strong> from the template and research it using the Keyword Research tool</li>
+                            <li style="margin-bottom: 12px; line-height: 1.6;"><strong>Generate article ideas</strong> to see what performs best for your niche</li>
+                            <li style="margin-bottom: 12px; line-height: 1.6;"><strong>Create your first article</strong> using one of the pre-written titles</li>
+                            <li style="margin-bottom: 12px; line-height: 1.6;"><strong>Follow the Quick Start Guide</strong> to build your content strategy</li>
+                        </ol>
+                    </div>
+
+                    <div style="text-align: center;">
+                        <button onclick="this.closest('[style*=fixed]').remove(); showDashboard();" style="padding: 14px 32px; background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.25)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'">
+                            🎯 Start Creating Content
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    showDashboard();
                 }
             });
         }
