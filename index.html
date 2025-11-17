@@ -1911,6 +1911,17 @@
                 name: "Health & Wellness Blog",
                 icon: "🏥",
                 description: "Perfect for health, nutrition, fitness, and wellness content",
+                essentialPages: [
+                    { title: "About Us", content: "Professional About Us page highlighting your health expertise and mission" },
+                    { title: "Privacy Policy", content: "GDPR-compliant privacy policy for health websites" },
+                    { title: "Terms of Service", content: "Legal terms protecting your health content and disclaimers" },
+                    { title: "Contact", content: "Contact form for health consultations and inquiries" }
+                ],
+                emailListSetup: {
+                    leadMagnet: "Free Health & Wellness Ebook",
+                    signupIncentive: "10 Science-Backed Tips to Transform Your Health in 30 Days",
+                    integrations: ["Mailchimp", "ConvertKit", "Substack"]
+                },
                 keywords: [
                     { keyword: "gut health", searchVolume: 135000, difficulty: "Medium", cpc: "$2.50" },
                     { keyword: "intermittent fasting", searchVolume: 246000, difficulty: "High", cpc: "$3.20" },
@@ -16826,41 +16837,8 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 const username = atob(blog.username);
                 const password = atob(blog.password);
 
-                // Check if category already exists using our API
-                const categoriesResponse = await fetch('/api/wordpress-categories', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        url: blog.url,
-                        username: username,
-                        password: password
-                    })
-                });
-
-                const categoriesResult = await categoriesResponse.json();
-
-                if (categoriesResult.success && categoriesResult.categories) {
-                    const existingCategory = categoriesResult.categories.find(cat =>
-                        cat.name.toLowerCase() === categoryName.toLowerCase()
-                    );
-
-                    if (existingCategory) {
-                        // Category already exists, just select it
-                        await loadWordPressCategories(selectedBlogId);
-                        setTimeout(() => {
-                            const categorySelect = document.getElementById('publishCategory');
-                            if (categorySelect) {
-                                categorySelect.value = existingCategory.id;
-                            }
-                        }, 500);
-                        return;
-                    }
-                }
-
-                // Create new category using our API
-                const createResponse = await fetch('/api/wordpress-create-category', {
+                // Create category using our backend API (avoids CORS issues)
+                const createResponse = await fetch('/api/wordpress-categories', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -16869,7 +16847,8 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         url: blog.url,
                         username: username,
                         password: password,
-                        categoryName: categoryName
+                        action: 'create',
+                        categoryName: categoryName.trim()
                     })
                 });
 
@@ -16966,34 +16945,36 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 const username = atob(blog.username);
                 const password = atob(blog.password);
 
-                // Create category in WordPress
-                const response = await fetch(`${blog.url}/wp-json/wp/v2/categories`, {
+                // Create category using our backend API (avoids CORS issues)
+                const response = await fetch('/api/wordpress-categories', {
                     method: 'POST',
                     headers: {
-                        'Authorization': 'Basic ' + btoa(`${username}:${password}`),
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        name: categoryName.trim(),
-                        slug: categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+                        url: blog.url,
+                        username: username,
+                        password: password,
+                        action: 'create',
+                        categoryName: categoryName.trim()
                     })
                 });
 
-                if (response.ok) {
-                    const newCategory = await response.json();
-                    alert(`✅ Category "${newCategory.name}" created successfully!`);
+                const data = await response.json();
+
+                if (data.success && data.category) {
+                    alert(`✅ Category "${data.category.name}" created successfully!`);
                     // Reload categories to show the new one
                     loadWordPressCategories(selectedBlogId);
                     // Select the newly created category
                     setTimeout(() => {
                         const categorySelect = document.getElementById('publishCategory');
                         if (categorySelect) {
-                            categorySelect.value = newCategory.id;
+                            categorySelect.value = data.category.id;
                         }
                     }, 500);
                 } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || `Failed to create category: ${response.status}`);
+                    throw new Error(data.message || 'Failed to create category');
                 }
             } catch (error) {
                 console.error('Error creating category:', error);

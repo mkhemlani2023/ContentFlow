@@ -3155,7 +3155,7 @@ Generate a professional, actionable outline that a content writer can follow to 
 
     // WordPress Category Management
     if (path === '/api/wordpress-categories' && method === 'POST') {
-      const { url, username, password } = body;
+      const { url, username, password, action, categoryName } = body;
 
       if (!url || !username || !password) {
         return {
@@ -3170,6 +3170,59 @@ Generate a professional, actionable outline that a content writer can follow to 
 
       try {
         const baseUrl = url.replace(/\/$/, '');
+
+        // If action is "create", create a new category
+        if (action === 'create') {
+          if (!categoryName || !categoryName.trim()) {
+            return {
+              statusCode: 400,
+              headers,
+              body: JSON.stringify({
+                success: false,
+                message: 'Category name is required'
+              })
+            };
+          }
+
+          const createUrl = `${baseUrl}/wp-json/wp/v2/categories`;
+          const createResponse = await fetch(createUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              name: categoryName.trim(),
+              slug: categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+            })
+          });
+
+          if (createResponse.ok) {
+            const newCategory = await createResponse.json();
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify({
+                success: true,
+                category: newCategory,
+                message: `Category "${newCategory.name}" created successfully`
+              })
+            };
+          } else {
+            const errorData = await createResponse.json();
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify({
+                success: false,
+                message: errorData.message || `Failed to create category: ${createResponse.status}`,
+                details: errorData
+              })
+            };
+          }
+        }
+
+        // Default action: fetch categories
         const categoriesUrl = `${baseUrl}/wp-json/wp/v2/categories?per_page=100`;
 
         const response = await fetch(categoriesUrl, {
@@ -3208,7 +3261,7 @@ Generate a professional, actionable outline that a content writer can follow to 
           headers,
           body: JSON.stringify({
             success: false,
-            message: 'Failed to load categories',
+            message: 'Failed to process request',
             error: error.message
           })
         };
