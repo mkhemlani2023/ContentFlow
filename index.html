@@ -445,68 +445,6 @@
             font-weight: 500;
         }
 
-        .traffic-projection {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 20px;
-        }
-
-        .projection-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .projection-icon {
-            font-size: 16px;
-        }
-
-        .projection-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #334155;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .projection-timeline {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .timeline-item {
-            text-align: center;
-            padding: 8px;
-            background: white;
-            border-radius: 6px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .timeline-month {
-            font-size: 10px;
-            color: #64748b;
-            text-transform: uppercase;
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-
-        .timeline-visits {
-            font-size: 13px;
-            font-weight: 600;
-            color: #2d3748;
-        }
-
-        .projection-note {
-            font-size: 11px;
-            color: #64748b;
-            text-align: center;
-            font-style: italic;
-        }
 
         .keyword-actions {
             display: flex;
@@ -935,7 +873,7 @@
             <div class="wizard-step" id="step1" style="background: white; border: 2px solid #334155; border-radius: 12px; padding: 25px; position: relative; transition: all 0.3s;">
                 <div style="position: absolute; top: -15px; left: 20px; background: #1E293B; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px;">1</div>
                 <h3 style="color: #1E293B; margin: 15px 0 10px 0; font-weight: 600;">🔍 Keyword Research</h3>
-                <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 15px;">Discover high-impact keywords with search volume, competition data, and ranking potential</p>
+                <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 15px;">Discover what people actually search for with real Google autocomplete suggestions</p>
 
                 <div style="background: #f8fafc; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
                     <input type="text" id="wizardKeyword" placeholder="Enter your topic or keyword..." style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; margin-bottom: 10px;">
@@ -946,10 +884,9 @@
 
                 <div style="font-size: 12px; color: #64748b; line-height: 1.5;">
                     <strong style="color: #1e293b;">What you'll get:</strong><br>
-                    • Real-time search data<br>
-                    • Competition analysis<br>
-                    • Related keywords<br>
-                    • Traffic projections
+                    • Real Google autocomplete keywords<br>
+                    • Estimated difficulty ratings<br>
+                    • Search intent classification
                 </div>
             </div>
 
@@ -3551,10 +3488,10 @@
 
             statusDiv.innerHTML = `
                 <div class="status success">
-                    <strong>✅ Analysis Complete</strong><br>
-                    Discovered ${data.totalKeywords} content opportunities in ${Math.round(totalTime/100)/10} seconds<br>
-                    Found ${data.analysis?.competitorArticles || 0} competing articles and ${data.analysis?.relatedSearches || 0} related topics<br>
-                    Ready to dominate your niche with data-driven content strategy
+                    <strong>✅ Google Autocomplete Results Ready</strong><br>
+                    Found ${data.totalKeywords} real keyword suggestions in ${Math.round(totalTime/100)/10} seconds<br>
+                    ${data.metadata?.note || 'Keywords are actual Google autocomplete suggestions based on real search behavior'}<br>
+                    Click any keyword to discover content ideas
                 </div>
             `;
 
@@ -3583,18 +3520,22 @@
                     const backgroundColor = isProcessed ? '#f1f5f9' : 'white';
                     const statusIndicator = isProcessed ? '<span style="color: #334155; font-weight: 500;">✓ Content Generated</span>' : '<span style="color: #334155; font-weight: 500;">Click to expand →</span>';
 
+                    // Source badge (Google Autocomplete or Original Query)
+                    const sourceBadge = keyword.source === 'Original Query'
+                        ? '<span style="background: #0284c7; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500;">Original</span>'
+                        : '<span style="background: #475569; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500;">Google</span>';
+
                     return `
                         <div class="keyword-list-item" ${clickHandler}
                              style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; margin: 8px 0; background: ${backgroundColor}; border: 1px solid #e2e8f0; border-radius: 8px; cursor: ${cursor}; transition: all 0.2s ease; opacity: ${opacity};"
                              ${!isProcessed ? `onmouseover="this.style.backgroundColor='#f8fafc'; this.style.borderColor='#334155'" onmouseout="this.style.backgroundColor='white'; this.style.borderColor='#e2e8f0'"` : ''}>
-                            <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
                                 <div style="font-weight: 600; color: #1e293b;">${keyword.keyword}</div>
-                                <span style="background: ${getOpportunityColor(keyword.opportunity)}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">${keyword.opportunity}% opportunity</span>
+                                ${sourceBadge}
                             </div>
                             <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; color: #64748b;">
-                                <span style="width: 90px; text-align: left;">🔍 ${keyword.searchVolume.toLocaleString()}</span>
-                                <span style="width: 70px; text-align: left; color: ${getDifficultyColor(keyword.difficulty)}">⚡ ${keyword.difficulty}</span>
-                                <span style="width: 60px; text-align: left;">💰 ${keyword.cpc}</span>
+                                <span style="width: 100px; text-align: left; color: ${getDifficultyColor(keyword.difficulty)}">⚡ ${keyword.difficulty}</span>
+                                <span style="width: 120px; text-align: left; font-size: 11px; color: #94a3b8;">${keyword.intent || 'Informational'}</span>
                                 <span style="margin-right: 20px;">${statusIndicator}</span>
                             </div>
                         </div>
@@ -3604,7 +3545,10 @@
                 resultsDiv.innerHTML = `
                     <div class="card">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h2>📈 Keyword Opportunities</h2>
+                            <div>
+                                <h2 style="margin: 0 0 5px 0;">📈 Keyword Suggestions from Google</h2>
+                                <p style="margin: 0; font-size: 13px; color: #64748b;">Real autocomplete data from Google Search</p>
+                            </div>
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <button onclick="saveKeywordResearch()" style="background: #475569; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
                                         onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#475569'">
@@ -3613,16 +3557,15 @@
                             </div>
                         </div>
                         <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0284c7;">
-                            <strong style="color: #1e293b;">💡 Next Step:</strong> <span style="color: #334155;">Click on any keyword below to generate content ideas and articles.</span>
+                            <strong style="color: #1e293b;">💡 Next Step:</strong> <span style="color: #334155;">Click on any keyword below to generate content ideas and articles. Keywords are from Google Autocomplete - what people actually search for!</span>
                         </div>
 
                         <!-- Column Headers -->
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; margin-bottom: 8px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; color: #374151; font-size: 14px;">
-                            <div style="flex: 1;">Keyword & Opportunity</div>
+                            <div style="flex: 1;">Keyword & Source</div>
                             <div style="display: flex; align-items: center; gap: 16px;">
-                                <span style="width: 90px; text-align: left;">Search Volume</span>
-                                <span style="width: 70px; text-align: left;">Difficulty</span>
-                                <span style="width: 60px; text-align: left;">CPC</span>
+                                <span style="width: 100px; text-align: left;">Est. Difficulty</span>
+                                <span style="width: 120px; text-align: left;">Intent</span>
                                 <span style="margin-right: 20px;">Action</span>
                             </div>
                         </div>
@@ -3687,72 +3630,28 @@
                             <h3 class="keyword-title">${keywordData.keyword}</h3>
                             <span class="keyword-intent ${keywordData.intent.toLowerCase()}">${keywordData.intent}</span>
                         </div>
-                        <div class="keyword-opportunity-badge" style="background-color: ${getOpportunityColor(keywordData.opportunity)}">
-                            ${keywordData.opportunity}%
+                        <div style="background: #0284c7; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;">
+                            ${keywordData.source}
                         </div>
                     </div>
 
-                    <div class="keyword-metrics-grid">
-                        <div class="metric-item">
-                            <div class="metric-icon">🔍</div>
-                            <div class="metric-content">
-                                <div class="metric-label">Search Volume</div>
-                                <div class="metric-value">${keywordData.searchVolume.toLocaleString()}</div>
-                            </div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-icon">⚡</div>
-                            <div class="metric-content">
-                                <div class="metric-label">Difficulty</div>
-                                <div class="metric-value" style="color: ${getDifficultyColor(keywordData.difficulty)}">
-                                    <span class="difficulty-dot" style="background-color: ${getDifficultyColor(keywordData.difficulty)}"></span>
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Estimated Difficulty</div>
+                                <div style="font-size: 16px; font-weight: 600; color: ${getDifficultyColor(keywordData.difficulty)};">
+                                    <span class="difficulty-dot" style="background-color: ${getDifficultyColor(keywordData.difficulty)}; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px;"></span>
                                     ${keywordData.difficulty}
                                 </div>
+                                <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Based on keyword patterns</div>
                             </div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-icon">💰</div>
-                            <div class="metric-content">
-                                <div class="metric-label">Cost Per Click</div>
-                                <div class="metric-value">${keywordData.cpc}</div>
+                            <div>
+                                <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Search Intent</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #1e293b;">
+                                    ${keywordData.intent || 'Informational'}
+                                </div>
+                                <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">What users are looking for</div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Opportunity Score Bar -->
-                    <div class="opportunity-score">
-                        <div class="score-label">Opportunity Score</div>
-                        <div class="score-bar-container">
-                            <div class="score-bar" style="width: ${keywordData.opportunity}%; background-color: ${getOpportunityColor(keywordData.opportunity)}"></div>
-                        </div>
-                        <div class="score-text">${keywordData.opportunity}/100</div>
-                    </div>
-
-                    <!-- Traffic Projection -->
-                    <div class="traffic-projection">
-                        <div class="projection-header">
-                            <span class="projection-icon">📊</span>
-                            <span class="projection-title">3-Month Traffic Forecast</span>
-                        </div>
-                        <div class="projection-timeline">
-                            <div class="timeline-item">
-                                <div class="timeline-month">Month 1</div>
-                                <div class="timeline-visits">${calculateTrafficProjection(keywordData, 1)} visits</div>
-                            </div>
-                            <div class="timeline-item">
-                                <div class="timeline-month">Month 2</div>
-                                <div class="timeline-visits">${calculateTrafficProjection(keywordData, 2)} visits</div>
-                            </div>
-                            <div class="timeline-item">
-                                <div class="timeline-month">Month 3</div>
-                                <div class="timeline-visits">${calculateTrafficProjection(keywordData, 3)} visits</div>
-                            </div>
-                        </div>
-                        <div class="projection-note">
-                            Based on ${keywordData.searchVolume.toLocaleString()} monthly searches & ${keywordData.opportunity}% opportunity
-                        </div>
-                        <div style="font-size: 10px; color: #888; margin-top: 8px; font-style: italic; text-align: center;">
-                            ⚠️ Traffic estimates are projections based on keyword potential and assume consistent publishing schedule. Actual results may vary.
                         </div>
                     </div>
 
@@ -5158,38 +5057,6 @@
             setTimeout(() => {
                 displayArticleResult(title, []);
             }, 2000);
-        }
-
-        // Traffic Projection Calculator
-        function calculateTrafficProjection(keyword, month) {
-            const baseVolume = parseInt(keyword.searchVolume) || 0;
-            const difficulty = keyword.difficulty?.toLowerCase() || 'medium';
-            const opportunity = keyword.opportunity || 50;
-
-            // CTR based on difficulty (harder = lower initial ranking = lower CTR)
-            const ctrMultiplier = {
-                'low': 0.15,    // Higher chance of ranking well
-                'medium': 0.08, // Medium chance
-                'high': 0.03    // Lower chance initially
-            };
-
-            const baseCTR = ctrMultiplier[difficulty] || 0.08;
-
-            // Progressive growth over months (SEO takes time)
-            const growthFactors = {
-                1: 0.1,  // Month 1: 10% of potential
-                2: 0.35, // Month 2: 35% of potential
-                3: 0.65  // Month 3: 65% of potential
-            };
-
-            // Opportunity score affects final potential
-            const opportunityMultiplier = opportunity / 100;
-
-            const projectedTraffic = Math.round(
-                baseVolume * baseCTR * growthFactors[month] * opportunityMultiplier
-            );
-
-            return projectedTraffic.toLocaleString();
         }
 
         // SEO Wizard Content Flow Functions
@@ -10574,16 +10441,12 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
 
                         <div id="wizardSteps" style="margin-bottom: 28px;">
                             <div id="step1" style="padding: 14px 16px; margin-bottom: 10px; background: #F8FAFC; border-radius: 8px; border-left: 3px solid #94A3B8;">
-                                <div style="color: #1E293B; font-size: 13px; font-weight: 600;">Step 1: Analyzing SEO Score</div>
+                                <div style="color: #1E293B; font-size: 13px; font-weight: 600;">Step 1: Analyzing Content</div>
                                 <div style="color: #64748B; font-size: 12px; margin-top: 4px;" id="step1Status">Initializing...</div>
                             </div>
-                            <div id="step2" style="padding: 14px 16px; margin-bottom: 10px; background: #F8FAFC; border-radius: 8px; border-left: 3px solid #94A3B8;">
-                                <div style="color: #1E293B; font-size: 13px; font-weight: 600;">Step 2: SEO Optimization</div>
+                            <div id="step2" style="padding: 14px 16px; background: #F8FAFC; border-radius: 8px; border-left: 3px solid #94A3B8;">
+                                <div style="color: #1E293B; font-size: 13px; font-weight: 600;">Step 2: Final Quality Check</div>
                                 <div style="color: #64748B; font-size: 12px; margin-top: 4px;" id="step2Status">Waiting...</div>
-                            </div>
-                            <div id="step3" style="padding: 14px 16px; background: #F8FAFC; border-radius: 8px; border-left: 3px solid #94A3B8;">
-                                <div style="color: #1E293B; font-size: 13px; font-weight: 600;">Step 3: Final Quality Check</div>
-                                <div style="color: #64748B; font-size: 12px; margin-top: 4px;" id="step3Status">Waiting...</div>
                             </div>
                         </div>
 
@@ -10699,43 +10562,13 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
             }
 
             try {
-                // Step 1: Analyze SEO Score
-                updateStep(1, 'Analyzing...', 'active');
+                // Step 1: Analyze and Humanize Content
+                updateStep(1, 'Analyzing content...', 'active');
                 updateProgress(10);
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
-                const initialSEOScore = calculateSEOScoreForOptimization(article);
-                console.log('📊 Initial SEO Score:', initialSEOScore);
-
-                updateStep(1, `Initial score: ${initialSEOScore}/100`, initialSEOScore >= 80 ? 'success' : 'warning');
+                updateStep(1, 'Humanizing content...', 'active');
                 updateProgress(25);
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                // Step 2: SEO Optimization (if needed)
-                try {
-                    if (initialSEOScore < 80) {
-                        updateStep(2, 'Optimizing for SEO...', 'active');
-                        updateProgress(30);
-
-                        console.log('🔧 SEO Score below 80, optimizing...');
-                        const optimizedArticle = await optimizeArticleForSEO(article);
-                        article.content = optimizedArticle.content;
-
-                        const newScore = calculateSEOScoreForOptimization(article);
-                        updateStep(2, `Optimized to ${newScore}/100`, 'success');
-                        updateProgress(50);
-                        await new Promise(resolve => setTimeout(resolve, 800));
-                    } else {
-                        const currentScore = calculateSEOScoreForOptimization(article);
-                        updateStep(2, `Score: ${currentScore}/100`, 'success');
-                        updateProgress(50);
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    }
-                } catch (seoError) {
-                    console.error('SEO optimization failed:', seoError);
-                    updateStep(2, 'Skipped (error)', 'warning');
-                    updateProgress(50);
-                }
 
                 // Automatic Humanization (running silently in background)
                 try {
@@ -10747,10 +10580,14 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                     console.error('Humanization failed (continuing anyway):', humanizeError);
                 }
 
-                // Step 3: Final Quality Check
+                updateStep(1, 'Content humanized', 'success');
+                updateProgress(50);
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Step 2: Final Quality Check
                 try {
-                    updateStep(3, 'Running final checks...', 'active');
-                    updateProgress(70);
+                    updateStep(2, 'Running final checks...', 'active');
+                    updateProgress(60);
                     await new Promise(resolve => setTimeout(resolve, 500));
 
                     // Calculate final scores
@@ -10759,6 +10596,8 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                     const heuristicScore = analyzeAIPatterns(finalContent);
                     const apiScore = await callAIDetectionAPI(finalContent);
                     const finalAIScore = Math.round((heuristicScore * 0.4) + (apiScore * 0.6));
+
+                    updateProgress(80);
 
                     // Store final scores in article
                     article.finalScores = {
@@ -10770,11 +10609,11 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                     console.log('✅ Final SEO Score:', finalSEOScore);
                     console.log('✅ Final AI Detection Score:', finalAIScore);
 
-                    updateStep(3, `SEO Score: ${finalSEOScore}/100`, 'success');
+                    updateStep(2, 'Quality check complete', 'success');
                     updateProgress(100);
                 } catch (qualityError) {
                     console.error('Quality check failed:', qualityError);
-                    updateStep(3, 'Skipped (error)', 'warning');
+                    updateStep(2, 'Skipped (error)', 'warning');
                     updateProgress(100);
                     // Don't set finalScores if quality check fails
                 }

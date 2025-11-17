@@ -248,6 +248,86 @@ const callSerperAPI = async (query, location = 'us', language = 'en', num = 10) 
   }
 };
 
+// Serper Autocomplete API - Get real Google autocomplete suggestions
+const callSerperAutocompleteAPI = async (query, location = 'us') => {
+  try {
+    const requestData = {
+      q: query,
+      gl: location
+    };
+
+    const startTime = Date.now();
+
+    const response = await fetch(`${SERPER_BASE_URL}/autocomplete`, {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': SERPER_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const responseTime = Date.now() - startTime;
+
+    console.log('✅ Serper Autocomplete API response:', JSON.stringify(data, null, 2));
+
+    return { data, responseTime, success: true };
+  } catch (error) {
+    throw new Error(`Serper Autocomplete API error: ${error.message}`);
+  }
+};
+
+// Process autocomplete suggestions into keyword data
+const processAutocompleteKeywords = (autocompleteData, responseTime, originalKeyword) => {
+  const keywords = [];
+  const seenKeywords = new Set();
+
+  // Add original keyword first
+  keywords.push({
+    keyword: originalKeyword,
+    difficulty: calculateKeywordDifficulty(originalKeyword, 0),
+    intent: determineIntent(originalKeyword),
+    source: 'Original Query'
+  });
+  seenKeywords.add(originalKeyword.toLowerCase());
+
+  // Process autocomplete suggestions (real Google suggestions)
+  if (autocompleteData.suggestions && Array.isArray(autocompleteData.suggestions)) {
+    autocompleteData.suggestions.forEach((suggestion, index) => {
+      const suggestionText = typeof suggestion === 'string' ? suggestion : suggestion.value;
+
+      if (suggestionText && !seenKeywords.has(suggestionText.toLowerCase())) {
+        keywords.push({
+          keyword: suggestionText,
+          difficulty: calculateKeywordDifficulty(suggestionText, index + 1),
+          intent: determineIntent(suggestionText),
+          source: 'Google Autocomplete'
+        });
+        seenKeywords.add(suggestionText.toLowerCase());
+      }
+    });
+  }
+
+  console.log(`✅ Processed ${keywords.length} keywords from Google Autocomplete`);
+
+  return {
+    success: true,
+    keywords: keywords,
+    totalKeywords: keywords.length,
+    responseTime,
+    cached: false,
+    dataSource: 'Google Autocomplete via Serper API',
+    analysis: {
+      autocompleteResults: autocompleteData.suggestions?.length || 0
+    }
+  };
+};
+
 const processKeywords = (searchData, responseTime, originalKeyword) => {
   const keywords = [];
 
@@ -1012,7 +1092,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Keywords endpoint
+    // Keywords endpoint - Using Google Autocomplete for real suggestions
     if (path === '/api/keywords' && method === 'POST') {
       const { keyword, location = 'us', language = 'en', count = 10 } = body;
 
@@ -1028,14 +1108,11 @@ exports.handler = async (event, context) => {
       }
 
       try {
-        const result = await callSerperAPI(keyword, location, language, count);
-        const processedResult = processKeywords(result.data, result.responseTime, keyword);
+        // Use Serper Autocomplete API for real Google suggestions
+        const result = await callSerperAutocompleteAPI(keyword, location);
+        const processedResult = processAutocompleteKeywords(result.data, result.responseTime, keyword);
 
-        // Business value metrics
-        const avgOpportunity = Math.round(
-          processedResult.keywords.reduce((sum, kw) => sum + kw.opportunity, 0) / processedResult.keywords.length
-        );
-        const highOpportunityCount = processedResult.keywords.filter(kw => kw.opportunity >= 70).length;
+        console.log(`✅ Returning ${processedResult.totalKeywords} keywords from Google Autocomplete`);
 
         return {
           statusCode: 200,
@@ -1048,24 +1125,21 @@ exports.handler = async (event, context) => {
               language,
               requestedCount: count,
               actualCount: processedResult.totalKeywords,
-              businessValue: {
-                avgOpportunity: avgOpportunity,
-                highOpportunityKeywords: highOpportunityCount,
-                competitiveLandscape: `${processedResult.analysis?.competitorArticles || 0} competitors analyzed`,
-                marketInsights: `${processedResult.analysis?.relatedSearches || 0} related search trends identified`
-              }
+              dataSource: 'Google Autocomplete via Serper API',
+              note: 'Keywords are real Google autocomplete suggestions. Difficulty estimates are algorithmic.'
             },
             timestamp: new Date().toISOString()
           })
         };
       } catch (error) {
+        console.error('❌ Autocomplete API failed:', error.message);
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({
-            error: 'Failed to fetch keywords',
+            error: 'Failed to fetch keyword suggestions',
             message: error.message,
-            code: 'KEYWORD_RESEARCH_FAILED'
+            code: 'KEYWORD_AUTOCOMPLETE_FAILED'
           })
         };
       }
