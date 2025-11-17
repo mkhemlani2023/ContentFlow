@@ -3544,7 +3544,7 @@
                                 <span style="width: 120px; text-align: left;">🔍 ${keyword.searchVolume ? keyword.searchVolume.toLocaleString() : 'N/A'}</span>
                                 <span style="width: 80px; text-align: left; color: ${getDifficultyColor(keyword.difficulty)}">⚡ ${keyword.difficulty}</span>
                                 <span style="width: 70px; text-align: left;">💰 ${keyword.cpc || 'N/A'}</span>
-                                <span style="margin-right: 20px;">${statusIndicator}</span>
+                                <span style="width: 180px; text-align: left;">${statusIndicator}</span>
                             </div>
                         </div>
                     `;
@@ -3575,7 +3575,7 @@
                                 <span style="width: 120px; text-align: left;">Search Volume</span>
                                 <span style="width: 80px; text-align: left;">Difficulty</span>
                                 <span style="width: 70px; text-align: left;">CPC</span>
-                                <span style="margin-right: 20px;">Action</span>
+                                <span style="width: 180px; text-align: left;">Action</span>
                             </div>
                         </div>
 
@@ -5335,6 +5335,7 @@
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Model:</label>
                                 <select id="modelSelect" onchange="updateModelSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
                                     <option value="">Choose a model...</option>
+                                    <option value="dataforseo|8">📊 DataForSEO (SEO-Optimized) - 8 credits (~$0.08) 🔥 NEW</option>
                                     <option value="basic|25" id="basicModelOption">🥉 Standard Quality - 25 credits (~$0.25)</option>
                                     <option value="premium|50">🥈 Premium Quality - 50 credits (~$0.50) ⭐ RECOMMENDED</option>
                                     <option value="enterprise|85">🥇 Enterprise Quality - 85 credits (~$0.85)</option>
@@ -9878,7 +9879,7 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
 
         async function generateArticleWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier, totalCredits) {
             // Calculate credit costs
-            const articleCreditCost = modelTier === 'basic' ? 25 : modelTier === 'premium' ? 50 : 85;
+            const articleCreditCost = modelTier === 'dataforseo' ? 8 : modelTier === 'basic' ? 25 : modelTier === 'premium' ? 50 : 85;
             const imageCreditCost = totalCredits - articleCreditCost;
 
             console.log('=== GENERATE ARTICLE WITH IMAGES ===');
@@ -12009,6 +12010,7 @@ ${item.answer}
                             <div>
                                 <label style="display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 5px;">Model Quality</label>
                                 <select id="model-select-${cleanId}-${index}" onchange="updateCreditCost('${cleanId}', ${index})" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
+                                    <option value="dataforseo">DataForSEO - 8 credits 🔥</option>
                                     <option value="basic">Standard - 25 credits</option>
                                     <option value="premium">Premium - 50 credits</option>
                                     <option value="enterprise">Enterprise - 85 credits</option>
@@ -12272,7 +12274,7 @@ ${item.answer}
             if (!lengthSelect || !modelSelect || !imageSelect || !costDisplay) return;
 
             // Base costs by model
-            const modelCosts = { 'basic': 25, 'premium': 50, 'enterprise': 85 };
+            const modelCosts = { 'dataforseo': 8, 'basic': 25, 'premium': 50, 'enterprise': 85 };
 
             // Length multipliers (longer articles cost more)
             const lengthMultipliers = {
@@ -12341,7 +12343,7 @@ ${item.answer}
             const costDisplay = document.getElementById(`credit-cost-${cleanId}-${index}`);
 
             if (modelSelect && imageSelect && costDisplay) {
-                const modelCosts = { 'basic': 25, 'premium': 50, 'enterprise': 85 };
+                const modelCosts = { 'dataforseo': 8, 'basic': 25, 'premium': 50, 'enterprise': 85 };
                 const imageCosts = { 'none': 0, 'featured': 20, 'full': 50 };
 
                 const modelCost = modelCosts[modelSelect.value] || 25;
@@ -12380,7 +12382,7 @@ ${item.answer}
             const selectedImages = window.selectedArticleImages[`${cleanId}-${index}`] || [];
 
             // Calculate total cost with length multiplier
-            const modelCosts = { 'basic': 25, 'premium': 50, 'enterprise': 85 };
+            const modelCosts = { 'dataforseo': 8, 'basic': 25, 'premium': 50, 'enterprise': 85 };
             const lengthMultipliers = { '1000': 1.0, '1500': 1.2, '2000': 1.4, '2500': 1.6, '3000': 1.8 };
 
             const baseCost = modelCosts[modelType] || 25;
@@ -12787,6 +12789,7 @@ ${item.answer}
 
             let modelCost = 25; // default basic
             switch(modelSelect.value) {
+                case 'dataforseo': modelCost = 8; break;
                 case 'basic': modelCost = 25; break;
                 case 'premium': modelCost = 50; break;
                 case 'enterprise': modelCost = 85; break;
@@ -12819,7 +12822,7 @@ ${item.answer}
             const images = imageSelect.value;
 
             // Calculate total credit cost
-            let modelCost = model === 'basic' ? 25 : model === 'premium' ? 50 : 85;
+            let modelCost = model === 'dataforseo' ? 8 : model === 'basic' ? 25 : model === 'premium' ? 50 : 85;
             let imageCost = images === 'none' ? 0 : images === 'featured' ? 20 : 50;
             const totalCost = modelCost + imageCost;
 
@@ -17826,6 +17829,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Model:</label>
                                 <select id="bulkModelSelect" onchange="updateBulkCostSummary()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
                                     <option value="">Choose a model...</option>
+                                    <option value="dataforseo|8">📊 DataForSEO (SEO-Optimized) - 8 credits per article 🔥 NEW</option>
                                     <option value="basic|25">🥉 Basic Model (GPT-3.5) - 25 credits per article</option>
                                     <option value="premium|50">🥈 Premium Model (GPT-4) - 50 credits per article</option>
                                     <option value="enterprise|85">🥇 Enterprise Model (Claude 3.5 Sonnet) - 85 credits per article</option>
