@@ -17142,10 +17142,12 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 const password = atob(blog.password);
 
                 // Fetch categories using our API to avoid CORS issues
-                const response = await fetch('/api/wordpress-categories', {
+                // Add cache-busting to ensure fresh category data
+                const response = await fetch('/api/wordpress-categories?t=' + Date.now(), {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
                     },
                     body: JSON.stringify({
                         url: blog.url,

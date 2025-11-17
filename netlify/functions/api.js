@@ -3223,13 +3223,17 @@ Generate a professional, actionable outline that a content writer can follow to 
         }
 
         // Default action: fetch categories
-        const categoriesUrl = `${baseUrl}/wp-json/wp/v2/categories?per_page=100`;
+        // Add cache-busting timestamp to ensure fresh data
+        const timestamp = Date.now();
+        const categoriesUrl = `${baseUrl}/wp-json/wp/v2/categories?per_page=100&_=${timestamp}`;
 
         const response = await fetch(categoriesUrl, {
           method: 'GET',
           headers: {
             'Authorization': 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
           }
         });
 
