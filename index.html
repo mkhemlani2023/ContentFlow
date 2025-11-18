@@ -16700,6 +16700,28 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 return;
             }
 
+            // Check if first blog needs template setup BEFORE showing publish modal
+            const firstBlog = blogs[0];
+            const blogSetupKey = `blog_setup_${firstBlog.id}`;
+            const hasBeenSetup = localStorage.getItem(blogSetupKey);
+
+            if (!hasBeenSetup && blogs.length === 1) {
+                console.log('🎯 First-time blog detected - showing template setup before publish modal');
+                try {
+                    const wantsTemplate = await offerBlogTemplateSetup(firstBlog);
+                    if (wantsTemplate) {
+                        localStorage.setItem(blogSetupKey, 'true');
+                        console.log('✅ Template applied before publish');
+                    } else {
+                        localStorage.setItem(blogSetupKey, 'declined');
+                        console.log('⏭️ Template declined before publish');
+                    }
+                } catch (error) {
+                    console.error('❌ Template setup error:', error);
+                    localStorage.setItem(blogSetupKey, 'error');
+                }
+            }
+
             // Suggest a category based on article content
             const suggestedCategory = suggestCategoryFromArticle(article);
 
