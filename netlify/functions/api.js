@@ -567,7 +567,7 @@ const processHybridKeywords = async (autocompleteData, originalKeyword) => {
     console.log('⚠️ Falling back to autocomplete-only data');
 
     // Fallback to autocomplete-only if DataForSEO fails
-    keywordList.forEach((keyword, index) => {
+    googleSuggestions.forEach((keyword, index) => {
       keywords.push({
         keyword: keyword,
         difficulty: calculateKeywordDifficulty(keyword, index),
