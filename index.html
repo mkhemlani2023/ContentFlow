@@ -8840,13 +8840,23 @@
                 const result = await SupabaseService.deleteBlog(blogId);
 
                 if (result.success) {
-                    // Clear the blog setup flag from localStorage
-                    // This ensures that if the blog is recreated, it will show the template setup modal
+                    // Clear ALL cached data related to this blog
                     const blogSetupKey = `blog_setup_${blogId}`;
                     localStorage.removeItem(blogSetupKey);
-                    console.log(`🗑️ Cleared setup flag for deleted blog: ${blogId}`);
 
-                    alert('✅ Blog deleted successfully!');
+                    // Clear any other blog-related cache
+                    // Force browser to forget any cached API responses for this blog
+                    if ('caches' in window) {
+                        caches.keys().then(names => {
+                            names.forEach(name => {
+                                caches.delete(name);
+                            });
+                        });
+                    }
+
+                    console.log(`🗑️ Cleared all cached data for deleted blog: ${blogId}`);
+
+                    alert('✅ Blog deleted successfully!\n\nAll cached data has been cleared.');
                     displayBlogManagement();
                 } else {
                     throw new Error(result.error || 'Failed to delete blog');
@@ -17133,6 +17143,8 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
             const categorySelect = document.getElementById('publishCategory');
             if (!categorySelect) return;
 
+            console.log('📂 Loading categories for blog:', blogId);
+
             categorySelect.innerHTML = '<option value="">Loading categories...</option>';
             categorySelect.disabled = true;
 
@@ -17142,7 +17154,12 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 if (!result.success || !result.data) return;
 
                 const blog = result.data.find(b => b.id === blogId);
-                if (!blog) return;
+                if (!blog) {
+                    console.warn('⚠️ Blog not found:', blogId);
+                    return;
+                }
+
+                console.log('🔗 Fetching categories from WordPress:', blog.url);
 
                 const username = atob(blog.username);
                 const password = atob(blog.password);
@@ -17169,7 +17186,8 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     categorySelect.innerHTML = '<option value="">Select a category (optional)</option>' +
                         categories.map(cat => `<option value="${cat.id}">${cat.name} (${cat.count} posts)</option>`).join('');
                     categorySelect.disabled = false;
-                    console.log(`✅ Loaded ${categories.length} categories from WordPress`);
+                    console.log(`✅ Loaded ${categories.length} categories from WordPress:`,
+                        categories.map(c => c.name).join(', ') || 'No categories');
                 } else {
                     throw new Error(result2.message || 'Failed to load categories');
                 }
