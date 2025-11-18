@@ -15976,6 +15976,11 @@ Main Noun(s):`;
 
                 successModal.remove();
 
+                // Clear any existing auto-close timeout
+                if (window.imageSuccessTimeout) {
+                    clearTimeout(window.imageSuccessTimeout);
+                }
+
                 // Always use the updated window.currentGeneratedArticle which has images embedded
                 if (article.savedArticleId) {
                     console.log('✅ Loading from Supabase (ID: ' + article.savedArticleId + ')');
@@ -16004,8 +16009,17 @@ Main Noun(s):`;
             });
 
             closeBtn.addEventListener('click', function() {
+                if (window.imageSuccessTimeout) {
+                    clearTimeout(window.imageSuccessTimeout);
+                }
                 successModal.remove();
             });
+
+            // Auto-close and show article after 2 seconds
+            window.imageSuccessTimeout = setTimeout(() => {
+                console.log('⏱️ Auto-closing success modal and showing article');
+                viewArticleWithImages();
+            }, 2000);
         }
 
         async function removeImagesFromArticle() {
@@ -18957,7 +18971,104 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
             // Load saved research
             displaySavedResearch();
+
+            // Setup Enter key handlers for common inputs
+            setupEnterKeyHandlers();
         });
+
+        // Setup Enter key support for inputs throughout the application
+        function setupEnterKeyHandlers() {
+            // Helper function to add Enter key listener
+            const addEnterListener = (inputId, buttonId, buttonClickHandler) => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (buttonClickHandler) {
+                                buttonClickHandler();
+                            } else {
+                                const button = document.getElementById(buttonId);
+                                if (button) button.click();
+                            }
+                        }
+                    });
+                }
+            };
+
+            // Wizard keyword input
+            addEnterListener('wizardKeyword', null, () => {
+                if (typeof wizardStartKeywordResearch === 'function') {
+                    wizardStartKeywordResearch();
+                }
+            });
+
+            // Login form
+            const loginEmail = document.getElementById('loginEmail');
+            const loginPassword = document.getElementById('loginPassword');
+            if (loginEmail) {
+                loginEmail.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        document.getElementById('loginPassword')?.focus();
+                    }
+                });
+            }
+            if (loginPassword) {
+                loginPassword.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (typeof login === 'function') {
+                            login();
+                        }
+                    }
+                });
+            }
+
+            // Signup form - Enter moves to next field, last field triggers signup
+            const signupName = document.getElementById('signupName');
+            const signupEmail = document.getElementById('signupEmail');
+            const signupPassword = document.getElementById('signupPassword');
+            if (signupName) {
+                signupName.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        document.getElementById('signupEmail')?.focus();
+                    }
+                });
+            }
+            if (signupEmail) {
+                signupEmail.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        document.getElementById('signupPassword')?.focus();
+                    }
+                });
+            }
+            if (signupPassword) {
+                signupPassword.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (typeof signup === 'function') {
+                            signup();
+                        }
+                    }
+                });
+            }
+
+            // Blog management form
+            const blogName = document.getElementById('blogName');
+            if (blogName) {
+                blogName.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        document.getElementById('blogUrl')?.focus();
+                    }
+                });
+            }
+
+            console.log('✅ Enter key handlers initialized');
+        }
 
         // Individual Image Management
         function manageIndividualImages() {
