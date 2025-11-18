@@ -17566,7 +17566,10 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                                         url: uploadedMedia.source_url,
                                         alt: altText,
                                         type: img.type, // Preserve type (featured/supporting)
-                                        sectionId: img.sectionId
+                                        sectionId: img.sectionId,
+                                        photographer: img.photographer, // Preserve photographer info
+                                        photographerUrl: img.photographerUrl,
+                                        source: img.source
                                     });
                                 } else {
                                     console.error(`❌ Invalid media ID received for image ${i + 1}:`, uploadedMedia);
@@ -17651,7 +17654,16 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         if (uploadedImages.length > index + 1) {
                             const sectionImage = uploadedImages[index + 1];
                             htmlContent += `<!-- wp:image {"id":${sectionImage.id},"align":"center","sizeSlug":"large"} -->\n`;
-                            htmlContent += `<figure class="wp-block-image aligncenter size-large"><img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/></figure>\n`;
+                            htmlContent += `<figure class="wp-block-image aligncenter size-large">`;
+                            htmlContent += `<img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/>`;
+                            // Add figcaption with photo credits if photographer info exists
+                            if (sectionImage.photographer && sectionImage.source) {
+                                const photographerLink = sectionImage.photographerUrl ?
+                                    `<a href="${sectionImage.photographerUrl}" target="_blank" rel="noopener noreferrer">${sectionImage.photographer}</a>` :
+                                    sectionImage.photographer;
+                                htmlContent += `<figcaption class="wp-element-caption">Photo by ${photographerLink} on ${sectionImage.source}</figcaption>`;
+                            }
+                            htmlContent += `</figure>\n`;
                             htmlContent += `<!-- /wp:image -->\n\n`;
                         }
 
