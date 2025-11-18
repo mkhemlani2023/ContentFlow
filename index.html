@@ -17409,27 +17409,45 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Step 1: Upload images to WordPress media library if they exist
                 let uploadedImages = [];
 
+                // Parse images if it's a JSON string
+                let images = article.images;
+                if (typeof images === 'string') {
+                    try {
+                        images = JSON.parse(images);
+                        console.log('📸 Parsed images from JSON string');
+                    } catch (e) {
+                        console.error('Failed to parse images JSON:', e);
+                        images = [];
+                    }
+                }
+
+                // Ensure images is an array
+                if (!Array.isArray(images)) {
+                    console.warn('⚠️ article.images is not an array, converting to array');
+                    images = images ? [images] : [];
+                }
+
                 // Reorder images to ensure featured image (type='featured' or first image) is first
                 let imagesToUpload = [];
-                if (article.images && article.images.length > 0) {
+                if (images && images.length > 0) {
                     // Find featured image (usually has type='featured' or sectionId='title')
-                    let featuredImg = article.images.find(img => img.type === 'featured' || img.sectionId === 'title');
+                    let featuredImg = images.find(img => img.type === 'featured' || img.sectionId === 'title');
 
                     // If no explicit featured image found, use the first image as featured
-                    if (!featuredImg && article.images.length > 0) {
-                        featuredImg = article.images[0];
+                    if (!featuredImg && images.length > 0) {
+                        featuredImg = images[0];
                         featuredImg.type = 'featured'; // Mark it as featured
                         console.log('📸 No explicit featured image found, using first image as featured');
                     }
 
-                    const otherImages = article.images.filter(img => img !== featuredImg);
+                    const otherImages = images.filter(img => img !== featuredImg);
 
                     // Featured image first, then others
-                    imagesToUpload = featuredImg ? [featuredImg, ...otherImages] : article.images;
+                    imagesToUpload = featuredImg ? [featuredImg, ...otherImages] : images;
 
                     console.log('📸 Image order:', {
                         total: imagesToUpload.length,
-                        featured: featuredImg ? 'Found at original index ' + article.images.indexOf(featuredImg) : 'Not found',
+                        featured: featuredImg ? 'Found at original index ' + images.indexOf(featuredImg) : 'Not found',
                         featuredType: featuredImg?.type,
                         featuredSectionId: featuredImg?.sectionId,
                         reordered: !!featuredImg
