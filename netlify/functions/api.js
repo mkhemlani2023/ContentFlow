@@ -1418,6 +1418,33 @@ exports.handler = async (event, context) => {
         };
       }
 
+      // Check for required API keys
+      if (!SERPER_API_KEY) {
+        console.error('❌ SERPER_API_KEY not configured');
+        return {
+          statusCode: 503,
+          headers,
+          body: JSON.stringify({
+            error: 'Keyword research API not configured. Please contact support.',
+            code: 'SERPER_NOT_CONFIGURED',
+            details: 'SERPER_API_KEY environment variable is missing'
+          })
+        };
+      }
+
+      if (!DATAFORSEO_LOGIN || !DATAFORSEO_PASSWORD) {
+        console.error('❌ DataForSEO credentials not configured');
+        return {
+          statusCode: 503,
+          headers,
+          body: JSON.stringify({
+            error: 'Keyword metrics API not configured. Please contact support.',
+            code: 'DATAFORSEO_NOT_CONFIGURED',
+            details: 'DATAFORSEO credentials are missing'
+          })
+        };
+      }
+
       try {
         // Step 1: Get real keyword suggestions from Google Autocomplete
         console.log(`🔍 Step 1: Fetching autocomplete suggestions for "${keyword}"`);
