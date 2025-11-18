@@ -17310,23 +17310,38 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
             });
 
             if (!hasBeenSetup) {
-                // Close current modal
-                closePublishModal();
+                console.log('⏸️ Blog not setup yet - showing template modal');
 
-                // Offer template setup for new blog
-                const wantsTemplate = await offerBlogTemplateSetup(selectedBlog);
+                try {
+                    // Close current modal
+                    closePublishModal();
 
-                if (wantsTemplate) {
-                    // Template was applied, mark as setup
-                    localStorage.setItem(blogSetupKey, 'true');
-                } else {
-                    // User declined template, mark as setup anyway so we don't ask again
-                    localStorage.setItem(blogSetupKey, 'declined');
+                    // Offer template setup for new blog
+                    const wantsTemplate = await offerBlogTemplateSetup(selectedBlog);
+
+                    console.log('📋 Template modal result:', wantsTemplate);
+
+                    if (wantsTemplate) {
+                        // Template was applied, mark as setup
+                        localStorage.setItem(blogSetupKey, 'true');
+                        console.log('✅ Template applied, marked as setup');
+                    } else {
+                        // User declined template, mark as setup anyway so we don't ask again
+                        localStorage.setItem(blogSetupKey, 'declined');
+                        console.log('⏭️ Template declined, marked as declined');
+                    }
+
+                    // Reopen publish modal to continue
+                    console.log('🔄 Reopening publish modal...');
+                    publishToWebsite();
+                    return;
+                } catch (error) {
+                    console.error('❌ Error in template setup flow:', error);
+                    // Mark as setup anyway to prevent getting stuck
+                    localStorage.setItem(blogSetupKey, 'error');
+                    alert('Template setup encountered an error. You can still publish your article.');
+                    // Continue with publish
                 }
-
-                // Reopen publish modal to continue
-                publishToWebsite();
-                return;
             }
 
             // Warn if no category is selected
