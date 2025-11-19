@@ -16031,11 +16031,11 @@ Main Noun(s):`;
                 successModal.remove();
             });
 
-            // Auto-close and show article after 2 seconds
+            // Auto-close and show article immediately (500ms delay for smooth transition)
             window.imageSuccessTimeout = setTimeout(() => {
                 console.log('⏱️ Auto-closing success modal and showing article');
                 viewArticleWithImages();
-            }, 2000);
+            }, 500);
         }
 
         async function removeImagesFromArticle() {
@@ -17337,7 +17337,35 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
             // Check if this is the first article to this blog - offer template setup
             const blogSetupKey = `blog_setup_${selectedBlogId}`;
-            const hasBeenSetup = localStorage.getItem(blogSetupKey);
+            let hasBeenSetup = localStorage.getItem(blogSetupKey);
+
+            // If not marked as setup, check if blog has existing posts
+            if (!hasBeenSetup) {
+                try {
+                    const username = selectedBlog.username ? atob(selectedBlog.username) : '';
+                    const password = selectedBlog.password ? atob(selectedBlog.password) : '';
+
+                    // Check if blog has existing posts
+                    const postsCheckResponse = await fetch(`${selectedBlog.url}/wp-json/wp/v2/posts?per_page=1&_fields=id`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': 'Basic ' + btoa(`${username}:${password}`)
+                        }
+                    });
+
+                    if (postsCheckResponse.ok) {
+                        const posts = await postsCheckResponse.json();
+                        if (posts && posts.length > 0) {
+                            // Blog has existing posts, mark as setup automatically
+                            localStorage.setItem(blogSetupKey, 'existing');
+                            hasBeenSetup = 'existing';
+                            console.log('✅ Blog has existing posts, marked as setup automatically');
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Could not check for existing posts:', error);
+                }
+            }
 
             console.log('🔍 Template setup check:', {
                 blogId: selectedBlogId,
