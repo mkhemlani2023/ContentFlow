@@ -3925,8 +3925,6 @@
                 <div class="status success">
                     <strong>✅ Keyword Research Complete</strong><br>
                     Found ${data.totalKeywords} keywords with real search data in ${Math.round(totalTime/100)/10} seconds<br>
-                    ${data.metadata?.note || 'Keywords enriched with real metrics from DataForSEO'}<br>
-                    ${data.metadata?.cost ? `DataForSEO API cost: $${data.metadata.cost.toFixed(4)}` : ''}<br>
                     Click any keyword to discover content ideas
                 </div>
             `;
@@ -6088,8 +6086,6 @@
                             ` : ''}
                         </div>
                         <div style="text-align: right; font-size: 12px; color: #64748b;">
-                            <div><strong>Model:</strong> ${article.metadata.modelUsed}</div>
-                            <div><strong>Cost:</strong> ${article.metadata.creditCost} credits</div>
                             ${article.metadata.generatedAt ? `<div style="font-size: 11px; margin-top: 4px;">${new Date(article.metadata.generatedAt).toLocaleString()}</div>` : ''}
                         </div>
                     </div>
@@ -9724,7 +9720,7 @@
                 if (!config) {
                     throw new Error(`Invalid model tier: ${modelTier}. Please select a valid model.`);
                 }
-                progress.updateTechnicalInfo(`Model: ${config.model}\nWord count: ${wordCount}\nDifficulty: ${difficulty}\nIntent: ${intent}\nTemperature: ${config.temperature}`);
+                progress.updateTechnicalInfo(`Word count: ${wordCount}\nDifficulty: ${difficulty}\nIntent: ${intent}`);
 
                 // Manually advance through stages with confidence-inspiring messages
                 updateProgressStage(0, '✓ AI model ready');
@@ -12526,7 +12522,6 @@ ${item.answer}
                             <div id="credit-cost-${cleanId}-${index}" style="font-size: 12px; color: #1E293B; font-weight: 600;">
                                 <div style="background: linear-gradient(135deg, #334155 0%, #1E293B 100%); color: white; padding: 8px 12px; border-radius: 6px;">
                                     <div style="font-size: 14px; font-weight: 600;">Total: 30 credits</div>
-                                    <div style="font-size: 11px; opacity: 0.9;">≈ $0.30 value</div>
                                 </div>
                             </div>
                         </div>
@@ -14062,7 +14057,7 @@ ${item.answer}
                         </div>
 
                         <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #92400e;">
-                            <strong>💳 Cost:</strong> ${editCost} credits (using ${article.modelTier || 'basic'} model)
+                            <strong>💳 Cost:</strong> ${editCost} credits
                         </div>
 
                         <div style="display: flex; gap: 12px; justify-content: center;">
@@ -14288,7 +14283,7 @@ EDITED VERSION (complete, no abbreviations):`;
                         </div>
 
                         <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #92400e;">
-                            <strong>💳 Cost:</strong> ${humanizeCost} credits (using ${article.modelTier || 'basic'} model)
+                            <strong>💳 Cost:</strong> ${humanizeCost} credits
                         </div>
 
                         <div style="display: flex; gap: 12px; justify-content: center;">
@@ -18761,7 +18756,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 breakdown += `</div>`;
 
                 breakdown += `<div style="border-top: 1px solid #334155; padding-top: 12px; margin-top: 12px; font-size: 16px;">`;
-                breakdown += `<div style="display: flex; justify-content: space-between; align-items: center;"><strong>Total Credits: ${totalCredits}</strong><strong>Cost: ~$${totalCost}</strong></div>`;
+                breakdown += `<div style="display: flex; justify-content: space-between; align-items: center;"><strong>Total Credits: ${totalCredits}</strong></div>`;
                 breakdown += `</div>`;
 
                 breakdown += `<div style="margin-top: 10px; font-size: 12px; font-style: italic; color: #64748b;">`;
