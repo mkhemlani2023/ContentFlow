@@ -9713,12 +9713,35 @@
         async function generateArticleWithDataforSEO(keyword, wordCount, difficulty, intent, articleTitle = null) {
             const title = articleTitle || keyword;
 
-            // Calculate section distribution
-            const numSections = Math.max(3, Math.min(5, Math.floor(wordCount / 350)));
-            const introWords = Math.min(250, Math.floor(wordCount * 0.15));
-            const conclusionWords = Math.min(200, Math.floor(wordCount * 0.12));
+            // Calculate section distribution based on article length
+            let numSections, introWords, conclusionWords;
+
+            if (wordCount <= 800) {
+                // Short articles: 3 sections
+                numSections = 3;
+                introWords = Math.floor(wordCount * 0.15); // ~120 words
+                conclusionWords = Math.floor(wordCount * 0.12); // ~96 words
+            } else if (wordCount <= 1200) {
+                // Medium-short articles: 4 sections
+                numSections = 4;
+                introWords = Math.floor(wordCount * 0.12); // ~144 words
+                conclusionWords = Math.floor(wordCount * 0.10); // ~120 words
+            } else if (wordCount <= 1800) {
+                // Medium articles: 5 sections
+                numSections = 5;
+                introWords = Math.floor(wordCount * 0.10); // ~180 words
+                conclusionWords = Math.floor(wordCount * 0.08); // ~144 words
+            } else {
+                // Long articles (1800+): 6 sections
+                numSections = 6;
+                introWords = Math.floor(wordCount * 0.08); // ~200 words
+                conclusionWords = Math.floor(wordCount * 0.07); // ~175 words
+            }
+
             const bodyWords = wordCount - introWords - conclusionWords;
             const wordsPerSection = Math.floor(bodyWords / numSections);
+
+            console.log(`📊 Article structure: ${wordCount} words = ${numSections} sections, ${wordsPerSection} words/section`);
 
             // Build stage names dynamically
             const stages = [
