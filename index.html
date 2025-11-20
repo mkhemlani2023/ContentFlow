@@ -9739,7 +9739,8 @@
 
                     if (!response.ok) {
                         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                        throw new Error(errorData.error || `API error: ${response.status}`);
+                        console.error('DataforSEO section error:', errorData);
+                        throw new Error(errorData.message || errorData.error || `API error: ${response.status}`);
                     }
 
                     const data = await response.json();

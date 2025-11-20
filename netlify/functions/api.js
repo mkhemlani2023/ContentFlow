@@ -3664,6 +3664,7 @@ Generate a professional, actionable outline that a content writer can follow to 
 
       try {
         console.log(`📊 DataforSEO Section: ${sectionType} - ${wordCount} words`);
+        console.log(`📊 Topic: ${topic.substring(0, 100)}...`);
 
         const result = await generateSingleDataForSEOContent(
           topic,
@@ -3689,13 +3690,15 @@ Generate a professional, actionable outline that a content writer can follow to 
           })
         };
       } catch (error) {
-        console.error('DataforSEO section error:', error);
+        console.error('DataforSEO section error:', error.message);
+        console.error('DataforSEO section error stack:', error.stack);
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({
             error: 'Failed to generate section',
-            message: error.message
+            message: error.message,
+            details: error.stack
           })
         };
       }
