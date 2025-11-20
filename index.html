@@ -5768,7 +5768,7 @@
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Model:</label>
                                 <select id="modelSelect" onchange="updateModelSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
                                     <option value="">Choose a model...</option>
-                                    <option value="dataforseo|8">📊 DataForSEO (SEO-Optimized) - 8 credits (~$0.08) 🔥 NEW</option>
+                                    <option value="dataforseo|12">📊 DataForSEO (SEO-Optimized) - 12 credits (~$0.12) 🔥 NEW</option>
                                     <option value="basic|25" id="basicModelOption">🥉 Standard Quality - 25 credits (~$0.25)</option>
                                     <option value="premium|50">🥈 Premium Quality - 50 credits (~$0.50) ⭐ RECOMMENDED</option>
                                     <option value="enterprise|85">🥇 Enterprise Quality - 85 credits (~$0.85)</option>
@@ -9689,39 +9689,41 @@
             await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, keyword);
         }
 
-        // DataforSEO Content Generation - modular approach calling backend for each section
+        // DataforSEO Content Generation - generates outline first, then fills content modularly
         async function generateArticleWithDataforSEO(keyword, wordCount, difficulty, intent, articleTitle = null) {
+            const title = articleTitle || keyword;
+
             // Calculate section distribution
             const numSections = Math.max(3, Math.min(5, Math.floor(wordCount / 350)));
-            const introWords = Math.min(200, Math.floor(wordCount * 0.12));
+            const introWords = Math.min(250, Math.floor(wordCount * 0.15));
             const conclusionWords = Math.min(200, Math.floor(wordCount * 0.12));
             const bodyWords = wordCount - introWords - conclusionWords;
             const wordsPerSection = Math.floor(bodyWords / numSections);
 
             // Build stage names dynamically
             const stages = [
+                'Creating article outline',
                 'Generating introduction',
-                ...Array(numSections).fill(0).map((_, i) => `Generating section ${i + 1}`),
+                ...Array(numSections).fill(0).map((_, i) => `Writing section ${i + 1}`),
                 'Generating conclusion',
-                'Formatting article structure'
+                'Creating FAQ section',
+                'Finalizing article'
             ];
 
             const progress = showProgressModal({
                 title: '📊 DataforSEO Article Generation',
-                initialMessage: `Generating ${wordCount}-word SEO-optimized article in ${numSections + 2} parts...`,
+                initialMessage: `Creating outline and generating ${wordCount}-word article...`,
                 icon: '📊',
                 stages: stages,
-                estimatedDuration: (numSections + 3) * 8000,
+                estimatedDuration: (numSections + 5) * 6000,
                 manualStageControl: true
             });
 
             try {
-                progress.updateTechnicalInfo(`Word count: ${wordCount}\nSections: ${numSections}\nDifficulty: ${difficulty}`);
+                progress.updateTechnicalInfo(`Word count: ${wordCount}\nSections: ${numSections}\nIntent: ${intent}`);
 
-                const title = articleTitle || keyword;
                 let totalCost = 0;
                 let stageIndex = 0;
-                let supplementToken = null;
 
                 // Helper function to generate a single section
                 async function generateSection(topic, sectionWordCount, sectionType) {
@@ -9731,8 +9733,7 @@
                         body: JSON.stringify({
                             topic: topic,
                             wordCount: sectionWordCount,
-                            sectionType: sectionType,
-                            supplementToken: supplementToken
+                            sectionType: sectionType
                         })
                     });
 
@@ -9743,65 +9744,116 @@
 
                     const data = await response.json();
                     totalCost += data.cost || 0;
-                    supplementToken = data.supplementToken || null;
                     return data.content;
                 }
 
-                // 1. Generate introduction
+                // Step 1: Generate outline first
+                progress.updateMessage('📝 Creating article outline structure...');
+                const outlinePrompt = `Create a detailed outline for an article titled "${title}".
+The article should be about ${keyword} with ${intent} intent.
+Generate ${numSections} main section titles that would be relevant for this topic.
+Return ONLY the section titles, one per line, no numbers or bullets.`;
+
+                const outlineContent = await generateSection(outlinePrompt, 100, 'outline');
+
+                // Parse outline into section titles
+                const outlineTitles = outlineContent
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 5 && line.length < 100)
+                    .slice(0, numSections);
+
+                // Fallback titles if outline generation fails
+                const defaultTitles = [
+                    `Understanding ${keyword}`,
+                    `Key Factors and Considerations`,
+                    `Practical Implications and Applications`,
+                    `Research and Evidence`,
+                    `Management and Prevention Strategies`
+                ];
+
+                const sectionTitles = outlineTitles.length >= numSections
+                    ? outlineTitles
+                    : defaultTitles.slice(0, numSections);
+
+                updateProgressStage(stageIndex++, '✓ Outline created');
+                console.log('📋 Section titles:', sectionTitles);
+
+                // Step 2: Generate introduction
                 progress.updateMessage(`✍️ Writing introduction (${introWords} words)...`);
-                const introTopic = `Introduction to ${title}: ${keyword}. Write an engaging opening that explains the topic.`;
-                const introduction = await generateSection(introTopic, introWords, 'introduction');
+                const introPrompt = `Write an engaging introduction for an article titled "${title}".
+The introduction should:
+- Hook the reader with a compelling opening
+- Introduce the main topic: ${keyword}
+- Preview what the article will cover
+- Be approximately ${introWords} words
+Write in a professional, informative tone.`;
+
+                const introduction = await generateSection(introPrompt, introWords, 'introduction');
                 updateProgressStage(stageIndex++, '✓ Introduction complete');
                 console.log(`✅ Introduction: ${introduction.split(/\s+/).length} words`);
 
-                // 2. Generate body sections
+                // Step 3: Generate body sections
                 const sections = [];
-                const sectionTopics = [
-                    `Understanding the fundamentals of ${keyword}`,
-                    `Key benefits and advantages of ${keyword}`,
-                    `How to implement or use ${keyword} effectively`,
-                    `Best practices and tips for ${keyword}`,
-                    `Common challenges and solutions with ${keyword}`
-                ];
 
-                for (let i = 0; i < numSections; i++) {
-                    const sectionTopic = sectionTopics[i] || `Important aspect ${i + 1} of ${keyword}`;
-                    progress.updateMessage(`✍️ Writing section ${i + 1}/${numSections} (${wordsPerSection} words)...`);
+                for (let i = 0; i < sectionTitles.length; i++) {
+                    const sectionTitle = sectionTitles[i];
+                    progress.updateMessage(`✍️ Writing: ${sectionTitle} (${wordsPerSection} words)...`);
 
-                    const sectionContent = await generateSection(
-                        `${sectionTopic}. Continue the article about ${title}.`,
-                        wordsPerSection,
-                        'section'
-                    );
+                    const sectionPrompt = `Write a detailed section for an article about "${title}".
+Section title: "${sectionTitle}"
+This is section ${i + 1} of ${numSections} in the article.
+The section should:
+- Provide valuable, specific information about ${sectionTitle}
+- Include relevant details, examples, or evidence
+- Connect to the overall topic of ${keyword}
+- Be approximately ${wordsPerSection} words
+Write in a professional, informative tone.`;
 
-                    // Generate section title from topic
-                    const sectionTitle = sectionTopic.replace(/^(Understanding|Key|How to|Best|Common)\s+/i, '')
-                        .split(' ').slice(0, 6).join(' ');
+                    const sectionContent = await generateSection(sectionPrompt, wordsPerSection, 'section');
 
                     sections.push({
-                        title: sectionTitle.charAt(0).toUpperCase() + sectionTitle.slice(1),
+                        title: sectionTitle,
                         content: sectionContent,
                         anchor: sectionTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50)
                     });
 
-                    updateProgressStage(stageIndex++, `✓ Section ${i + 1} complete`);
+                    updateProgressStage(stageIndex++, `✓ ${sectionTitle.substring(0, 20)}...`);
                     console.log(`✅ Section ${i + 1}: ${sectionContent.split(/\s+/).length} words`);
                 }
 
-                // 3. Generate conclusion
+                // Step 4: Generate conclusion
                 progress.updateMessage(`✍️ Writing conclusion (${conclusionWords} words)...`);
-                const conclusionTopic = `Conclusion for ${title}: Summarize key points about ${keyword} and provide final thoughts.`;
-                const conclusion = await generateSection(conclusionTopic, conclusionWords, 'conclusion');
+                const conclusionPrompt = `Write a conclusion for an article titled "${title}".
+The article covered these sections: ${sectionTitles.join(', ')}.
+The conclusion should:
+- Summarize key takeaways
+- Reinforce the main message about ${keyword}
+- Provide actionable insights or final thoughts
+- Be approximately ${conclusionWords} words`;
+
+                const conclusion = await generateSection(conclusionPrompt, conclusionWords, 'conclusion');
                 updateProgressStage(stageIndex++, '✓ Conclusion complete');
                 console.log(`✅ Conclusion: ${conclusion.split(/\s+/).length} words`);
 
-                // 4. Format article structure
-                progress.updateMessage('🔧 Formatting article structure...');
+                // Step 5: Generate FAQ
+                progress.updateMessage('❓ Generating FAQ section...');
+                const faqPrompt = `Generate 5 frequently asked questions and answers about "${title}".
+Each Q&A should be relevant to ${keyword}.
+Format: Question followed by a detailed 2-3 sentence answer.
+Make the questions specific and the answers informative.`;
+
+                const faqContent = await generateSection(faqPrompt, 300, 'faq');
+
+                // Parse FAQ content
+                const faq = parseFAQContent(faqContent, keyword);
+                updateProgressStage(stageIndex++, '✓ FAQ complete');
+
+                // Step 6: Format final article
+                progress.updateMessage('🔧 Finalizing article structure...');
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                // Generate FAQ from content
                 const allContent = [introduction, ...sections.map(s => s.content), conclusion].join('\n\n');
-                const faq = generateFAQFromContent(allContent, keyword);
 
                 // Create table of contents
                 const tableOfContents = sections.map(section => ({
@@ -9832,7 +9884,7 @@
                     modelTier: 'dataforseo'
                 };
 
-                updateProgressStage(stageIndex, '✓ Formatting complete');
+                updateProgressStage(stageIndex, '✓ Article complete');
                 progress.updateMessage('🎉 Article generation complete!');
                 console.log(`📊 Total DataforSEO Cost: $${totalCost.toFixed(4)}`);
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -9840,13 +9892,55 @@
                 progress.close();
 
                 // Display the generated article
-                displayGeneratedArticle(articleData, 'dataforseo', 8);
+                displayGeneratedArticle(articleData, 'dataforseo', 12);
 
             } catch (error) {
                 console.error('DataforSEO generation error:', error);
                 progress.close();
                 alert(`❌ DataforSEO Error: ${error.message}\n\nPlease try again or select a different model.`);
             }
+        }
+
+        // Parse FAQ content from DataforSEO response
+        function parseFAQContent(content, keyword) {
+            const faq = [];
+            const lines = content.split('\n').filter(line => line.trim());
+
+            let currentQuestion = '';
+            let currentAnswer = '';
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                // Check if line looks like a question
+                if (trimmed.includes('?') && trimmed.length < 150) {
+                    // Save previous Q&A if exists
+                    if (currentQuestion && currentAnswer) {
+                        faq.push({ question: currentQuestion, answer: currentAnswer.trim() });
+                    }
+                    currentQuestion = trimmed.replace(/^\d+\.\s*/, '').replace(/^Q:\s*/i, '');
+                    currentAnswer = '';
+                } else if (currentQuestion && trimmed) {
+                    // This is answer content
+                    currentAnswer += (currentAnswer ? ' ' : '') + trimmed.replace(/^A:\s*/i, '');
+                }
+            }
+
+            // Save last Q&A
+            if (currentQuestion && currentAnswer) {
+                faq.push({ question: currentQuestion, answer: currentAnswer.trim() });
+            }
+
+            // Ensure we have at least some FAQs
+            if (faq.length < 3) {
+                const defaultFAQ = [
+                    { question: `What is ${keyword}?`, answer: `${keyword} refers to the topic discussed in this article. Please refer to the introduction and main sections for detailed information.` },
+                    { question: `Why is ${keyword} important?`, answer: `Understanding ${keyword} is important for making informed decisions. The article sections above cover key aspects and considerations.` },
+                    { question: `How can I learn more about ${keyword}?`, answer: `For more information about ${keyword}, consult the resources mentioned in this article and seek advice from qualified professionals in the field.` }
+                ];
+                return defaultFAQ;
+            }
+
+            return faq.slice(0, 5);
         }
 
         // Parse DataforSEO content into structured format
@@ -12753,7 +12847,7 @@ ${item.answer}
                             <div>
                                 <label style="display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 5px;">Model Quality</label>
                                 <select id="model-select-${cleanId}-${index}" onchange="updateCreditCost('${cleanId}', ${index})" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
-                                    <option value="dataforseo">DataForSEO - 8 credits 🔥</option>
+                                    <option value="dataforseo">DataForSEO - 12 credits 🔥</option>
                                     <option value="basic">Standard - 25 credits</option>
                                     <option value="premium">Premium - 50 credits</option>
                                     <option value="enterprise">Enterprise - 85 credits</option>
@@ -18942,7 +19036,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Model:</label>
                                 <select id="bulkModelSelect" onchange="updateBulkCostSummary()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
                                     <option value="">Choose a model...</option>
-                                    <option value="dataforseo|8">📊 DataForSEO (SEO-Optimized) - 8 credits per article 🔥 NEW</option>
+                                    <option value="dataforseo|12">📊 DataForSEO (SEO-Optimized) - 12 credits per article 🔥 NEW</option>
                                     <option value="basic|25">🥉 Basic Model (GPT-3.5) - 25 credits per article</option>
                                     <option value="premium|50">🥈 Premium Model (GPT-4) - 50 credits per article</option>
                                     <option value="enterprise|85">🥇 Enterprise Model (Claude 3.5 Sonnet) - 85 credits per article</option>
