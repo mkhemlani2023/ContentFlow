@@ -4121,13 +4121,21 @@
                             <div class="score-text">${keywordData.opportunity}/100</div>
                         </div>
                     ` : `
-                        <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <span style="font-size: 18px;">⚠️</span>
-                                <span style="font-weight: 600; color: #92400e;">No Volume Data Available</span>
+                        <div style="background: #e0f2fe; border: 1px solid #0ea5e9; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                                <span style="font-size: 18px;">💡</span>
+                                <span style="font-weight: 600; color: #0369a1;">Long-Tail Keyword Detected</span>
                             </div>
-                            <div style="font-size: 13px; color: #92400e;">
-                                DataForSEO did not return search volume data for this keyword. It may be a very low-volume or newly trending term.
+                            <div style="font-size: 13px; color: #0c4a6e; line-height: 1.5;">
+                                <p style="margin: 0 0 10px 0;">
+                                    <strong>Why no volume data?</strong> This keyword is likely a <strong>long-tail keyword</strong> - a highly specific search phrase that may not have enough monthly searches to register in traditional databases.
+                                </p>
+                                <p style="margin: 0 0 10px 0;">
+                                    <strong>✅ Good news:</strong> This keyword came from <strong>Google Autocomplete</strong>, meaning real users are actively typing this exact phrase into Google. These are genuine search queries with high user intent!
+                                </p>
+                                <p style="margin: 0; font-style: italic;">
+                                    Long-tail keywords often convert better because they're more specific and indicate stronger purchase/action intent. They're excellent for targeting niche audiences.
+                                </p>
                             </div>
                         </div>
                     `}

@@ -444,6 +444,8 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
     requestBody[0].supplement_token = options.supplementToken;
   }
 
+  console.log('📊 DataforSEO request body:', JSON.stringify(requestBody, null, 2));
+
   const response = await fetch('https://api.dataforseo.com/v3/content_generation/generate_text/live', {
     method: 'POST',
     headers: {
@@ -453,11 +455,16 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
     body: JSON.stringify(requestBody)
   });
 
+  console.log('📊 DataforSEO response status:', response.status, response.statusText);
+
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('📊 DataforSEO error response:', errorText);
+    throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
   }
 
   const data = await response.json();
+  console.log('📊 DataforSEO response:', JSON.stringify(data, null, 2).substring(0, 500));
 
   if (data.tasks && data.tasks[0]) {
     // Check for API errors
