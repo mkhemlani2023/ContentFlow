@@ -3624,6 +3624,71 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
     }
 
+    // DataforSEO Section Generation - Modular endpoint for generating one section at a time
+    if (path === '/api/dataforseo-section' && method === 'POST') {
+      const { topic, wordCount = 400, sectionType = 'section', supplementToken = null } = body;
+
+      if (!topic) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Topic is required',
+            code: 'MISSING_TOPIC'
+          })
+        };
+      }
+
+      if (!DATAFORSEO_LOGIN || !DATAFORSEO_PASSWORD) {
+        return {
+          statusCode: 503,
+          headers,
+          body: JSON.stringify({
+            error: 'DataforSEO credentials not configured',
+            code: 'DATAFORSEO_NOT_CONFIGURED'
+          })
+        };
+      }
+
+      try {
+        console.log(`📊 DataforSEO Section: ${sectionType} - ${wordCount} words`);
+
+        const result = await generateSingleDataForSEOContent(
+          topic,
+          Math.min(wordCount, 1000), // Cap at 1000 words per request
+          {
+            creativityIndex: 0.8,
+            includeConclusion: sectionType === 'conclusion',
+            supplementToken: supplementToken
+          }
+        );
+
+        console.log(`✅ Section generated: ${result.content.split(/\s+/).length} words, $${result.cost.toFixed(4)}`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            content: result.content,
+            cost: result.cost,
+            supplementToken: result.supplementToken,
+            wordCount: result.content.split(/\s+/).length
+          })
+        };
+      } catch (error) {
+        console.error('DataforSEO section error:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error: 'Failed to generate section',
+            message: error.message
+          })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
@@ -3642,6 +3707,7 @@ Generate a professional, actionable outline that a content writer can follow to 
           'POST /api/openrouter-generate',
           'POST /api/generate-images',
           'POST /api/generate-article',
+          'POST /api/dataforseo-section',
           'POST /api/content-outline',
           'POST /api/pexels-images',
           'POST /api/wordpress-test-connection',

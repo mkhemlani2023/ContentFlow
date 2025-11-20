@@ -9689,95 +9689,152 @@
             await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, keyword);
         }
 
-        // DataforSEO Content Generation - calls backend API directly
+        // DataforSEO Content Generation - modular approach calling backend for each section
         async function generateArticleWithDataforSEO(keyword, wordCount, difficulty, intent, articleTitle = null) {
+            // Calculate section distribution
+            const numSections = Math.max(3, Math.min(5, Math.floor(wordCount / 350)));
+            const introWords = Math.min(200, Math.floor(wordCount * 0.12));
+            const conclusionWords = Math.min(200, Math.floor(wordCount * 0.12));
+            const bodyWords = wordCount - introWords - conclusionWords;
+            const wordsPerSection = Math.floor(bodyWords / numSections);
+
+            // Build stage names dynamically
+            const stages = [
+                'Generating introduction',
+                ...Array(numSections).fill(0).map((_, i) => `Generating section ${i + 1}`),
+                'Generating conclusion',
+                'Formatting article structure'
+            ];
+
             const progress = showProgressModal({
                 title: '📊 DataforSEO Article Generation',
-                initialMessage: `Generating ${wordCount}-word SEO-optimized article...`,
+                initialMessage: `Generating ${wordCount}-word SEO-optimized article in ${numSections + 2} parts...`,
                 icon: '📊',
-                stages: [
-                    'Connecting to DataforSEO API',
-                    'Analyzing topic & keywords',
-                    'Generating content',
-                    'Processing response',
-                    'Formatting article structure',
-                    'Finalizing SEO optimizations'
-                ],
-                estimatedDuration: 30000,
+                stages: stages,
+                estimatedDuration: (numSections + 3) * 8000,
                 manualStageControl: true
             });
 
             try {
-                progress.updateTechnicalInfo(`Word count: ${wordCount}\nDifficulty: ${difficulty}\nIntent: ${intent}`);
+                progress.updateTechnicalInfo(`Word count: ${wordCount}\nSections: ${numSections}\nDifficulty: ${difficulty}`);
 
-                updateProgressStage(0, '✓ Connected');
-                progress.updateMessage('📊 Sending request to DataforSEO Content API...');
-                await new Promise(resolve => setTimeout(resolve, 500));
+                const title = articleTitle || keyword;
+                let totalCost = 0;
+                let stageIndex = 0;
+                let supplementToken = null;
 
-                updateProgressStage(1, '✓ Topic analyzed');
-                progress.updateMessage('✍️ DataforSEO is generating your article...');
+                // Helper function to generate a single section
+                async function generateSection(topic, sectionWordCount, sectionType) {
+                    const response = await fetch('/api/dataforseo-section', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            topic: topic,
+                            wordCount: sectionWordCount,
+                            sectionType: sectionType,
+                            supplementToken: supplementToken
+                        })
+                    });
 
-                // Call backend API with dataforseo model
-                const response = await fetch('/api/generate-article', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        title: articleTitle || keyword,
-                        focusKeyword: keyword,
-                        wordCount: wordCount,
-                        model: 'dataforseo',
-                        intent: intent,
-                        difficulty: difficulty
-                    })
-                });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                        throw new Error(errorData.error || `API error: ${response.status}`);
+                    }
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                    throw new Error(errorData.error || `API error: ${response.status}`);
+                    const data = await response.json();
+                    totalCost += data.cost || 0;
+                    supplementToken = data.supplementToken || null;
+                    return data.content;
                 }
 
-                updateProgressStage(2, '✓ Content generated');
-                progress.updateMessage('📋 Processing article response...');
-                await new Promise(resolve => setTimeout(resolve, 300));
+                // 1. Generate introduction
+                progress.updateMessage(`✍️ Writing introduction (${introWords} words)...`);
+                const introTopic = `Introduction to ${title}: ${keyword}. Write an engaging opening that explains the topic.`;
+                const introduction = await generateSection(introTopic, introWords, 'introduction');
+                updateProgressStage(stageIndex++, '✓ Introduction complete');
+                console.log(`✅ Introduction: ${introduction.split(/\s+/).length} words`);
 
-                const data = await response.json();
-                console.log('📊 DataforSEO API Response:', data);
+                // 2. Generate body sections
+                const sections = [];
+                const sectionTopics = [
+                    `Understanding the fundamentals of ${keyword}`,
+                    `Key benefits and advantages of ${keyword}`,
+                    `How to implement or use ${keyword} effectively`,
+                    `Best practices and tips for ${keyword}`,
+                    `Common challenges and solutions with ${keyword}`
+                ];
 
-                updateProgressStage(3, '✓ Response received');
+                for (let i = 0; i < numSections; i++) {
+                    const sectionTopic = sectionTopics[i] || `Important aspect ${i + 1} of ${keyword}`;
+                    progress.updateMessage(`✍️ Writing section ${i + 1}/${numSections} (${wordsPerSection} words)...`);
+
+                    const sectionContent = await generateSection(
+                        `${sectionTopic}. Continue the article about ${title}.`,
+                        wordsPerSection,
+                        'section'
+                    );
+
+                    // Generate section title from topic
+                    const sectionTitle = sectionTopic.replace(/^(Understanding|Key|How to|Best|Common)\s+/i, '')
+                        .split(' ').slice(0, 6).join(' ');
+
+                    sections.push({
+                        title: sectionTitle.charAt(0).toUpperCase() + sectionTitle.slice(1),
+                        content: sectionContent,
+                        anchor: sectionTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50)
+                    });
+
+                    updateProgressStage(stageIndex++, `✓ Section ${i + 1} complete`);
+                    console.log(`✅ Section ${i + 1}: ${sectionContent.split(/\s+/).length} words`);
+                }
+
+                // 3. Generate conclusion
+                progress.updateMessage(`✍️ Writing conclusion (${conclusionWords} words)...`);
+                const conclusionTopic = `Conclusion for ${title}: Summarize key points about ${keyword} and provide final thoughts.`;
+                const conclusion = await generateSection(conclusionTopic, conclusionWords, 'conclusion');
+                updateProgressStage(stageIndex++, '✓ Conclusion complete');
+                console.log(`✅ Conclusion: ${conclusion.split(/\s+/).length} words`);
+
+                // 4. Format article structure
                 progress.updateMessage('🔧 Formatting article structure...');
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                // Parse the generated content into sections
-                const articleContent = data.article || data.content || '';
-                const apiCost = data.apiCost || 0;
+                // Generate FAQ from content
+                const allContent = [introduction, ...sections.map(s => s.content), conclusion].join('\n\n');
+                const faq = generateFAQFromContent(allContent, keyword);
 
-                console.log(`📊 DataforSEO Cost: $${apiCost.toFixed(4)}`);
+                // Create table of contents
+                const tableOfContents = sections.map(section => ({
+                    text: section.title,
+                    anchor: `#${section.anchor}`
+                }));
 
-                // Create structured article from DataforSEO response
-                const articleData = parseDataforSEOContent(articleContent, articleTitle || keyword, keyword, wordCount);
-
-                updateProgressStage(4, '✓ Structure formatted');
-                progress.updateMessage('✨ Applying SEO optimizations...');
-                await new Promise(resolve => setTimeout(resolve, 300));
-
-                // Add metadata
-                articleData.metadata = {
-                    focusKeyword: keyword,
-                    wordCount: wordCount,
-                    actualWordCount: articleContent.split(/\s+/).length,
-                    difficulty: difficulty,
-                    intent: intent,
-                    modelTier: 'dataforseo',
-                    generatedAt: new Date().toISOString(),
-                    apiCost: apiCost
+                // Build article data
+                const articleData = {
+                    content: {
+                        title: title,
+                        introduction: introduction,
+                        sections: sections,
+                        conclusion: conclusion,
+                        faq: faq
+                    },
+                    tableOfContents: tableOfContents,
+                    metadata: {
+                        focusKeyword: keyword,
+                        wordCount: wordCount,
+                        actualWordCount: allContent.split(/\s+/).length,
+                        difficulty: difficulty,
+                        intent: intent,
+                        modelTier: 'dataforseo',
+                        generatedAt: new Date().toISOString(),
+                        apiCost: totalCost
+                    },
+                    modelTier: 'dataforseo'
                 };
 
-                articleData.modelTier = 'dataforseo';
-
-                updateProgressStage(5, '✓ Optimizations complete');
+                updateProgressStage(stageIndex, '✓ Formatting complete');
                 progress.updateMessage('🎉 Article generation complete!');
+                console.log(`📊 Total DataforSEO Cost: $${totalCost.toFixed(4)}`);
                 await new Promise(resolve => setTimeout(resolve, 500));
 
                 progress.close();
