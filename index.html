@@ -9689,7 +9689,226 @@
             await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, keyword);
         }
 
+        // DataforSEO Content Generation - calls backend API directly
+        async function generateArticleWithDataforSEO(keyword, wordCount, difficulty, intent, articleTitle = null) {
+            const progress = showProgressModal({
+                title: '📊 DataforSEO Article Generation',
+                initialMessage: `Generating ${wordCount}-word SEO-optimized article...`,
+                icon: '📊',
+                stages: [
+                    'Connecting to DataforSEO API',
+                    'Analyzing topic & keywords',
+                    'Generating content',
+                    'Processing response',
+                    'Formatting article structure',
+                    'Finalizing SEO optimizations'
+                ],
+                estimatedDuration: 30000,
+                manualStageControl: true
+            });
+
+            try {
+                progress.updateTechnicalInfo(`Word count: ${wordCount}\nDifficulty: ${difficulty}\nIntent: ${intent}`);
+
+                updateProgressStage(0, '✓ Connected');
+                progress.updateMessage('📊 Sending request to DataforSEO Content API...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                updateProgressStage(1, '✓ Topic analyzed');
+                progress.updateMessage('✍️ DataforSEO is generating your article...');
+
+                // Call backend API with dataforseo model
+                const response = await fetch('/api/generate-article', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: articleTitle || keyword,
+                        focusKeyword: keyword,
+                        wordCount: wordCount,
+                        model: 'dataforseo',
+                        intent: intent,
+                        difficulty: difficulty
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `API error: ${response.status}`);
+                }
+
+                updateProgressStage(2, '✓ Content generated');
+                progress.updateMessage('📋 Processing article response...');
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                const data = await response.json();
+                console.log('📊 DataforSEO API Response:', data);
+
+                updateProgressStage(3, '✓ Response received');
+                progress.updateMessage('🔧 Formatting article structure...');
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                // Parse the generated content into sections
+                const articleContent = data.article || data.content || '';
+                const apiCost = data.apiCost || 0;
+
+                console.log(`📊 DataforSEO Cost: $${apiCost.toFixed(4)}`);
+
+                // Create structured article from DataforSEO response
+                const articleData = parseDataforSEOContent(articleContent, articleTitle || keyword, keyword, wordCount);
+
+                updateProgressStage(4, '✓ Structure formatted');
+                progress.updateMessage('✨ Applying SEO optimizations...');
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                // Add metadata
+                articleData.metadata = {
+                    focusKeyword: keyword,
+                    wordCount: wordCount,
+                    actualWordCount: articleContent.split(/\s+/).length,
+                    difficulty: difficulty,
+                    intent: intent,
+                    modelTier: 'dataforseo',
+                    generatedAt: new Date().toISOString(),
+                    apiCost: apiCost
+                };
+
+                articleData.modelTier = 'dataforseo';
+
+                updateProgressStage(5, '✓ Optimizations complete');
+                progress.updateMessage('🎉 Article generation complete!');
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                progress.close();
+
+                // Display the generated article
+                displayGeneratedArticle(articleData, 'dataforseo', 8);
+
+            } catch (error) {
+                console.error('DataforSEO generation error:', error);
+                progress.close();
+                alert(`❌ DataforSEO Error: ${error.message}\n\nPlease try again or select a different model.`);
+            }
+        }
+
+        // Parse DataforSEO content into structured format
+        function parseDataforSEOContent(content, title, keyword, targetWordCount) {
+            // Split content into paragraphs
+            const paragraphs = content.split(/\n\n+/).filter(p => p.trim());
+
+            // Calculate section distribution
+            const numSections = Math.max(3, Math.min(6, Math.floor(targetWordCount / 300)));
+            const paragraphsPerSection = Math.ceil(paragraphs.length / (numSections + 2)); // +2 for intro and conclusion
+
+            // Extract introduction (first few paragraphs)
+            const introParagraphs = paragraphs.slice(0, Math.min(2, paragraphsPerSection));
+            const introduction = introParagraphs.join('\n\n');
+
+            // Extract conclusion (last few paragraphs)
+            const conclusionParagraphs = paragraphs.slice(-Math.min(2, paragraphsPerSection));
+            const conclusion = conclusionParagraphs.join('\n\n');
+
+            // Middle paragraphs become sections
+            const middleParagraphs = paragraphs.slice(
+                Math.min(2, paragraphsPerSection),
+                -Math.min(2, paragraphsPerSection) || paragraphs.length
+            );
+
+            // Create sections from middle content
+            const sections = [];
+            const sectionSize = Math.ceil(middleParagraphs.length / numSections);
+
+            for (let i = 0; i < numSections && i * sectionSize < middleParagraphs.length; i++) {
+                const sectionParagraphs = middleParagraphs.slice(i * sectionSize, (i + 1) * sectionSize);
+                const sectionContent = sectionParagraphs.join('\n\n');
+
+                // Generate section title from first sentence or use generic
+                const firstSentence = sectionContent.split(/[.!?]/)[0] || '';
+                const sectionTitle = generateSectionTitle(firstSentence, i, keyword);
+
+                sections.push({
+                    title: sectionTitle,
+                    content: sectionContent,
+                    anchor: sectionTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50)
+                });
+            }
+
+            // Generate FAQ from content keywords
+            const faq = generateFAQFromContent(content, keyword);
+
+            // Create table of contents
+            const tableOfContents = sections.map((section, index) => ({
+                text: section.title,
+                anchor: `#${section.anchor}`
+            }));
+
+            return {
+                content: {
+                    title: title,
+                    introduction: introduction,
+                    sections: sections,
+                    conclusion: conclusion,
+                    faq: faq
+                },
+                tableOfContents: tableOfContents
+            };
+        }
+
+        // Generate section title from content
+        function generateSectionTitle(text, index, keyword) {
+            // Try to extract meaningful title from first sentence
+            const cleanText = text.trim().replace(/^(The|A|An|This)\s+/i, '');
+            const words = cleanText.split(/\s+/).slice(0, 5);
+
+            if (words.length >= 3) {
+                return words.join(' ').replace(/[,.:;]$/, '');
+            }
+
+            // Fallback to generic titles
+            const genericTitles = [
+                `Understanding ${keyword}`,
+                `Key Aspects of ${keyword}`,
+                `Important Considerations`,
+                `Practical Applications`,
+                `Best Practices`,
+                `Future Outlook`
+            ];
+
+            return genericTitles[index] || `Section ${index + 1}`;
+        }
+
+        // Generate FAQ from content
+        function generateFAQFromContent(content, keyword) {
+            const faq = [];
+            const questions = [
+                `What is ${keyword}?`,
+                `How does ${keyword} work?`,
+                `What are the benefits of ${keyword}?`,
+                `Who should consider ${keyword}?`,
+                `What are the potential risks of ${keyword}?`
+            ];
+
+            // Extract relevant sentences for answers
+            const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 30);
+
+            questions.forEach((question, i) => {
+                const answer = sentences[i * 2] || sentences[i] || `For more information about ${keyword}, please consult relevant resources.`;
+                faq.push({
+                    question: question,
+                    answer: answer.trim() + '.'
+                });
+            });
+
+            return faq;
+        }
+
         async function generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, articleTitle = null) {
+            // Check if using DataforSEO - route to backend API
+            if (modelTier.toLowerCase() === 'dataforseo') {
+                return await generateArticleWithDataforSEO(keyword, wordCount, difficulty, intent, articleTitle);
+            }
+
             // Show comprehensive progress modal
             const progress = showProgressModal({
                 title: '📝 Step 1: Creating Article Outline',
@@ -9710,7 +9929,6 @@
             try {
                 // Get model configuration
                 const modelConfigs = {
-                    'dataforseo': { model: 'openai/gpt-4o-mini', temperature: 0.7 },
                     'basic': { model: 'openai/gpt-3.5-turbo', temperature: 0.7 },
                     'premium': { model: 'openai/gpt-4o-mini', temperature: 0.8 },
                     'enterprise': { model: 'anthropic/claude-3.5-sonnet', temperature: 0.7 }
