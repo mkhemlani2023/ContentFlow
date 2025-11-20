@@ -482,6 +482,14 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
       const content = result.generated_text || result.text || '';
       console.log(`📊 Generated content preview: "${content.substring(0, 200)}..."`);
       console.log(`📊 Generated content length: ${content.length} chars, ${content.split(/\s+/).length} words`);
+
+      // Check for empty or very short content
+      if (!content || content.trim().length < 10) {
+        console.error('📊 Warning: Generated content is too short or empty');
+        console.error('📊 Full result:', JSON.stringify(result, null, 2));
+        throw new Error(`DataforSEO returned insufficient content (${content.length} chars). Check API response.`);
+      }
+
       return {
         content: content,
         cost: data.cost || 0,
