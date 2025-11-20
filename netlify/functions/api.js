@@ -3645,7 +3645,7 @@ Generate a professional, actionable outline that a content writer can follow to 
 
     // DataforSEO Section Generation - Modular endpoint for generating one section at a time
     if (path === '/api/dataforseo-section' && method === 'POST') {
-      const { topic, wordCount = 400, sectionType = 'section', supplementToken = null } = body;
+      const { topic, wordCount = 400, sectionType = 'section', supplementToken = null, subTopics = [], description = '' } = body;
 
       if (!topic) {
         return {
@@ -3679,7 +3679,9 @@ Generate a professional, actionable outline that a content writer can follow to 
           {
             creativityIndex: 0.8,
             includeConclusion: sectionType === 'conclusion',
-            supplementToken: supplementToken
+            supplementToken: supplementToken,
+            subTopics: subTopics.slice(0, 10), // DataforSEO limit: 10
+            description: description
           }
         );
 

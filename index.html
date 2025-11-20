@@ -9734,14 +9734,16 @@
                 let stageIndex = 0;
 
                 // Helper function to generate a single section
-                async function generateSection(topic, sectionWordCount, sectionType) {
+                async function generateSection(shortTopic, sectionWordCount, sectionType, subTopics = [], description = '') {
                     const response = await fetch('/api/dataforseo-section', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            topic: topic,
+                            topic: shortTopic.substring(0, 200), // Keep topic short (DataforSEO limit: 50 tokens)
                             wordCount: sectionWordCount,
-                            sectionType: sectionType
+                            sectionType: sectionType,
+                            subTopics: subTopics,
+                            description: description
                         })
                     });
 
@@ -9808,15 +9810,13 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
 
                 // Step 2: Generate introduction
                 progress.updateMessage(`✍️ Writing introduction (${introWords} words)...`);
-                const introPrompt = `Write an engaging introduction for an article titled "${title}".
-The introduction should:
-- Hook the reader with a compelling opening
-- Introduce the main topic: ${keyword}
-- Preview what the article will cover
-- Be approximately ${introWords} words
-Write in a professional, informative tone.`;
-
-                const introduction = await generateSection(introPrompt, introWords, 'introduction');
+                const introduction = await generateSection(
+                    title, // Short topic
+                    introWords,
+                    'introduction',
+                    [keyword], // Sub-topics
+                    `Introduction to ${keyword}` // Description
+                );
                 updateProgressStage(stageIndex++, '✓ Introduction complete');
                 console.log(`✅ Introduction: ${introduction.split(/\s+/).length} words`);
 
@@ -9827,17 +9827,13 @@ Write in a professional, informative tone.`;
                     const sectionTitle = sectionTitles[i];
                     progress.updateMessage(`✍️ Writing: ${sectionTitle} (${wordsPerSection} words)...`);
 
-                    const sectionPrompt = `Write a detailed section for an article about "${title}".
-Section title: "${sectionTitle}"
-This is section ${i + 1} of ${numSections} in the article.
-The section should:
-- Provide valuable, specific information about ${sectionTitle}
-- Include relevant details, examples, or evidence
-- Connect to the overall topic of ${keyword}
-- Be approximately ${wordsPerSection} words
-Write in a professional, informative tone.`;
-
-                    const sectionContent = await generateSection(sectionPrompt, wordsPerSection, 'section');
+                    const sectionContent = await generateSection(
+                        sectionTitle, // Short topic (section title)
+                        wordsPerSection,
+                        'section',
+                        [keyword, title], // Sub-topics for context
+                        `Section about ${sectionTitle} for article on ${keyword}` // Description
+                    );
 
                     sections.push({
                         title: sectionTitle,
@@ -9851,26 +9847,25 @@ Write in a professional, informative tone.`;
 
                 // Step 4: Generate conclusion
                 progress.updateMessage(`✍️ Writing conclusion (${conclusionWords} words)...`);
-                const conclusionPrompt = `Write a conclusion for an article titled "${title}".
-The article covered these sections: ${sectionTitles.join(', ')}.
-The conclusion should:
-- Summarize key takeaways
-- Reinforce the main message about ${keyword}
-- Provide actionable insights or final thoughts
-- Be approximately ${conclusionWords} words`;
-
-                const conclusion = await generateSection(conclusionPrompt, conclusionWords, 'conclusion');
+                const conclusion = await generateSection(
+                    `Conclusion: ${keyword}`, // Short topic
+                    conclusionWords,
+                    'conclusion',
+                    sectionTitles, // Sub-topics are the section titles
+                    `Conclusion summarizing ${title}` // Description
+                );
                 updateProgressStage(stageIndex++, '✓ Conclusion complete');
                 console.log(`✅ Conclusion: ${conclusion.split(/\s+/).length} words`);
 
                 // Step 5: Generate FAQ
                 progress.updateMessage('❓ Generating FAQ section...');
-                const faqPrompt = `Generate 5 frequently asked questions and answers about "${title}".
-Each Q&A should be relevant to ${keyword}.
-Format: Question followed by a detailed 2-3 sentence answer.
-Make the questions specific and the answers informative.`;
-
-                const faqContent = await generateSection(faqPrompt, 300, 'faq');
+                const faqContent = await generateSection(
+                    `FAQ: ${keyword}`, // Short topic
+                    300,
+                    'faq',
+                    [title, ...sectionTitles.slice(0, 5)], // Sub-topics
+                    `Frequently asked questions about ${keyword}` // Description
+                );
 
                 // Parse FAQ content
                 const faq = parseFAQContent(faqContent, keyword);
