@@ -9747,14 +9747,34 @@
                     return data.content;
                 }
 
-                // Step 1: Generate outline first
+                // Step 1: Generate outline using OpenRouter (faster and more reliable)
                 progress.updateMessage('📝 Creating article outline structure...');
                 const outlinePrompt = `Create a detailed outline for an article titled "${title}".
 The article should be about ${keyword} with ${intent} intent.
-Generate ${numSections} main section titles that would be relevant for this topic.
+Generate exactly ${numSections} main section titles that would be relevant for this topic.
 Return ONLY the section titles, one per line, no numbers or bullets.`;
 
-                const outlineContent = await generateSection(outlinePrompt, 100, 'outline');
+                // Use OpenRouter for outline generation
+                const outlineResponse = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'openai/gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: 'You are an expert content strategist. Generate clear, specific section titles for articles.' },
+                            { role: 'user', content: outlinePrompt }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 500
+                    })
+                });
+
+                if (!outlineResponse.ok) {
+                    throw new Error('Failed to generate outline');
+                }
+
+                const outlineData = await outlineResponse.json();
+                const outlineContent = outlineData.content || outlineData.choices?.[0]?.message?.content || '';
 
                 // Parse outline into section titles
                 const outlineTitles = outlineContent
