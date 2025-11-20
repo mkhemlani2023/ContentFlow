@@ -474,8 +474,11 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
 
     if (data.tasks[0].result && data.tasks[0].result.length > 0) {
       const result = data.tasks[0].result[0];
+      // DataforSEO uses 'generated_text' not 'text'
+      const content = result.generated_text || result.text || '';
+      console.log(`📊 Generated content length: ${content.length} chars, ${content.split(/\s+/).length} words`);
       return {
-        content: result.text || '',
+        content: content,
         cost: data.cost || 0,
         supplementToken: result.supplement_token,
         inputTokens: result.input_token_count,
