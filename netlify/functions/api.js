@@ -474,8 +474,13 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
 
     if (data.tasks[0].result && data.tasks[0].result.length > 0) {
       const result = data.tasks[0].result[0];
+      // Log the full result to see all available fields
+      console.log('📊 DataforSEO result fields:', Object.keys(result));
+      console.log('📊 DataforSEO result:', JSON.stringify(result, null, 2).substring(0, 1000));
+
       // DataforSEO uses 'generated_text' not 'text'
       const content = result.generated_text || result.text || '';
+      console.log(`📊 Generated content preview: "${content.substring(0, 200)}..."`);
       console.log(`📊 Generated content length: ${content.length} chars, ${content.split(/\s+/).length} words`);
       return {
         content: content,
