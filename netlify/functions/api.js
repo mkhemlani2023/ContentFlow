@@ -1116,6 +1116,10 @@ Generate ideas that users would actually find valuable when searching for "${key
         model: model,
         messages: [
           {
+            role: 'system',
+            content: 'You are a JSON generator. You ONLY output valid JSON arrays. Never include explanations, markdown formatting, or any text outside the JSON structure. Start your response with [ and end with ].'
+          },
+          {
             role: 'user',
             content: prompt
           }
