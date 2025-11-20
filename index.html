@@ -854,9 +854,9 @@
 
     <!-- Hidden form fields for backward compatibility with searchKeywords function -->
     <div style="display: none;">
-        <input type="text" id="keyword" value="">
-        <input type="text" id="location" value="United States">
-        <input type="number" id="count" value="10">
+        <input type="text" id="keyword" value="" autocomplete="off">
+        <input type="text" id="location" value="United States" autocomplete="off">
+        <input type="number" id="count" value="10" autocomplete="off">
         <button id="searchBtn"></button>
     </div>
 
@@ -877,7 +877,7 @@
                 <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 15px;">Discover what people actually search for with real Google autocomplete suggestions</p>
 
                 <div style="background: #f8fafc; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
-                    <input type="text" id="wizardKeyword" placeholder="Enter your topic or keyword..." style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; margin-bottom: 10px;">
+                    <input type="text" id="wizardKeyword" placeholder="Enter your topic or keyword..." autocomplete="off" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; margin-bottom: 10px;">
                     <button onclick="wizardStartKeywordResearch()" style="background: #334155; color: white; width: 100%; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
                         Start Research (5 credits)
                     </button>
