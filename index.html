@@ -9760,21 +9760,19 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         model: 'openai/gpt-4o-mini',
-                        messages: [
-                            { role: 'system', content: 'You are an expert content strategist. Generate clear, specific section titles for articles.' },
-                            { role: 'user', content: outlinePrompt }
-                        ],
+                        prompt: `You are an expert content strategist. Generate clear, specific section titles for articles.\n\n${outlinePrompt}`,
                         temperature: 0.7,
                         max_tokens: 500
                     })
                 });
 
                 if (!outlineResponse.ok) {
-                    throw new Error('Failed to generate outline');
+                    const errorData = await outlineResponse.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Failed to generate outline');
                 }
 
                 const outlineData = await outlineResponse.json();
-                const outlineContent = outlineData.content || outlineData.choices?.[0]?.message?.content || '';
+                const outlineContent = outlineData.content || '';
 
                 // Parse outline into section titles
                 const outlineTitles = outlineContent
