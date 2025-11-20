@@ -9869,19 +9869,58 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                 updateProgressStage(stageIndex++, '✓ Conclusion complete');
                 console.log(`✅ Conclusion: ${conclusion.split(/\s+/).length} words`);
 
-                // Step 5: Generate FAQ
+                // Step 5: Generate FAQ using OpenRouter (better for structured Q&A format)
                 progress.updateMessage('❓ Generating FAQ section...');
-                const faqContent = await generateSection(
-                    `FAQ: ${keyword}`, // Short topic
-                    300,
-                    'faq',
-                    [title, ...sectionTitles.slice(0, 5)], // Sub-topics
-                    `Frequently asked questions about ${keyword}` // Description
-                );
+                const faqPrompt = `Generate exactly 5 frequently asked questions and answers about "${title}".
+Topic: ${keyword}
 
-                // Parse FAQ content
-                const faq = parseFAQContent(faqContent, keyword);
+Format your response as a JSON array with this exact structure:
+[
+  {"question": "Question 1?", "answer": "Detailed answer 1."},
+  {"question": "Question 2?", "answer": "Detailed answer 2."},
+  ...
+]
+
+Make questions specific and practical. Answers should be 2-3 sentences each.
+Return ONLY the JSON array, no other text.`;
+
+                const faqResponse = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'openai/gpt-4o-mini',
+                        prompt: faqPrompt,
+                        temperature: 0.7,
+                        max_tokens: 1000
+                    })
+                });
+
+                let faq = [];
+                if (faqResponse.ok) {
+                    const faqData = await faqResponse.json();
+                    const faqContent = faqData.content || '';
+                    try {
+                        // Try to parse JSON from response
+                        const jsonMatch = faqContent.match(/\[[\s\S]*\]/);
+                        if (jsonMatch) {
+                            faq = JSON.parse(jsonMatch[0]);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse FAQ JSON:', e);
+                    }
+                }
+
+                // Fallback if FAQ generation failed
+                if (faq.length === 0) {
+                    faq = [
+                        { question: `What is ${keyword}?`, answer: `${keyword} refers to the main topic discussed in this article. It covers important aspects that can help you understand and apply this knowledge effectively.` },
+                        { question: `Why is understanding ${keyword} important?`, answer: `Understanding ${keyword} is crucial for making informed decisions. The research and evidence presented in this article highlight its significance for health and well-being.` },
+                        { question: `What are effective strategies for managing ${keyword}?`, answer: `Effective strategies include stress management techniques, regular exercise, mindfulness practices, and building strong social support networks as discussed in the article sections above.` }
+                    ];
+                }
+
                 updateProgressStage(stageIndex++, '✓ FAQ complete');
+                console.log(`✅ FAQ generated: ${faq.length} questions`);
 
                 // Step 6: Format final article
                 progress.updateMessage('🔧 Finalizing article structure...');
@@ -9890,10 +9929,12 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                 const allContent = [introduction, ...sections.map(s => s.content), conclusion].join('\n\n');
 
                 // Create table of contents
+                console.log('📋 Creating TOC from sections:', sections.map(s => ({ title: s.title, anchor: s.anchor })));
                 const tableOfContents = sections.map(section => ({
-                    text: section.title,
-                    anchor: `#${section.anchor}`
+                    text: section.title || 'Untitled Section',
+                    anchor: `#${section.anchor || 'section'}`
                 }));
+                console.log('📋 Table of Contents:', tableOfContents);
 
                 // Build article data
                 const articleData = {
