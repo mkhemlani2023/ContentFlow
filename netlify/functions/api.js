@@ -459,18 +459,26 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
 
   const data = await response.json();
 
-  if (data.tasks && data.tasks[0] && data.tasks[0].result && data.tasks[0].result.length > 0) {
-    const result = data.tasks[0].result[0];
-    return {
-      content: result.text || '',
-      cost: data.cost || 0,
-      supplementToken: result.supplement_token,
-      inputTokens: result.input_token_count,
-      outputTokens: result.output_token_count
-    };
+  if (data.tasks && data.tasks[0]) {
+    // Check for API errors
+    if (data.tasks[0].status_code !== 20000) {
+      throw new Error(`DataForSEO API error: ${data.tasks[0].status_message || 'Unknown error'} (code: ${data.tasks[0].status_code})`);
+    }
+
+    if (data.tasks[0].result && data.tasks[0].result.length > 0) {
+      const result = data.tasks[0].result[0];
+      return {
+        content: result.text || '',
+        cost: data.cost || 0,
+        supplementToken: result.supplement_token,
+        inputTokens: result.input_token_count,
+        outputTokens: result.output_token_count
+      };
+    }
   }
 
-  throw new Error('No content generated from DataForSEO');
+  console.error('DataForSEO response:', JSON.stringify(data, null, 2));
+  throw new Error('No content generated from DataForSEO - check API response');
 };
 
 // Hybrid processing: Combine Serper Autocomplete + DataForSEO metrics
