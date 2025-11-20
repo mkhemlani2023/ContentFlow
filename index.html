@@ -5397,6 +5397,12 @@
             const card = document.getElementById('selectedKeywordsCard');
             const list = document.getElementById('selectedKeywordsList');
 
+            // Check if elements exist
+            if (!card || !list) {
+                console.log('Selected keywords display elements not found');
+                return;
+            }
+
             if (selectedKeywords.length === 0) {
                 card.style.display = 'none';
                 return;
@@ -6480,12 +6486,18 @@
             const savedResearch = JSON.parse(localStorage.getItem('savedKeywordResearch') || '[]');
             const savedResearchDiv = document.getElementById('savedResearch');
 
+            if (!savedResearchDiv) {
+                console.error('savedResearch element not found');
+                return;
+            }
+
             if (savedResearch.length === 0) {
                 savedResearchDiv.style.display = 'none';
                 return;
             }
 
             savedResearchDiv.style.display = 'block';
+            console.log(`📂 Displaying ${savedResearch.length} saved research items`);
             const researchList = savedResearch.map(research => `
                 <div style="border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 10px; background: white;">
                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
@@ -13034,16 +13046,51 @@ ${item.answer}
 
                 if (error) throw error;
 
+                // Get localStorage keyword research
+                const localResearch = JSON.parse(localStorage.getItem('savedKeywordResearch') || '[]');
+
                 // Create modal
                 const modal = document.createElement('div');
                 modal.innerHTML = `
                     <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; overflow-y: auto;">
                         <div style="max-width: 1000px; margin: 20px auto; background: white; border-radius: 12px; padding: 30px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
-                                <h2 style="margin: 0; color: #1e293b;">💡 Saved Content Ideas</h2>
+                                <h2 style="margin: 0; color: #1e293b;">💡 Saved Keywords & Content Ideas</h2>
                                 <button onclick="this.closest('[style*=\\'position: fixed\\']').remove()"
                                         style="background: #f1f5f9; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">✕ Close</button>
                             </div>
+
+                            ${localResearch.length > 0 ? `
+                                <div style="margin-bottom: 30px;">
+                                    <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 18px;">📊 Saved Keyword Research</h3>
+                                    ${localResearch.map(research => `
+                                        <div style="background: #e0f2fe; border: 2px solid #0ea5e9; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                                <div>
+                                                    <strong style="color: #0369a1;">${research.name}</strong>
+                                                    <div style="font-size: 12px; color: #0c4a6e; margin-top: 4px;">
+                                                        📅 ${new Date(research.date).toLocaleDateString()} |
+                                                        🔍 "${research.originalKeyword}" |
+                                                        📊 ${research.results?.totalKeywords || 0} keywords
+                                                    </div>
+                                                </div>
+                                                <div style="display: flex; gap: 8px;">
+                                                    <button onclick="loadSavedResearch(${research.id}); this.closest('[style*=\\'position: fixed\\']').remove();"
+                                                            style="background: #0ea5e9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                                        📂 Load
+                                                    </button>
+                                                    <button onclick="deleteSavedResearch(${research.id}); this.closest('[style*=\\'position: fixed\\']').remove(); showSavedContentIdeas();"
+                                                            style="background: #64748b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+
+                            <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 18px;">💡 Saved Content Ideas</h3>
 
                             ${data && data.length > 0 ? data.map(item => `
                                 <div style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
