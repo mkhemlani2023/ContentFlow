@@ -353,6 +353,7 @@ const callDataForSEOContentAPI = async (topic, wordCount, options = {}) => {
     } = options;
 
     // DataForSEO has 1000-word limit, so we need to batch for longer articles
+    // Use maximum 1000 words per request to minimize API calls and avoid timeout
     const maxWordsPerRequest = 1000;
     const needsBatching = wordCount > maxWordsPerRequest;
 
@@ -367,10 +368,13 @@ const callDataForSEOContentAPI = async (topic, wordCount, options = {}) => {
       });
     }
 
-    // Batch processing for longer articles
+    // Batch processing for longer articles - use 2 chunks max to avoid timeout
+    // For 1800 words: 2 chunks of 900 words each
+    // For 2000 words: 2 chunks of 1000 words each
     console.log(`📝 Article requires ${wordCount} words - batching into multiple requests`);
 
-    const numChunks = Math.ceil(wordCount / maxWordsPerRequest);
+    // Optimize: use 2 chunks maximum to stay within Netlify timeout
+    const numChunks = Math.min(2, Math.ceil(wordCount / maxWordsPerRequest));
     const wordsPerChunk = Math.floor(wordCount / numChunks);
 
     let fullContent = '';
