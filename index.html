@@ -889,6 +889,9 @@
                     • Estimated difficulty ratings<br>
                     • Search intent classification
                 </div>
+
+                <!-- Saved Research Quick Access -->
+                <div id="savedResearchQuickAccess" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;"></div>
             </div>
 
             <!-- Step 2: Content Ideas -->
@@ -6485,7 +6488,36 @@
         function displaySavedResearch() {
             const savedResearch = JSON.parse(localStorage.getItem('savedKeywordResearch') || '[]');
             const savedResearchDiv = document.getElementById('savedResearch');
+            const quickAccessDiv = document.getElementById('savedResearchQuickAccess');
 
+            // Update the quick access div (shows before running any search)
+            if (quickAccessDiv) {
+                if (savedResearch.length === 0) {
+                    quickAccessDiv.style.display = 'none';
+                } else {
+                    quickAccessDiv.style.display = 'block';
+                    const quickList = savedResearch.slice(0, 3).map(research => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f8fafc; border-radius: 6px; margin-bottom: 6px;">
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 500; font-size: 12px; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${research.name}</div>
+                                <div style="font-size: 10px; color: #64748b;">${research.results.totalKeywords} keywords</div>
+                            </div>
+                            <button onclick="loadSavedResearch(${research.id})"
+                                    style="background: #475569; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; white-space: nowrap;">
+                                Load
+                            </button>
+                        </div>
+                    `).join('');
+
+                    quickAccessDiv.innerHTML = `
+                        <div style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 8px;">Saved Research (${savedResearch.length})</div>
+                        ${quickList}
+                        ${savedResearch.length > 3 ? `<button onclick="showSavedContentIdeas()" style="width: 100%; background: none; border: 1px solid #e2e8f0; padding: 6px; border-radius: 4px; color: #64748b; cursor: pointer; font-size: 11px;">View all ${savedResearch.length} saved</button>` : ''}
+                    `;
+                }
+            }
+
+            // Update the main saved research div (shows after running search)
             if (!savedResearchDiv) {
                 console.error('savedResearch element not found');
                 return;
@@ -9823,9 +9855,11 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                 // Parse outline into section titles
                 const outlineTitles = outlineContent
                     .split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line.length > 5 && line.length < 100)
+                    .map(line => line.trim().replace(/^[\d\.\-\*]+\s*/, '')) // Remove numbers, bullets
+                    .filter(line => line.length > 5 && line.length < 100 && !line.startsWith('#'))
                     .slice(0, numSections);
+
+                console.log('🔍 Parsed outline titles:', outlineTitles);
 
                 // Fallback titles if outline generation fails
                 const defaultTitles = [
@@ -9833,12 +9867,27 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                     `Key Factors and Considerations`,
                     `Practical Implications and Applications`,
                     `Research and Evidence`,
-                    `Management and Prevention Strategies`
+                    `Management and Prevention Strategies`,
+                    `Expert Recommendations`
                 ];
 
-                const sectionTitles = outlineTitles.length >= numSections
-                    ? outlineTitles
-                    : defaultTitles.slice(0, numSections);
+                // Use parsed titles if we have enough, otherwise use defaults
+                let sectionTitles;
+                if (outlineTitles.length >= numSections) {
+                    sectionTitles = outlineTitles.slice(0, numSections);
+                } else {
+                    console.warn(`⚠️ Only got ${outlineTitles.length} titles from outline, need ${numSections}. Using defaults.`);
+                    sectionTitles = defaultTitles.slice(0, numSections);
+                }
+
+                // Validate all titles are defined strings
+                sectionTitles = sectionTitles.map((title, index) => {
+                    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+                        console.warn(`⚠️ Invalid title at index ${index}, using default`);
+                        return defaultTitles[index] || `Section ${index + 1}`;
+                    }
+                    return title.trim();
+                });
 
                 updateProgressStage(stageIndex++, '✓ Outline created');
                 console.log('📋 Section titles:', sectionTitles);
@@ -9901,44 +9950,67 @@ Format your response as a JSON array with this exact structure:
 [
   {"question": "Question 1?", "answer": "Detailed answer 1."},
   {"question": "Question 2?", "answer": "Detailed answer 2."},
-  ...
+  {"question": "Question 3?", "answer": "Detailed answer 3."},
+  {"question": "Question 4?", "answer": "Detailed answer 4."},
+  {"question": "Question 5?", "answer": "Detailed answer 5."}
 ]
 
 Make questions specific and practical. Answers should be 2-3 sentences each.
-Return ONLY the JSON array, no other text.`;
-
-                const faqResponse = await fetch('/api/openrouter-generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model: 'openai/gpt-4o-mini',
-                        prompt: faqPrompt,
-                        temperature: 0.7,
-                        max_tokens: 1000
-                    })
-                });
+Return ONLY the JSON array, no other text or markdown.`;
 
                 let faq = [];
-                if (faqResponse.ok) {
-                    const faqData = await faqResponse.json();
-                    const faqContent = faqData.content || '';
-                    try {
-                        // Try to parse JSON from response
-                        const jsonMatch = faqContent.match(/\[[\s\S]*\]/);
-                        if (jsonMatch) {
-                            faq = JSON.parse(jsonMatch[0]);
+                try {
+                    const faqResponse = await fetch('/api/openrouter-generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: 'openai/gpt-4o-mini',
+                            prompt: faqPrompt,
+                            temperature: 0.7,
+                            max_tokens: 1500
+                        })
+                    });
+
+                    console.log('📋 FAQ response status:', faqResponse.status);
+
+                    if (faqResponse.ok) {
+                        const faqData = await faqResponse.json();
+                        const faqContent = faqData.content || '';
+                        console.log('📋 FAQ raw content:', faqContent.substring(0, 500));
+
+                        try {
+                            // Try to parse JSON from response
+                            const jsonMatch = faqContent.match(/\[[\s\S]*?\]/);
+                            if (jsonMatch) {
+                                const parsed = JSON.parse(jsonMatch[0]);
+                                // Validate the parsed FAQ
+                                if (Array.isArray(parsed) && parsed.length > 0) {
+                                    faq = parsed.filter(item => item.question && item.answer);
+                                    console.log(`✅ Parsed ${faq.length} FAQ items`);
+                                }
+                            } else {
+                                console.warn('⚠️ No JSON array found in FAQ response');
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse FAQ JSON:', e.message);
                         }
-                    } catch (e) {
-                        console.error('Failed to parse FAQ JSON:', e);
+                    } else {
+                        const errorText = await faqResponse.text();
+                        console.error('FAQ API error:', faqResponse.status, errorText);
                     }
+                } catch (faqError) {
+                    console.error('FAQ generation fetch error:', faqError);
                 }
 
                 // Fallback if FAQ generation failed
                 if (faq.length === 0) {
+                    console.warn('⚠️ Using fallback FAQ - generation failed');
                     faq = [
                         { question: `What is ${keyword}?`, answer: `${keyword} refers to the main topic discussed in this article. It covers important aspects that can help you understand and apply this knowledge effectively.` },
                         { question: `Why is understanding ${keyword} important?`, answer: `Understanding ${keyword} is crucial for making informed decisions. The research and evidence presented in this article highlight its significance for health and well-being.` },
-                        { question: `What are effective strategies for managing ${keyword}?`, answer: `Effective strategies include stress management techniques, regular exercise, mindfulness practices, and building strong social support networks as discussed in the article sections above.` }
+                        { question: `How can I learn more about ${keyword}?`, answer: `You can explore additional resources, consult with professionals in the field, and continue reading current research to deepen your understanding of ${keyword}.` },
+                        { question: `What are the key takeaways about ${keyword}?`, answer: `The key takeaways include understanding the fundamentals, recognizing practical applications, and implementing the strategies discussed in the sections above.` },
+                        { question: `What are effective strategies for managing ${keyword}?`, answer: `Effective strategies include following evidence-based approaches, maintaining consistency in application, and seeking guidance from experts as discussed in the article sections above.` }
                     ];
                 }
 
