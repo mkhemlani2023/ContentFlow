@@ -9850,7 +9850,9 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                 }
 
                 const outlineData = await outlineResponse.json();
-                const outlineContent = outlineData.content || '';
+                // OpenRouter returns in OpenAI format: choices[0].message.content
+                const outlineContent = outlineData.choices?.[0]?.message?.content || outlineData.content || '';
+                console.log('📝 Outline response:', outlineContent.substring(0, 200));
 
                 // Parse outline into section titles
                 const outlineTitles = outlineContent
@@ -9975,7 +9977,8 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                     if (faqResponse.ok) {
                         const faqData = await faqResponse.json();
-                        const faqContent = faqData.content || '';
+                        // OpenRouter returns in OpenAI format: choices[0].message.content
+                        const faqContent = faqData.choices?.[0]?.message?.content || faqData.content || '';
                         console.log('📋 FAQ raw content:', faqContent.substring(0, 500));
 
                         try {
@@ -10026,9 +10029,27 @@ Return ONLY the JSON array, no other text or markdown.`;
                 // Create table of contents
                 console.log('📋 Creating TOC from sections:', sections.map(s => ({ title: s.title, anchor: s.anchor })));
                 const tableOfContents = sections.map(section => ({
-                    text: section.title || 'Untitled Section',
-                    anchor: `#${section.anchor || 'section'}`
+                    title: section.title || 'Untitled Section',
+                    anchor: `#${section.anchor || 'section'}`,
+                    level: 2
                 }));
+
+                // Add Conclusion to TOC
+                tableOfContents.push({
+                    title: 'Conclusion',
+                    anchor: '#conclusion',
+                    level: 2
+                });
+
+                // Add FAQ to TOC if we have questions
+                if (faq && faq.length > 0) {
+                    tableOfContents.push({
+                        title: 'Frequently Asked Questions',
+                        anchor: '#faq',
+                        level: 2
+                    });
+                }
+
                 console.log('📋 Table of Contents:', tableOfContents);
 
                 // Build article data
