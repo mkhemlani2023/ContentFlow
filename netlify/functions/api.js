@@ -3326,12 +3326,13 @@ Generate a professional, actionable outline that a content writer can follow to 
           };
         }
       } catch (error) {
+        console.error('WordPress categories error:', error);
         return {
           statusCode: 200,
           headers,
           body: JSON.stringify({
             success: false,
-            message: 'Failed to process request',
+            message: `Failed to process request: ${error.message}`,
             error: error.message
           })
         };
