@@ -16535,12 +16535,15 @@ Main Noun(s):`;
                 } catch (error) {
                     console.error('Error saving article with images:', error);
                     alert('⚠️ Images added but failed to save to database. Please try saving the article manually.');
-                    return;
+                    // Don't return - still close modal and show success for images
                 }
             }
 
-            // Close modal
-            document.querySelector('.modal').remove();
+            // Close the image insertion modal (find it by z-index or class)
+            const imageModal = document.querySelector('.modal[style*="z-index: 25000"]') || document.querySelector('.modal');
+            if (imageModal) {
+                imageModal.remove();
+            }
 
             // Show success modal with action buttons
             const imageCount = Object.keys(window.selectedImages).length;
@@ -18231,9 +18234,19 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     console.log(`📸 Image upload complete: ${uploadedImages.length}/${imagesToUpload.length} successful`);
                 }
 
+                // Determine image status message
+                let imageStatusMsg;
+                if (uploadedImages.length > 0) {
+                    imageStatusMsg = `Uploaded ${uploadedImages.length} image(s)`;
+                } else if (imagesToUpload && imagesToUpload.length > 0) {
+                    imageStatusMsg = `⚠️ ${imagesToUpload.length} image(s) failed to upload`;
+                } else {
+                    imageStatusMsg = 'No images in article';
+                }
+
                 statusDiv.innerHTML = `
                     <div>✅ Connected to ${selectedBlog.name}</div>
-                    <div>✅ ${uploadedImages.length > 0 ? `Uploaded ${uploadedImages.length} image(s)` : 'No images to upload'}</div>
+                    <div>✅ ${imageStatusMsg}</div>
                     <div>📝 Building article content...</div>
                 `;
                 progressBar.style.width = '40%';
@@ -18364,7 +18377,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                 statusDiv.innerHTML = `
                     <div>✅ Connected to ${selectedBlog.name}</div>
-                    <div>✅ ${uploadedImages.length > 0 ? `Uploaded ${uploadedImages.length} image(s)` : 'No images to upload'}</div>
+                    <div>✅ ${imageStatusMsg}</div>
                     <div>📤 Publishing article to WordPress...</div>
                 `;
                 progressBar.style.width = '60%';
