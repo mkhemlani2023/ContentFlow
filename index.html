@@ -1519,10 +1519,14 @@
 
             // Save publishing log
             async savePublishLog(log) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
                 try {
                     const { data, error } = await supabaseClient
                         .from('publish_logs')
                         .insert([{
+                            user_id: currentUser.id,
                             article_id: log.articleId,
                             blog_id: log.blogId,
                             blog_name: log.blogName,
@@ -1531,6 +1535,7 @@
                             post_url: log.postUrl,
                             status: log.status,
                             publish_type: log.publishType,
+                            category_id: log.categoryId,
                             created_at: new Date().toISOString()
                         }])
                         .select();
@@ -18496,7 +18501,22 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                         alert(`✅ Success!\n\nArticle "${result.data.title}" has been ${publishTypeText} to ${selectedBlog.name}!\n\n📊 Publishing Details:\n• Post ID: ${result.data.postId}\n• Post URL: ${result.data.postUrl}\n• Status: ${result.data.status}\n• Platform: WordPress\n• Username: ${username}\n• ${featuredImageStatus}\n\n🌐 View your article:\n${result.data.postUrl}`);
 
-                        // Log the publishing attempt
+                        // Log the publishing attempt to Supabase
+                        if (currentUser && supabaseClient) {
+                            await SupabaseService.savePublishLog({
+                                articleId: article.savedArticleId || null,
+                                articleTitle: article.content.title,
+                                blogId: selectedBlogId,
+                                blogName: selectedBlog.name,
+                                postId: result.data.postId,
+                                postUrl: result.data.postUrl,
+                                publishType: publishType,
+                                categoryId: selectedCategoryId || null,
+                                status: 'success'
+                            });
+                        }
+
+                        // Also keep localStorage backup
                         const publishLog = JSON.parse(localStorage.getItem('publishHistory') || '[]');
                         publishLog.push({
                             articleTitle: article.content.title,
