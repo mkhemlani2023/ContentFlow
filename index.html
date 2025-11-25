@@ -12433,77 +12433,10 @@ REWRITTEN VERSION (begin immediately with the content):`;
 
         // Auto-save article silently in background
         async function autoSaveArticleToLibrary() {
-            if (!supabaseClient) {
-                console.log('Auto-save skipped: Supabase not initialized');
-                return;
-            }
-
-            // Check authentication status by getting session
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session || !session.user) {
-                    console.log('Auto-save skipped: User not logged in');
-                    return;
-                }
-                console.log('✅ User authenticated for auto-save:', session.user.email);
-            } catch (error) {
-                console.error('Auto-save auth check failed:', error);
-                return;
-            }
-
-            if (!window.currentGeneratedArticle) {
-                console.log('Auto-save skipped: No article data');
-                return;
-            }
-
-            try {
-                const article = window.currentGeneratedArticle;
-
-                console.log('🔄 Auto-saving article to library...');
-
-                // Save complete article data including TOC
-                const completeArticleData = {
-                    content: article.content,
-                    metadata: article.metadata || {},
-                    tableOfContents: article.tableOfContents || [],
-                    images: article.images || [],
-                    modelTier: article.modelTier,
-                    modelConfig: article.modelConfig
-                };
-
-                const result = await SupabaseService.saveArticle({
-                    title: article.content?.title || 'Untitled Article',
-                    keyword: article.metadata?.focusKeyword || article.metadata?.keyword || '',
-                    content: JSON.stringify(completeArticleData),
-                    metadata: JSON.stringify(article.metadata || {}),
-                    model_tier: article.modelTier || window.selectedModel || 'basic',
-                    word_count: article.metadata?.actualWordCount || article.metadata?.wordCount || 0,
-                    images: JSON.stringify(article.images || [])
-                });
-
-                if (result.success) {
-                    // Store the saved article ID for future updates
-                    window.currentGeneratedArticle.savedArticleId = result.data.id;
-
-                    console.log('✅ Article auto-saved successfully (ID: ' + result.data.id + ')');
-
-                    // Show subtle success indicator
-                    const indicator = document.createElement('div');
-                    indicator.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; z-index: 10001; box-shadow: 0 4px 12px rgba(0,0,0,0.3); animation: slideIn 0.3s ease;';
-                    indicator.innerHTML = '✅ Article saved to library';
-                    document.body.appendChild(indicator);
-
-                    setTimeout(() => {
-                        indicator.style.animation = 'slideOut 0.3s ease';
-                        setTimeout(() => indicator.remove(), 300);
-                    }, 3000);
-                } else {
-                    console.warn('Auto-save failed:', result.error);
-                }
-            } catch (error) {
-                console.error('Auto-save error:', error);
-                // Fail silently - don't interrupt user experience
-            }
+            // Skip auto-save - article will be saved after images are added
+            // This prevents duplicate saves and saves database space
+            console.log('ℹ️ Skipping auto-save - article will be saved after adding images');
+            return;
         }
 
         function displayGeneratedArticleWithImages(completeArticle, modelTier, totalCredits) {
@@ -18489,7 +18422,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         <div>🚀 ${publishType === 'now' ? 'Published' : publishType === 'draft' ? 'Saved as draft' : 'Scheduled'}!</div>
                     `;
 
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         progressModal.remove();
 
                         const publishTypeText = publishType === 'now' ? 'published' : publishType === 'draft' ? 'saved as draft' : 'scheduled';
