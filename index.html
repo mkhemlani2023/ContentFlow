@@ -4000,7 +4000,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                             <div>
                                 <h2 style="margin: 0 0 5px 0;">📈 Keyword Research Results</h2>
-                                <p style="margin: 0; font-size: 13px; color: #64748b;">Real Google autocomplete suggestions with actual search metrics from DataForSEO</p>
+                                <p style="margin: 0; font-size: 13px; color: #64748b;">Real Google autocomplete suggestions with verified search metrics</p>
                             </div>
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <button onclick="saveKeywordResearch()" style="background: #475569; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;"
@@ -4010,7 +4010,7 @@
                             </div>
                         </div>
                         <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0284c7;">
-                            <strong style="color: #1e293b;">💡 Next Step:</strong> <span style="color: #334155;">Click on any keyword below to generate content ideas and articles. All metrics are real data from Google and DataForSEO!</span>
+                            <strong style="color: #1e293b;">💡 Next Step:</strong> <span style="color: #334155;">Click on any keyword below to generate content ideas and articles. All metrics are verified real-time data from Google!</span>
                         </div>
 
                         <!-- Column Headers -->
@@ -4100,7 +4100,7 @@
                                 <div class="metric-content">
                                     <div class="metric-label">Search Volume</div>
                                     <div class="metric-value">${keywordData.searchVolume.toLocaleString()}</div>
-                                    <div style="font-size: 10px; color: #10b981; margin-top: 2px;">Real DataForSEO data</div>
+                                    <div style="font-size: 10px; color: #10b981; margin-top: 2px;">Verified real-time data</div>
                                 </div>
                             </div>
                             <div class="metric-item">
@@ -5794,7 +5794,7 @@
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Model:</label>
                                 <select id="modelSelect" onchange="updateModelSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
                                     <option value="">Choose a model...</option>
-                                    <option value="dataforseo|25">📊 DataForSEO (SEO-Optimized) - 25 credits (~$0.25) 🔥 NEW</option>
+                                    <option value="dataforseo|25">🎯 SEO Pro (Optimized) - 25 credits (~$0.25) 🔥 NEW</option>
                                     <option value="basic|25" id="basicModelOption">🥉 Standard Quality - 25 credits (~$0.25)</option>
                                     <option value="premium|50">🥈 Premium Quality - 50 credits (~$0.50) ⭐ RECOMMENDED</option>
                                     <option value="enterprise|85">🥇 Enterprise Quality - 85 credits (~$0.85)</option>
@@ -5932,7 +5932,12 @@
 
             if (window.selectedModel && totalCredits > 0) {
                 btn.disabled = false;
-                btn.textContent = `📝 Generate Outline (${totalCredits} credits)`;
+                // DataforSEO model generates both outline AND article in one step
+                if (window.selectedModel === 'dataforseo') {
+                    btn.textContent = `📝 Generate Outline AND Article (${totalCredits} credits)`;
+                } else {
+                    btn.textContent = `📝 Generate Outline (${totalCredits} credits)`;
+                }
                 btn.style.background = '#2563eb';
             } else {
                 btn.disabled = true;
@@ -9799,9 +9804,9 @@
             ];
 
             const progress = showProgressModal({
-                title: '📊 DataforSEO Article Generation',
+                title: '🎯 SEO Pro Article Generation',
                 initialMessage: `Creating outline and generating ${wordCount}-word article...`,
-                icon: '📊',
+                icon: '🎯',
                 stages: stages,
                 estimatedDuration: (numSections + 5) * 6000,
                 manualStageControl: true
@@ -9829,7 +9834,7 @@
 
                     if (!response.ok) {
                         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                        console.error('DataforSEO section error:', errorData);
+                        console.error('SEO Pro section error:', errorData);
                         throw new Error(errorData.message || errorData.error || `API error: ${response.status}`);
                     }
 
@@ -10093,7 +10098,7 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                 updateProgressStage(stageIndex, '✓ Article complete');
                 progress.updateMessage('🎉 Article generation complete!');
-                console.log(`📊 Total DataforSEO Cost: $${totalCost.toFixed(4)}`);
+                console.log(`🎯 Total SEO Pro Cost: $${totalCost.toFixed(4)}`);
                 await new Promise(resolve => setTimeout(resolve, 500));
 
                 progress.close();
@@ -10102,9 +10107,9 @@ Return ONLY the JSON array, no other text or markdown.`;
                 displayGeneratedArticle(articleData, 'dataforseo', 25);
 
             } catch (error) {
-                console.error('DataforSEO generation error:', error);
+                console.error('SEO Pro generation error:', error);
                 progress.close();
-                alert(`❌ DataforSEO Error: ${error.message}\n\nPlease try again or select a different model.`);
+                alert(`❌ SEO Pro Error: ${error.message}\n\nPlease try again or select a different model.`);
             }
         }
 
@@ -12987,7 +12992,7 @@ ${item.answer}
                             <div>
                                 <label style="display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 5px;">Model Quality</label>
                                 <select id="model-select-${cleanId}-${index}" onchange="updateCreditCost('${cleanId}', ${index})" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
-                                    <option value="dataforseo">DataForSEO - 25 credits 🔥</option>
+                                    <option value="dataforseo">🎯 SEO Pro - 25 credits 🔥</option>
                                     <option value="basic">Standard - 25 credits</option>
                                     <option value="premium">Premium - 50 credits</option>
                                     <option value="enterprise">Enterprise - 85 credits</option>
@@ -19239,7 +19244,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Model:</label>
                                 <select id="bulkModelSelect" onchange="updateBulkCostSummary()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
                                     <option value="">Choose a model...</option>
-                                    <option value="dataforseo|25">📊 DataForSEO (SEO-Optimized) - 25 credits per article 🔥 NEW</option>
+                                    <option value="dataforseo|25">🎯 SEO Pro (Optimized) - 25 credits per article 🔥 NEW</option>
                                     <option value="basic|25">🥉 Basic Model (GPT-3.5) - 25 credits per article</option>
                                     <option value="premium|50">🥈 Premium Model (GPT-4) - 50 credits per article</option>
                                     <option value="enterprise|85">🥇 Enterprise Model (Claude 3.5 Sonnet) - 85 credits per article</option>
