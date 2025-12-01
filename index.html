@@ -18194,6 +18194,17 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     console.log(`📸 Image upload complete: ${uploadedImages.length}/${imagesToUpload.length} successful`);
                 }
 
+                // DEBUG: Log all uploaded images with their sectionId assignments
+                console.log('🔍 DEBUG - Uploaded Images Array:', {
+                    count: uploadedImages.length,
+                    images: uploadedImages.map(img => ({
+                        id: img.id,
+                        sectionId: img.sectionId,
+                        type: img.type,
+                        url: img.url.substring(0, 50) + '...'
+                    }))
+                });
+
                 // Determine image status message
                 let imageStatusMsg;
                 if (uploadedImages.length > 0) {
@@ -18265,7 +18276,17 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             img.sectionId === `section-${index}` && img.type !== 'featured'
                         );
 
+                        // DEBUG: Log search for section image
+                        console.log(`🔍 Section ${index} (${section.title}):`, {
+                            lookingFor: `section-${index}`,
+                            foundImage: !!sectionImageData,
+                            imageId: sectionImageData?.id,
+                            imageSectionId: sectionImageData?.sectionId,
+                            imageType: sectionImageData?.type
+                        });
+
                         if (sectionImageData) {
+                            console.log(`✅ Inserting image after section ${index} title`);
                             htmlContent += `<!-- wp:image {"id":${sectionImageData.id},"align":"center","sizeSlug":"large"} -->\n`;
                             htmlContent += `<figure class="wp-block-image aligncenter size-large">`;
                             htmlContent += `<img src="${sectionImageData.url}" alt="${sectionImageData.alt}" class="wp-image-${sectionImageData.id}"/>`;
@@ -18358,10 +18379,23 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 );
                 if (featuredImage) {
                     featuredMediaId = featuredImage.id;
-                    console.log('📸 Featured media set:', featuredMediaId);
+                    console.log('📸 Featured media set:', {
+                        id: featuredMediaId,
+                        sectionId: featuredImage.sectionId,
+                        type: featuredImage.type,
+                        note: 'This will be displayed by WordPress theme (position varies by theme)'
+                    });
                 } else {
                     console.log('📸 No featured media - no image assigned to title');
                 }
+
+                // DEBUG: Log first 1000 characters of HTML content to verify no duplicate images
+                console.log('🔍 HTML Content Preview (first 1000 chars):', htmlContent.substring(0, 1000));
+                console.log('🔍 HTML Content Stats:', {
+                    totalLength: htmlContent.length,
+                    imageBlockCount: (htmlContent.match(/<!-- wp:image/g) || []).length,
+                    figureCount: (htmlContent.match(/<figure/g) || []).length
+                });
 
                 // Log publishing data for debugging
                 const publishData = {
