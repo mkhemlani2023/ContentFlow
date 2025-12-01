@@ -18246,7 +18246,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     htmlContent += `<!-- /wp:group -->\n\n`;
                 }
 
-                // Add sections (without inline images - images handled via featured_media)
+                // Add sections with images assigned to each section
                 if (article.content?.sections && Array.isArray(article.content.sections)) {
                     article.content.sections.forEach((section, index) => {
                         if (section.title) {
@@ -18260,8 +18260,24 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             htmlContent += `<!-- /wp:heading -->\n\n`;
                         }
 
-                        // No images inserted in content - WordPress theme handles featured_media display
-                        // This prevents themes from auto-extracting and duplicating images
+                        // Insert image if one is assigned to this section (but not the featured image)
+                        const sectionImageData = uploadedImages.find(img =>
+                            img.sectionId === `section-${index}` && img.type !== 'featured'
+                        );
+
+                        if (sectionImageData) {
+                            htmlContent += `<!-- wp:image {"id":${sectionImageData.id},"align":"center","sizeSlug":"large"} -->\n`;
+                            htmlContent += `<figure class="wp-block-image aligncenter size-large">`;
+                            htmlContent += `<img src="${sectionImageData.url}" alt="${sectionImageData.alt}" class="wp-image-${sectionImageData.id}"/>`;
+                            if (sectionImageData.photographer && sectionImageData.source) {
+                                const photographerLink = sectionImageData.photographerUrl ?
+                                    `<a href="${sectionImageData.photographerUrl}" target="_blank" rel="noopener noreferrer">${sectionImageData.photographer}</a>` :
+                                    sectionImageData.photographer;
+                                htmlContent += `<figcaption class="wp-element-caption">Photo by ${photographerLink} on ${sectionImageData.source}</figcaption>`;
+                            }
+                            htmlContent += `</figure>\n`;
+                            htmlContent += `<!-- /wp:image -->\n\n`;
+                        }
 
                         if (section.content) {
                             // Split content by double newlines for proper paragraph formatting
@@ -18335,12 +18351,16 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     publishType: publishType
                 });
 
-                // Set featured_media for homepage thumbnail
-                // Theme may also auto-extract first image - user needs to disable that in theme settings
+                // Set featured_media only if user assigned an image to 'title' section
                 let featuredMediaId = null;
-                if (uploadedImages.length > 0) {
-                    featuredMediaId = uploadedImages[0].id;
+                const featuredImage = uploadedImages.find(img =>
+                    img.type === 'featured' || img.sectionId === 'title'
+                );
+                if (featuredImage) {
+                    featuredMediaId = featuredImage.id;
                     console.log('📸 Featured media set:', featuredMediaId);
+                } else {
+                    console.log('📸 No featured media - no image assigned to title');
                 }
 
                 // Log publishing data for debugging
