@@ -18225,11 +18225,29 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Step 2: Build HTML content from article using WordPress blocks
                 let htmlContent = '';
 
+                // Helper function to strip out any existing image HTML from content
+                // This prevents duplication - WordPress publishing will add images based on sectionId
+                function stripImageHTML(text) {
+                    if (!text) return text;
+                    const originalLength = text.length;
+                    // Remove <figure> tags and their contents (added by insertImagesIntoArticle)
+                    const cleaned = text.replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '').trim();
+                    if (cleaned.length < originalLength) {
+                        console.log('🧹 Stripped embedded image HTML:', {
+                            originalLength: originalLength,
+                            cleanedLength: cleaned.length,
+                            removedChars: originalLength - cleaned.length
+                        });
+                    }
+                    return cleaned;
+                }
+
                 // Don't manually insert first image here - section logic handles all images
 
-                // Add introduction if exists
+                // Add introduction if exists (strip any embedded image HTML first)
                 if (article.content?.introduction) {
-                    const introParagraphs = article.content.introduction.split(/\n\n+/).filter(p => p.trim());
+                    const cleanIntro = stripImageHTML(article.content.introduction);
+                    const introParagraphs = cleanIntro.split(/\n\n+/).filter(p => p.trim());
                     introParagraphs.forEach(paragraph => {
                         htmlContent += `<!-- wp:paragraph -->\n`;
                         htmlContent += `<p style="text-align: left;">${paragraph.trim()}</p>\n`;
@@ -18301,8 +18319,10 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         }
 
                         if (section.content) {
+                            // Strip any embedded image HTML from section content first
+                            const cleanContent = stripImageHTML(section.content);
                             // Split content by double newlines for proper paragraph formatting
-                            const paragraphs = section.content.split(/\n\n+/).filter(p => p.trim());
+                            const paragraphs = cleanContent.split(/\n\n+/).filter(p => p.trim());
                             paragraphs.forEach(paragraph => {
                                 htmlContent += `<!-- wp:paragraph -->\n`;
                                 htmlContent += `<p style="text-align: left;">${paragraph.trim()}</p>\n`;
