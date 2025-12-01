@@ -18214,9 +18214,23 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Step 2: Build HTML content from article using WordPress blocks
                 let htmlContent = '';
 
-                // Note: Featured image is set via featured_media field (line ~16838)
-                // WordPress themes automatically display it above the title
-                // No need to embed it in content to avoid duplication
+                // Insert first image right after title (before introduction)
+                if (uploadedImages.length > 0) {
+                    const firstImage = uploadedImages[0];
+                    htmlContent += `<!-- wp:image {"id":${firstImage.id},"align":"center","sizeSlug":"large"} -->\n`;
+                    htmlContent += `<figure class="wp-block-image aligncenter size-large">`;
+                    htmlContent += `<img src="${firstImage.url}" alt="${firstImage.alt}" class="wp-image-${firstImage.id}"/>`;
+                    // Add figcaption with photo credits if photographer info exists
+                    if (firstImage.photographer && firstImage.source) {
+                        const photographerLink = firstImage.photographerUrl ?
+                            `<a href="${firstImage.photographerUrl}" target="_blank" rel="noopener noreferrer">${firstImage.photographer}</a>` :
+                            firstImage.photographer;
+                        htmlContent += `<figcaption class="wp-element-caption">Photo by ${photographerLink} on ${firstImage.source}</figcaption>`;
+                    }
+                    htmlContent += `</figure>\n`;
+                    htmlContent += `<!-- /wp:image -->\n\n`;
+                    console.log('📸 Inserted first image after title');
+                }
 
                 // Add introduction if exists
                 if (article.content?.introduction) {
@@ -18351,22 +18365,10 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     publishType: publishType
                 });
 
-                // Find the featured image from uploaded images
+                // Don't set featured_media - images are embedded in content instead
+                // This prevents WordPress from displaying the image twice (once as featured, once in content)
                 let featuredMediaId = null;
-                if (uploadedImages.length > 0) {
-                    // Look for image marked as featured
-                    const featuredImage = uploadedImages.find(img => img.type === 'featured' || img.sectionId === 'title');
-                    // Use featured image if found, otherwise use first image
-                    featuredMediaId = (featuredImage || uploadedImages[0]).id;
-
-                    console.log('🖼️ Featured media selection:', {
-                        totalUploaded: uploadedImages.length,
-                        featuredImageFound: !!featuredImage,
-                        featuredMediaId: featuredMediaId,
-                        featuredImageType: featuredImage?.type,
-                        featuredImageSection: featuredImage?.sectionId
-                    });
-                }
+                console.log('📸 Featured media disabled - first image embedded in content after title');
 
                 // Log publishing data for debugging
                 const publishData = {
@@ -18438,12 +18440,12 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                         const publishTypeText = publishType === 'now' ? 'published' : publishType === 'draft' ? 'saved as draft' : 'scheduled';
 
-                        // Build featured image status message
-                        const featuredImageStatus = result.data.featured_media && result.data.featured_media > 0
-                            ? `✅ Featured image set (ID: ${result.data.featured_media})`
-                            : '⚠️ No featured image set';
+                        // Build image status message
+                        const imageStatus = uploadedImages.length > 0
+                            ? `📸 ${uploadedImages.length} image(s) embedded in content`
+                            : '⚠️ No images';
 
-                        alert(`✅ Success!\n\nArticle "${result.data.title}" has been ${publishTypeText} to ${selectedBlog.name}!\n\n📊 Publishing Details:\n• Post ID: ${result.data.postId}\n• Post URL: ${result.data.postUrl}\n• Status: ${result.data.status}\n• Platform: WordPress\n• Username: ${username}\n• ${featuredImageStatus}\n\n🌐 View your article:\n${result.data.postUrl}`);
+                        alert(`✅ Success!\n\nArticle "${result.data.title}" has been ${publishTypeText} to ${selectedBlog.name}!\n\n📊 Publishing Details:\n• Post ID: ${result.data.postId}\n• Post URL: ${result.data.postUrl}\n• Status: ${result.data.status}\n• Platform: WordPress\n• Username: ${username}\n• ${imageStatus}\n\n🌐 View your article:\n${result.data.postUrl}`);
 
                         // Log the publishing attempt to Supabase
                         if (currentUser && supabaseClient) {
