@@ -18350,10 +18350,13 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     publishType: publishType
                 });
 
-                // Don't set featured_media - it causes theme to auto-display image multiple times
-                // We manually insert images in content where we want them
+                // Set featured_media for homepage thumbnail
+                // Theme may also auto-extract first image - user needs to disable that in theme settings
                 let featuredMediaId = null;
-                console.log('📸 Featured media disabled - images manually controlled in content');
+                if (uploadedImages.length > 0) {
+                    featuredMediaId = uploadedImages[0].id;
+                    console.log('📸 Featured media set:', featuredMediaId);
+                }
 
                 // Log publishing data for debugging
                 const publishData = {
