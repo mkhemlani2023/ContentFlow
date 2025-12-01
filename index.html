@@ -18214,9 +18214,25 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Step 2: Build HTML content from article using WordPress blocks
                 let htmlContent = '';
 
-                // Don't insert first image in content - it's set as featured_media
-                // WordPress themes will display it automatically
-                // This prevents duplication in single post view
+                // Insert first image after title (before introduction)
+                // Note: This is manually inserted so it appears exactly where we want it
+                // You may need to disable your theme's automatic featured image display
+                if (uploadedImages.length > 0) {
+                    const firstImage = uploadedImages[0];
+                    htmlContent += `<!-- wp:image {"id":${firstImage.id},"align":"center","sizeSlug":"large","className":"manual-featured-image"} -->\n`;
+                    htmlContent += `<figure class="wp-block-image aligncenter size-large manual-featured-image">`;
+                    htmlContent += `<img src="${firstImage.url}" alt="${firstImage.alt}" class="wp-image-${firstImage.id}"/>`;
+                    // Add figcaption with photo credits if photographer info exists
+                    if (firstImage.photographer && firstImage.source) {
+                        const photographerLink = firstImage.photographerUrl ?
+                            `<a href="${firstImage.photographerUrl}" target="_blank" rel="noopener noreferrer">${firstImage.photographer}</a>` :
+                            firstImage.photographer;
+                        htmlContent += `<figcaption class="wp-element-caption">Photo by ${photographerLink} on ${firstImage.source}</figcaption>`;
+                    }
+                    htmlContent += `</figure>\n`;
+                    htmlContent += `<!-- /wp:image -->\n\n`;
+                    console.log('📸 Inserted first image after title in content');
+                }
 
                 // Add introduction if exists
                 if (article.content?.introduction) {
@@ -18436,7 +18452,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                         // Build image status message
                         const imageStatus = result.data.featured_media && result.data.featured_media > 0
-                            ? `📸 Featured image set (${uploadedImages.length} total images)`
+                            ? `📸 Featured image set + ${uploadedImages.length} image(s) in content\n\n⚠️ NOTE: If image appears multiple times, disable theme's automatic featured image display in WordPress → Appearance → Customize`
                             : '⚠️ No images';
 
                         alert(`✅ Success!\n\nArticle "${result.data.title}" has been ${publishTypeText} to ${selectedBlog.name}!\n\n📊 Publishing Details:\n• Post ID: ${result.data.postId}\n• Post URL: ${result.data.postUrl}\n• Status: ${result.data.status}\n• Platform: WordPress\n• Username: ${username}\n• ${imageStatus}\n\n🌐 View your article:\n${result.data.postUrl}`);
