@@ -9955,8 +9955,8 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                     `Conclusion: ${keyword}`, // Short topic
                     conclusionWords,
                     'conclusion',
-                    sectionTitles, // Sub-topics are the section titles
-                    `Conclusion summarizing ${title}` // Description
+                    [], // No subtopics - conclusion should be flowing paragraphs without headers
+                    `Write a conclusion summarizing the key points about ${title}. Use only flowing paragraphs without any headers or section titles.` // Description
                 );
                 updateProgressStage(stageIndex++, '✓ Conclusion complete');
                 console.log(`✅ Conclusion: ${conclusion.split(/\s+/).length} words`);
@@ -10757,7 +10757,13 @@ Write ${wordsPerSection} words of informative, engaging paragraphs. Use double l
 Purpose: ${conclusionData.purpose}
 Key points: ${conclusionData.keyPoints.join(', ')}
 
-Write ${conclusionWords} words wrapping up the article. Use double line breaks between paragraphs. Return ONLY the conclusion text, no JSON, no markdown.`;
+Write ${conclusionWords} words wrapping up the article. Use double line breaks between paragraphs.
+
+CRITICAL RULES:
+- Do NOT use any headers, subheadings, or section titles
+- Do NOT write section names like "Understanding X" or "Integrating Y"
+- Write ONLY flowing paragraphs that summarize the main points
+- Return ONLY the conclusion text, no JSON, no markdown, no headers`;
 
                 const conclusion = await generatePhase(conclusionPrompt, Math.floor(conclusionWords * 2.0));
                 console.log('✅ Conclusion generated:', conclusion.substring(0, 100));
