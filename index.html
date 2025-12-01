@@ -18246,7 +18246,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     htmlContent += `<!-- /wp:group -->\n\n`;
                 }
 
-                // Add sections if they exist with inline images
+                // Add sections (without inline images - images handled via featured_media)
                 if (article.content?.sections && Array.isArray(article.content.sections)) {
                     article.content.sections.forEach((section, index) => {
                         if (section.title) {
@@ -18260,23 +18260,8 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             htmlContent += `<!-- /wp:heading -->\n\n`;
                         }
 
-                        // Insert image AFTER section title but BEFORE content
-                        // Section 0 gets uploadedImages[0], section 1 gets uploadedImages[1], etc.
-                        if (uploadedImages.length > index) {
-                            const sectionImage = uploadedImages[index];
-                            htmlContent += `<!-- wp:image {"id":${sectionImage.id},"align":"center","sizeSlug":"large"} -->\n`;
-                            htmlContent += `<figure class="wp-block-image aligncenter size-large">`;
-                            htmlContent += `<img src="${sectionImage.url}" alt="${sectionImage.alt}" class="wp-image-${sectionImage.id}"/>`;
-                            // Add figcaption with photo credits if photographer info exists
-                            if (sectionImage.photographer && sectionImage.source) {
-                                const photographerLink = sectionImage.photographerUrl ?
-                                    `<a href="${sectionImage.photographerUrl}" target="_blank" rel="noopener noreferrer">${sectionImage.photographer}</a>` :
-                                    sectionImage.photographer;
-                                htmlContent += `<figcaption class="wp-element-caption">Photo by ${photographerLink} on ${sectionImage.source}</figcaption>`;
-                            }
-                            htmlContent += `</figure>\n`;
-                            htmlContent += `<!-- /wp:image -->\n\n`;
-                        }
+                        // No images inserted in content - WordPress theme handles featured_media display
+                        // This prevents themes from auto-extracting and duplicating images
 
                         if (section.content) {
                             // Split content by double newlines for proper paragraph formatting
@@ -18429,11 +18414,11 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         const publishTypeText = publishType === 'now' ? 'published' : publishType === 'draft' ? 'saved as draft' : 'scheduled';
 
                         // Build image status message
-                        const imageStatus = uploadedImages.length > 0
-                            ? `📸 ${uploadedImages.length} image(s) embedded in content`
+                        const imageStatus = result.data.featured_media && result.data.featured_media > 0
+                            ? `📸 Featured image set - theme will display automatically`
                             : '⚠️ No images';
 
-                        alert(`✅ Success!\n\nArticle "${result.data.title}" has been ${publishTypeText} to ${selectedBlog.name}!\n\n📊 Publishing Details:\n• Post ID: ${result.data.postId}\n• Post URL: ${result.data.postUrl}\n• Status: ${result.data.status}\n• Platform: WordPress\n• Username: ${username}\n• ${imageStatus}\n\nNote: Images are embedded in content (no homepage thumbnail)\n\n🌐 View your article:\n${result.data.postUrl}`);
+                        alert(`✅ Success!\n\nArticle "${result.data.title}" has been ${publishTypeText} to ${selectedBlog.name}!\n\n📊 Publishing Details:\n• Post ID: ${result.data.postId}\n• Post URL: ${result.data.postUrl}\n• Status: ${result.data.status}\n• Platform: WordPress\n• Username: ${username}\n• ${imageStatus}\n\nNote: Image displays automatically via WordPress theme (position varies by theme)\n\n🌐 View your article:\n${result.data.postUrl}`);
 
                         // Log the publishing attempt to Supabase
                         if (currentUser && supabaseClient) {
