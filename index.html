@@ -18370,15 +18370,10 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     publishType: publishType
                 });
 
-                // Set featured_media for homepage/archive display, but don't duplicate in content
-                // The first image is embedded in content, and also set as featured_media for thumbnails
+                // Don't set featured_media - it causes theme to auto-display image multiple times
+                // We manually insert images in content where we want them
                 let featuredMediaId = null;
-                if (uploadedImages.length > 0) {
-                    featuredMediaId = uploadedImages[0].id;
-                    console.log('📸 Featured media set for homepage:', featuredMediaId);
-                } else {
-                    console.log('📸 No featured media - no images uploaded');
-                }
+                console.log('📸 Featured media disabled - images manually controlled in content');
 
                 // Log publishing data for debugging
                 const publishData = {
@@ -18451,11 +18446,11 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         const publishTypeText = publishType === 'now' ? 'published' : publishType === 'draft' ? 'saved as draft' : 'scheduled';
 
                         // Build image status message
-                        const imageStatus = result.data.featured_media && result.data.featured_media > 0
-                            ? `📸 Featured image set + ${uploadedImages.length} image(s) in content\n\n⚠️ NOTE: If image appears multiple times, disable theme's automatic featured image display in WordPress → Appearance → Customize`
+                        const imageStatus = uploadedImages.length > 0
+                            ? `📸 ${uploadedImages.length} image(s) embedded in content`
                             : '⚠️ No images';
 
-                        alert(`✅ Success!\n\nArticle "${result.data.title}" has been ${publishTypeText} to ${selectedBlog.name}!\n\n📊 Publishing Details:\n• Post ID: ${result.data.postId}\n• Post URL: ${result.data.postUrl}\n• Status: ${result.data.status}\n• Platform: WordPress\n• Username: ${username}\n• ${imageStatus}\n\n🌐 View your article:\n${result.data.postUrl}`);
+                        alert(`✅ Success!\n\nArticle "${result.data.title}" has been ${publishTypeText} to ${selectedBlog.name}!\n\n📊 Publishing Details:\n• Post ID: ${result.data.postId}\n• Post URL: ${result.data.postUrl}\n• Status: ${result.data.status}\n• Platform: WordPress\n• Username: ${username}\n• ${imageStatus}\n\nNote: Images are embedded in content (no homepage thumbnail)\n\n🌐 View your article:\n${result.data.postUrl}`);
 
                         // Log the publishing attempt to Supabase
                         if (currentUser && supabaseClient) {
