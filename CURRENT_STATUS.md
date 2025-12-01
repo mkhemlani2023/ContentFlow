@@ -1,12 +1,116 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2025-11-08 (Latest Session - Bug Fixes & WordPress Publishing)
-**Current Session:** View Article Button & Featured Image Fixes
-**Developer:** Mary + Claude Code
+**Last Updated:** 2025-12-01 (Latest Session - Image Publishing & WordPress Integration Fixes)
+**Current Session:** WordPress Image Handling & SectionId-Based Placement
+**Developer:** Mahesh + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2025-11-08 (Bug Fixes & WordPress Publishing)
+## 🆕 LATEST SESSION - 2025-12-01 (Image Publishing & WordPress Integration)
+
+**MAJOR FIXES:** Resolved WordPress image duplication issues and implemented proper sectionId-based image placement system.
+
+**Recent Updates:**
+- ✅ FIXED: Syntax error with await in non-async setTimeout callback (was breaking all JavaScript)
+- ✅ REBRANDED: "DataforSEO" model renamed to "SEO Pro" to avoid source attribution
+- ✅ FIXED: Conclusion formatting to prevent incomplete subsections with headers
+- ✅ IMPLEMENTED: SectionId-based image placement system for WordPress publishing
+- ✅ FIXED: Image duplication issues (images appearing 2-3 times in posts)
+- ✅ ENHANCED: Featured image handling respects user's section assignments
+- ✅ REMOVED: Automatic theme-based image extraction issues for SaaS compatibility
+
+**Git Commits (Latest Session - Image Handling):**
+- `f2af089`: Respect sectionId assignments for image placement
+- `3090420`: SaaS-friendly: Remove content images, rely on featured_media only (reverted)
+- `ab910be`: Re-enable featured_media for homepage thumbnails
+- `bd48f55`: Remove featured_media to prevent theme's multiple auto-displays
+- `b512004`: Fix image positioning: embed images in content instead of using featured_media
+- `6421947`: Fix: Use featured_media properly - let WordPress theme handle display
+- `de9e273`: Fix conclusion formatting to prevent incomplete subsections
+- `4b6f314`: Rebrand DataforSEO model to SEO Pro to avoid source attribution
+- `d564af8`: Fix syntax error: make setTimeout callback async for await support
+
+**Critical Fixes Implemented:**
+
+1. **JavaScript Syntax Error (BLOCKING)**:
+   - Fixed await in non-async function that prevented entire script from parsing
+   - Made setTimeout callback async to support await SupabaseService.savePublishLog()
+   - This was causing showAuthModal and wizardStartKeywordResearch to be undefined
+
+2. **SEO Pro Rebranding**:
+   - Replaced all "DataforSEO" references with "SEO Pro" in user-facing UI
+   - Updated model selection dropdowns, progress modals, and error messages
+   - Changed generate button text to "Generate Outline AND Article" for SEO Pro model
+   - Prevents users from going directly to data source
+
+3. **Conclusion Formatting**:
+   - Fixed AI generating incomplete subsection headers in conclusions
+   - Added explicit rules to prevent headers like "Understanding X" or "Integrating Y"
+   - Updated prompts for both SEO Pro and standard models
+   - Ensures conclusions are flowing paragraphs only
+
+4. **Image Placement System**:
+   - **SectionId-Based Assignment**: Images are now placed based on their sectionId property
+     - `'title'` → Featured image (featured_media, displays on homepage)
+     - `'section-0'`, `'section-1'`, etc. → After specific section titles
+     - `'introduction'` → In introduction section
+   - **User Control**: Users specify which sections get images via image management UI
+   - **No Duplication**: Featured image NOT inserted in content (avoids theme auto-extraction)
+   - **SaaS-Friendly**: Works across all WordPress themes without configuration
+
+**Image Management System Architecture:**
+```javascript
+// Article image structure
+article.images = [
+  {
+    url: "https://...",
+    alt: "...",
+    photographer: "...",
+    source: "pexels",
+    sectionId: "title",        // Where to place it
+    type: "featured"            // Image type
+  },
+  {
+    sectionId: "section-0",    // First section
+    type: "supporting"
+  }
+]
+```
+
+**WordPress Publishing Logic:**
+1. Upload all images to WordPress media library
+2. Set `featured_media` ONLY if image has `sectionId === 'title'`
+3. Insert section images in content based on their `sectionId` assignments
+4. Featured image NOT duplicated in content
+5. WordPress theme handles featured_media display (position varies by theme)
+
+**What Was Broken:**
+- ❌ Syntax error prevented entire app from loading (login, signup, keyword research all broken)
+- ❌ "DataforSEO" branding exposed data source to users
+- ❌ Conclusions had incomplete subsection headers
+- ❌ Images appeared 2-3 times in WordPress posts
+- ❌ No control over image placement (automatic theme handling)
+- ❌ Theme auto-extraction caused duplication issues
+
+**What's Fixed:**
+- ✅ All JavaScript functions load correctly
+- ✅ "SEO Pro" branding throughout interface
+- ✅ Conclusions are properly formatted with only paragraphs
+- ✅ Images appear exactly once where user specifies
+- ✅ Full control over image placement via sectionId system
+- ✅ SaaS-compatible (works across all WordPress themes)
+- ✅ Homepage thumbnails work (via featured_media)
+
+**Current Behavior:**
+- **Homepage**: Shows featured image thumbnail (if assigned to 'title')
+- **Single Post**:
+  - Featured image displays per WordPress theme
+  - Section images appear after their assigned section titles
+  - No duplication issues
+
+---
+
+## 🆕 PREVIOUS SESSION - 2025-11-08 (Bug Fixes & WordPress Publishing)
 
 **BUG FIXES:** Fixed "View Article with Images" button and WordPress featured image publishing issues.
 
@@ -20,603 +124,83 @@
 - ✅ ADDED: Detailed logging for WordPress image upload process
 - ✅ IMPROVED: Validation logging for featured_media parameter
 
-**Git Commits (Latest Session - Bug Fixes):**
+**Git Commits:**
 - `099da84`: Fix WordPress featured image upload - detect correct image type and set alt text
 - `874a563`: Fix View Article with Images button - add debugging and error handling
 
-**Technical Improvements:**
-1. **View Article Button Fix**:
-   - Added validation for `window.currentGeneratedArticle` availability
-   - Improved error messages for missing article data
-   - Enhanced console logging to track article state and savedArticleId
-   - Fixed fallback logic when article is not saved to Supabase
+---
 
-2. **WordPress Featured Image Fix**:
-   - Detect actual image content type from blob (was hardcoded to 'image/jpeg')
-   - Use correct Content-Type header for each image format
-   - Set alt text with separate POST request to `/wp-json/wp/v2/media/{id}`
-   - Log all uploaded image IDs for debugging
-   - Validate featured_media parameter before sending to backend
+## SYSTEM ARCHITECTURE OVERVIEW
 
-**What Was Broken:**
-- ❌ "View Article with Images" button didn't work immediately after adding images
-- ❌ Featured images weren't appearing on published WordPress posts
-- ❌ Image uploads used hardcoded JPEG content type (failed for PNG/WebP)
-- ❌ Alt text wasn't being set on WordPress media library uploads
+**Core Components:**
+1. **Frontend**: Single-page application (index.html)
+2. **Backend**: Netlify serverless functions
+3. **Database**: Supabase (auth, user profiles, blogs, articles)
+4. **APIs**: Serper (search), OpenRouter (AI), Pexels (images)
+5. **Publishing**: WordPress REST API integration
 
-**What's Fixed:**
-- ✅ View Article button now works immediately with proper error handling
-- ✅ Images upload with correct content type (JPEG/PNG/WebP detected)
-- ✅ Featured images are properly set on WordPress posts
-- ✅ Alt text and captions are set on all uploaded media
-- ✅ Comprehensive logging helps diagnose any remaining issues
+**Image Management Flow:**
+1. User generates article with AI
+2. User adds images via "🖼️ Add Images" button
+3. Images assigned to specific sections (title, section-0, etc.)
+4. Images stored in article.images array with sectionId
+5. WordPress publishing respects sectionId assignments
+
+**Credit System:**
+- SEO Pro: 25 credits (gpt-4o-mini)
+- Standard: 25 credits (gpt-3.5-turbo)
+- Premium: 50 credits (gpt-4o-mini) ⭐ RECOMMENDED
+- Enterprise: 85 credits (claude-3.5-sonnet)
 
 ---
 
-## 🆕 PREVIOUS SESSION - 2025-10-21 (Supabase Backend & Production Launch)
+## KNOWN ISSUES & FUTURE WORK
 
-**MAJOR ARCHITECTURAL CHANGE:** Complete migration to Supabase backend with cloud authentication, database storage, and production-ready configuration.
+**Current Limitations:**
+- Featured image position in posts depends on WordPress theme
+- No multi-image support per section (only one image per section)
+- Image captions use fixed format (photographer attribution)
 
-**Recent Updates:**
-- ✅ IMPLEMENTED: Complete Supabase backend integration with authentication system
-- ✅ MIGRATED: Blog management to Supabase cloud storage (from localStorage)
-- ✅ CREATED: User profiles table with Row Level Security (RLS) policies
-- ✅ IMPLEMENTED: Admin role system for unlimited testing credits
-- ✅ CHANGED: New user credits from 50,000 → 0 (production setting - users must purchase)
-- ✅ FIXED: Missing INSERT policy for user_profiles table
-- ✅ FIXED: DOM event listener timing and user profile creation flow
-- ✅ ENHANCED: Auto-clear old localStorage blog data on page load
-- ✅ CREATED: Database migration and safe schema scripts
-- ✅ REMOVED: All demo/sample data functionality for production
-- ✅ REMOVED: Duplicate old addBlog function causing prompt dialogs
-- ✅ FIXED: Blog editing functions to prevent dialog box prompts
-- ✅ ENHANCED: CSP headers to allow Supabase library and API access
-- ✅ IMPROVED: Supabase initialization and credential validation
-- ✅ IMPLEMENTED: Real WordPress connection and article publishing
-- ✅ IMPLEMENTED: Manual image selection with AI-generated SEO metadata
-- ✅ REMOVED: Competitor keyword analysis flow (Phase 1 cleanup)
-- ✅ UPDATED: Platform status buttons to purple theme with Blog Management highlight
-- ✅ FIXED: Blog autopost - added missing user_id field in saveBlog() function
-- ✅ CREATED: Complete admin role system with SQL scripts
-- ✅ CREATED: User subscription tier system (starter/professional/enterprise/unlimited)
-- ✅ SET: mahesh.khemlani@gmail.com as admin with unlimited testing credits
-- ✅ DOCUMENTED: Complete ADMIN_SETUP_INSTRUCTIONS.md guide
-
-**Git Commits (Latest Session - Supabase & Production):**
-- `53f7fe5`: Add admin role system and setup instructions
-- `724e36a`: Fix blog autopost - add missing user_id field in saveBlog function
-- `2f15b89`: Add admin role system for unlimited testing credits
-- `7655306`: Change new user credits from 50,000 to 0 - users must purchase credits
-- `491353e`: Add missing INSERT policy for user_profiles table
-- `66367c5`: Fix DOM event listener timing and user profile creation
-- `5e8354c`: Clear old localStorage blog data immediately on page load
-- `063d0de`: Add database migration and safe schema scripts
-- `b5f8183`: Remove all demo/sample data functionality for production
-- `a83ceb4`: Remove duplicate old addBlog function causing prompt dialogs
-- `44a1f24`: Auto-clear old localStorage blogs and require login for blog management
-- `9cb01d9`: Fix editBlog function to prevent dialog box prompts
-- `385ce2f`: Migrate blog management to Supabase cloud storage
-- `f67996a`: Fix CSP to allow Supabase library and API access
-- `908fc35`: Improve Supabase initialization and credential validation
-- `6e06f34`: Fix Supabase client initialization error
-- `7322ef6`: Add comprehensive Supabase backend integration with authentication
-- `203d4e5`: Add Supabase backend integration with complete database schema
-- `cb6d1d1`: Remove competitor keyword analysis flow - Phase 1
-- `becf8df`: Implement manual image selection with AI-generated SEO metadata
-- `b25d90e`: Update platform status buttons to purple theme and highlight Blog Management
-- `d232979`: Implement real WordPress connection and article publishing
+**Planned Enhancements:**
+- Custom image positioning within section content
+- Multiple images per section
+- Image gallery support
+- Custom caption templates
 
 ---
 
-## 🆕 PREVIOUS SESSION - 2025-10-10 (Multi-Section Background Generation)
+## CRITICAL FILES
 
-**MAJOR ARCHITECTURAL CHANGE:** Implemented multi-section background article generation to permanently eliminate 26-second Netlify Function timeout issues.
+**Frontend:**
+- `index.html` - Complete application (150K+ lines)
 
-**Recent Updates:**
-- ✅ IMPLEMENTED: Background function for multi-section article generation (no timeout limits)
-- ✅ CREATED: Article status polling endpoint for real-time progress tracking
-- ✅ ENHANCED: Frontend polling system with live phase-by-phase progress updates
-- ✅ OPTIMIZED: Article generation in separate phases (intro → sections → conclusion → FAQ → proofread)
-- ✅ IMPROVED: Each section generated independently (5-10s) to stay under 26s per function call
-- ✅ FIXED: 1800-2000+ word articles now generate reliably without timeouts
-- ✅ REMOVED: 504 timeout retry logic (no longer needed)
-- ✅ ENHANCED: User sees live progress with phase names, section counts, and completion percentages
-- ✅ FIXED: Force GPT-4o-mini for outline generation regardless of article tier (prevents Enterprise timeout)
-- ✅ OPTIMIZED: Reduced outline max_tokens to 1000 and ultra-concise prompt for <10 second generation
-- ✅ ENHANCED: Explicit "Return ONLY valid JSON" instruction prevents conversational responses
-- ✅ FIXED: Outline prompt now generates proper multi-section structure based on word count
-- ✅ IMPLEMENTED: Dynamic section calculation (3-6 sections) based on article length
-- ✅ ENHANCED: Outline prompt shows multiple section examples in JSON template
-- ✅ OPTIMIZED: Variable section lengths based on content importance (not equal distribution)
-- ✅ IMPLEMENTED: Backend streaming support for OpenRouter API to prevent 504 timeouts
-- ✅ FIXED: Backend accumulates streaming chunks and returns complete response to frontend
-- ✅ ENHANCED: Both outline and article generation now use streaming to prevent gateway timeouts
-- ✅ INCREASED: Default credits from 10,000 to 50,000 for testing
-- ✅ OPTIMIZED: Drastically simplified article prompt by ~75% to prevent API timeouts
-- ✅ INCREASED: max_tokens for Premium (3.5x) and Enterprise (4x) tiers for reliable 1800-word generation
-- ✅ IMPROVED: Model-specific timeout error messages with actionable solutions
-- ✅ FIXED: Syntax error in content.sections ternary operator
-- ✅ FIXED: Duplicate targetWordCount declaration
-- ✅ FIXED: Button onclick handlers for undefined originalKeyword
-- ✅ FIXED: Focus keyword now preserves original research keyword instead of using article title
-- ✅ IMPLEMENTED: originalKeyword flows from keyword research through entire article generation workflow
-- ✅ FIXED: Image display undefined errors (tableOfContents, sections, relatedKeywords safety checks)
-- ✅ OPTIMIZED: Drastically simplified article generation prompt (60-70% reduction) to prevent API timeouts
-- ✅ IMPROVED: Removed full JSON outline structure from prompt - now extracts only section titles
-- ✅ ENHANCED: Compressed prompt instructions for faster API processing
-- ✅ RESTRICTED: Basic tier limited to 1,200 words max (was 1,500) - Premium required for longer articles
-- ✅ ENFORCED: Backend validation prevents Basic tier from generating >1200 word articles
-- ✅ ENHANCED: Clear "⭐ Premium+" indicators on 1500+, 1800, and 2500 word options
-- ✅ ADDED: Animated progress bar with shimmer effect showing continuous movement
-- ✅ IMPLEMENTED: Pulsing animation on current working stage (yellow background + ⏳)
-- ✅ ENHANCED: Clear visual distinction between working/complete/pending stages
-- ✅ FIXED: Confusing traffic light colors - replaced with article type icons and ⭐ ratings
-- ✅ FIXED: 504 timeout errors in outline generation with helpful recovery guidance
-- ✅ OPTIMIZED: Reduced outline max_tokens from 2000 → 1500 for faster generation
-- ✅ ENHANCED: Tier-specific timeout error messages with actionable solutions
-- ✅ ADDED: Word count selection dropdown (500-2500 words) with reading time estimates
-- ✅ IMPLEMENTED: Smart model filtering - Basic tier disabled for articles >1500 words
-- ✅ ENHANCED: Warning system for incompatible model/word count combinations
-- ✅ TRANSFORMED: Progress messages to be confidence-inspiring with checkmarks and positive language
-- ✅ FIXED: Progress bar UX - stages advance one at a time with clear completion indicators
-- ✅ FIXED: Progress bar initial state - added delays to prevent 3 stages lighting up instantly
-- ✅ ENHANCED: All progress messages show "working" status with emojis and clear outcomes
-- ✅ FIXED: 504 timeout errors - capped GPT-3.5 at 2500 tokens for articles >1500 words
-- ✅ ENHANCED: Smart error handling for timeouts with upgrade recommendations
-- ✅ OPTIMIZED: Balanced word count prompt (90-110% target) to prevent timeouts
-- ✅ FIXED: Word count accuracy - AI prompt optimized for 100-200 words per section
-- ✅ FIXED: max_tokens scaling - GPT-3.5 uses 1.8x multiplier (≤1500 words) or 2500 cap (>1500 words)
-- ✅ FIXED: Image display crash - wrapped FAQ/Conclusion in conditional checks to prevent .map() errors
-- ✅ FIXED: Actual word count calculation - counts all sections, subsections, conclusion, and FAQ
-- ✅ FIXED: Focus keyword - now forces correct keyword instead of article title
-- ✅ FIXED: Progress bar conflict - added manualStageControl to prevent auto-timer and manual update conflicts
-- ✅ ENHANCED: Image generation debugging - comprehensive logging for troubleshooting
-- ✅ ENHANCED: Article display - shows actual vs target word count
-- ✅ FIXED: JSON parsing errors - implemented 3 fallback strategies for AI response parsing
-- ✅ FIXED: Progress bar stages - now manually advance through all steps tied to actual work
-- ✅ FIXED: Table of Contents - now includes Conclusion and FAQ sections with anchor links
-- ✅ ENHANCED: Comprehensive error logging throughout parsing pipeline with full response capture
-- ✅ ENHANCED: AI prompts with explicit JSON-only output instructions
-- ✅ IMPLEMENTED: Comprehensive progress bar system for ALL AI operations with dynamic status messages
-- ✅ FIXED: Article generation from Article Ideas - reconnected to proper workflow (was calling wrong API)
-- ✅ FIXED: Article display issues - made metadata fields optional, auto-generate TOC if missing
-- ✅ ENHANCED: Button wording for clarity - "Discover Content Ideas" & "Outrank Top Competitors"
-- ✅ ADDED: Extensive debugging logging throughout article generation flow
-- ✅ FIXED: Article Ideas Generation button functionality (ID mismatch resolved)
-- ✅ FIXED: Content Strategy formatting (left alignment, proper bullet positioning)
-- ✅ FIXED: OpenRouter 400 errors (model-specific token management implemented)
-- ✅ IMPLEMENTED: Editable outline workflow - users can now review and modify outlines before article generation
-- ✅ ADDED: AI-powered internal linking feature (7 credits) - analyzes saved articles for contextual link suggestions
-- ✅ ENHANCED: Three-step article generation: Ideas → Editable Outline → Full Article
+**Backend:**
+- `netlify/functions/api.js` - Main API endpoints
+- `netlify/functions/env-config.js` - Environment configuration
 
-**Git Commits (Latest Session - Multi-Section Generation):**
-- `745bff0`: Implement multi-section background article generation to eliminate timeouts
-- `612f082`: Force GPT-4o-mini for outline generation to prevent Enterprise tier timeouts
-- `55f1755`: Add explicit JSON-only instruction to outline prompt
-- `6d20c2d`: Drastically simplify outline prompt and reduce max_tokens to prevent 504 timeouts
-- `25ae50a`: Allow variable section lengths in outline based on content importance
-- `ab072c0`: Fix outline prompt to generate proper multi-section structure for long-form articles
-- `6d99fbf`: Increase default credits to 50000 for testing
-- `ec1820c`: Fix frontend streaming implementation - simplify to receive complete response
-- `ef20e79`: Implement backend streaming accumulation for OpenRouter API
-- `3b7c8e2`: Add streaming support to prevent 504 timeouts on article generation
-- `fa754d2`: Increase max_tokens for Premium/Enterprise tiers for better completion rates
-- `7d0b04c`: Drastically simplify article prompt to prevent timeouts - reduce by ~75%
-- `cc64bb9`: Improve timeout error messages to show model-specific solutions
-- `3af1d75`: Fix syntax error: add missing ternary operator false case for content.sections
-- `3040b3f`: Fix duplicate targetWordCount declaration causing SyntaxError
-- `f0d5d4f`: Fix button onclick handlers - check for undefined originalKeyword before calling replace()
-- `bc0d20b`: Increase default credits from 1000 to 10000 for testing
-- `776fe0c`: Fix article generation issues: word count, focus keyword, and image display
-- `2726b39`: Update CURRENT_STATUS with prompt simplification optimization
-- `5f40187`: Drastically simplify article generation prompt to prevent API timeouts
-- `8bd10db`: Update CURRENT_STATUS with Basic tier 1200-word restriction
-- `d71954e`: Restrict Basic tier to 1200 words maximum - require Premium for longer articles
-- `7936a96`: Update CURRENT_STATUS with animated progress bar and color coding fixes
-- `5b55ffc`: Add animated progress bar with visual activity indicators (shimmer + pulse animations)
-- `bc3400e`: Fix confusing traffic light color coding in word count selection
-- `e59a894`: Update CURRENT_STATUS with outline timeout fixes
-- `aa05be6`: Fix 504 timeout errors in outline generation (reduced tokens, better error handling)
-- `7f598f3`: Update CURRENT_STATUS with word count selection and smart model filtering features
-- `e5dc2e8`: Add word count selection and smart model filtering with confidence-inspiring progress messages
-- `5c4bfa5`: Update CURRENT_STATUS with progress bar UX improvements
-- `252b031`: Fix progress bar UX - show working status and prevent multiple stages lighting up
-- `272f9a1`: Update CURRENT_STATUS with 504 timeout fixes and optimizations
-- `3043d96`: Fix 504 timeout errors for long article generation (smart token caps, error handling, optimized prompts)
-- `56162ba`: Update CURRENT_STATUS with aggressive word count and image display fixes
-- `9d211d9`: Fix word count and image display errors (aggressive prompts, increased max_tokens, FAQ/Conclusion checks)
-- `c18e2b2`: Update CURRENT_STATUS with word count, focus keyword, and progress bar fixes
-- `8bc3401`: Fix article generation issues: word count, focus keyword, progress bar, and image generation
-- `50cf4ad`: Update CURRENT_STATUS with latest JSON parsing and progress bar fixes
-- `5c1b0e4`: Fix JSON parsing errors with multiple fallback strategies and comprehensive debugging
-- `270e17c`: Fix 3 out of 4 user-reported issues (progress stages, TOC sections)
-- `2a03450`: Fix all article generation issues - reconnect to outline-first workflow
-- `a729fd3`: Enhance workflow button wording for clarity and elegance
-- `f7072d3`: Fix article generation from Article Ideas - connect to correct workflow
-- `fb7e24c`: Fix article display issues with comprehensive debugging
-- `6483da2`: Add comprehensive progress indicators for all AI operations
-- `8f275a6`: Update CURRENT_STATUS with progress bar system documentation
-- `fc36809`: Update CURRENT_STATUS with session 2025-10-08 work
-- `78a60e5`: Add AI-powered internal linking feature with relevance analysis
-- `c747b83`: Implement editable outline review workflow before article generation
-- `3d635d9`: Fix OpenRouter token limits and content strategy formatting
-- `5b699f4`: Fix content strategy display formatting issues
-- `2761111`: Fix article ideas API response field name mismatch
-- `ea02e5d`: Fix button IDs for article ideas and content strategy
+**Documentation:**
+- `PROJECT_CONTEXT.md` - Project overview and architecture
+- `CURRENT_STATUS.md` - This file
+- `ADMIN_SETUP_INSTRUCTIONS.md` - Admin configuration
+- `SUPABASE_SETUP.md` - Database setup
 
-**Major Features Added:**
-
-1. **Multi-Section Background Article Generation** (NEW - Session 2025-10-10):
-   - **Problem Solved**: Netlify Functions have a hard 26-second timeout limit on ALL plans
-   - **Solution**: Generate articles in phases using background functions (no timeout limits)
-   - **Architecture**:
-     - Backend: `generate-article-background.js` - Generates intro, sections, conclusion, FAQ, proofread separately
-     - Backend: `/api/article-status/:jobId` - Polling endpoint for progress tracking
-     - Frontend: Polls every 1 second for status updates with live progress display
-   - **Benefits**:
-     - 1800-2000+ word articles generate reliably without timeouts
-     - User sees phase-by-phase progress (initialization → intro → sections → conclusion → FAQ → proofread)
-     - Displays section completion (e.g., "Section 3/6 complete")
-     - Shows elapsed time and completion percentage
-     - Backend handles all complexity - frontend workflow unchanged
-   - **Technical Details**:
-     - Each phase stays under 26s (intro: 5-8s, section: 5-10s each, conclusion: 5s, FAQ: 5s, proofread: 5-10s)
-     - Total generation time: 40-70 seconds depending on article length
-     - No single function call exceeds Netlify's timeout
-     - Status saved to `/tmp/article-status/{jobId}.json` for polling
-     - Automatic HTML-to-JSON conversion for frontend compatibility
-
-2. **Comprehensive Progress Bar System**:
-   - Reusable progress modal component for ALL AI operations
-   - Real-time stage indicators with checkmark completion
-   - Dynamic status messages throughout generation
-   - Technical details panel (collapsible) showing model, parameters, performance
-   - Gradient animated progress bars
-   - Estimated durations: 8s (ideas), 12s (strategy), 15s (outline), 35s (article)
-   - Auto-close on completion with success confirmation
-   - Proper error handling with automatic cleanup
-
-2. **Editable Outline Workflow**:
-   - Full-screen modal displays AI-generated outline
-   - Edit article title, meta description, section titles, subsections
-   - Users approve outline before final article generation
-   - Prevents wasted credits on unwanted article structures
-
-3. **Internal Linking System**:
-   - Analyzes current article against saved article library (up to 20 articles)
-   - GPT-3.5 suggests 3-5 contextual internal links with relevance scores
-   - Shows placement recommendations and SEO reasoning
-   - Users select which links to apply via checkboxes
-   - Cost: 7 credits per analysis
-
-4. **Token Management**:
-   - GPT-3.5: max 2000 tokens (4K window)
-   - GPT-4o-mini: 1.8x word count (128K window)
-   - Claude: 2x word count (200K window)
-   - Prevents OpenRouter 400 errors from context overflow
-
-5. **Critical Bug Fixes (Session Continued)**:
-   - **Article Generation Broken**: confirmArticleGeneration() was calling wrong API endpoint
-   - **Solution**: Reconnected to generateArticleWithModel() and generateArticleWithImages()
-   - **Article Display Failure**: displayGeneratedArticle() crashed on missing tableOfContents
-   - **Solution**: Made all metadata fields optional, auto-generate TOC from sections
-   - **No Progress Indicators**: Users had no visibility into AI processing
-   - **Solution**: Added comprehensive progress bars with 5-7 stages per operation
-   - **Confusing Button Labels**: "Generate Article Ideas" and "Analyze Competitors" unclear
-   - **Solution**: Changed to "Discover Content Ideas" and "Outrank Top Competitors"
-
-6. **Enhanced User Experience**:
-   - Button text: "📝 Generate Article Outline" (clarifies first step)
-   - Confirmation dialog explains workflow: outline → edit → article
-   - Progress bars show: icon, title, stages, technical details, estimated time
-   - Comprehensive console logging for debugging (parse errors, API responses)
-   - Elegant tooltips explaining each workflow's benefits
-
-**All Features Now Working:**
-- ✅ Article Ideas Generation: Fixed button IDs, API field names, button wording
-- ✅ Content Strategy: Real-time formatting, left-aligned content, proper lists
-- ✅ Outline Editor: Full modification capability before article generation
-- ✅ Article Generation from Ideas: Now properly triggers outline → edit → article workflow
-- ✅ Article Display: Handles missing metadata gracefully, auto-generates TOC
-- ✅ Progress Indicators: All AI operations show real-time progress with stages
-- ✅ Internal Links: AI-powered relevance analysis with user selection
-
-**Technical Improvements:**
-- **Animated Progress Bar**: Shimmer gradient animation (2s cycle) shows continuous activity
-- **Stage Pulse Animation**: Current working stage pulses with yellow background and ⏳ icon
-- **Visual State System**: Yellow pulsing = working, Green static = complete, Gray = pending
-- **CSS Keyframe Animations**: shimmer (200% gradient), stagePulse (scale + opacity)
-- **Smart Stage Detection**: Automatically detects working vs complete stages based on message content
-- **Word Count Selection**: 6 predefined options (500-2500 words) with reading time estimates
-- **Icon-Based Ratings**: Replaced traffic light colors with article type icons (📝📄📋📚📖🎯) and ⭐ ratings
-- **Smart Model Filtering**: Basic tier automatically disabled for >1500 word articles to prevent timeouts
-- **Dynamic UI Updates**: Model dropdown updates in real-time when word count changes
-- **Warning System**: Yellow banner alerts users when selecting incompatible model/word count combinations
-- **Progress Bar Transformation**: Replaced uncertain ⏳ messages with confident ✓ completion indicators
-- **Positive Messaging**: All progress messages now use action-oriented, confidence-inspiring language
-- **Emoji Communication**: Strategic use of emojis to convey progress and completion (🎯📋✨🎉)
-- **Progress Bar UX**: Added 200-400ms delays between stage updates to prevent instant multi-activation
-- **Stage Advancement**: Only one stage active at a time, progress percentage updates automatically
-- **Status Messages**: Clear completion indicators with outcome-focused messaging
-- **Timeout Prevention**: GPT-3.5 capped at 2500 tokens for articles >1500 words (prevents 504 Gateway Timeout)
-- **Smart Token Scaling**: Articles ≤1500 words use 1.8x multiplier, >1500 words use fixed 2500 cap
-- **Enhanced Error Handling**: 504 errors show helpful upgrade recommendations (Premium/Enterprise for long articles)
-- **Optimized Prompts**: Balanced word count requirements (100-200 words/section) for efficiency
-- **Model Recommendations**: Console warns when using Basic tier for 1500+ word articles
-- **Image Display Safety**: Wrapped FAQ and Conclusion rendering in conditional checks to prevent .map() errors on undefined arrays
-- **Word Count Calculation**: Client-side validation counts actual words from all article sections
-- **Focus Keyword Fix**: Forces correct keyword in metadata after AI generation (prevents title substitution)
-- **Progress Bar System**: manualStageControl flag prevents auto-timer/manual update conflicts
-- **Image Generation Debugging**: Comprehensive console logging for troubleshooting API failures
-- **JSON Parsing Robustness**: Implemented 3-tier fallback strategy (remove markdown → extract JSON → trim trailing text)
-- **Progress Bar Synchronization**: Manual stage advancement tied to actual API progress (6 stages outline, 7 stages article)
-- **Comprehensive Error Logging**: Full raw response capture with clear markers for debugging
-- **Enhanced AI Prompts**: Explicit JSON-only instructions to reduce parsing failures
-- Fixed critical workflow disconnect in confirmArticleGeneration()
-- Made displayGeneratedArticle() resilient to missing/optional fields
-- Added comprehensive console debugging throughout generation flow
-- Enhanced error logging for OpenRouter API calls
-- Improved modal UI/UX with animated progress indicators
-- Added fallback logic for container ID lookups
-- Updated button text across entire application for consistency
+**Database:**
+- Supabase tables: user_profiles, blogs, articles (planned)
 
 ---
 
-## 🆕 PREVIOUS SESSION - 2025-10-06
+## EMERGENCY CONTEXT RECOVERY
 
-**Recent Updates:**
-- ✅ FIXED: "Create Winning Content Strategy" now uses real OpenRouter API (no more templates!)
-- ✅ CREATED: New `/api/content-outline` endpoint for AI-powered content strategy generation
-- ✅ ENHANCED: Content outlines use competitor analysis data for context-aware strategies
-- ✅ VERIFIED: Article Ideas Generation working correctly with OpenRouter integration
-- ✅ ADDED: Competitor data caching for enhanced cross-feature intelligence
-- ✅ IMPLEMENTED: Credit system - Content Outline (15 credits), Article Ideas (5 credits)
-
-**Git Commits:**
-- `93c8fa7`: Fix article ideas generation and Create Winning Content Strategy features
-- `238feb8`: Add comprehensive website metrics tracking and fix competitor analysis dates
-- `a3917bc`: Add analysis date to competitor analysis metrics
-
-**All Features Now Working:**
-- ✅ Article Ideas Generation: Real AI-generated article suggestions from keywords
-- ✅ Create Winning Content Strategy: AI-generated detailed content outlines with sections, FAQ, SEO keywords
-- ✅ Both features follow "No Templates" principle with 100% AI-generated content
+If context is lost:
+1. Read `PROJECT_CONTEXT.md` for architecture overview
+2. Read this file (`CURRENT_STATUS.md`) for latest state
+3. Run `git log --oneline -20` to see recent commits
+4. Test live app: https://www.getseowizard.com
+5. Check browser console for errors
+6. Review latest commit messages for recent changes
 
 ---
 
-## 🎯 Current Focus - RESOLVED ✅
-**Epic 2: Document Upload & Content Processing Pipeline**
-- ✅ Fixed Article Ideas Generation (CSP issue)
-- ✅ Fixed Template Keywords Problem (replaced with real API data)
-- ✅ Enhanced Continuity System (zero context loss)
-- ✅ Established "No Templates" coding principle
-
-## 🔍 Testing Results (www.getseowizard.com)
-- **✅ Frontend Loads**: Page loads completely with full interface
-- **✅ API Status**: All services (Serper API, OpenRouter API) are connected
-- **✅ Code Structure**: JavaScript functions and event listeners properly implemented
-- **✅ Backend Functions**: Netlify serverless functions deployed and responding
-- **❓ Functionality**: Need to test actual button interactions and form submissions
-
-## ✅ What's Working
-- **Epic 1 Complete**: Serper API integration (97% cost reduction achieved)
-- **Backend Infrastructure**: Node.js server, Redis caching, circuit breaker
-- **API Endpoints**: All DataforSEO-compatible endpoints functional
-- **Authentication**: Serper API client working properly
-
-## 🚧 What's Broken
-- **Backend API Server**: Redis connection errors preventing server startup on port 3000
-- **Environment Configuration**: Server requires Redis and proper API configuration via Netlify
-- **Frontend-Backend Connection**: Cannot test functionality without running backend server
-- **OpenRouter API Integration**: Content generation depends on backend `/api/openrouter-generate` endpoint
-
-## ✅ ALL MAJOR ISSUES RESOLVED - READY FOR TESTING
-
-**Final Status Update - 2025-10-02 13:30 EST**:
-- **✅ Keyword Research**: COMPLETELY FIXED - Real API data extraction implemented
-- **✅ Article Ideas Generation**: COMPLETELY FIXED - CSP updated + OpenRouter working
-- **✅ Template Problem**: ELIMINATED - All template-based approaches removed
-- **✅ Continuity System**: ENHANCED - Zero context loss protocols established
-- **✅ Coding Standards**: DOCUMENTED - "No Templates" rule in knowledge bases
-
-**Major Accomplishments This Session**:
-1. **Root Cause Analysis**: Identified CSP blocking OpenRouter + template keyword problem
-2. **Complete Template Elimination**: Removed ALL hardcoded templates, replaced with contextual intelligence
-3. **Real Data Implementation**: Keywords now extracted from actual Serper API search results
-4. **Enhanced Continuity**: Created comprehensive context recovery system
-5. **Knowledge Base Updates**: Documented principles to prevent future template usage
-
-**System Status**:
-- **Live Application**: www.getseowizard.com - All features should now work properly
-- **Deployment**: All fixes committed and deployed via Netlify
-- **Testing**: Ready for user acceptance testing
-
-**Business Planning Session (14:30 EST)**:
-- ✅ CREATED: Comprehensive business plan with credit-based pricing system
-- ✅ DESIGNED: Detailed credit cost matrix for every single action in the platform
-- ✅ DEVELOPED: AI-managed business model for infinite scalability with minimal labor
-- ✅ PROJECTED: 5-year financial model with 86%+ profit margins
-
-**Business Documents Created**:
-- `BUSINESS_PLAN.md` - Complete business strategy and market analysis
-- `CREDIT_COST_MATRIX.md` - Detailed pricing for every platform action
-- `AI_MANAGED_BUSINESS_MODEL.md` - Scalable AI-agent operations model
-
-**Key Business Metrics**:
-- Break-even: Month 6 (800 users)
-- Year 1 Revenue: $669K - $1.2M
-- Year 5 Revenue: $47.5M+ (500k+ users)
-- Profit Margins: 86%+ at scale with AI management
-
-**Business Planning Completion (15:00 EST)**:
-- ✅ COMPLETED: Comprehensive 10-year scalable business projections
-- ✅ CREATED: `SCALABLE_BUSINESS_PROJECTIONS.md` - Detailed financial modeling with 500M+ revenue potential
-- ✅ PROJECTED: AI-managed model achieving 187% profit margins at scale
-- ✅ ANALYZED: Cost structure showing 82% labor savings vs traditional SaaS ($17.6M savings at 1M users)
-
-**Complete Business Documentation Package**:
-- `BUSINESS_PLAN.md` - Core business strategy, market analysis, credit system architecture
-- `CREDIT_COST_MATRIX.md` - Detailed pricing for every single platform action
-- `AI_MANAGED_BUSINESS_MODEL.md` - AI agent operations for minimal labor costs
-- `SCALABLE_BUSINESS_PROJECTIONS.md` - 10-year financial projections with infinite scale potential
-
-**Key Financial Metrics**:
-- Break-even: Month 6 (800 users) - 50% faster than traditional model
-- Year 1: $594K revenue, $509K profit (86% margin)
-- Year 5: $119M revenue, $222M profit (187% margin)
-- Year 10: $475M revenue, $888M profit
-- ROI: 200x over 5 years ($100M+ cumulative profit from $500K investment)
-
-**Credit System Implementation Complete (15:30 EST)**:
-- ✅ IMPLEMENTED: Complete credit-based pricing system in SEO Wizard platform
-- ✅ CREATED: Credit balance display in header with real-time updates
-- ✅ BUILT: Professional credit purchase modal with 4 pricing tiers
-- ✅ DEPLOYED: Credit deduction system for keyword research (5 credits per search)
-- ✅ ADDED: Comprehensive credit dashboard with usage analytics
-
-**Credit System Features**:
-- Real-time credit balance in header (1000 credits demo)
-- Credit purchase packages: $29-$399 (1K-20K credits) with volume discounts
-- Credit validation and insufficient credit handling
-- Professional purchase modal with detailed package comparisons
-- Credit dashboard showing balance, usage stats, and cost reference guide
-- Demo reset functionality for testing
-
-**Technical Implementation**:
-- Credit storage: localStorage persistence
-- Credit deduction: Integrated into searchKeywords() function
-- Purchase system: PayPal integration ready (placeholder active)
-- Dashboard: Complete usage analytics and management tools
-
-**Live Deployment Status**:
-- Committed: SHA 0cd4758 (comprehensive credit system)
-- Pushed to GitHub: Triggering Netlify deployment
-- Live URL: www.getseowizard.com (should reflect changes in 2-3 minutes)
-
-**Article Generation System Fixed (15:45 EST)**:
-- ✅ IMPLEMENTED: Two-step article generation (Outline → Full Article)
-- ✅ FIXED: All credit system inconsistencies across all features
-- ✅ ENHANCED: Professional loading modals with progress tracking
-- ✅ INTEGRATED: Consistent credit validation and deduction
-
-**Article Generation Features Now Working**:
-- Step 1: AI generates comprehensive article outline (2-3 seconds)
-- Step 2: AI creates full article from structured outline (30-60 seconds)
-- Credit costs: Basic (25), Premium (50), Enterprise (85 credits)
-- All models: GPT-3.5-turbo, GPT-4o-mini, Claude-3.5-sonnet
-
-**All Credit-Enabled Features**:
-- ✅ Keyword Research: 5 credits (working)
-- ✅ Article Ideas Generation: 5 credits (fixed & working)
-- ✅ Competitor Analysis: 10 credits (fixed & working)
-- ✅ Article Generation: 25-85 credits (fixed & working)
-- ✅ Article + Images: 35-105 credits (fixed & working)
-
-**Technical Fixes Applied**:
-- Consistent credit system using checkCreditRequirement() and deductCredits()
-- Removed all localStorage inconsistencies
-- Fixed duplicate credit deductions
-- Enhanced error handling and modal cleanup
-- Two-step workflow with outline validation
-
-**Live Deployment Status**:
-- Committed: SHA 66e3754 (article generation fixes)
-- Pushed to GitHub: Triggering Netlify deployment
-- Live URL: www.getseowizard.com (updates in 2-3 minutes)
-
-## ✅ ARTICLE GENERATION COMPLETELY FIXED - 2025-10-04 ✅
-
-**Major Article Generation Fixes - 2025-10-04**:
-- ✅ FIXED: Word count inconsistencies - AI now targets exact word count with 5% tolerance
-- ✅ FIXED: Focus keyword identification - Enhanced extraction from titles with compound terms
-- ✅ FIXED: Image generation - Updated to use working Picsum API with semantic seeding
-- ✅ FIXED: Article formatting - Full markdown to HTML conversion with proper styling
-- ✅ ENHANCED: Display shows actual vs target word count with color coding
-- ✅ ENHANCED: Focus keyword prominently displayed in article metadata
-- ✅ ENHANCED: Full article view (no 300px height limit) for better readability
-
-**Technical Improvements**:
-1. **Word Count Precision**: Updated AI prompt to require exact word count within ±5%
-2. **Keyword Extraction**: Improved algorithm prioritizes 2-3 word compounds over single words
-3. **Image URLs**: Replaced deprecated Unsplash Source API with Picsum using semantic seeding
-4. **Formatting**: Complete markdown parser with headings, lists, blockquotes, bold/italic
-5. **UI/UX**: Color-coded word count (green=on target, orange=variance), full content display
-
-## ✅ ALL CORE API FUNCTIONALITY NOW WORKING - FULLY TESTED ✅
-
-**Final Status Update - 2025-10-03 15:15 EST**:
-- **✅ Keyword Research**: WORKING PERFECTLY - Real Serper API data with 25+ contextual keywords
-- **✅ Competitor Analysis**: WORKING PERFECTLY - Real competitor data, domain authority, backlinks
-- **✅ Article Ideas Generation**: COMPLETELY FIXED - OpenRouter AI generating 10 contextual ideas
-- **✅ Full Article Generation**: WORKING PERFECTLY - Complete SEO articles with meta data
-- **✅ Credit System**: FULLY FUNCTIONAL - Real-time credit deduction, purchase modal, dashboard
-
-**Major Accomplishments This Session**:
-1. **OpenRouter API Integration**: Fixed 400 Bad Request errors by updating model names to standard OpenAI format
-2. **Frontend Function Implementation**: Added missing `generateArticleIdeasWithCredits()` function
-3. **Complete API Testing**: All endpoints now return real data and work end-to-end
-4. **Credit System Validation**: Consistent credit checking and deduction across all features
-5. **Template/Mock Data Removal**: Eliminated ALL template-based fallbacks per user requirements
-
-**System Status**:
-- **Live Application**: www.getseowizard.com - ALL FEATURES NOW WORKING
-- **Git Status**: All fixes committed and deployed (commit a3c2db9)
-- **Testing**: User can now test complete workflow from keywords → competitors → article ideas → full articles
-
-**Next Actions** (Ready for Implementation):
-- Test article ideas generation (should now show full article cards instead of just lightbulb)
-- Implement blog/website upload functionality
-- Create bulk article generation from keyword lists
-- Build calendar/chronogram scheduling interface
-- Integrate PayPal payment processing
-
-## 🧪 Testing Resources
-- **Live Application**: https://www.getseowizard.com
-- **Test Page**: `test-functionality.html` - Comprehensive feature testing
-- **API Status**: All services operational and responding
-
-## 🗂️ Key Files to Remember
-- **Main App**: `/index.html` - Frontend interface
-- **Server**: `/server.js` - Backend API
-- **Docs**: `/docs/prd/` - Sharded PRD documents
-- **Stories**: `/docs/stories/` - Development stories
-- **Config**: `/.bmad-core/` - BMAD system files
-
-## 🔄 Recent Git Commits (Oct 3, 2025)
-1. **a3c2db9**: Implement missing article ideas generation frontend function
-2. **a981fc6**: Switch to standard OpenAI model names for OpenRouter compatibility
-3. **067685f**: Fix OpenRouter model names to resolve 400 Bad Request errors
-4. **29221e4**: Fix article generation API modelType parameter error
-5. **7699c66**: Remove template and mock fallback data from API endpoints
-
-## ✅ DEVELOPMENT PHASE COMPLETE - ALL CORE FEATURES WORKING
-**Ready for Next Phase**: Blog management, content scheduling, and payment integration
-
----
-
-## 📞 Context for Future Sessions
-
-**If you're starting a new session:**
-1. Read this file first to understand current state
-2. Check `/docs/stories/` for active development stories
-3. Review recent commits on GitHub for breaking changes
-4. Run the app locally to test current functionality
-5. Update this file with any new findings or changes
-
-**Key Commands to Remember:**
-```bash
-# Start development server
-npm run dev
-
-# Run tests
-npm test
-
-# Check current git status
-git status
-```
-
-**Development Workflow:**
-- Always use TodoWrite to track session progress
-- Update this file when major changes occur
-- Commit working states before major refactors
-- Test critical paths before pushing to GitHub
+**Last Verified Working:** December 1, 2025
+**Production URL:** https://www.getseowizard.com
+**Repository:** https://github.com/mkhemlani2023/ContentFlow
