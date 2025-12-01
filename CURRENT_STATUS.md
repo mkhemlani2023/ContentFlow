@@ -1,12 +1,50 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2025-12-01 (Latest Session - Image Publishing & WordPress Integration Fixes)
-**Current Session:** WordPress Image Handling & SectionId-Based Placement
+**Last Updated:** 2025-12-01 (Latest Session - Final Image Duplication Fix)
+**Current Session:** WordPress Image Publishing - Embedded HTML Conflict Resolution
 **Developer:** Mahesh + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2025-12-01 (Image Publishing & WordPress Integration)
+## 🆕 LATEST SESSION - 2025-12-01 Part 2 (Image Duplication - Final Fix)
+
+**CRITICAL FIX:** Resolved persistent image duplication caused by conflict between embedded HTML and featured_media.
+
+**Root Cause Identified:**
+- `insertImagesIntoArticle()` was adding `<figure>` HTML directly to `article.content.introduction` and `article.content.sections[].content`
+- WordPress publishing was ALSO setting `featured_media` parameter
+- Result: Images appeared twice (embedded HTML + theme's featured_media display)
+
+**The Solution:**
+- Created `stripImageHTML()` function to remove all `<figure>` tags from content before building WordPress HTML
+- WordPress publishing now uses ONLY sectionId-based placement as the single source of truth
+- Embedded HTML is stripped out during publishing process
+- Featured_media still set for thumbnails (sectionId === 'title')
+
+**Git Commits (Part 2 - Final Fix):**
+- `93b0ca9`: Fix image duplication: strip embedded HTML before WordPress publishing
+- `13ad3fd`: Add comprehensive debugging for WordPress image publishing
+
+**What Was Broken:**
+- ❌ Images appeared twice in WordPress posts
+- ❌ Embedded `<figure>` HTML in content conflicted with featured_media
+- ❌ No way to prevent duplication without theme configuration
+
+**What's Fixed:**
+- ✅ Each image appears exactly once where assigned via sectionId
+- ✅ Embedded HTML automatically stripped during publishing
+- ✅ Featured_media works for thumbnails without duplication
+- ✅ SaaS-compatible (no theme configuration needed)
+- ✅ Comprehensive debug logging for troubleshooting
+
+**Current Behavior (VERIFIED WORKING):**
+- User assigns image to 'title' → Appears as thumbnail + theme displays featured_media (NO duplication)
+- User assigns image to 'section-0' → Appears after first section title
+- Old embedded HTML is automatically removed before publishing
+
+---
+
+## 🆕 PREVIOUS SESSION - 2025-12-01 Part 1 (Image Publishing & WordPress Integration)
 
 **MAJOR FIXES:** Resolved WordPress image duplication issues and implemented proper sectionId-based image placement system.
 
@@ -15,11 +53,9 @@
 - ✅ REBRANDED: "DataforSEO" model renamed to "SEO Pro" to avoid source attribution
 - ✅ FIXED: Conclusion formatting to prevent incomplete subsections with headers
 - ✅ IMPLEMENTED: SectionId-based image placement system for WordPress publishing
-- ✅ FIXED: Image duplication issues (images appearing 2-3 times in posts)
 - ✅ ENHANCED: Featured image handling respects user's section assignments
-- ✅ REMOVED: Automatic theme-based image extraction issues for SaaS compatibility
 
-**Git Commits (Latest Session - Image Handling):**
+**Git Commits (Part 1 - Initial Attempts):**
 - `f2af089`: Respect sectionId assignments for image placement
 - `3090420`: SaaS-friendly: Remove content images, rely on featured_media only (reverted)
 - `ab910be`: Re-enable featured_media for homepage thumbnails
