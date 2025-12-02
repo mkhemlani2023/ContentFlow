@@ -437,8 +437,17 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
   if (options.metaKeywords && options.metaKeywords.length > 0) {
     requestBody[0].meta_keywords = options.metaKeywords.slice(0, 10);
   }
-  if (options.description) {
-    requestBody[0].description = options.description;
+  if (options.description || options.previousContext) {
+    // Combine description with context about previously written content
+    let fullDescription = options.description || '';
+
+    if (options.previousContext) {
+      // Add context instruction to prevent repetition
+      const contextNote = `\n\nIMPORTANT: This section continues an article. Previous content: ${options.previousContext}\n\nDo NOT repeat information already covered. Build upon and extend what was previously discussed with new insights and details.`;
+      fullDescription = fullDescription + contextNote;
+    }
+
+    requestBody[0].description = fullDescription;
   }
   if (options.supplementToken) {
     requestBody[0].supplement_token = options.supplementToken;
@@ -3662,7 +3671,7 @@ Generate a professional, actionable outline that a content writer can follow to 
 
     // DataforSEO Section Generation - Modular endpoint for generating one section at a time
     if (path === '/api/dataforseo-section' && method === 'POST') {
-      const { topic, wordCount = 400, sectionType = 'section', supplementToken = null, subTopics = [], description = '' } = body;
+      const { topic, wordCount = 400, sectionType = 'section', supplementToken = null, subTopics = [], description = '', previousContext = '' } = body;
 
       if (!topic) {
         return {
@@ -3689,6 +3698,9 @@ Generate a professional, actionable outline that a content writer can follow to 
       try {
         console.log(`📊 DataforSEO Section: ${sectionType} - ${wordCount} words`);
         console.log(`📊 Topic: ${topic.substring(0, 100)}...`);
+        if (previousContext) {
+          console.log(`📚 Context provided: ${previousContext.substring(0, 200)}...`);
+        }
 
         const result = await generateSingleDataForSEOContent(
           topic,
@@ -3698,7 +3710,8 @@ Generate a professional, actionable outline that a content writer can follow to 
             includeConclusion: sectionType === 'conclusion',
             supplementToken: supplementToken,
             subTopics: subTopics.slice(0, 10), // DataforSEO limit: 10
-            description: description
+            description: description,
+            previousContext: previousContext // Pass context to generation function
           }
         );
 

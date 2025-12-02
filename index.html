@@ -9818,8 +9818,8 @@
                 let totalCost = 0;
                 let stageIndex = 0;
 
-                // Helper function to generate a single section
-                async function generateSection(shortTopic, sectionWordCount, sectionType, subTopics = [], description = '') {
+                // Helper function to generate a single section with context from previous content
+                async function generateSection(shortTopic, sectionWordCount, sectionType, subTopics = [], description = '', previousContext = '') {
                     const response = await fetch('/api/dataforseo-section', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -9828,7 +9828,8 @@
                             wordCount: sectionWordCount,
                             sectionType: sectionType,
                             subTopics: subTopics,
-                            description: description
+                            description: description,
+                            previousContext: previousContext // Pass context from what's already written
                         })
                     });
 
@@ -9924,19 +9925,32 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                 updateProgressStage(stageIndex++, '✓ Introduction complete');
                 console.log(`✅ Introduction: ${introduction.split(/\s+/).length} words`);
 
-                // Step 3: Generate body sections
+                // Step 3: Generate body sections with context
                 const sections = [];
+                let contextSummary = `Article introduction: ${introduction.substring(0, 300)}...`; // Start with intro context
 
                 for (let i = 0; i < sectionTitles.length; i++) {
                     const sectionTitle = sectionTitles[i];
                     progress.updateMessage(`✍️ Writing: ${sectionTitle} (${wordsPerSection} words)...`);
+
+                    // Build context string from previous sections
+                    let previousSectionsContext = '';
+                    if (sections.length > 0) {
+                        // Include titles and brief excerpts from previous sections
+                        previousSectionsContext = sections.map(s =>
+                            `Previous section "${s.title}": ${s.content.substring(0, 200)}...`
+                        ).join('\n');
+                    }
+
+                    const fullContext = `${contextSummary}\n${previousSectionsContext}`.trim();
 
                     const sectionContent = await generateSection(
                         sectionTitle, // Short topic (section title)
                         wordsPerSection,
                         'section',
                         [keyword, title], // Sub-topics for context
-                        `Section about ${sectionTitle} for article on ${keyword}` // Description
+                        `Section about ${sectionTitle} for article on ${keyword}. Continue the article naturally, building upon what was already covered. Do NOT repeat information from previous sections.`, // Enhanced description
+                        fullContext // Pass context from introduction and previous sections
                     );
 
                     sections.push({
