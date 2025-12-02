@@ -10066,9 +10066,16 @@ Return ONLY the JSON array, no other text or markdown.`;
                 // Step 6: Extract citations and generate References section
                 progress.updateMessage('Extracting citations and generating references...');
 
-                // More comprehensive pattern to match full Chicago-style citations
-                // Matches: Author(s). Year. "Title." Journal info. URL/DOI
-                const fullCitationPattern = /^([A-Z][a-zA-Z]+(?:,\s+[A-Z][a-zA-Z\s\.]+)+\.\s+\d{4}\.\s+"[^"]+"\s+[^\.]+\.(?:\s+\d+(?:\(\d+\))?:\s+\d+-\d+\.)?\s+https?:\/\/[^\s]+)$/gm;
+                // More flexible pattern to match Chicago-style citations
+                // Matches: Author(s). Year. "Title." Journal/Source. Volume/Issue/Pages. URL
+                // Pattern breakdown:
+                // - Author names (Last, First format, multiple authors with "and")
+                // - Year (4 digits)
+                // - Quoted title
+                // - Journal/source name
+                // - Optional volume/issue/pages
+                // - URL or DOI
+                const fullCitationPattern = /([A-Z][a-zA-Z]+,\s+[A-Z][a-zA-Z\s\.,]+\d{4}\.\s+"[^"]+"\s+[A-Za-z\s&]+\d+[^\.]*\.\s+https?:\/\/[^\s<>]+)/gm;
 
                 const fullCitations = [];
                 const allSectionsContent = [];
@@ -10078,10 +10085,10 @@ Return ONLY the JSON array, no other text or markdown.`;
                     if (!content) return content;
 
                     let cleanedContent = content;
-                    let match;
-                    const citationPattern = new RegExp(fullCitationPattern);
 
-                    while ((match = citationPattern.exec(content)) !== null) {
+                    // Extract full Chicago-style citations
+                    let match;
+                    while ((match = fullCitationPattern.exec(content)) !== null) {
                         const fullCitation = match[1].trim();
                         if (!fullCitations.includes(fullCitation)) {
                             fullCitations.push(fullCitation);
@@ -10923,8 +10930,9 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                 // Phase 4.5: Extract citations and generate References section
                 progress.updateMessage('Extracting citations and generating references...');
 
-                // More comprehensive pattern to match full Chicago-style citations
-                const fullCitationPattern = /^([A-Z][a-zA-Z]+(?:,\s+[A-Z][a-zA-Z\s\.]+)+\.\s+\d{4}\.\s+"[^"]+"\s+[^\.]+\.(?:\s+\d+(?:\(\d+\))?:\s+\d+-\d+\.)?\s+https?:\/\/[^\s]+)$/gm;
+                // More flexible pattern to match Chicago-style citations
+                // Matches: Author(s). Year. "Title." Journal/Source. Volume/Issue/Pages. URL
+                const fullCitationPattern = /([A-Z][a-zA-Z]+,\s+[A-Z][a-zA-Z\s\.,]+\d{4}\.\s+"[^"]+"\s+[A-Za-z\s&]+\d+[^\.]*\.\s+https?:\/\/[^\s<>]+)/gm;
 
                 const fullCitations = [];
 
@@ -10933,10 +10941,11 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                     if (!content) return content;
 
                     let cleanedContent = content;
-                    let match;
-                    const citationPattern = new RegExp(fullCitationPattern);
 
-                    while ((match = citationPattern.exec(content)) !== null) {
+                    // Extract full Chicago-style citations
+                    let match;
+
+                    while ((match = fullCitationPattern.exec(content)) !== null) {
                         const fullCitation = match[1].trim();
                         if (!fullCitations.includes(fullCitation)) {
                             fullCitations.push(fullCitation);
@@ -12527,9 +12536,10 @@ REWRITTEN VERSION (begin immediately with the content):`;
                                     <h2 id="references" style="color: #1e293b; margin-bottom: 15px; font-size: 20px;">References</h2>
                                     <div style="color: #475569; line-height: 1.8;">
                                         ${content.references.split('\n').map(line => {
-                                            // Make URLs clickable
-                                            const urlPattern = /(https?:\/\/[^\s]+)/g;
-                                            line = line.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">$1</a>');
+                                            // Make URLs clickable - improved pattern for DOIs and URLs
+                                            // Matches http/https URLs including common special chars in DOIs
+                                            const urlPattern = /(https?:\/\/[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+)/g;
+                                            line = line.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; word-break: break-all;">$1</a>');
 
                                             if (line.match(/^\d+\./)) {
                                                 return `<div style="margin: 12px 0; padding-left: 10px; line-height: 1.6;">${line}</div>`;
@@ -18537,8 +18547,8 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     // Process references line by line and make URLs clickable
                     const refLines = article.content.references.split('\n').filter(line => line.trim());
                     refLines.forEach(line => {
-                        // Make URLs clickable
-                        const urlPattern = /(https?:\/\/[^\s]+)/g;
+                        // Make URLs clickable - improved pattern for DOIs and URLs
+                        const urlPattern = /(https?:\/\/[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+)/g;
                         line = line.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 
                         if (line.match(/^\d+\./)) {
