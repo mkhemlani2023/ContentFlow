@@ -9951,12 +9951,16 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                         [keyword, title], // Sub-topics for context
                         `Section about ${sectionTitle} for article on ${keyword}. Continue the article naturally, building upon what was already covered. Do NOT repeat information from previous sections.
 
-CITATION REQUIREMENTS: When referencing clinical studies, scientific papers, or research findings:
-- Cite the paper title, authors (use "et al." for multiple authors), and year
-- Mention primary conclusions or key findings
-- Use inline citations in format: [Author et al., Year] or [Author, Year]
-- Example: "Research shows X benefits [Smith et al., 2023]" or "According to Jones et al. (2023), Y was observed"
-- Only cite real, verifiable research - do not fabricate citations`, // Enhanced description with citation instructions
+CITATION REQUIREMENTS - Chicago Manual of Style:
+When referencing clinical studies, scientific papers, or research findings:
+- Use in-text citations: (Author Year) or (Author et al. Year) for 3+ authors
+- Mention primary conclusions or key findings from the research
+- Provide complete citations with: Author(s), Year, "Article Title," Journal Name Volume(Issue): Pages, DOI or URL
+- Example in-text: "Research demonstrates neuroprotective effects (Smith et al. 2023)"
+- Example full citation: Smith, John A., Mary B. Johnson, and Robert C. Lee. 2023. "Neuroprotective Effects of Nicotine in Parkinson Disease Patients: A Randomized Clinical Trial." Journal of Neurology 45(2): 123-145. https://doi.org/10.1234/jn.2023.123
+- CRITICAL: Only cite real, verifiable research from reputable peer-reviewed journals
+- Do NOT fabricate citations - if you reference research, it must be real
+- Include DOI or direct URL to the paper whenever possible`, // Chicago style citation instructions
                         fullContext // Pass context from introduction and previous sections
                     );
 
@@ -10060,7 +10064,7 @@ Return ONLY the JSON array, no other text or markdown.`;
                 console.log(`✅ FAQ generated: ${faq.length} questions`);
 
                 // Step 6: Extract citations and generate References section
-                progress.updateMessage('📚 Extracting citations and generating references...');
+                progress.updateMessage('Extracting citations and generating references...');
 
                 // Combine all content to search for citations
                 const allContent = [
@@ -10069,35 +10073,52 @@ Return ONLY the JSON array, no other text or markdown.`;
                     conclusion
                 ].join('\n\n');
 
-                // Extract citations in format [Author et al., Year] or [Author, Year]
-                const citationPattern = /\[([A-Z][a-zA-Z]+(?:\s+et\s+al\.)?),?\s+(\d{4})\]/g;
-                const citations = new Set();
+                // Extract Chicago-style in-text citations: (Author Year) or (Author et al. Year)
+                const inTextPattern = /\(([A-Z][a-zA-Z]+(?:\s+et\s+al\.)?)\s+(\d{4})\)/g;
+                const citedAuthors = new Set();
                 let match;
 
-                while ((match = citationPattern.exec(allContent)) !== null) {
-                    citations.add(`${match[1]}, ${match[2]}`);
+                while ((match = inTextPattern.exec(allContent)) !== null) {
+                    citedAuthors.add(`${match[1]} ${match[2]}`);
                 }
 
-                console.log(`📚 Found ${citations.size} unique citations`);
+                console.log(`Found ${citedAuthors.size} unique in-text citations`);
 
-                // Generate References section with proper formatting
+                // Look for full citations in the content (Author, Name. Year. "Title." Journal...)
+                const fullCitationPattern = /([A-Z][a-zA-Z]+,\s+[A-Z][a-zA-Z\s\.]+\.\s+\d{4}\.\s+"[^"]+"\s+[^\.]+\.\s+https?:\/\/[^\s]+)/g;
+                const fullCitations = [];
+
+                while ((match = fullCitationPattern.exec(allContent)) !== null) {
+                    fullCitations.push(match[1]);
+                }
+
+                console.log(`Found ${fullCitations.length} full citations in content`);
+
+                // Generate References section with proper Chicago style formatting (no emojis)
                 let references = '';
-                if (citations.size > 0) {
-                    references = '## References\n\n';
-                    references += '*The following research papers and studies were cited in this article:*\n\n';
+                if (citedAuthors.size > 0 || fullCitations.length > 0) {
+                    references = 'References\n\n';
 
-                    const citationArray = Array.from(citations).sort();
-                    citationArray.forEach((citation, index) => {
-                        references += `${index + 1}. ${citation}\n`;
-                    });
+                    if (fullCitations.length > 0) {
+                        // Use full citations if found
+                        fullCitations.forEach((citation, index) => {
+                            references += `${index + 1}. ${citation}\n\n`;
+                        });
+                    } else {
+                        // Create placeholder references from in-text citations
+                        const citationArray = Array.from(citedAuthors).sort();
+                        citationArray.forEach((citation, index) => {
+                            references += `${index + 1}. ${citation}. [Full citation details to be added]\n\n`;
+                        });
+                    }
 
-                    references += '\n*Note: These citations represent research referenced in the article. Readers are encouraged to consult the original sources for detailed information and to verify current research findings.*';
+                    references += 'Note: Readers are encouraged to consult the original sources for detailed information and to verify current research findings.';
                 } else {
-                    console.log('📚 No citations found - skipping References section');
+                    console.log('No citations found - skipping References section');
                 }
 
                 updateProgressStage(stageIndex++, '✓ References extracted');
-                console.log(`✅ References section: ${references ? 'Generated' : 'Skipped (no citations)'}`);
+                console.log(`References section: ${references ? 'Generated' : 'Skipped (no citations)'}`);
 
                 // Step 7: Format final article
                 progress.updateMessage('🔧 Finalizing article structure...');
@@ -12402,13 +12423,20 @@ REWRITTEN VERSION (begin immediately with the content):`;
 
                                 <!-- References Section -->
                                 ${content.references ? `
-                                <div style="background: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-top: 20px;">
-                                    <h2 id="references" style="color: #92400e; margin-bottom: 15px; font-size: 20px;">📚 References</h2>
-                                    <div style="color: #78350f; line-height: 1.8;">
+                                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #64748b; margin-top: 20px;">
+                                    <h2 id="references" style="color: #1e293b; margin-bottom: 15px; font-size: 20px;">References</h2>
+                                    <div style="color: #475569; line-height: 1.8;">
                                         ${content.references.split('\n').map(line => {
-                                            if (line.startsWith('## ')) return `<h3 style="color: #92400e; margin: 15px 0 10px 0; font-size: 18px;">${line.replace('## ', '')}</h3>`;
-                                            if (line.match(/^\d+\./)) return `<div style="margin: 8px 0; padding-left: 10px;">${line}</div>`;
-                                            if (line.startsWith('*')) return `<p style="margin: 10px 0; font-style: italic; font-size: 13px; color: #a16207;">${line.replace(/^\*|\*$/g, '')}</p>`;
+                                            // Make URLs clickable
+                                            const urlPattern = /(https?:\/\/[^\s]+)/g;
+                                            line = line.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">$1</a>');
+
+                                            if (line.match(/^\d+\./)) {
+                                                return `<div style="margin: 12px 0; padding-left: 10px; line-height: 1.6;">${line}</div>`;
+                                            }
+                                            if (line.startsWith('Note:')) {
+                                                return `<p style="margin: 15px 0 0 0; font-style: italic; font-size: 13px; color: #64748b; padding-top: 15px; border-top: 1px solid #e2e8f0;">${line}</p>`;
+                                            }
                                             return line ? `<p style="margin: 10px 0;">${line}</p>` : '';
                                         }).join('')}
                                     </div>
@@ -18403,24 +18431,25 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Add References if exists
                 if (article.content?.references) {
                     htmlContent += `<!-- wp:heading {"level":2} -->\n`;
-                    htmlContent += `<h2 id="references">📚 References</h2>\n`;
+                    htmlContent += `<h2 id="references">References</h2>\n`;
                     htmlContent += `<!-- /wp:heading -->\n\n`;
 
-                    // Process references line by line
+                    // Process references line by line and make URLs clickable
                     const refLines = article.content.references.split('\n').filter(line => line.trim());
                     refLines.forEach(line => {
-                        if (line.startsWith('## ')) {
-                            // Skip the main heading as we already added it
-                            return;
-                        } else if (line.match(/^\d+\./)) {
+                        // Make URLs clickable
+                        const urlPattern = /(https?:\/\/[^\s]+)/g;
+                        line = line.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+
+                        if (line.match(/^\d+\./)) {
                             // Numbered citation
                             htmlContent += `<!-- wp:paragraph -->\n`;
-                            htmlContent += `<p style="text-align: left; margin-left: 20px;"><strong>${line}</strong></p>\n`;
+                            htmlContent += `<p style="text-align: left; margin-left: 20px; line-height: 1.6;">${line}</p>\n`;
                             htmlContent += `<!-- /wp:paragraph -->\n\n`;
-                        } else if (line.startsWith('*')) {
-                            // Italic note
+                        } else if (line.startsWith('Note:')) {
+                            // Note paragraph with border
                             htmlContent += `<!-- wp:paragraph -->\n`;
-                            htmlContent += `<p style="text-align: left; font-style: italic; color: #666;"><em>${line.replace(/^\*|\*$/g, '')}</em></p>\n`;
+                            htmlContent += `<p style="text-align: left; font-style: italic; color: #666; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;"><em>${line}</em></p>\n`;
                             htmlContent += `<!-- /wp:paragraph -->\n\n`;
                         } else if (line.trim()) {
                             // Regular paragraph
