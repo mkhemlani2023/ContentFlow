@@ -16505,95 +16505,48 @@ Main Noun(s):`;
                 imageModal.remove();
             }
 
-            // Show success modal with action buttons
+            // Show brief toast notification
             const imageCount = Object.keys(window.selectedImages).length;
             const imageText = imageCount === 1 ? 'image' : 'images';
 
-            const successModal = document.createElement('div');
-            successModal.innerHTML = `
-                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 50000; display: flex; align-items: center; justify-content: center;">
-                    <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%; text-align: center;">
-                        <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
-                        <h2 style="color: #1e293b; margin: 0 0 15px 0;">Images Added Successfully!</h2>
-                        <p style="color: #64748b; margin: 0 0 30px 0; line-height: 1.6;">
-                            ${imageCount} ${imageText} added to your article with SEO-optimized alt text.
-                        </p>
-
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <button id="viewArticleBtn" style="width: 100%; background: #334155; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
-                                💾 Save, Close and View Article with Images
-                            </button>
-
-                            <button id="publishArticleBtn" style="width: 100%; background: #10b981; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
-                                🚀 Publish to Website
-                            </button>
-
-                            <button id="closeSuccessBtn" style="width: 100%; background: #64748b; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;" onmouseover="this.style.background='#475569'" onmouseout="this.style.background='#64748b'">
-                                Close
-                            </button>
-                        </div>
+            const toast = document.createElement('div');
+            toast.innerHTML = `
+                <div style="position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 16px 24px; border-radius: 8px; z-index: 60000; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 12px; animation: slideIn 0.3s ease-out;">
+                    <span style="font-size: 24px;">✅</span>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 2px;">Images Added Successfully!</div>
+                        <div style="font-size: 13px; opacity: 0.9;">${imageCount} ${imageText} embedded in your article</div>
                     </div>
                 </div>
             `;
+            document.body.appendChild(toast);
 
-            document.body.appendChild(successModal);
+            // Auto-remove toast after 3 seconds
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.3s ease-out';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
 
-            // Add event listeners to buttons
-            const viewBtn = document.getElementById('viewArticleBtn');
-            const publishBtn = document.getElementById('publishArticleBtn');
-            const closeBtn = document.getElementById('closeSuccessBtn');
+            // Immediately display the article with images and action buttons
+            console.log('🔍 Displaying article with images');
+            console.log('Article savedArticleId:', article.savedArticleId);
+            console.log('window.currentGeneratedArticle:', window.currentGeneratedArticle);
 
-            const viewArticleWithImages = function() {
-                console.log('🔍 View Article clicked');
-                console.log('Article savedArticleId:', article.savedArticleId);
-                console.log('window.currentGeneratedArticle:', window.currentGeneratedArticle);
-
-                successModal.remove();
-
-                // Clear any existing auto-close timeout
-                if (window.imageSuccessTimeout) {
-                    clearTimeout(window.imageSuccessTimeout);
+            // Always use the updated window.currentGeneratedArticle which has images embedded
+            if (article.savedArticleId) {
+                console.log('✅ Loading from Supabase (ID: ' + article.savedArticleId + ')');
+                viewSavedArticle(article.savedArticleId);
+            } else {
+                console.log('✅ Displaying article with images from memory');
+                // Ensure we have all the required data
+                const articleToDisplay = window.currentGeneratedArticle;
+                if (!articleToDisplay || !articleToDisplay.content) {
+                    alert('❌ Article data is missing. Please try regenerating the article.');
+                    return;
                 }
-
-                // Always use the updated window.currentGeneratedArticle which has images embedded
-                if (article.savedArticleId) {
-                    console.log('✅ Loading from Supabase (ID: ' + article.savedArticleId + ')');
-                    viewSavedArticle(article.savedArticleId);
-                } else {
-                    console.log('✅ Displaying article with images from memory');
-                    // Ensure we have all the required data
-                    const articleToDisplay = window.currentGeneratedArticle;
-                    if (!articleToDisplay || !articleToDisplay.content) {
-                        alert('❌ Article data is missing. Please try regenerating the article.');
-                        return;
-                    }
-                    displayGeneratedArticleWithImages(articleToDisplay, article.modelTier || 'Standard', 0);
-                }
-            };
-
-            viewBtn.addEventListener('click', viewArticleWithImages);
-
-            publishBtn.addEventListener('click', function() {
-                successModal.remove();
-                if (article.savedArticleId) {
-                    publishSavedArticle(article.savedArticleId);
-                } else {
-                    publishToWebsite();
-                }
-            });
-
-            closeBtn.addEventListener('click', function() {
-                if (window.imageSuccessTimeout) {
-                    clearTimeout(window.imageSuccessTimeout);
-                }
-                successModal.remove();
-            });
-
-            // Auto-close and show article immediately (500ms delay for smooth transition)
-            window.imageSuccessTimeout = setTimeout(() => {
-                console.log('⏱️ Auto-closing success modal and showing article');
-                viewArticleWithImages();
-            }, 500);
+                displayGeneratedArticleWithImages(articleToDisplay, article.modelTier || 'Standard', 0);
+            }
         }
 
         async function removeImagesFromArticle() {
