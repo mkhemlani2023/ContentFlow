@@ -10073,9 +10073,9 @@ Return ONLY the JSON array, no other text or markdown.`;
                 const fullCitations = [];
                 const allSectionsContent = [];
 
-                // Extract citations from all sections and remove them from content
-                [introduction, ...sections.map(s => s.content), conclusion].forEach((content, idx) => {
-                    if (!content) return;
+                // Helper function to extract citations and clean content
+                function extractAndClean(content) {
+                    if (!content) return content;
 
                     let cleanedContent = content;
                     let match;
@@ -10105,15 +10105,19 @@ Return ONLY the JSON array, no other text or markdown.`;
                         return ''; // Remove the references section from content
                     });
 
-                    // Update the section content without citations
-                    if (idx === 0) {
-                        introduction = cleanedContent;
-                    } else if (idx <= sections.length) {
-                        sections[idx - 1].content = cleanedContent;
-                    } else {
-                        conclusion = cleanedContent;
-                    }
+                    return cleanedContent;
+                }
+
+                // Extract from introduction (will be used later in article data)
+                let cleanIntroduction = extractAndClean(introduction);
+
+                // Extract from sections and update in place
+                sections.forEach(section => {
+                    section.content = extractAndClean(section.content);
                 });
+
+                // Extract from conclusion (will be used later in article data)
+                let cleanConclusion = extractAndClean(conclusion);
 
                 console.log(`Found ${fullCitations.length} full citations in content`);
 
@@ -10175,24 +10179,24 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                 console.log('📋 Table of Contents:', tableOfContents);
 
-                // Build article data
+                // Build article data with cleaned content (citations removed)
                 const articleData = {
                     content: {
                         title: title,
-                        introduction: introduction,
-                        sections: sections,
-                        conclusion: conclusion,
+                        introduction: cleanIntroduction,
+                        sections: sections, // Already cleaned in place
+                        conclusion: cleanConclusion,
                         faq: faq,
                         references: references || null // Add references section
                     },
                     tableOfContents: tableOfContents,
                     metadata: {
                         seoTitle: `${title} | ${keyword} Guide ${new Date().getFullYear()}`,
-                        metaDescription: introduction ? `${introduction.substring(0, 150).trim()}...` : `Comprehensive guide about ${keyword} covering key concepts and actionable insights.`,
+                        metaDescription: cleanIntroduction ? `${cleanIntroduction.substring(0, 150).trim()}...` : `Comprehensive guide about ${keyword} covering key concepts and actionable insights.`,
                         focusKeyword: keyword,
                         relatedKeywords: sectionTitles.slice(0, 5),
                         wordCount: wordCount,
-                        actualWordCount: allContent.split(/\s+/).length,
+                        actualWordCount: [cleanIntroduction, ...sections.map(s => s.content), cleanConclusion].join(' ').split(/\s+/).length,
                         difficulty: difficulty,
                         intent: intent,
                         modelTier: 'dataforseo',
@@ -10924,9 +10928,9 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
 
                 const fullCitations = [];
 
-                // Extract citations from all sections and remove them from content
-                [introduction, ...generatedSections.map(s => s.content), conclusion].forEach((content, idx) => {
-                    if (!content) return;
+                // Helper function to extract citations and clean content
+                function extractAndClean(content) {
+                    if (!content) return content;
 
                     let cleanedContent = content;
                     let match;
@@ -10956,15 +10960,19 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                         return ''; // Remove the references section from content
                     });
 
-                    // Update the section content without citations
-                    if (idx === 0) {
-                        introduction = cleanedContent;
-                    } else if (idx <= generatedSections.length) {
-                        generatedSections[idx - 1].content = cleanedContent;
-                    } else {
-                        conclusion = cleanedContent;
-                    }
+                    return cleanedContent;
+                }
+
+                // Extract from introduction (will be used later in article data)
+                let cleanIntroduction = extractAndClean(introduction);
+
+                // Extract from sections and update in place
+                generatedSections.forEach(section => {
+                    section.content = extractAndClean(section.content);
                 });
+
+                // Extract from conclusion (will be used later in article data)
+                let cleanConclusion = extractAndClean(conclusion);
 
                 console.log(`Found ${fullCitations.length} full citations in content`);
 
@@ -10992,16 +11000,16 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                 const finalArticle = {
                     metadata: {
                         seoTitle: `${articleTitle} | ${keyword} ${new Date().getFullYear()}`,
-                        metaDescription: `${introduction.substring(0, 150)}...`,
+                        metaDescription: `${cleanIntroduction.substring(0, 150)}...`,
                         focusKeyword: keyword,
                         relatedKeywords: outlineStructure.metadata?.relatedKeywords || [],
                         wordCount: targetWordCount
                     },
                     content: {
                         title: articleTitle,
-                        introduction: introduction,
-                        sections: generatedSections,
-                        conclusion: conclusion,
+                        introduction: cleanIntroduction,
+                        sections: generatedSections, // Already cleaned in place
+                        conclusion: cleanConclusion,
                         faq: faqItems,
                         references: references || null // Add references section
                     }
@@ -11009,7 +11017,7 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
 
                 // Calculate actual word count
                 let actualWordCount = 0;
-                actualWordCount += introduction.split(/\s+/).filter(w => w.length > 0).length;
+                actualWordCount += cleanIntroduction.split(/\s+/).filter(w => w.length > 0).length;
 
                 if (finalArticle.content.sections) {
                     finalArticle.content.sections.forEach(section => {
@@ -11026,7 +11034,7 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                     });
                 }
 
-                actualWordCount += conclusion.split(/\s+/).filter(w => w.length > 0).length;
+                actualWordCount += cleanConclusion.split(/\s+/).filter(w => w.length > 0).length;
 
                 if (finalArticle.content.faq) {
                     finalArticle.content.faq.forEach(item => {
