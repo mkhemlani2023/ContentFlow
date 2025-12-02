@@ -10121,6 +10121,11 @@ Return ONLY the JSON array, no other text or markdown.`;
                         return ''; // Remove the references section from content
                     });
 
+                    // Remove standalone "References" headers (markdown or plain)
+                    cleanedContent = cleanedContent.replace(/^#{1,6}\s*References?\s*$/gmi, '');
+                    cleanedContent = cleanedContent.replace(/^\*\*\s*References?\s*\*?\*?\s*$/gmi, '');
+                    cleanedContent = cleanedContent.replace(/^References?\s*$/gmi, '');
+
                     // Clean up any remaining markdown delimiters that were left behind
                     cleanedContent = cleanedContent.replace(/\*\*\s*$/gm, '');
                     cleanedContent = cleanedContent.replace(/\n{3,}/g, '\n\n');
@@ -10995,6 +11000,11 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                         });
                         return ''; // Remove the references section from content
                     });
+
+                    // Remove standalone "References" headers (markdown or plain)
+                    cleanedContent = cleanedContent.replace(/^#{1,6}\s*References?\s*$/gmi, '');
+                    cleanedContent = cleanedContent.replace(/^\*\*\s*References?\s*\*?\*?\s*$/gmi, '');
+                    cleanedContent = cleanedContent.replace(/^References?\s*$/gmi, '');
 
                     // Clean up any remaining markdown delimiters that were left behind
                     cleanedContent = cleanedContent.replace(/\*\*\s*$/gm, '');
