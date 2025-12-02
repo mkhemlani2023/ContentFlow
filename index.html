@@ -10833,6 +10833,13 @@ Section: ${section.title}
 Key points: ${section.keyPoints?.join(', ')}
 ${subsectionList ? `Subsections to cover:\n${subsectionList}` : ''}
 
+CITATION REQUIREMENTS - Chicago Manual of Style:
+When referencing clinical studies, scientific papers, or research findings:
+- Use in-text citations: (Author Year) or (Author et al. Year) for 3+ authors
+- Provide complete citations: Author(s). Year. "Article Title." Journal Name Volume(Issue): Pages. DOI or URL
+- Only cite real, verifiable research from reputable peer-reviewed journals
+- Include DOI or direct URL when available
+
 Write ${wordsPerSection} words of informative, engaging paragraphs. Use double line breaks between paragraphs. Return ONLY the content text, no JSON, no formatting.`;
 
                     const sectionContent = await generatePhase(sectionPrompt, Math.floor(wordsPerSection * 2.0));
@@ -10909,6 +10916,74 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                 updateProgressStage(4, '✓ FAQ complete');
                 await new Promise(resolve => setTimeout(resolve, 200));
 
+                // Phase 4.5: Extract citations and generate References section
+                progress.updateMessage('Extracting citations and generating references...');
+
+                // More comprehensive pattern to match full Chicago-style citations
+                const fullCitationPattern = /^([A-Z][a-zA-Z]+(?:,\s+[A-Z][a-zA-Z\s\.]+)+\.\s+\d{4}\.\s+"[^"]+"\s+[^\.]+\.(?:\s+\d+(?:\(\d+\))?:\s+\d+-\d+\.)?\s+https?:\/\/[^\s]+)$/gm;
+
+                const fullCitations = [];
+
+                // Extract citations from all sections and remove them from content
+                [introduction, ...generatedSections.map(s => s.content), conclusion].forEach((content, idx) => {
+                    if (!content) return;
+
+                    let cleanedContent = content;
+                    let match;
+                    const citationPattern = new RegExp(fullCitationPattern);
+
+                    while ((match = citationPattern.exec(content)) !== null) {
+                        const fullCitation = match[1].trim();
+                        if (!fullCitations.includes(fullCitation)) {
+                            fullCitations.push(fullCitation);
+                        }
+                        // Remove citation from content
+                        cleanedContent = cleanedContent.replace(match[0], '').trim();
+                    }
+
+                    // Also look for "References:" headers followed by citations
+                    const refSectionPattern = /References?:\s*([\s\S]*?)(?=\n\n[A-Z]|\n\n$|$)/gi;
+                    cleanedContent = cleanedContent.replace(refSectionPattern, (match, refContent) => {
+                        // Extract citations from this references section
+                        const lines = refContent.split('\n').filter(l => l.trim());
+                        lines.forEach(line => {
+                            if (line.match(/^[A-Z][a-zA-Z]+,.*\d{4}\./)) {
+                                if (!fullCitations.includes(line.trim())) {
+                                    fullCitations.push(line.trim());
+                                }
+                            }
+                        });
+                        return ''; // Remove the references section from content
+                    });
+
+                    // Update the section content without citations
+                    if (idx === 0) {
+                        introduction = cleanedContent;
+                    } else if (idx <= generatedSections.length) {
+                        generatedSections[idx - 1].content = cleanedContent;
+                    } else {
+                        conclusion = cleanedContent;
+                    }
+                });
+
+                console.log(`Found ${fullCitations.length} full citations in content`);
+
+                // Generate References section with proper Chicago style formatting (no emojis)
+                let references = '';
+                if (fullCitations.length > 0) {
+                    references = 'References\n\n';
+
+                    // Remove duplicates and sort
+                    const uniqueCitations = [...new Set(fullCitations)].sort();
+                    uniqueCitations.forEach((citation, index) => {
+                        references += `${index + 1}. ${citation}\n\n`;
+                    });
+
+                    references += 'Note: Readers are encouraged to consult the original sources for detailed information and to verify current research findings.';
+                }
+
+                console.log(`References section: ${references ? 'Generated with ' + fullCitations.length + ' citations' : 'Skipped (no citations)'}`);
+
                 // Phase 5: Assembly
                 updateProgressStage(5, 'Assembling article...');
                 progress.updateMessage('🔧 Combining all sections...');
@@ -10927,7 +11002,8 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                         introduction: introduction,
                         sections: generatedSections,
                         conclusion: conclusion,
-                        faq: faqItems
+                        faq: faqItems,
+                        references: references || null // Add references section
                     }
                 };
 
