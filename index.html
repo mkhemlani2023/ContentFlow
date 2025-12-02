@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="SEO Wizard - AI-powered content creation platform with hosting recommendations">
     <title>SEO Wizard - Professional Content Platform</title>
+    <!-- Version: 2024.12.02-v2 - Save Ideas + Citation Fixes -->
 
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -19491,6 +19492,8 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     ${ideasHtml}
                 </div>
             `;
+
+            console.log('📝 Displayed article ideas with Save buttons. Ideas count:', ideas.length);
 
             // Update the button to show success state
             const button = document.getElementById(`ideas-btn-${cleanId}`);
