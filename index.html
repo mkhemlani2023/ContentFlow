@@ -9920,7 +9920,7 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                     introWords,
                     'introduction',
                     [keyword], // Sub-topics
-                    `Introduction to ${keyword}` // Description
+                    `Introduction to ${keyword}. When referencing research, cite sources using [Author et al., Year] format. Mention key findings and conclusions.` // Description with citation instructions
                 );
                 updateProgressStage(stageIndex++, '✓ Introduction complete');
                 console.log(`✅ Introduction: ${introduction.split(/\s+/).length} words`);
@@ -9949,7 +9949,14 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                         wordsPerSection,
                         'section',
                         [keyword, title], // Sub-topics for context
-                        `Section about ${sectionTitle} for article on ${keyword}. Continue the article naturally, building upon what was already covered. Do NOT repeat information from previous sections.`, // Enhanced description
+                        `Section about ${sectionTitle} for article on ${keyword}. Continue the article naturally, building upon what was already covered. Do NOT repeat information from previous sections.
+
+CITATION REQUIREMENTS: When referencing clinical studies, scientific papers, or research findings:
+- Cite the paper title, authors (use "et al." for multiple authors), and year
+- Mention primary conclusions or key findings
+- Use inline citations in format: [Author et al., Year] or [Author, Year]
+- Example: "Research shows X benefits [Smith et al., 2023]" or "According to Jones et al. (2023), Y was observed"
+- Only cite real, verifiable research - do not fabricate citations`, // Enhanced description with citation instructions
                         fullContext // Pass context from introduction and previous sections
                     );
 
@@ -10052,11 +10059,49 @@ Return ONLY the JSON array, no other text or markdown.`;
                 updateProgressStage(stageIndex++, '✓ FAQ complete');
                 console.log(`✅ FAQ generated: ${faq.length} questions`);
 
-                // Step 6: Format final article
+                // Step 6: Extract citations and generate References section
+                progress.updateMessage('📚 Extracting citations and generating references...');
+
+                // Combine all content to search for citations
+                const allContent = [
+                    introduction,
+                    ...sections.map(s => s.content),
+                    conclusion
+                ].join('\n\n');
+
+                // Extract citations in format [Author et al., Year] or [Author, Year]
+                const citationPattern = /\[([A-Z][a-zA-Z]+(?:\s+et\s+al\.)?),?\s+(\d{4})\]/g;
+                const citations = new Set();
+                let match;
+
+                while ((match = citationPattern.exec(allContent)) !== null) {
+                    citations.add(`${match[1]}, ${match[2]}`);
+                }
+
+                console.log(`📚 Found ${citations.size} unique citations`);
+
+                // Generate References section with proper formatting
+                let references = '';
+                if (citations.size > 0) {
+                    references = '## References\n\n';
+                    references += '*The following research papers and studies were cited in this article:*\n\n';
+
+                    const citationArray = Array.from(citations).sort();
+                    citationArray.forEach((citation, index) => {
+                        references += `${index + 1}. ${citation}\n`;
+                    });
+
+                    references += '\n*Note: These citations represent research referenced in the article. Readers are encouraged to consult the original sources for detailed information and to verify current research findings.*';
+                } else {
+                    console.log('📚 No citations found - skipping References section');
+                }
+
+                updateProgressStage(stageIndex++, '✓ References extracted');
+                console.log(`✅ References section: ${references ? 'Generated' : 'Skipped (no citations)'}`);
+
+                // Step 7: Format final article
                 progress.updateMessage('🔧 Finalizing article structure...');
                 await new Promise(resolve => setTimeout(resolve, 300));
-
-                const allContent = [introduction, ...sections.map(s => s.content), conclusion].join('\n\n');
 
                 // Create table of contents
                 console.log('📋 Creating TOC from sections:', sections.map(s => ({ title: s.title, anchor: s.anchor })));
@@ -10082,6 +10127,15 @@ Return ONLY the JSON array, no other text or markdown.`;
                     });
                 }
 
+                // Add References to TOC if we have citations
+                if (references) {
+                    tableOfContents.push({
+                        title: 'References',
+                        anchor: '#references',
+                        level: 2
+                    });
+                }
+
                 console.log('📋 Table of Contents:', tableOfContents);
 
                 // Build article data
@@ -10091,7 +10145,8 @@ Return ONLY the JSON array, no other text or markdown.`;
                         introduction: introduction,
                         sections: sections,
                         conclusion: conclusion,
-                        faq: faq
+                        faq: faq,
+                        references: references || null // Add references section
                     },
                     tableOfContents: tableOfContents,
                     metadata: {
@@ -12342,6 +12397,21 @@ REWRITTEN VERSION (begin immediately with the content):`;
                                             <div style="color: #475569;">${item.answer.split('\n\n').map(para => `<p style="margin-bottom: 10px;">${para}</p>`).join('')}</div>
                                         </div>
                                     `).join('')}
+                                </div>
+                                ` : ''}
+
+                                <!-- References Section -->
+                                ${content.references ? `
+                                <div style="background: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-top: 20px;">
+                                    <h2 id="references" style="color: #92400e; margin-bottom: 15px; font-size: 20px;">📚 References</h2>
+                                    <div style="color: #78350f; line-height: 1.8;">
+                                        ${content.references.split('\n').map(line => {
+                                            if (line.startsWith('## ')) return `<h3 style="color: #92400e; margin: 15px 0 10px 0; font-size: 18px;">${line.replace('## ', '')}</h3>`;
+                                            if (line.match(/^\d+\./)) return `<div style="margin: 8px 0; padding-left: 10px;">${line}</div>`;
+                                            if (line.startsWith('*')) return `<p style="margin: 10px 0; font-style: italic; font-size: 13px; color: #a16207;">${line.replace(/^\*|\*$/g, '')}</p>`;
+                                            return line ? `<p style="margin: 10px 0;">${line}</p>` : '';
+                                        }).join('')}
+                                    </div>
                                 </div>
                                 ` : ''}
                             </div>
@@ -18325,6 +18395,37 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             htmlContent += `<!-- /wp:heading -->\n\n`;
                             htmlContent += `<!-- wp:paragraph -->\n`;
                             htmlContent += `<p style="text-align: left;">${qa.answer}</p>\n`;
+                            htmlContent += `<!-- /wp:paragraph -->\n\n`;
+                        }
+                    });
+                }
+
+                // Add References if exists
+                if (article.content?.references) {
+                    htmlContent += `<!-- wp:heading {"level":2} -->\n`;
+                    htmlContent += `<h2 id="references">📚 References</h2>\n`;
+                    htmlContent += `<!-- /wp:heading -->\n\n`;
+
+                    // Process references line by line
+                    const refLines = article.content.references.split('\n').filter(line => line.trim());
+                    refLines.forEach(line => {
+                        if (line.startsWith('## ')) {
+                            // Skip the main heading as we already added it
+                            return;
+                        } else if (line.match(/^\d+\./)) {
+                            // Numbered citation
+                            htmlContent += `<!-- wp:paragraph -->\n`;
+                            htmlContent += `<p style="text-align: left; margin-left: 20px;"><strong>${line}</strong></p>\n`;
+                            htmlContent += `<!-- /wp:paragraph -->\n\n`;
+                        } else if (line.startsWith('*')) {
+                            // Italic note
+                            htmlContent += `<!-- wp:paragraph -->\n`;
+                            htmlContent += `<p style="text-align: left; font-style: italic; color: #666;"><em>${line.replace(/^\*|\*$/g, '')}</em></p>\n`;
+                            htmlContent += `<!-- /wp:paragraph -->\n\n`;
+                        } else if (line.trim()) {
+                            // Regular paragraph
+                            htmlContent += `<!-- wp:paragraph -->\n`;
+                            htmlContent += `<p style="text-align: left;">${line}</p>\n`;
                             htmlContent += `<!-- /wp:paragraph -->\n\n`;
                         }
                     });
