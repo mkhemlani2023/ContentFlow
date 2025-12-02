@@ -10068,15 +10068,7 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                 // More flexible pattern to match Chicago-style citations
                 // Matches: Author(s). Year. "Title." Journal/Source. Volume/Issue/Pages. URL
-                // Pattern breakdown:
-                // - Author names (Last, First format, multiple authors with "and")
-                // - Year (4 digits)
-                // - Quoted title
-                // - Journal/source name
-                // - Optional volume/issue/pages
-                // - URL or DOI
-                const fullCitationPattern = /([A-Z][a-zA-Z]+,\s+[A-Z][a-zA-Z\s\.,]+\d{4}\.\s+"[^"]+"\s+[A-Za-z\s&]+\d+[^\.]*\.\s+https?:\/\/[^\s<>]+)/gm;
-
+                // Now handles markdown formatting like *italics* in journal names
                 const fullCitations = [];
                 const allSectionsContent = [];
 
@@ -10086,10 +10078,21 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                     let cleanedContent = content;
 
+                    // First, strip leading markdown delimiters before citations
+                    cleanedContent = cleanedContent.replace(/\*\*\s*\n\n/g, '\n\n');
+
+                    // Pattern to match Chicago-style citations (handles markdown in journal names)
+                    // Matches: Author, Name(s). Year. "Title." *Journal* or Journal Vol(Issue): Pages. URL
+                    const citationPattern = /([A-Z][a-zA-Z]+,\s+[A-Z][a-zA-Z\s\.,]+?\d{4}\.\s+"[^"]+"\s+[\*_]?[A-Za-z\s&\*_]+[\*_]?\s+\d+[^\n]*?https?:\/\/[^\s]+)/gm;
+
                     // Extract full Chicago-style citations
                     let match;
-                    while ((match = fullCitationPattern.exec(content)) !== null) {
-                        const fullCitation = match[1].trim();
+                    while ((match = citationPattern.exec(content)) !== null) {
+                        let fullCitation = match[1].trim();
+                        // Remove markdown formatting from the citation
+                        fullCitation = fullCitation.replace(/\*([^\*]+)\*/g, '$1');
+                        fullCitation = fullCitation.replace(/_([^_]+)_/g, '$1');
+
                         if (!fullCitations.includes(fullCitation)) {
                             fullCitations.push(fullCitation);
                         }
@@ -10103,16 +10106,25 @@ Return ONLY the JSON array, no other text or markdown.`;
                         // Extract citations from this references section
                         const lines = refContent.split('\n').filter(l => l.trim());
                         lines.forEach(line => {
-                            if (line.match(/^[A-Z][a-zA-Z]+,.*\d{4}\./)) {
-                                if (!fullCitations.includes(line.trim())) {
-                                    fullCitations.push(line.trim());
+                            let cleanLine = line.trim();
+                            // Remove markdown formatting
+                            cleanLine = cleanLine.replace(/\*([^\*]+)\*/g, '$1');
+                            cleanLine = cleanLine.replace(/_([^_]+)_/g, '$1');
+
+                            if (cleanLine.match(/^[A-Z][a-zA-Z]+,.*\d{4}\./)) {
+                                if (!fullCitations.includes(cleanLine)) {
+                                    fullCitations.push(cleanLine);
                                 }
                             }
                         });
                         return ''; // Remove the references section from content
                     });
 
-                    return cleanedContent;
+                    // Clean up any remaining markdown delimiters that were left behind
+                    cleanedContent = cleanedContent.replace(/\*\*\s*$/gm, '');
+                    cleanedContent = cleanedContent.replace(/\n{3,}/g, '\n\n');
+
+                    return cleanedContent.trim();
                 }
 
                 // Extract from introduction (will be used later in article data)
@@ -10932,8 +10944,7 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
 
                 // More flexible pattern to match Chicago-style citations
                 // Matches: Author(s). Year. "Title." Journal/Source. Volume/Issue/Pages. URL
-                const fullCitationPattern = /([A-Z][a-zA-Z]+,\s+[A-Z][a-zA-Z\s\.,]+\d{4}\.\s+"[^"]+"\s+[A-Za-z\s&]+\d+[^\.]*\.\s+https?:\/\/[^\s<>]+)/gm;
-
+                // Now handles markdown formatting like *italics* in journal names
                 const fullCitations = [];
 
                 // Helper function to extract citations and clean content
@@ -10942,11 +10953,21 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
 
                     let cleanedContent = content;
 
+                    // First, strip leading markdown delimiters before citations
+                    cleanedContent = cleanedContent.replace(/\*\*\s*\n\n/g, '\n\n');
+
+                    // Pattern to match Chicago-style citations (handles markdown in journal names)
+                    // Matches: Author, Name(s). Year. "Title." *Journal* or Journal Vol(Issue): Pages. URL
+                    const citationPattern = /([A-Z][a-zA-Z]+,\s+[A-Z][a-zA-Z\s\.,]+?\d{4}\.\s+"[^"]+"\s+[\*_]?[A-Za-z\s&\*_]+[\*_]?\s+\d+[^\n]*?https?:\/\/[^\s]+)/gm;
+
                     // Extract full Chicago-style citations
                     let match;
+                    while ((match = citationPattern.exec(content)) !== null) {
+                        let fullCitation = match[1].trim();
+                        // Remove markdown formatting from the citation
+                        fullCitation = fullCitation.replace(/\*([^\*]+)\*/g, '$1');
+                        fullCitation = fullCitation.replace(/_([^_]+)_/g, '$1');
 
-                    while ((match = fullCitationPattern.exec(content)) !== null) {
-                        const fullCitation = match[1].trim();
                         if (!fullCitations.includes(fullCitation)) {
                             fullCitations.push(fullCitation);
                         }
@@ -10960,16 +10981,25 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                         // Extract citations from this references section
                         const lines = refContent.split('\n').filter(l => l.trim());
                         lines.forEach(line => {
-                            if (line.match(/^[A-Z][a-zA-Z]+,.*\d{4}\./)) {
-                                if (!fullCitations.includes(line.trim())) {
-                                    fullCitations.push(line.trim());
+                            let cleanLine = line.trim();
+                            // Remove markdown formatting
+                            cleanLine = cleanLine.replace(/\*([^\*]+)\*/g, '$1');
+                            cleanLine = cleanLine.replace(/_([^_]+)_/g, '$1');
+
+                            if (cleanLine.match(/^[A-Z][a-zA-Z]+,.*\d{4}\./)) {
+                                if (!fullCitations.includes(cleanLine)) {
+                                    fullCitations.push(cleanLine);
                                 }
                             }
                         });
                         return ''; // Remove the references section from content
                     });
 
-                    return cleanedContent;
+                    // Clean up any remaining markdown delimiters that were left behind
+                    cleanedContent = cleanedContent.replace(/\*\*\s*$/gm, '');
+                    cleanedContent = cleanedContent.replace(/\n{3,}/g, '\n\n');
+
+                    return cleanedContent.trim();
                 }
 
                 // Extract from introduction (will be used later in article data)
