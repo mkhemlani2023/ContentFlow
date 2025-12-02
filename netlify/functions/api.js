@@ -1182,20 +1182,40 @@ Generate ideas that users would actually find valuable when searching for "${key
       cleanContent = content.replace(/```\s*/, '').replace(/\s*```$/, '');
     }
 
+    // Trim whitespace and remove any leading/trailing text outside the JSON array
+    cleanContent = cleanContent.trim();
+
     let articles;
     try {
+      // First attempt: Parse as-is
       articles = JSON.parse(cleanContent);
     } catch (parseError) {
-      console.error('JSON parsing failed for content:', cleanContent.substring(0, 200));
-      // Fallback: Try to extract JSON from the response
+      console.error('JSON parsing failed. Error:', parseError.message);
+      console.error('Content preview:', cleanContent.substring(0, 500));
+
+      // Fallback 1: Try to extract JSON array from the response
       const jsonMatch = cleanContent.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         try {
-          articles = JSON.parse(jsonMatch[0]);
+          const extractedJson = jsonMatch[0];
+
+          // Fix common JSON issues:
+          // 1. Trailing commas before closing brackets
+          let fixedJson = extractedJson.replace(/,(\s*[\]}])/g, '$1');
+
+          // 2. Remove any text after the closing bracket
+          fixedJson = fixedJson.substring(0, fixedJson.lastIndexOf(']') + 1);
+
+          // 3. Try to parse the fixed JSON
+          articles = JSON.parse(fixedJson);
+          console.log('Successfully parsed JSON after cleanup');
         } catch (secondParseError) {
-          throw new Error(`Failed to parse article ideas: ${parseError.message}`);
+          console.error('Second parsing attempt failed:', secondParseError.message);
+          console.error('Extracted content:', jsonMatch[0].substring(0, 500));
+          throw new Error(`Failed to parse article ideas: ${parseError.message}. Position: ${parseError.message.match(/position (\d+)/)?.[1] || 'unknown'}`);
         }
       } else {
+        console.error('No JSON array pattern found in content');
         throw new Error('No valid JSON array found in API response');
       }
     }
