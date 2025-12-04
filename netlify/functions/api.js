@@ -3861,6 +3861,147 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
     }
 
+    // Google Analytics Data API - Fetch traffic stats using service account
+    if (path === '/api/google-analytics-report' && method === 'POST') {
+      const { propertyId, serviceAccountJson, startDate, endDate, url } = body;
+
+      if (!propertyId || !serviceAccountJson) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Property ID and service account credentials are required'
+          })
+        };
+      }
+
+      try {
+        // Parse service account credentials
+        const credentials = JSON.parse(Buffer.from(serviceAccountJson, 'base64').toString('utf-8'));
+
+        // Get OAuth2 access token using service account
+        const accessToken = await getGoogleAccessToken(credentials);
+
+        // Make request to Google Analytics Data API
+        const analyticsUrl = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
+
+        const requestBody = {
+          dateRanges: [{ startDate: startDate || '365daysAgo', endDate: endDate || 'today' }],
+          dimensions: [{ name: 'date' }],
+          metrics: [{ name: 'screenPageViews' }]
+        };
+
+        // Add URL filter if specified (for individual article stats)
+        if (url) {
+          requestBody.dimensionFilter = {
+            filter: {
+              fieldName: 'pagePath',
+              stringFilter: {
+                matchType: 'CONTAINS',
+                value: url
+              }
+            }
+          };
+        }
+
+        const analyticsResponse = await fetch(analyticsUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!analyticsResponse.ok) {
+          const errorText = await analyticsResponse.text();
+          console.error('Google Analytics API error:', errorText);
+          throw new Error(`GA API returned ${analyticsResponse.status}: ${errorText}`);
+        }
+
+        const analyticsData = await analyticsResponse.json();
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            data: analyticsData
+          })
+        };
+
+      } catch (error) {
+        console.error('Google Analytics fetch error:', error);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Failed to fetch analytics data',
+            error: error.message
+          })
+        };
+      }
+    }
+
+    // Helper function to get Google OAuth2 access token using service account
+    async function getGoogleAccessToken(credentials) {
+      const { client_email, private_key } = credentials;
+
+      // Create JWT assertion
+      const now = Math.floor(Date.now() / 1000);
+      const jwtHeader = {
+        alg: 'RS256',
+        typ: 'JWT'
+      };
+
+      const jwtPayload = {
+        iss: client_email,
+        scope: 'https://www.googleapis.com/auth/analytics.readonly',
+        aud: 'https://oauth2.googleapis.com/token',
+        exp: now + 3600,
+        iat: now
+      };
+
+      // Encode JWT
+      const encodedHeader = base64UrlEncode(JSON.stringify(jwtHeader));
+      const encodedPayload = base64UrlEncode(JSON.stringify(jwtPayload));
+      const signatureInput = `${encodedHeader}.${encodedPayload}`;
+
+      // Sign with private key using Node.js crypto
+      const crypto = require('crypto');
+      const sign = crypto.createSign('RSA-SHA256');
+      sign.update(signatureInput);
+      const signature = sign.sign(private_key, 'base64');
+      const encodedSignature = base64UrlEncode(Buffer.from(signature, 'base64'));
+
+      const jwt = `${signatureInput}.${encodedSignature}`;
+
+      // Exchange JWT for access token
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
+      });
+
+      if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        throw new Error(`Token exchange failed: ${errorText}`);
+      }
+
+      const tokenData = await tokenResponse.json();
+      return tokenData.access_token;
+    }
+
+    // Helper function for base64 URL encoding
+    function base64UrlEncode(str) {
+      const base64 = typeof str === 'string'
+        ? Buffer.from(str).toString('base64')
+        : str.toString('base64');
+      return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
     // DataforSEO Section Generation - Modular endpoint for generating one section at a time
     if (path === '/api/dataforseo-section' && method === 'POST') {
       const { topic, wordCount = 400, sectionType = 'section', supplementToken = null, subTopics = [], description = '', previousContext = '' } = body;

@@ -7612,6 +7612,31 @@
                                     ℹ️ Generate this in WordPress: Users → Profile → Application Passwords
                                 </div>
                             </div>
+
+                            <!-- Google Analytics Section -->
+                            <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px; margin-bottom: 15px;">
+                                <h4 style="color: #1e293b; margin: 0 0 10px 0; font-size: 14px; font-weight: 600;">Google Analytics (Optional)</h4>
+                                <div style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
+                                    Connect Google Analytics to view real traffic statistics for your articles.
+                                </div>
+
+                                <div style="margin-bottom: 10px;">
+                                    <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">GA4 Property ID</label>
+                                    <input type="text" id="blogGaPropertyId" placeholder="123456789" style="width: 100%; margin: 0;">
+                                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                                        Find this in Google Analytics: Admin → Property Settings
+                                    </div>
+                                </div>
+
+                                <div style="margin-bottom: 10px;">
+                                    <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Service Account Key (JSON)</label>
+                                    <textarea id="blogGaCredentials" placeholder='{"type": "service_account", "project_id": "...", "private_key": "..."}' style="width: 100%; margin: 0; min-height: 80px; font-family: monospace; font-size: 11px;"></textarea>
+                                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                                        Create a service account in Google Cloud Console and download the JSON key file
+                                    </div>
+                                </div>
+                            </div>
+
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <button onclick="testNewBlogConnection()" style="background: #1E293B; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#1E293B'">
                                     Test Connection
@@ -7716,12 +7741,16 @@
 
                                 ${globalStats.needsGASetup ? `
                                     <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 16px; border-radius: 8px; margin-bottom: 15px;">
-                                        <div style="font-weight: 600; color: #92400e; margin-bottom: 8px; font-size: 14px;">Analytics Data Not Available</div>
+                                        <div style="font-weight: 600; color: #92400e; margin-bottom: 8px; font-size: 14px;">Google Analytics Setup Required</div>
                                         <div style="font-size: 13px; color: #78350f; margin-bottom: 10px;">
-                                            Real-time traffic statistics are currently unavailable. Site Kit's REST API requires WordPress session authentication which isn't supported by Application Passwords.
+                                            Connect Google Analytics to view real-time traffic statistics for your blog and articles.
                                         </div>
                                         <div style="font-size: 12px; color: #78350f; background: white; padding: 8px; border-radius: 4px; margin-top: 8px;">
-                                            <strong>Note:</strong> Traffic data integration will be added in a future update with alternative authentication methods or direct Google Analytics API integration.
+                                            <strong>Setup Steps:</strong><br>
+                                            1. Go to Blog Management → Edit your blog<br>
+                                            2. Enter your GA4 Property ID and Service Account JSON<br>
+                                            3. Save and refresh to see live traffic data<br><br>
+                                            <strong>Need help?</strong> Check our docs for detailed setup instructions.
                                         </div>
                                     </div>
                                 ` : `
@@ -7878,30 +7907,39 @@
                     };
                 }
 
-                // Attempt to fetch from Site Kit Analytics module for entire blog
-                const siteKitResponse = await fetch(`${blog.url}/wp-json/google-site-kit/v1/modules/analytics-4/data/report`, {
+                // Check if Google Analytics is configured
+                if (!blog.ga_property_id || !blog.ga_credentials) {
+                    return {
+                        needsGASetup: true,
+                        days30: { views: null, change: null },
+                        days60: { views: null, change: null },
+                        days90: { views: null, change: null },
+                        months6: { views: null, change: null },
+                        year1: { views: null, change: null }
+                    };
+                }
+
+                // Fetch from Google Analytics Data API via our backend
+                const gaResponse = await fetch('/api/google-analytics-report', {
                     method: 'POST',
-                    headers: {
-                        'Authorization': 'Basic ' + btoa(`${blog.username}:${blog.password}`),
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        // No URL specified = entire site stats
-                        metrics: [{ name: 'screenPageViews' }],
-                        dimensions: [{ name: 'date' }],
+                        propertyId: blog.ga_property_id,
+                        serviceAccountJson: blog.ga_credentials,
                         startDate: '365daysAgo',
                         endDate: 'today'
+                        // No URL = entire site stats
                     })
                 });
 
-                if (siteKitResponse.ok) {
-                    const siteKitData = await siteKitResponse.json();
-                    return processSiteKitData(siteKitData);
-                } else if (siteKitResponse.status === 401) {
-                    console.log('Site Kit API returned 401 - REST API authentication cannot access Site Kit endpoints. Site Kit requires WordPress session or special API configuration.');
+                if (gaResponse.ok) {
+                    const gaData = await gaResponse.json();
+                    if (gaData.success) {
+                        return processGoogleAnalyticsData(gaData.data);
+                    }
                 }
 
-                // If Site Kit not available, show setup message
+                // If GA not available, show setup message
                 return {
                     needsGASetup: true,
                     days30: { views: null, change: null },
@@ -7916,10 +7954,9 @@
             }
         }
 
-        // Get real traffic stats for an article from Site Kit / Google Analytics
+        // Get real traffic stats for an article from Google Analytics
         async function calculateTrafficStats(blogId, postId, articleUrl) {
             try {
-                // Try to fetch from Site Kit first
                 const blogsResult = await SupabaseService.loadBlogs();
                 if (!blogsResult.success) {
                     throw new Error('Could not load blog credentials');
@@ -7930,31 +7967,39 @@
                     throw new Error('Blog not found');
                 }
 
-                // Attempt to fetch from Site Kit Analytics module
-                const siteKitResponse = await fetch(`${blog.url}/wp-json/google-site-kit/v1/modules/analytics-4/data/report`, {
+                // Check if Google Analytics is configured
+                if (!blog.ga_property_id || !blog.ga_credentials) {
+                    return {
+                        days30: { views: null, change: null },
+                        days60: { views: null, change: null },
+                        days90: { views: null, change: null },
+                        months6: { views: null, change: null },
+                        year1: { views: null, change: null },
+                        needsGASetup: true
+                    };
+                }
+
+                // Fetch from Google Analytics Data API via our backend
+                const gaResponse = await fetch('/api/google-analytics-report', {
                     method: 'POST',
-                    headers: {
-                        'Authorization': 'Basic ' + btoa(`${blog.username}:${blog.password}`),
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        url: articleUrl,
-                        metrics: [{ name: 'screenPageViews' }],
-                        dimensions: [{ name: 'date' }],
+                        propertyId: blog.ga_property_id,
+                        serviceAccountJson: blog.ga_credentials,
                         startDate: '365daysAgo',
-                        endDate: 'today'
+                        endDate: 'today',
+                        url: articleUrl  // Filter for this specific article
                     })
                 });
 
-                if (siteKitResponse.ok) {
-                    const siteKitData = await siteKitResponse.json();
-                    return processSiteKitData(siteKitData);
-                } else if (siteKitResponse.status === 401) {
-                    // Site Kit API requires WordPress session authentication, not REST API auth
-                    // Silently return needsGASetup - we already logged this once at blog level
+                if (gaResponse.ok) {
+                    const gaData = await gaResponse.json();
+                    if (gaData.success) {
+                        return processGoogleAnalyticsData(gaData.data);
+                    }
                 }
 
-                // If Site Kit not available, show setup message
+                // If GA not available, show setup message
                 return {
                     days30: { views: null, change: null },
                     days60: { views: null, change: null },
@@ -7974,6 +8019,83 @@
                     needsGASetup: true
                 };
             }
+        }
+
+        // Process Google Analytics Data API response into our format
+        function processGoogleAnalyticsData(data) {
+            try {
+                // Extract daily views from GA4 API response
+                // GA4 format: { rows: [{ dimensionValues: [{value: "20240101"}], metricValues: [{value: "123"}] }] }
+                const rows = data.rows || [];
+                const now = new Date();
+
+                // Convert GA4 rows to our internal format
+                const formattedRows = rows.map(row => ({
+                    date: row.dimensionValues?.[0]?.value, // Date in YYYYMMDD format
+                    views: parseInt(row.metricValues?.[0]?.value || 0)
+                }));
+
+                // Calculate views for different periods
+                const get30DaysAgo = () => new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+                const get60DaysAgo = () => new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+                const get90DaysAgo = () => new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+                const get180DaysAgo = () => new Date(now.getTime() - (180 * 24 * 60 * 60 * 1000));
+
+                const viewsLast30 = sumViewsForPeriodGA4(formattedRows, get30DaysAgo(), now);
+                const viewsPrev30 = sumViewsForPeriodGA4(formattedRows, get60DaysAgo(), get30DaysAgo());
+                const viewsLast60 = sumViewsForPeriodGA4(formattedRows, get60DaysAgo(), now);
+                const viewsLast90 = sumViewsForPeriodGA4(formattedRows, get90DaysAgo(), now);
+                const viewsLast180 = sumViewsForPeriodGA4(formattedRows, get180DaysAgo(), now);
+
+                return {
+                    days30: {
+                        views: viewsLast30,
+                        change: calculateChange(viewsLast30, viewsPrev30)
+                    },
+                    days60: {
+                        views: viewsLast60,
+                        change: calculateChange(viewsLast60, viewsLast30)
+                    },
+                    days90: {
+                        views: viewsLast90,
+                        change: calculateChange(viewsLast90, viewsLast60)
+                    },
+                    months6: {
+                        views: viewsLast180,
+                        change: calculateChange(viewsLast180, viewsLast90)
+                    },
+                    year1: {
+                        views: formattedRows.reduce((sum, row) => sum + row.views, 0),
+                        change: 0
+                    },
+                    needsGASetup: false
+                };
+            } catch (error) {
+                console.error('Error processing Google Analytics data:', error.message);
+                return {
+                    days30: { views: null, change: null },
+                    days60: { views: null, change: null },
+                    days90: { views: null, change: null },
+                    months6: { views: null, change: null },
+                    year1: { views: null, change: null },
+                    needsGASetup: true
+                };
+            }
+        }
+
+        function sumViewsForPeriodGA4(rows, startDate, endDate) {
+            return rows.reduce((sum, row) => {
+                // Parse date from YYYYMMDD format
+                const year = parseInt(row.date.substring(0, 4));
+                const month = parseInt(row.date.substring(4, 6)) - 1; // JS months are 0-indexed
+                const day = parseInt(row.date.substring(6, 8));
+                const rowDate = new Date(year, month, day);
+
+                if (rowDate >= startDate && rowDate <= endDate) {
+                    return sum + row.views;
+                }
+                return sum;
+            }, 0);
         }
 
         // Process Site Kit analytics data into our format
@@ -9257,12 +9379,14 @@ Return ONLY the JSON array, no other text.`;
                 blogUrl: document.getElementById('blogUrl'),
                 blogSigninUrl: document.getElementById('blogSigninUrl'),
                 blogUsername: document.getElementById('blogUsername'),
-                blogPassword: document.getElementById('blogPassword')
+                blogPassword: document.getElementById('blogPassword'),
+                blogGaPropertyId: document.getElementById('blogGaPropertyId'),
+                blogGaCredentials: document.getElementById('blogGaCredentials')
             };
 
-            // Find which element is missing
+            // Find which element is missing (excluding optional GA fields)
             for (const [key, element] of Object.entries(elements)) {
-                if (!element) {
+                if (!element && !key.startsWith('blogGa')) {
                     console.error(`Missing element: ${key}`);
                     alert(`Error: Form field "${key}" not found. Please try refreshing the Blog Management section.`);
                     return;
@@ -9275,10 +9399,22 @@ Return ONLY the JSON array, no other text.`;
             const signinUrl = elements.blogSigninUrl.value.trim();
             const username = elements.blogUsername.value.trim();
             const password = elements.blogPassword.value.trim();
+            const gaPropertyId = elements.blogGaPropertyId ? elements.blogGaPropertyId.value.trim() : '';
+            const gaCredentials = elements.blogGaCredentials ? elements.blogGaCredentials.value.trim() : '';
 
             if (!name || !url || !signinUrl || !username || !password) {
                 alert('Please fill in all required fields (Blog Name, Website URL, Sign in URL, Username, and Application Password)');
                 return;
+            }
+
+            // Validate GA credentials JSON if provided
+            if (gaCredentials) {
+                try {
+                    JSON.parse(gaCredentials);
+                } catch (error) {
+                    alert('Invalid Google Analytics Service Account JSON. Please check the format and try again.');
+                    return;
+                }
             }
 
             // Check if user is logged in
@@ -9295,7 +9431,9 @@ Return ONLY the JSON array, no other text.`;
                 username: btoa(username), // Basic encoding
                 password: btoa(password), // Basic encoding
                 status: 'active',
-                user_id: currentUser.id
+                user_id: currentUser.id,
+                ga_property_id: gaPropertyId || null,
+                ga_credentials: gaCredentials ? btoa(gaCredentials) : null // Encode JSON credentials
             };
 
             try {
