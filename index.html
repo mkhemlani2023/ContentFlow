@@ -3285,6 +3285,9 @@
         }
 
         function showCreditDashboard() {
+            // Scroll to top of page immediately
+            window.scrollTo(0, 0);
+
             const creditDashboard = document.getElementById('creditDashboard');
             const blogManagement = document.getElementById('blogManagement');
             const websiteTracking = document.getElementById('websiteTracking');
@@ -3379,6 +3382,9 @@
         }
 
         function hideCreditDashboard() {
+            // Scroll to top when returning to home
+            window.scrollTo(0, 0);
+
             document.getElementById('creditDashboard').style.display = 'none';
             const container = document.querySelector('.container');
             if (container) container.style.display = 'grid';
@@ -7379,6 +7385,9 @@
 
         // Blog Management System
         function showBlogManagement() {
+            // Scroll to top of page immediately
+            window.scrollTo(0, 0);
+
             const blogManagement = document.getElementById('blogManagement');
             const creditDashboard = document.getElementById('creditDashboard');
             const websiteTracking = document.getElementById('websiteTracking');
@@ -7393,9 +7402,6 @@
 
             blogManagement.style.display = 'block';
             displayBlogManagement();
-
-            // Scroll to blog management section
-            blogManagement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         async function displayBlogManagement() {
@@ -7527,6 +7533,9 @@
         }
 
         function hideBlogManagement() {
+            // Scroll to top when returning to home
+            window.scrollTo(0, 0);
+
             document.getElementById('blogManagement').style.display = 'none';
             const container = document.querySelector('.container');
             if (container) container.style.display = 'grid';
@@ -7555,6 +7564,9 @@
 
         // ===== SAVED ARTICLES LIBRARY =====
         async function showSavedArticlesLibrary() {
+            // Scroll to top of page immediately
+            window.scrollTo(0, 0);
+
             const savedArticlesLibrary = document.getElementById('savedArticlesLibrary');
             const blogManagement = document.getElementById('blogManagement');
             const creditDashboard = document.getElementById('creditDashboard');
@@ -7798,6 +7810,9 @@
         }
 
         function hideSavedArticlesLibrary() {
+            // Scroll to top when returning to home
+            window.scrollTo(0, 0);
+
             document.getElementById('savedArticlesLibrary').style.display = 'none';
             const container = document.querySelector('.container');
             const wizardFlow = document.getElementById('wizardFlow');
