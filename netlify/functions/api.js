@@ -2326,6 +2326,9 @@ exports.handler = async (event, context) => {
 
       } catch (error) {
         console.error('Image Generation Error:', error);
+        console.error('Error stack:', error.stack);
+
+        // Return detailed error for debugging
         return {
           statusCode: 500,
           headers,
@@ -2333,6 +2336,7 @@ exports.handler = async (event, context) => {
             success: false,
             message: 'Image generation failed',
             error: error.message,
+            errorDetails: error.stack ? error.stack.split('\n').slice(0, 3).join(' | ') : 'No stack trace',
             code: 'IMAGE_GENERATION_FAILED'
           })
         };

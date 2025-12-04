@@ -16611,7 +16611,11 @@ Main Noun(s):`;
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                    console.error('Full error response:', errorData);
+                    const errorMsg = errorData.errorDetails ?
+                        `${errorData.message}: ${errorData.errorDetails}` :
+                        errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+                    throw new Error(errorMsg);
                 }
 
                 const result = await response.json();
