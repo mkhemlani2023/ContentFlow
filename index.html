@@ -985,10 +985,10 @@
 
     <div id="stats" class="stats" style="display: none;"></div>
     <div id="savedResearch" style="display: none;"></div>
-    <div id="creditDashboard" style="display: none;"></div>
-    <div id="websiteTracking" style="display: none;"></div>
-    <div id="blogManagement" style="display: none;"></div>
-    <div id="savedArticlesLibrary" style="display: none;"></div>
+    <div id="creditDashboard" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 9999; overflow-y: auto; padding: 20px;"></div>
+    <div id="websiteTracking" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 9999; overflow-y: auto; padding: 20px;"></div>
+    <div id="blogManagement" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 9999; overflow-y: auto; padding: 20px;"></div>
+    <div id="savedArticlesLibrary" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 9999; overflow-y: auto; padding: 20px;"></div>
     <div id="results" class="results"></div>
     <div id="contentResult" class="results" style="display: none;"></div>
 
@@ -3381,20 +3381,15 @@
         }
 
         function showCreditDashboard() {
-            // Scroll to top of page immediately
-            window.scrollTo(0, 0);
-
             const creditDashboard = document.getElementById('creditDashboard');
             const blogManagement = document.getElementById('blogManagement');
             const websiteTracking = document.getElementById('websiteTracking');
-            const results = document.getElementById('results');
-            const container = document.querySelector('.container');
+            const savedArticlesLibrary = document.getElementById('savedArticlesLibrary');
 
-            // Hide other sections
-            if (container) container.style.display = 'none';
+            // Hide other full-page sections
             blogManagement.style.display = 'none';
             websiteTracking.style.display = 'none';
-            results.innerHTML = '';
+            savedArticlesLibrary.style.display = 'none';
 
             // Calculate usage statistics
             const totalCreditsEver = parseInt(localStorage.getItem('seoWizardTotalCreditsEver') || '1000');
@@ -3478,12 +3473,7 @@
         }
 
         function hideCreditDashboard() {
-            // Scroll to top when returning to home
-            window.scrollTo(0, 0);
-
             document.getElementById('creditDashboard').style.display = 'none';
-            const container = document.querySelector('.container');
-            if (container) container.style.display = 'grid';
         }
 
 
@@ -7481,21 +7471,17 @@
 
         // Blog Management System
         function showBlogManagement() {
-            // Scroll to top of page immediately
-            window.scrollTo(0, 0);
-
             const blogManagement = document.getElementById('blogManagement');
             const creditDashboard = document.getElementById('creditDashboard');
             const websiteTracking = document.getElementById('websiteTracking');
-            const results = document.getElementById('results');
-            const container = document.querySelector('.container');
+            const savedArticlesLibrary = document.getElementById('savedArticlesLibrary');
 
-            // Hide other sections
-            if (container) container.style.display = 'none';
+            // Hide other full-page sections
             creditDashboard.style.display = 'none';
             websiteTracking.style.display = 'none';
-            results.innerHTML = '';
+            savedArticlesLibrary.style.display = 'none';
 
+            // Show blog management as full page overlay
             blogManagement.style.display = 'block';
             displayBlogManagement();
         }
@@ -7651,12 +7637,7 @@
         }
 
         function hideBlogManagement() {
-            // Scroll to top when returning to home
-            window.scrollTo(0, 0);
-
             document.getElementById('blogManagement').style.display = 'none';
-            const container = document.querySelector('.container');
-            if (container) container.style.display = 'grid';
         }
 
         // Switch between tabs in Blog Management
@@ -8035,25 +8016,17 @@ Return ONLY the JSON array, no other text.`;
 
         // ===== SAVED ARTICLES LIBRARY =====
         async function showSavedArticlesLibrary() {
-            // Scroll to top of page immediately
-            window.scrollTo(0, 0);
-
             const savedArticlesLibrary = document.getElementById('savedArticlesLibrary');
             const blogManagement = document.getElementById('blogManagement');
             const creditDashboard = document.getElementById('creditDashboard');
             const websiteTracking = document.getElementById('websiteTracking');
-            const results = document.getElementById('results');
-            const container = document.querySelector('.container');
-            const wizardFlow = document.getElementById('wizardFlow');
 
-            // Hide other sections - show as separate screen
-            if (container) container.style.display = 'none';
-            if (wizardFlow) wizardFlow.style.display = 'none';
+            // Hide other full-page sections
             creditDashboard.style.display = 'none';
             websiteTracking.style.display = 'none';
             blogManagement.style.display = 'none';
-            results.innerHTML = '';
 
+            // Show saved articles as full page overlay
             savedArticlesLibrary.style.display = 'block';
 
             // Check if user is logged in
@@ -8281,14 +8254,7 @@ Return ONLY the JSON array, no other text.`;
         }
 
         function hideSavedArticlesLibrary() {
-            // Scroll to top when returning to home
-            window.scrollTo(0, 0);
-
             document.getElementById('savedArticlesLibrary').style.display = 'none';
-            const container = document.querySelector('.container');
-            const wizardFlow = document.getElementById('wizardFlow');
-            if (container) container.style.display = 'grid';
-            if (wizardFlow) wizardFlow.style.display = 'block';
         }
 
         async function viewSavedArticle(articleId) {
