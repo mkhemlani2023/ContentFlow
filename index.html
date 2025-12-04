@@ -16282,25 +16282,27 @@ Only suggest links with relevance score > 0.7. Return empty array if no good mat
         // Simplify keywords using AI for better image search results
         async function simplifyKeywordForImages(keyword, article) {
             try {
-                const prompt = `Extract the main noun(s) from this section header for image search.
+                const prompt = `Convert this section header into a focused search phrase for finding relevant images.
 
 Section Header: "${keyword}"
 
 Requirements:
-- Extract ONLY the main concrete noun(s) - no verbs, adjectives, or articles
-- Return 1-2 words maximum
-- Choose photographable, visual concepts
-- No quotes, no explanations, just the noun(s)
+- Extract the key concepts and topics (2-5 words)
+- Keep important context and subjects
+- Make it specific enough for relevant image results
+- Remove only filler words like "the", "of", "and", "how to"
+- No quotes, no explanations, just the search phrase
 
 Examples:
-"The Benefits of Regular Exercise" → "exercise"
-"How to Start Your Morning Routine" → "morning"
-"Understanding Cloud Computing Infrastructure" → "computers"
-"Tips for Better Sleep Quality" → "sleep"
-"Building a Strong Online Presence" → "social media"
-"Managing Your Personal Finances" → "money"
+"The Benefits of Regular Exercise" → "exercise benefits"
+"How to Start Your Morning Routine" → "morning routine"
+"Understanding Cloud Computing Infrastructure" → "cloud computing infrastructure"
+"Tips for Better Sleep Quality" → "sleep quality"
+"The Link Between Dark Chocolate, Dopamine, and Parkinson's Symptoms" → "dark chocolate dopamine parkinsons"
+"Understanding Dopamine: The Brain's Reward Chemical" → "dopamine brain chemistry"
+"Exploring the Connection: Dark Chocolate and Parkinson's Symptoms" → "dark chocolate parkinsons disease"
 
-Main Noun(s):`;
+Search Phrase:`;
 
                 const response = await fetch('/api/openrouter-generate', {
                     method: 'POST',
@@ -16309,36 +16311,43 @@ Main Noun(s):`;
                         model: 'openai/gpt-4o-mini',
                         prompt: prompt,
                         temperature: 0.2,
-                        max_tokens: 15,
+                        max_tokens: 30,
                         stream: false
                     })
                 });
 
                 if (!response.ok) {
-                    console.warn('⚠️ AI keyword simplification failed, extracting first noun manually');
-                    // Fallback: extract first significant word (skip articles/prepositions)
+                    console.warn('⚠️ AI keyword simplification failed, using manual extraction');
+                    // Fallback: remove common filler words but keep context
                     const words = keyword.toLowerCase().split(/\s+/);
-                    const skipWords = ['the', 'a', 'an', 'how', 'why', 'what', 'when', 'where', 'to', 'of', 'for', 'in', 'on', 'at', 'by', 'with'];
-                    const mainWord = words.find(w => !skipWords.includes(w) && w.length > 2) || words[0];
-                    return mainWord;
+                    const skipWords = new Set(['the', 'a', 'an', 'how', 'why', 'what', 'when', 'where', 'to', 'of', 'for', 'in', 'on', 'at', 'by', 'with', 'between', 'understanding', 'exploring']);
+                    const filtered = words.filter(w => !skipWords.has(w) && w.length > 2);
+                    return filtered.slice(0, 5).join(' ') || keyword;
                 }
 
                 const result = await response.json();
                 let simplified = result.content?.trim() || keyword;
 
-                // Clean up response - remove quotes, extra words
-                simplified = simplified.replace(/['"]/g, '').split(/\s+/).slice(0, 2).join(' ');
+                // Clean up response - remove quotes and extra punctuation
+                simplified = simplified.replace(/['"]/g, '').trim();
+
+                // Limit to reasonable length (first 5 words)
+                const words = simplified.split(/\s+/);
+                if (words.length > 5) {
+                    simplified = words.slice(0, 5).join(' ');
+                }
 
                 console.log(`✅ Simplified "${keyword}" → "${simplified}"`);
                 return simplified;
             } catch (error) {
                 console.error('❌ Error simplifying keyword:', error);
-                // Fallback: extract first significant word
+                // Fallback: remove common filler words but keep context
                 const words = keyword.toLowerCase().split(/\s+/);
-                const skipWords = ['the', 'a', 'an', 'how', 'why', 'what', 'when', 'where', 'to', 'of', 'for', 'in', 'on', 'at', 'by', 'with'];
-                const mainWord = words.find(w => !skipWords.includes(w) && w.length > 2) || words[0];
-                console.log(`⚠️ Fallback: "${keyword}" → "${mainWord}"`);
-                return mainWord;
+                const skipWords = new Set(['the', 'a', 'an', 'how', 'why', 'what', 'when', 'where', 'to', 'of', 'for', 'in', 'on', 'at', 'by', 'with', 'between', 'understanding', 'exploring']);
+                const filtered = words.filter(w => !skipWords.has(w) && w.length > 2);
+                const fallback = filtered.slice(0, 5).join(' ') || keyword;
+                console.log(`⚠️ Fallback: "${keyword}" → "${fallback}"`);
+                return fallback;
             }
         }
 
@@ -16443,10 +16452,10 @@ Main Noun(s):`;
                                             🔍 Search Stock
                                         </button>
                                         <button onclick="generateAIImageForSection('${section.id}')" style="background: linear-gradient(135deg, #10a37f 0%, #16a34a 100%); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; box-shadow: 0 2px 4px rgba(16,163,127,0.3);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                                            ✨ DALL-E 3 (10 credits)
+                                            ✨ AI Curated (10 credits)
                                         </button>
                                     </div>
-                                    <div style="font-size: 11px; color: #64748b;">💡 Search stock photos or generate custom AI images with DALL-E 3 (10 credits per image)</div>
+                                    <div style="font-size: 11px; color: #64748b;">💡 Search stock photos or get AI-curated premium images (10 credits per image)</div>
                                 </div>
 
                                 <div id="images-${section.id}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; min-height: 50px;">
@@ -16595,7 +16604,7 @@ Main Noun(s):`;
                 return;
             }
 
-            imagesContainer.innerHTML = '<p style="color: #64748b; font-size: 14px;">✨ Generating AI image with DALL-E 3... (this may take 15-45 seconds)</p>';
+            imagesContainer.innerHTML = '<p style="color: #64748b; font-size: 14px;">✨ Finding AI-curated premium images... (this may take a few seconds)</p>';
 
             try {
                 const response = await fetch('/api/generate-images', {
@@ -16625,11 +16634,11 @@ Main Noun(s):`;
                     // Show generated image
                     const img = result.images[0];
                     imagesContainer.innerHTML = `
-                        <div onclick="selectImage('${sectionId}', '${img.url.replace(/'/g, "\\'")}', '${(img.alt || prompt).replace(/'/g, "\\'")}', 'DALL-E 3', '', 'ai')" style="cursor: pointer; border: 3px solid #10a37f; border-radius: 12px; overflow: hidden; transition: all 0.2s; background: linear-gradient(135deg, #10a37f 0%, #16a34a 100%); padding: 3px;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <div onclick="selectImage('${sectionId}', '${img.url.replace(/'/g, "\\'")}', '${(img.alt || prompt).replace(/'/g, "\\'")}', '${img.photographer || 'Unsplash'}', '${img.photographerUrl || ''}', 'curated')" style="cursor: pointer; border: 3px solid #10a37f; border-radius: 12px; overflow: hidden; transition: all 0.2s; background: linear-gradient(135deg, #10a37f 0%, #16a34a 100%); padding: 3px;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <img src="${img.url}" alt="${img.alt || prompt}" style="width: 100%; height: 300px; object-fit: cover; border-radius: 9px;">
                             <div style="padding: 12px; background: white; border-radius: 0 0 9px 9px;">
-                                <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 600; color: #10a37f;">✨ DALL-E 3 Generated</p>
-                                <p style="margin: 0; font-size: 11px; color: #64748b;">Cost: 10 credits</p>
+                                <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 600; color: #10a37f;">✨ AI-Curated Premium</p>
+                                <p style="margin: 0; font-size: 11px; color: #64748b;">Photo by ${img.photographer || 'Unsplash'} · 10 credits</p>
                             </div>
                         </div>
                     `;
@@ -16637,7 +16646,7 @@ Main Noun(s):`;
                     // Show success message
                     const successMsg = document.createElement('div');
                     successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; z-index: 30000; box-shadow: 0 4px 6px rgba(0,0,0,0.3);';
-                    successMsg.textContent = '✨ DALL-E 3 image generated! 10 credits used.';
+                    successMsg.textContent = '✨ Premium curated image found! 10 credits used.';
                     document.body.appendChild(successMsg);
                     setTimeout(() => {
                         successMsg.style.transition = 'opacity 0.3s';
@@ -16646,14 +16655,14 @@ Main Noun(s):`;
                     }, 3000);
 
                 } else {
-                    throw new Error('No AI image was generated');
+                    throw new Error('No curated images were found');
                 }
             } catch (error) {
-                console.error('AI image generation error:', error);
+                console.error('Curated image search error:', error);
                 imagesContainer.innerHTML = `
                     <div style="padding: 20px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; color: #991b1b;">
                         <div style="font-size: 36px; margin-bottom: 10px;">⚠️</div>
-                        <p style="margin: 0 0 8px 0; font-weight: 600;">AI Generation Error</p>
+                        <p style="margin: 0 0 8px 0; font-weight: 600;">Image Search Error</p>
                         <p style="margin: 0 0 15px 0; font-size: 13px;">${error.message}</p>
                         <div style="display: flex; gap: 10px; justify-content: center;">
                             <button onclick="generateAIImageForSection('${sectionId}', '${prompt.replace(/'/g, "\\'")}' )" style="background: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px;">
