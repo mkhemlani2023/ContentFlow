@@ -2186,29 +2186,90 @@ exports.handler = async (event, context) => {
     // Image Generation (Placeholder - can be extended with DALL-E, Stable Diffusion, etc.)
     if (path === '/api/generate-images' && method === 'POST') {
       try {
-        const { keyword, imageType, count } = JSON.parse(body);
+        const { keyword, imageType, count, prompt } = JSON.parse(body);
 
-        if (!keyword) {
+        if (!keyword && !prompt) {
           return {
             statusCode: 400,
             headers,
             body: JSON.stringify({
               success: false,
-              message: 'Keyword is required for image generation'
+              message: 'Keyword or prompt is required for image generation',
+              code: 'MISSING_PROMPT'
             })
           };
         }
 
-        // Mock image generation for now - replace with actual image API
-        const mockImages = [];
-        for (let i = 0; i < (count || 1); i++) {
-          mockImages.push({
-            url: `https://picsum.photos/800/600?random=${Date.now()}-${i}`,
-            alt: `${imageType || 'Featured'} image for ${keyword}`,
-            type: imageType || 'featured',
-            prompt: `High-quality ${imageType || 'featured'} image for ${keyword}`,
-            style: 'photographic'
+        if (!OPENROUTER_API_KEY) {
+          return {
+            statusCode: 503,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'OpenRouter API not configured',
+              code: 'OPENROUTER_NOT_CONFIGURED'
+            })
+          };
+        }
+
+        // Use black-forest-labs/flux-schnell (fast and free) or flux-pro for better quality
+        const imageModel = 'black-forest-labs/flux-schnell'; // Fast and free model
+        const imagesToGenerate = count || 1;
+        const generatedImages = [];
+
+        // Create optimized prompt for image generation
+        const imagePrompt = prompt || `A high-quality, professional ${imageType || 'featured'} image illustrating ${keyword}. Photorealistic, detailed, well-lit, suitable for article illustration.`;
+
+        console.log(`Generating ${imagesToGenerate} image(s) with prompt: ${imagePrompt}`);
+
+        for (let i = 0; i < imagesToGenerate; i++) {
+          const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://www.getseowizard.com',
+              'X-Title': 'SEO Wizard - AI Image Generation'
+            },
+            body: JSON.stringify({
+              model: imageModel,
+              prompt: imagePrompt,
+              n: 1,
+              size: '1024x1024'
+            })
           });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`OpenRouter image generation failed: ${response.status} ${errorText}`);
+            throw new Error(`Image generation failed: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+
+          // Extract image URL from response (format varies by model)
+          let imageUrl = null;
+          if (data.data && data.data[0] && data.data[0].url) {
+            imageUrl = data.data[0].url;
+          } else if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+            // Some models return image URL in message content
+            imageUrl = data.choices[0].message.content;
+          }
+
+          if (imageUrl) {
+            generatedImages.push({
+              url: imageUrl,
+              alt: `AI-generated image: ${keyword || 'article illustration'}`,
+              type: imageType || 'featured',
+              prompt: imagePrompt,
+              style: 'ai-generated',
+              model: imageModel
+            });
+          }
+        }
+
+        if (generatedImages.length === 0) {
+          throw new Error('No images were generated successfully');
         }
 
         return {
@@ -2217,7 +2278,9 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({
             success: true,
             keyword: keyword,
-            images: mockImages,
+            images: generatedImages,
+            count: generatedImages.length,
+            creditCost: 10, // Cost per image
             timestamp: new Date().toISOString()
           })
         };
@@ -2230,7 +2293,8 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({
             success: false,
             message: 'Image generation failed',
-            error: error.message
+            error: error.message,
+            code: 'IMAGE_GENERATION_FAILED'
           })
         };
       }

@@ -13,7 +13,8 @@
       "WebFetch(domain:serper.dev)",
       "WebFetch(domain:apitracker.io)",
       "WebSearch",
-      "WebFetch(domain:docs.dataforseo.com)"
+      "WebFetch(domain:docs.dataforseo.com)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

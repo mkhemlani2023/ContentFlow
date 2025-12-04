@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="SEO Wizard - AI-powered content creation platform with hosting recommendations">
     <title>SEO Wizard - Professional Content Platform</title>
-    <!-- Version: 2024.12.02-v3 - Modern UI/UX + Auth Fix -->
+    <!-- Version: 2024.12.04-v1 - AI Image Generation -->
 
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16438,12 +16438,15 @@ Main Noun(s):`;
 
                                 <div style="margin-bottom: 15px;">
                                     <div style="display: flex; gap: 10px; margin-bottom: 5px;">
-                                        <input type="text" id="search-${section.id}" placeholder="Input text describing the image you would like to include in this section" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
-                                        <button onclick="searchImagesForSection('${section.id}')" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                            🔍 Search
+                                        <input type="text" id="search-${section.id}" placeholder="Describe the image you want (for search or AI generation)" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                                        <button onclick="searchImagesForSection('${section.id}')" style="background: #334155; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap;">
+                                            🔍 Search Stock
+                                        </button>
+                                        <button onclick="generateAIImageForSection('${section.id}')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; box-shadow: 0 2px 4px rgba(102,126,234,0.3);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                            ✨ Generate AI (10 credits)
                                         </button>
                                     </div>
-                                    <div style="font-size: 11px; color: #64748b;">💡 Tip: Describe the image you want to find for this section</div>
+                                    <div style="font-size: 11px; color: #64748b;">💡 Search stock photos or generate custom AI images (costs 10 credits per image)</div>
                                 </div>
 
                                 <div id="images-${section.id}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; min-height: 50px;">
@@ -16570,6 +16573,92 @@ Main Noun(s):`;
                         <button onclick="searchImagesForSection('${sectionId}')" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px;">
                             Try Again
                         </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Generate AI Image for Section
+        async function generateAIImageForSection(sectionId, customPrompt = null) {
+            // Check if user is logged in
+            if (!currentUser) {
+                alert('🔒 Please log in to generate AI images');
+                return;
+            }
+
+            const searchInput = document.getElementById(`search-${sectionId}`);
+            const imagesContainer = document.getElementById(`images-${sectionId}`);
+            const prompt = customPrompt || searchInput.value.trim();
+
+            if (!prompt) {
+                alert('Please enter a description for the AI image');
+                return;
+            }
+
+            imagesContainer.innerHTML = '<p style="color: #64748b; font-size: 14px;">✨ Generating AI image... (this may take 10-30 seconds)</p>';
+
+            try {
+                const response = await fetch('/api/generate-images', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        keyword: prompt,
+                        prompt: prompt,
+                        imageType: sectionId === 'introduction' ? 'featured' : 'supporting',
+                        count: 1
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('AI image generation result:', result);
+
+                if (result.success && result.images && result.images.length > 0) {
+                    // Show generated image
+                    const img = result.images[0];
+                    imagesContainer.innerHTML = `
+                        <div onclick="selectImage('${sectionId}', '${img.url.replace(/'/g, "\\'")}', '${(img.alt || prompt).replace(/'/g, "\\'")}', 'AI Generated', '', 'ai')" style="cursor: pointer; border: 3px solid #8b5cf6; border-radius: 12px; overflow: hidden; transition: all 0.2s; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 3px;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            <img src="${img.url}" alt="${img.alt || prompt}" style="width: 100%; height: 300px; object-fit: cover; border-radius: 9px;">
+                            <div style="padding: 12px; background: white; border-radius: 0 0 9px 9px;">
+                                <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 600; color: #8b5cf6;">✨ AI Generated</p>
+                                <p style="margin: 0; font-size: 11px; color: #64748b;">Cost: 10 credits</p>
+                            </div>
+                        </div>
+                    `;
+
+                    // Show success message
+                    const successMsg = document.createElement('div');
+                    successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; z-index: 30000; box-shadow: 0 4px 6px rgba(0,0,0,0.3);';
+                    successMsg.textContent = '✨ AI image generated! 10 credits used.';
+                    document.body.appendChild(successMsg);
+                    setTimeout(() => {
+                        successMsg.style.transition = 'opacity 0.3s';
+                        successMsg.style.opacity = '0';
+                        setTimeout(() => successMsg.remove(), 300);
+                    }, 3000);
+
+                } else {
+                    throw new Error('No AI image was generated');
+                }
+            } catch (error) {
+                console.error('AI image generation error:', error);
+                imagesContainer.innerHTML = `
+                    <div style="padding: 20px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; color: #991b1b;">
+                        <div style="font-size: 36px; margin-bottom: 10px;">⚠️</div>
+                        <p style="margin: 0 0 8px 0; font-weight: 600;">AI Generation Error</p>
+                        <p style="margin: 0 0 15px 0; font-size: 13px;">${error.message}</p>
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button onclick="generateAIImageForSection('${sectionId}', '${prompt.replace(/'/g, "\\'")}' )" style="background: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                                Try Again
+                            </button>
+                            <button onclick="searchImagesForSection('${sectionId}')" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                                Search Stock Instead
+                            </button>
+                        </div>
                     </div>
                 `;
             }
