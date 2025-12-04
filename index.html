@@ -1629,6 +1629,102 @@
                     console.error('Error updating article:', error);
                     return { success: false, error: error.message };
                 }
+            },
+
+            // Load published articles by blog (from publish_logs)
+            async loadPublishedArticlesByBlog(blogId) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('publish_logs')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .eq('blog_id', blogId)
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading published articles:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Get all published articles for internal linking
+            async getAllPublishedArticles() {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('publish_logs')
+                        .select('article_title, post_url, post_id, blog_id, blog_name')
+                        .eq('user_id', currentUser.id)
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading all published articles:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Save article traffic data
+            async saveArticleTraffic(trafficData) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('article_traffic')
+                        .insert([{
+                            user_id: currentUser.id,
+                            blog_id: trafficData.blogId,
+                            post_id: trafficData.postId,
+                            post_url: trafficData.postUrl,
+                            article_title: trafficData.articleTitle,
+                            views: trafficData.views,
+                            date: trafficData.date || new Date().toISOString().split('T')[0],
+                            created_at: new Date().toISOString()
+                        }])
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error saving article traffic:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Get article traffic for different periods
+            async getArticleTraffic(blogId, postId, days = 30) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const dateFrom = new Date();
+                    dateFrom.setDate(dateFrom.getDate() - days);
+                    const dateString = dateFrom.toISOString().split('T')[0];
+
+                    const { data, error } = await supabaseClient
+                        .from('article_traffic')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .eq('blog_id', blogId)
+                        .eq('post_id', postId)
+                        .gte('date', dateString)
+                        .order('date', { ascending: true });
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading article traffic:', error);
+                    return { success: false, error: error.message };
+                }
             }
         };
 
@@ -7458,6 +7554,18 @@
                         </button>
                     </div>
 
+                    <!-- Tab Navigation -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0;">
+                        <button id="blogsTab" onclick="switchBlogManagementTab('blogs')" style="background: none; border: none; border-bottom: 3px solid #334155; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #334155; font-size: 14px; transition: all 0.2s;">
+                            📝 Managed Blogs (${blogs.length})
+                        </button>
+                        <button id="publishedTab" onclick="switchBlogManagementTab('published')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #64748b; font-size: 14px; transition: all 0.2s;">
+                            📊 Published Articles
+                        </button>
+                    </div>
+
+                    <!-- Blogs Tab Content -->
+                    <div id="blogsTabContent">
                     <!-- Managed Blogs List -->
                     <div style="margin-bottom: 30px;">
                         <h3 style="color: #2d3748; margin-bottom: 15px;">📝 Your Managed Blogs (${blogs.length})</h3>
@@ -7528,6 +7636,16 @@
                             </div>
                         </div>
                     </div>
+                    </div>
+                    <!-- End Blogs Tab Content -->
+
+                    <!-- Published Articles Tab Content -->
+                    <div id="publishedTabContent" style="display: none;">
+                        <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">📊</div>
+                            <p style="color: #64748b;">Loading published articles...</p>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -7539,6 +7657,180 @@
             document.getElementById('blogManagement').style.display = 'none';
             const container = document.querySelector('.container');
             if (container) container.style.display = 'grid';
+        }
+
+        // Switch between tabs in Blog Management
+        function switchBlogManagementTab(tab) {
+            const blogsTab = document.getElementById('blogsTab');
+            const publishedTab = document.getElementById('publishedTab');
+            const blogsTabContent = document.getElementById('blogsTabContent');
+            const publishedTabContent = document.getElementById('publishedTabContent');
+
+            if (tab === 'blogs') {
+                // Show blogs tab
+                blogsTab.style.borderBottom = '3px solid #334155';
+                blogsTab.style.color = '#334155';
+                publishedTab.style.borderBottom = '3px solid transparent';
+                publishedTab.style.color = '#64748b';
+                blogsTabContent.style.display = 'block';
+                publishedTabContent.style.display = 'none';
+            } else if (tab === 'published') {
+                // Show published articles tab
+                blogsTab.style.borderBottom = '3px solid transparent';
+                blogsTab.style.color = '#64748b';
+                publishedTab.style.borderBottom = '3px solid #334155';
+                publishedTab.style.color = '#334155';
+                blogsTabContent.style.display = 'none';
+                publishedTabContent.style.display = 'block';
+
+                // Load published articles when tab is opened
+                loadPublishedArticlesView();
+            }
+        }
+
+        // Load and display published articles
+        async function loadPublishedArticlesView() {
+            const publishedTabContent = document.getElementById('publishedTabContent');
+
+            publishedTabContent.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+                    <p style="color: #64748b;">Loading published articles...</p>
+                </div>
+            `;
+
+            try {
+                // Load all blogs first
+                const blogsResult = await SupabaseService.loadBlogs();
+                if (!blogsResult.success || !blogsResult.data || blogsResult.data.length === 0) {
+                    publishedTabContent.innerHTML = `
+                        <div style="text-align: center; padding: 60px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 64px; margin-bottom: 15px;">📝</div>
+                            <h3 style="color: #1e293b; margin-bottom: 10px;">No Blogs Yet</h3>
+                            <p style="color: #64748b; margin-bottom: 20px;">Add a blog first to see published articles here.</p>
+                            <button onclick="switchBlogManagementTab('blogs')" style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                ➕ Add Blog
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const blogs = blogsResult.data;
+
+                // Generate sections for each blog
+                let articlesHTML = '';
+                for (const blog of blogs) {
+                    const result = await SupabaseService.loadPublishedArticlesByBlog(blog.id);
+                    const articles = result.success && result.data ? result.data : [];
+
+                    articlesHTML += `
+                        <div style="margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h3 style="margin: 0; color: #1e293b; font-size: 18px;">📝 ${blog.name}</h3>
+                                <span style="color: #64748b; font-size: 13px;">${articles.length} article${articles.length !== 1 ? 's' : ''} published</span>
+                            </div>
+                            ${articles.length === 0 ? `
+                                <p style="color: #64748b; text-align: center; padding: 20px;">No articles published to this blog yet.</p>
+                            ` : await generatePublishedArticlesList(articles, blog.id)}
+                        </div>
+                    `;
+                }
+
+                publishedTabContent.innerHTML = articlesHTML;
+            } catch (error) {
+                console.error('Error loading published articles:', error);
+                publishedTabContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px; background: #fef2f2; border-radius: 12px; border: 1px solid #fecaca;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+                        <p style="color: #991b1b;">Error loading published articles: ${error.message}</p>
+                        <button onclick="loadPublishedArticlesView()" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-top: 15px;">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Generate HTML for list of published articles with traffic stats
+        async function generatePublishedArticlesList(articles, blogId) {
+            let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+
+            for (const article of articles) {
+                // Calculate traffic stats (mock data for now - will be real when WordPress analytics integrated)
+                const trafficStats = await calculateTrafficStats(blogId, article.post_id);
+
+                html += `
+                    <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 15px;">${article.article_title}</h4>
+                                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                                    <span style="color: #64748b; font-size: 12px;">📅 ${new Date(article.created_at).toLocaleDateString()}</span>
+                                    <a href="${article.post_url}" target="_blank" style="color: #334155; font-size: 12px; text-decoration: none; font-weight: 500;" onmouseover="this.style.color='#10a37f'" onmouseout="this.style.color='#334155'">🔗 View Post</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Traffic Statistics -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+                            ${generateTrafficStatCard('30 Days', trafficStats.days30)}
+                            ${generateTrafficStatCard('60 Days', trafficStats.days60)}
+                            ${generateTrafficStatCard('90 Days', trafficStats.days90)}
+                            ${generateTrafficStatCard('6 Months', trafficStats.months6)}
+                            ${generateTrafficStatCard('1 Year', trafficStats.year1)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        // Generate traffic stat card
+        function generateTrafficStatCard(period, stats) {
+            const trendColor = stats.change >= 0 ? '#10b981' : '#ef4444';
+            const trendIcon = stats.change >= 0 ? '📈' : '📉';
+            const changeText = stats.change >= 0 ? `+${stats.change}%` : `${stats.change}%`;
+
+            return `
+                <div style="background: #f8fafc; padding: 10px; border-radius: 6px; text-align: center;">
+                    <div style="color: #64748b; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">${period}</div>
+                    <div style="color: #1e293b; font-size: 16px; font-weight: 700; margin-bottom: 2px;">${stats.views.toLocaleString()}</div>
+                    <div style="color: ${trendColor}; font-size: 11px; font-weight: 600;">${trendIcon} ${changeText}</div>
+                </div>
+            `;
+        }
+
+        // Calculate traffic stats for an article (mock implementation - replace with real WordPress analytics)
+        async function calculateTrafficStats(blogId, postId) {
+            // TODO: Integrate with WordPress analytics or Google Analytics
+            // For now, return mock data
+            const baseViews = Math.floor(Math.random() * 500) + 100;
+
+            return {
+                days30: {
+                    views: Math.floor(baseViews * 0.3),
+                    change: Math.floor(Math.random() * 60) - 20 // -20% to +40%
+                },
+                days60: {
+                    views: Math.floor(baseViews * 0.6),
+                    change: Math.floor(Math.random() * 50) - 15
+                },
+                days90: {
+                    views: baseViews,
+                    change: Math.floor(Math.random() * 40) - 10
+                },
+                months6: {
+                    views: Math.floor(baseViews * 2),
+                    change: Math.floor(Math.random() * 30) - 5
+                },
+                year1: {
+                    views: Math.floor(baseViews * 3.5),
+                    change: Math.floor(Math.random() * 25)
+                }
+            };
         }
 
         function toggleAddBlogForm() {
