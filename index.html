@@ -1795,7 +1795,7 @@
                     // Admin users get unlimited credits for testing
                     if (userProfile.role === 'admin') {
                         window.seoWizard.credits = 999999999;
-                        console.log('🔑 Admin access granted - unlimited credits');
+                        console.log('Admin access granted - unlimited credits');
                     } else {
                         window.seoWizard.credits = userProfile.credits || 0;
                     }
@@ -6636,7 +6636,7 @@
             }
 
             savedResearchDiv.style.display = 'block';
-            console.log(`📂 Displaying ${savedResearch.length} saved research items`);
+            console.log(`Displaying ${savedResearch.length} saved research items`);
             const researchList = savedResearch.map(research => `
                 <div style="border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 10px; background: white;">
                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
@@ -7716,13 +7716,12 @@
 
                                 ${globalStats.needsGASetup ? `
                                     <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 16px; border-radius: 8px; margin-bottom: 15px;">
-                                        <div style="font-weight: 600; color: #92400e; margin-bottom: 8px; font-size: 14px;">Analytics Integration Required</div>
-                                        <div style="font-size: 13px; color: #78350f; margin-bottom: 10px;">Install Site Kit by Google to view real traffic data for your blog.</div>
+                                        <div style="font-weight: 600; color: #92400e; margin-bottom: 8px; font-size: 14px;">Analytics Data Not Available</div>
+                                        <div style="font-size: 13px; color: #78350f; margin-bottom: 10px;">
+                                            Real-time traffic statistics are currently unavailable. Site Kit's REST API requires WordPress session authentication which isn't supported by Application Passwords.
+                                        </div>
                                         <div style="font-size: 12px; color: #78350f; background: white; padding: 8px; border-radius: 4px; margin-top: 8px;">
-                                            <strong>Setup Instructions:</strong><br>
-                                            1. Install Site Kit plugin from WordPress.org<br>
-                                            2. Connect your Google Analytics account<br>
-                                            3. Refresh this page to see live traffic data
+                                            <strong>Note:</strong> Traffic data integration will be added in a future update with alternative authentication methods or direct Google Analytics API integration.
                                         </div>
                                     </div>
                                 ` : `
@@ -7898,6 +7897,8 @@
                 if (siteKitResponse.ok) {
                     const siteKitData = await siteKitResponse.json();
                     return processSiteKitData(siteKitData);
+                } else if (siteKitResponse.status === 401) {
+                    console.log('Site Kit API returned 401 - REST API authentication cannot access Site Kit endpoints. Site Kit requires WordPress session or special API configuration.');
                 }
 
                 // If Site Kit not available, show setup message
@@ -7948,6 +7949,9 @@
                 if (siteKitResponse.ok) {
                     const siteKitData = await siteKitResponse.json();
                     return processSiteKitData(siteKitData);
+                } else if (siteKitResponse.status === 401) {
+                    // Site Kit API requires WordPress session authentication, not REST API auth
+                    // Silently return needsGASetup - we already logged this once at blog level
                 }
 
                 // If Site Kit not available, show setup message
