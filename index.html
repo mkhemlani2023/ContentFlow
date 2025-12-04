@@ -16452,10 +16452,10 @@ Search Phrase:`;
                                             🔍 Search Stock
                                         </button>
                                         <button onclick="generateAIImageForSection('${section.id}')" style="background: linear-gradient(135deg, #10a37f 0%, #16a34a 100%); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; box-shadow: 0 2px 4px rgba(16,163,127,0.3);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                                            ✨ AI Curated (10 credits)
+                                            ✨ AI Curated (FREE)
                                         </button>
                                     </div>
-                                    <div style="font-size: 11px; color: #64748b;">💡 Search stock photos or get AI-curated premium images (10 credits per image)</div>
+                                    <div style="font-size: 11px; color: #64748b;">💡 Search stock photos or get AI-curated premium images (free with Unsplash)</div>
                                 </div>
 
                                 <div id="images-${section.id}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; min-height: 50px;">
@@ -16638,7 +16638,7 @@ Search Phrase:`;
                             <img src="${img.url}" alt="${img.alt || prompt}" style="width: 100%; height: 300px; object-fit: cover; border-radius: 9px;">
                             <div style="padding: 12px; background: white; border-radius: 0 0 9px 9px;">
                                 <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 600; color: #10a37f;">✨ AI-Curated Premium</p>
-                                <p style="margin: 0; font-size: 11px; color: #64748b;">Photo by ${img.photographer || 'Unsplash'} · 10 credits</p>
+                                <p style="margin: 0; font-size: 11px; color: #64748b;">Photo by ${img.photographer || 'Unsplash'} · FREE</p>
                             </div>
                         </div>
                     `;
@@ -16646,7 +16646,7 @@ Search Phrase:`;
                     // Show success message
                     const successMsg = document.createElement('div');
                     successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; z-index: 30000; box-shadow: 0 4px 6px rgba(0,0,0,0.3);';
-                    successMsg.textContent = '✨ Premium curated image found! 10 credits used.';
+                    successMsg.textContent = '✨ Premium curated image found! (Free)';
                     document.body.appendChild(successMsg);
                     setTimeout(() => {
                         successMsg.style.transition = 'opacity 0.3s';

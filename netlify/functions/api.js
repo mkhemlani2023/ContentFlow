@@ -2275,7 +2275,7 @@ exports.handler = async (event, context) => {
             keyword: keyword,
             images: generatedImages,
             count: generatedImages.length,
-            creditCost: 10, // Cost per image
+            creditCost: 0, // Free - using Unsplash API
             timestamp: new Date().toISOString()
           })
         };
