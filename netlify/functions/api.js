@@ -3752,6 +3752,101 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
     }
 
+    // Fetch all WordPress posts (for syncing existing articles)
+    if (path === '/api/wordpress-fetch-posts' && method === 'POST') {
+      const { url, username, password, perPage = 100, page = 1 } = body;
+
+      if (!url || !username || !password) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'URL, username, and password are required'
+          })
+        };
+      }
+
+      try {
+        const baseUrl = url.replace(/\/$/, '');
+        const postsUrl = `${baseUrl}/wp-json/wp/v2/posts?per_page=${perPage}&page=${page}&_embed`;
+
+        console.log(`Fetching WordPress posts from: ${postsUrl}`);
+
+        const response = await fetch(postsUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const posts = await response.json();
+
+          // Get total pages from headers
+          const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');
+          const totalPosts = parseInt(response.headers.get('X-WP-Total') || '0');
+
+          // Extract relevant data from each post
+          const formattedPosts = posts.map(post => ({
+            id: post.id,
+            title: post.title.rendered,
+            link: post.link,
+            date: post.date,
+            modified: post.modified,
+            status: post.status,
+            excerpt: post.excerpt.rendered,
+            categories: post.categories || [],
+            tags: post.tags || [],
+            featured_media: post.featured_media || 0,
+            // Check if published by ContentFlow
+            source: post.meta?._generated_by === 'ContentFlow' ? 'contentflow' : 'wordpress'
+          }));
+
+          console.log(`✅ Fetched ${formattedPosts.length} posts (page ${page}/${totalPages})`);
+
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              posts: formattedPosts,
+              pagination: {
+                page: page,
+                perPage: perPage,
+                totalPages: totalPages,
+                totalPosts: totalPosts
+              }
+            })
+          };
+        } else {
+          const errorText = await response.text();
+          console.error('WordPress fetch error:', errorText);
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: `Failed to fetch posts: ${response.status}`,
+              details: errorText
+            })
+          };
+        }
+      } catch (error) {
+        console.error('WordPress fetch error:', error);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Failed to fetch posts',
+            error: error.message
+          })
+        };
+      }
+    }
+
     // DataforSEO Section Generation - Modular endpoint for generating one section at a time
     if (path === '/api/dataforseo-section' && method === 'POST') {
       const { topic, wordCount = 400, sectionType = 'section', supplementToken = null, subTopics = [], description = '', previousContext = '' } = body;

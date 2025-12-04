@@ -7699,23 +7699,32 @@
 
                 const blogs = blogsResult.data;
 
-                // Generate sections for each blog
+                // Generate sections for each blog (includes both app-published and existing WordPress articles)
                 let articlesHTML = '';
                 for (const blog of blogs) {
-                    const result = await SupabaseService.loadPublishedArticlesByBlog(blog.id);
-                    const articles = result.success && result.data ? result.data : [];
+                    try {
+                        const articles = await getAllArticlesForBlog(blog);
 
-                    articlesHTML += `
-                        <div style="margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                <h3 style="margin: 0; color: #1e293b; font-size: 18px;">📝 ${blog.name}</h3>
-                                <span style="color: #64748b; font-size: 13px;">${articles.length} article${articles.length !== 1 ? 's' : ''} published</span>
+                        articlesHTML += `
+                            <div style="margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                    <h3 style="margin: 0; color: #1e293b; font-size: 18px;">📝 ${blog.name}</h3>
+                                    <span style="color: #64748b; font-size: 13px;">${articles.length} article${articles.length !== 1 ? 's' : ''} total</span>
+                                </div>
+                                ${articles.length === 0 ? `
+                                    <p style="color: #64748b; text-align: center; padding: 20px;">No articles found in this blog.</p>
+                                ` : await generatePublishedArticlesList(articles, blog.id)}
                             </div>
-                            ${articles.length === 0 ? `
-                                <p style="color: #64748b; text-align: center; padding: 20px;">No articles published to this blog yet.</p>
-                            ` : await generatePublishedArticlesList(articles, blog.id)}
-                        </div>
-                    `;
+                        `;
+                    } catch (error) {
+                        console.error(`Error loading articles for ${blog.name}:`, error);
+                        articlesHTML += `
+                            <div style="margin-bottom: 30px; background: #fef2f2; padding: 20px; border-radius: 12px; border: 1px solid #fecaca;">
+                                <h3 style="margin: 0; color: #991b1b; font-size: 18px;">📝 ${blog.name}</h3>
+                                <p style="color: #991b1b; margin-top: 10px;">Error loading articles: ${error.message}</p>
+                            </div>
+                        `;
+                    }
                 }
 
                 publishedTabContent.innerHTML = articlesHTML;
@@ -7739,16 +7748,24 @@
 
             for (const article of articles) {
                 // Calculate traffic stats (mock data for now - will be real when WordPress analytics integrated)
-                const trafficStats = await calculateTrafficStats(blogId, article.post_id);
+                const trafficStats = await calculateTrafficStats(blogId, article.id);
+
+                // Source badge
+                const sourceBadge = article.source === 'contentflow'
+                    ? '<span style="background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">📱 ContentFlow</span>'
+                    : '<span style="background: #e2e8f0; color: #64748b; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">🌐 WordPress</span>';
 
                 html += `
                     <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                             <div style="flex: 1;">
-                                <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 15px;">${article.article_title}</h4>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                    <h4 style="margin: 0; color: #1e293b; font-size: 15px;">${article.title}</h4>
+                                    ${sourceBadge}
+                                </div>
                                 <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                                    <span style="color: #64748b; font-size: 12px;">📅 ${new Date(article.created_at).toLocaleDateString()}</span>
-                                    <a href="${article.post_url}" target="_blank" style="color: #334155; font-size: 12px; text-decoration: none; font-weight: 500;" onmouseover="this.style.color='#10a37f'" onmouseout="this.style.color='#334155'">🔗 View Post</a>
+                                    <span style="color: #64748b; font-size: 12px;">📅 ${new Date(article.date).toLocaleDateString()}</span>
+                                    <a href="${article.url}" target="_blank" style="color: #334155; font-size: 12px; text-decoration: none; font-weight: 500;" onmouseover="this.style.color='#10a37f'" onmouseout="this.style.color='#334155'">🔗 View Post</a>
                                 </div>
                             </div>
                         </div>
@@ -7816,7 +7833,7 @@
 
         // ===== INTERNAL LINKING SYSTEM =====
 
-        // Add internal links to article content based on published articles
+        // Add internal links to article content based on all articles (published + existing WordPress)
         async function addInternalLinksToArticle(articleContent) {
             if (!currentUser) {
                 console.log('⚠️ User not logged in, skipping internal linking');
@@ -7824,18 +7841,18 @@
             }
 
             try {
-                // Get all published articles
-                const result = await SupabaseService.getAllPublishedArticles();
-                if (!result.success || !result.data || result.data.length === 0) {
-                    console.log('📝 No published articles found for internal linking');
+                // Get ALL articles from WordPress (both app-published and existing)
+                const allArticles = await getAllArticlesForLinking();
+
+                if (!allArticles || allArticles.length === 0) {
+                    console.log('📝 No articles found for internal linking');
                     return articleContent;
                 }
 
-                const publishedArticles = result.data;
-                console.log(`🔗 Found ${publishedArticles.length} published articles for internal linking`);
+                console.log(`🔗 Found ${allArticles.length} total articles for internal linking`);
 
                 // Use AI to suggest relevant internal links
-                const linksToAdd = await suggestInternalLinks(articleContent, publishedArticles);
+                const linksToAdd = await suggestInternalLinks(articleContent, allArticles);
 
                 if (!linksToAdd || linksToAdd.length === 0) {
                     console.log('✅ No relevant internal links found');
@@ -7862,9 +7879,9 @@
                 // Extract article text for analysis
                 const articleText = extractTextFromArticleContent(articleContent);
 
-                // Build list of published articles for the prompt
+                // Build list of available articles for the prompt
                 const articlesListText = publishedArticles.slice(0, 20).map((article, index) =>
-                    `${index + 1}. "${article.article_title}" - ${article.blog_name}`
+                    `${index + 1}. "${article.title}" - ${article.blogName} (${article.source === 'contentflow' ? 'App' : 'WordPress'})`
                 ).join('\n');
 
                 const prompt = `You are an SEO expert specializing in internal linking strategies.
@@ -7918,16 +7935,17 @@ Return ONLY the JSON array, no other text.`;
 
                 const suggestions = JSON.parse(jsonMatch[0]);
 
-                // Map suggestions to actual published articles
+                // Map suggestions to actual articles
                 const links = suggestions.map(sugg => {
                     const article = publishedArticles[sugg.index - 1];
                     if (!article) return null;
 
                     return {
-                        url: article.post_url,
-                        title: article.article_title,
+                        url: article.url,
+                        title: article.title,
                         anchorText: sugg.anchorText,
-                        blogName: article.blog_name
+                        blogName: article.blogName,
+                        source: article.source
                     };
                 }).filter(link => link !== null);
 
@@ -8011,6 +8029,125 @@ Return ONLY the JSON array, no other text.`;
                 document.getElementById('blogSigninUrl').value = '';
                 document.getElementById('blogUsername').value = '';
                 document.getElementById('blogPassword').value = '';
+            }
+        }
+
+        // ===== WORDPRESS ARTICLE SYNC =====
+
+        // Fetch all WordPress posts from a blog
+        async function fetchWordPressArticles(blog) {
+            try {
+                console.log(`🔄 Fetching WordPress articles from ${blog.name}...`);
+
+                const response = await fetch('/api/wordpress-fetch-posts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: blog.url,
+                        username: blog.username,
+                        password: blog.password,
+                        perPage: 100,
+                        page: 1
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to fetch articles');
+                }
+
+                console.log(`✅ Fetched ${data.posts.length} articles from WordPress`);
+                return data.posts;
+            } catch (error) {
+                console.error(`❌ Error fetching WordPress articles:`, error);
+                throw error;
+            }
+        }
+
+        // Get all articles (both app-published and existing WordPress articles)
+        async function getAllArticlesForBlog(blog) {
+            try {
+                // Get app-published articles from Supabase
+                const publishedResult = await SupabaseService.loadPublishedArticlesByBlog(blog.id);
+                const appPublishedArticles = publishedResult.success && publishedResult.data ? publishedResult.data : [];
+
+                // Get all WordPress articles
+                const wordpressArticles = await fetchWordPressArticles(blog);
+
+                // Create a map of app-published article IDs for quick lookup
+                const appPublishedIds = new Set(appPublishedArticles.map(a => a.post_id));
+
+                // Combine and mark sources
+                const allArticles = [];
+
+                // Add app-published articles
+                appPublishedArticles.forEach(article => {
+                    allArticles.push({
+                        id: article.post_id,
+                        title: article.article_title,
+                        url: article.post_url,
+                        date: article.created_at,
+                        source: 'contentflow',
+                        blogId: blog.id,
+                        blogName: blog.name
+                    });
+                });
+
+                // Add WordPress articles that weren't published by the app
+                wordpressArticles.forEach(article => {
+                    if (!appPublishedIds.has(article.id.toString())) {
+                        allArticles.push({
+                            id: article.id.toString(),
+                            title: article.title,
+                            url: article.link,
+                            date: article.date,
+                            source: article.source === 'contentflow' ? 'contentflow' : 'wordpress',
+                            blogId: blog.id,
+                            blogName: blog.name
+                        });
+                    }
+                });
+
+                // Sort by date (newest first)
+                allArticles.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                console.log(`📊 Total articles for ${blog.name}: ${allArticles.length} (${appPublishedArticles.length} from app, ${allArticles.length - appPublishedArticles.length} from WordPress)`);
+
+                return allArticles;
+            } catch (error) {
+                console.error('Error getting all articles:', error);
+                throw error;
+            }
+        }
+
+        // Get all articles across all blogs for internal linking
+        async function getAllArticlesForLinking() {
+            try {
+                const blogsResult = await SupabaseService.loadBlogs();
+                if (!blogsResult.success || !blogsResult.data || blogsResult.data.length === 0) {
+                    return [];
+                }
+
+                const allArticles = [];
+                for (const blog of blogsResult.data) {
+                    try {
+                        const blogArticles = await getAllArticlesForBlog(blog);
+                        allArticles.push(...blogArticles);
+                    } catch (error) {
+                        console.error(`Error fetching articles for ${blog.name}:`, error);
+                        // Continue with other blogs
+                    }
+                }
+
+                console.log(`🔗 Total articles available for internal linking: ${allArticles.length}`);
+                return allArticles;
+            } catch (error) {
+                console.error('Error getting all articles for linking:', error);
+                return [];
             }
         }
 
