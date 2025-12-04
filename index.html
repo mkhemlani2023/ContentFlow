@@ -1457,6 +1457,11 @@
                             password: blog.password, // encrypted
                             api_key: blog.apiKey, // encrypted
                             status: blog.status || 'active',
+                            ga_property_id: blog.ga_property_id || null,
+                            ga_access_token: blog.ga_access_token || null,
+                            ga_refresh_token: blog.ga_refresh_token || null,
+                            ga_token_expiry: blog.ga_token_expiry || null,
+                            ga_credentials: blog.ga_credentials || null, // Legacy support
                             created_at: new Date().toISOString()
                         }])
                         .select();
@@ -7614,26 +7619,48 @@
                             </div>
 
                             <!-- Google Analytics Section -->
-                            <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px; margin-bottom: 15px;">
+                            <div id="gaSection" style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px; margin-bottom: 15px;">
                                 <h4 style="color: #1e293b; margin: 0 0 10px 0; font-size: 14px; font-weight: 600;">Google Analytics (Optional)</h4>
                                 <div style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
                                     Connect Google Analytics to view real traffic statistics for your articles.
                                 </div>
 
-                                <div style="margin-bottom: 10px;">
-                                    <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">GA4 Property ID</label>
-                                    <input type="text" id="blogGaPropertyId" placeholder="123456789" style="width: 100%; margin: 0;">
-                                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
-                                        Find this in Google Analytics: Admin → Property Settings
+                                <!-- OAuth Connection Status (Hidden by default) -->
+                                <div id="gaConnectedStatus" style="display: none; background: #f0fdf4; border: 1px solid #86efac; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span style="font-size: 16px;">✓</span>
+                                            <span style="font-size: 13px; color: #166534; font-weight: 500;">Google Analytics Connected</span>
+                                        </div>
+                                        <button onclick="disconnectGA()" style="background: transparent; color: #dc2626; border: 1px solid #fca5a5; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                                            Disconnect
+                                        </button>
+                                    </div>
+                                    <div id="gaPropertyInfo" style="font-size: 11px; color: #15803d; margin-top: 6px;"></div>
+                                </div>
+
+                                <!-- OAuth Connect Button -->
+                                <div id="gaConnectSection" style="display: block;">
+                                    <button onclick="connectGoogleAnalytics()" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; background: #4285f4; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(66, 133, 244, 0.3);" onmouseover="this.style.background='#357ae8'" onmouseout="this.style.background='#4285f4'">
+                                        <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+                                            <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                                            <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                                            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                                        </svg>
+                                        Connect Google Analytics
+                                    </button>
+                                    <div style="font-size: 11px; color: #64748b; margin-top: 8px; text-align: center;">
+                                        Securely connect with your Google account in 2 clicks
                                     </div>
                                 </div>
 
-                                <div style="margin-bottom: 10px;">
-                                    <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Service Account Key (JSON)</label>
-                                    <textarea id="blogGaCredentials" placeholder='{"type": "service_account", "project_id": "...", "private_key": "..."}' style="width: 100%; margin: 0; min-height: 80px; font-family: monospace; font-size: 11px;"></textarea>
-                                    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
-                                        Create a service account in Google Cloud Console and download the JSON key file
-                                    </div>
+                                <!-- GA Property Selection Dropdown (Hidden until connected) -->
+                                <div id="gaPropertySelector" style="display: none; margin-top: 12px;">
+                                    <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Select GA4 Property</label>
+                                    <select id="gaPropertyDropdown" onchange="handlePropertySelection()" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; color: #334155;">
+                                        <option value="">Loading properties...</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -7907,8 +7934,11 @@
                     };
                 }
 
-                // Check if Google Analytics is configured
-                if (!blog.ga_property_id || !blog.ga_credentials) {
+                // Check if Google Analytics is configured (OAuth or legacy service account)
+                const hasOAuth = blog.ga_property_id && blog.ga_access_token;
+                const hasServiceAccount = blog.ga_property_id && blog.ga_credentials;
+
+                if (!hasOAuth && !hasServiceAccount) {
                     return {
                         needsGASetup: true,
                         days30: { views: null, change: null },
@@ -7919,22 +7949,42 @@
                     };
                 }
 
+                // Prepare request body (supports both OAuth and service account)
+                const requestBody = {
+                    propertyId: blog.ga_property_id,
+                    startDate: '365daysAgo',
+                    endDate: 'today'
+                    // No URL = entire site stats
+                };
+
+                // Add OAuth tokens if available, otherwise use service account
+                if (hasOAuth) {
+                    requestBody.oauthAccessToken = blog.ga_access_token;
+                    requestBody.oauthRefreshToken = blog.ga_refresh_token;
+                    requestBody.tokenExpiry = blog.ga_token_expiry;
+                } else {
+                    requestBody.serviceAccountJson = blog.ga_credentials;
+                }
+
                 // Fetch from Google Analytics Data API via our backend
                 const gaResponse = await fetch('/api/google-analytics-report', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        propertyId: blog.ga_property_id,
-                        serviceAccountJson: blog.ga_credentials,
-                        startDate: '365daysAgo',
-                        endDate: 'today'
-                        // No URL = entire site stats
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (gaResponse.ok) {
                     const gaData = await gaResponse.json();
                     if (gaData.success) {
+                        // Handle token refresh - update blog in Supabase if tokens were refreshed
+                        if (gaData.newAccessToken && hasOAuth) {
+                            console.log('OAuth tokens refreshed, updating blog...');
+                            await SupabaseService.updateBlog(blog.id, {
+                                ga_access_token: gaData.newAccessToken,
+                                ga_token_expiry: gaData.newTokenExpiry
+                            });
+                        }
+
                         return processGoogleAnalyticsData(gaData.data);
                     }
                 }
@@ -7967,8 +8017,11 @@
                     throw new Error('Blog not found');
                 }
 
-                // Check if Google Analytics is configured
-                if (!blog.ga_property_id || !blog.ga_credentials) {
+                // Check if Google Analytics is configured (OAuth or legacy service account)
+                const hasOAuth = blog.ga_property_id && blog.ga_access_token;
+                const hasServiceAccount = blog.ga_property_id && blog.ga_credentials;
+
+                if (!hasOAuth && !hasServiceAccount) {
                     return {
                         days30: { views: null, change: null },
                         days60: { views: null, change: null },
@@ -7979,22 +8032,42 @@
                     };
                 }
 
+                // Prepare request body (supports both OAuth and service account)
+                const requestBody = {
+                    propertyId: blog.ga_property_id,
+                    startDate: '365daysAgo',
+                    endDate: 'today',
+                    url: articleUrl  // Filter for this specific article
+                };
+
+                // Add OAuth tokens if available, otherwise use service account
+                if (hasOAuth) {
+                    requestBody.oauthAccessToken = blog.ga_access_token;
+                    requestBody.oauthRefreshToken = blog.ga_refresh_token;
+                    requestBody.tokenExpiry = blog.ga_token_expiry;
+                } else {
+                    requestBody.serviceAccountJson = blog.ga_credentials;
+                }
+
                 // Fetch from Google Analytics Data API via our backend
                 const gaResponse = await fetch('/api/google-analytics-report', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        propertyId: blog.ga_property_id,
-                        serviceAccountJson: blog.ga_credentials,
-                        startDate: '365daysAgo',
-                        endDate: 'today',
-                        url: articleUrl  // Filter for this specific article
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (gaResponse.ok) {
                     const gaData = await gaResponse.json();
                     if (gaData.success) {
+                        // Handle token refresh - update blog in Supabase if tokens were refreshed
+                        if (gaData.newAccessToken && hasOAuth) {
+                            console.log('OAuth tokens refreshed for article, updating blog...');
+                            await SupabaseService.updateBlog(blog.id, {
+                                ga_access_token: gaData.newAccessToken,
+                                ga_token_expiry: gaData.newTokenExpiry
+                            });
+                        }
+
                         return processGoogleAnalyticsData(gaData.data);
                     }
                 }
@@ -9371,6 +9444,164 @@ Return ONLY the JSON array, no other text.`;
             }
         }
 
+        // ===== GOOGLE ANALYTICS OAUTH FUNCTIONS =====
+
+        let currentOAuthBlogId = null;
+        let currentGATokens = null;
+
+        // Connect Google Analytics via OAuth
+        async function connectGoogleAnalytics() {
+            // Generate a temporary blog ID if we're adding a new blog
+            // Or use the current editing blog ID
+            const tempBlogId = 'temp_' + Date.now();
+            currentOAuthBlogId = tempBlogId;
+
+            // Open OAuth popup
+            const width = 600;
+            const height = 700;
+            const left = (screen.width / 2) - (width / 2);
+            const top = (screen.height / 2) - (height / 2);
+
+            const popup = window.open(
+                `/oauth/google/start?blog_id=${tempBlogId}`,
+                'oauth_popup',
+                `width=${width},height=${height},left=${left},top=${top},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`
+            );
+
+            if (!popup) {
+                alert('Popup blocked! Please allow popups for this site and try again.');
+                return;
+            }
+
+            // Listen for OAuth callback message
+            window.addEventListener('message', handleOAuthMessage);
+        }
+
+        // Handle OAuth callback message from popup
+        async function handleOAuthMessage(event) {
+            // Security check: Verify origin (in production, check for exact origin)
+            if (!event.data || !event.data.type) {
+                return;
+            }
+
+            if (event.data.type === 'oauth_success') {
+                console.log('OAuth success received');
+
+                // Store tokens temporarily (we'll save to DB when blog is added)
+                currentGATokens = {
+                    access_token: event.data.access_token,
+                    refresh_token: event.data.refresh_token,
+                    token_expiry: event.data.token_expiry
+                };
+
+                // Update UI to show connected status
+                document.getElementById('gaConnectSection').style.display = 'none';
+                document.getElementById('gaConnectedStatus').style.display = 'block';
+
+                // Fetch and display GA4 properties
+                try {
+                    await loadGAProperties(event.data.access_token);
+                } catch (error) {
+                    console.error('Error loading GA properties:', error);
+                    alert('Connected successfully, but failed to load properties. Error: ' + error.message);
+                }
+
+                // Remove event listener (we only need it once)
+                window.removeEventListener('message', handleOAuthMessage);
+            } else if (event.data.type === 'oauth_error') {
+                console.error('OAuth error:', event.data.error);
+                alert('Google Analytics connection failed: ' + event.data.error);
+                window.removeEventListener('message', handleOAuthMessage);
+            }
+        }
+
+        // Load user's GA4 properties from Google
+        async function loadGAProperties(accessToken) {
+            console.log('Fetching GA4 properties...');
+
+            const response = await fetch('/api/google-analytics-properties', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accessToken })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to fetch properties');
+            }
+
+            const properties = result.properties || [];
+
+            if (properties.length === 0) {
+                alert('No GA4 properties found. Please make sure you have access to at least one Google Analytics 4 property.');
+                return;
+            }
+
+            // Show property selector
+            document.getElementById('gaPropertySelector').style.display = 'block';
+
+            // Populate dropdown
+            const dropdown = document.getElementById('gaPropertyDropdown');
+            dropdown.innerHTML = `
+                <option value="">Select a GA4 property...</option>
+                ${properties.map(p => `
+                    <option value="${p.id}" data-name="${p.name}" data-account="${p.account}">
+                        ${p.name} (${p.account})
+                    </option>
+                `).join('')}
+            `;
+
+            console.log(`Loaded ${properties.length} GA4 properties`);
+        }
+
+        // Handle property selection
+        function handlePropertySelection() {
+            const dropdown = document.getElementById('gaPropertyDropdown');
+            const selectedOption = dropdown.options[dropdown.selectedIndex];
+
+            if (!selectedOption || !selectedOption.value) {
+                return;
+            }
+
+            const propertyId = selectedOption.value;
+            const propertyName = selectedOption.getAttribute('data-name');
+            const accountName = selectedOption.getAttribute('data-account');
+
+            // Update info display
+            const infoDiv = document.getElementById('gaPropertyInfo');
+            infoDiv.textContent = `Property: ${propertyName} (${accountName})`;
+
+            // Store selected property ID in tokens
+            if (currentGATokens) {
+                currentGATokens.property_id = propertyId;
+            }
+
+            console.log('Selected GA4 property:', propertyId);
+        }
+
+        // Disconnect Google Analytics
+        function disconnectGA() {
+            if (!confirm('Are you sure you want to disconnect Google Analytics? Traffic statistics will no longer be available.')) {
+                return;
+            }
+
+            // Clear tokens
+            currentGATokens = null;
+            currentOAuthBlogId = null;
+
+            // Reset UI
+            document.getElementById('gaConnectedStatus').style.display = 'none';
+            document.getElementById('gaPropertySelector').style.display = 'none';
+            document.getElementById('gaConnectSection').style.display = 'block';
+            document.getElementById('gaPropertyDropdown').innerHTML = '<option value="">Loading properties...</option>';
+            document.getElementById('gaPropertyInfo').textContent = '';
+
+            console.log('Disconnected Google Analytics');
+        }
+
+        // ===== END GOOGLE ANALYTICS OAUTH FUNCTIONS =====
+
         async function addBlog() {
             // Check all elements exist before trying to get values
             const elements = {
@@ -9379,14 +9610,12 @@ Return ONLY the JSON array, no other text.`;
                 blogUrl: document.getElementById('blogUrl'),
                 blogSigninUrl: document.getElementById('blogSigninUrl'),
                 blogUsername: document.getElementById('blogUsername'),
-                blogPassword: document.getElementById('blogPassword'),
-                blogGaPropertyId: document.getElementById('blogGaPropertyId'),
-                blogGaCredentials: document.getElementById('blogGaCredentials')
+                blogPassword: document.getElementById('blogPassword')
             };
 
-            // Find which element is missing (excluding optional GA fields)
+            // Find which element is missing
             for (const [key, element] of Object.entries(elements)) {
-                if (!element && !key.startsWith('blogGa')) {
+                if (!element) {
                     console.error(`Missing element: ${key}`);
                     alert(`Error: Form field "${key}" not found. Please try refreshing the Blog Management section.`);
                     return;
@@ -9399,30 +9628,19 @@ Return ONLY the JSON array, no other text.`;
             const signinUrl = elements.blogSigninUrl.value.trim();
             const username = elements.blogUsername.value.trim();
             const password = elements.blogPassword.value.trim();
-            const gaPropertyId = elements.blogGaPropertyId ? elements.blogGaPropertyId.value.trim() : '';
-            const gaCredentials = elements.blogGaCredentials ? elements.blogGaCredentials.value.trim() : '';
 
             if (!name || !url || !signinUrl || !username || !password) {
                 alert('Please fill in all required fields (Blog Name, Website URL, Sign in URL, Username, and Application Password)');
                 return;
             }
 
-            // Validate GA credentials JSON if provided
-            if (gaCredentials) {
-                try {
-                    JSON.parse(gaCredentials);
-                } catch (error) {
-                    alert('Invalid Google Analytics Service Account JSON. Please check the format and try again.');
-                    return;
-                }
-            }
-
             // Check if user is logged in
             if (!currentUser) {
-                alert('🔒 Please log in to save blogs to the cloud.\n\nYour blogs will be securely stored and accessible from any device.');
+                alert('Please log in to save blogs to the cloud. Your blogs will be securely stored and accessible from any device.');
                 return;
             }
 
+            // Build blog object with OAuth tokens if connected
             const newBlog = {
                 name,
                 platform,
@@ -9431,17 +9649,37 @@ Return ONLY the JSON array, no other text.`;
                 username: btoa(username), // Basic encoding
                 password: btoa(password), // Basic encoding
                 status: 'active',
-                user_id: currentUser.id,
-                ga_property_id: gaPropertyId || null,
-                ga_credentials: gaCredentials ? btoa(gaCredentials) : null // Encode JSON credentials
+                user_id: currentUser.id
             };
+
+            // Add OAuth tokens if user connected Google Analytics
+            if (currentGATokens && currentGATokens.property_id) {
+                newBlog.ga_property_id = currentGATokens.property_id;
+                newBlog.ga_access_token = currentGATokens.access_token;
+                newBlog.ga_refresh_token = currentGATokens.refresh_token;
+                newBlog.ga_token_expiry = currentGATokens.token_expiry;
+                console.log('Adding blog with OAuth tokens for GA property:', currentGATokens.property_id);
+            } else {
+                newBlog.ga_property_id = null;
+                newBlog.ga_access_token = null;
+                newBlog.ga_refresh_token = null;
+                newBlog.ga_token_expiry = null;
+            }
 
             try {
                 // Save to Supabase
                 const result = await SupabaseService.saveBlog(newBlog);
 
                 if (result.success) {
-                    alert(`✅ Blog "${name}" added successfully!\n\nYou can now publish articles directly to this blog from your saved articles.`);
+                    const gaMessage = currentGATokens && currentGATokens.property_id
+                        ? ' Google Analytics is connected and ready to track traffic.'
+                        : '';
+                    alert(`Blog "${name}" added successfully!${gaMessage}\n\nYou can now publish articles directly to this blog from your saved articles.`);
+
+                    // Clear OAuth state
+                    currentGATokens = null;
+                    currentOAuthBlogId = null;
+
                     await displayBlogManagement();
 
                     // Hide the form and show the button again
@@ -9454,7 +9692,7 @@ Return ONLY the JSON array, no other text.`;
                 }
             } catch (error) {
                 console.error('Error saving blog:', error);
-                alert('❌ Failed to save blog: ' + error.message);
+                alert('Failed to save blog: ' + error.message);
             }
         }
 
