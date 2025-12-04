@@ -10074,10 +10074,28 @@ Return ONLY the JSON array, no other text or markdown.`;
                 const allSectionsContent = [];
 
                 // Helper function to extract citations and clean content
-                function extractAndClean(content) {
+                function extractAndClean(content, sectionTitle = null) {
                     if (!content) return content;
 
                     let cleanedContent = content;
+
+                    // Remove duplicate section title if it appears at the start of content
+                    if (sectionTitle) {
+                        // Escape special regex characters in the title
+                        const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                        // Remove if title appears as plain text at start
+                        const titlePattern = new RegExp(`^${escapedTitle}\\s*\\n`, 'i');
+                        cleanedContent = cleanedContent.replace(titlePattern, '');
+
+                        // Remove if title appears as markdown header at start
+                        const titleHeaderPattern = new RegExp(`^#{1,6}\\s*${escapedTitle}\\s*\\n`, 'i');
+                        cleanedContent = cleanedContent.replace(titleHeaderPattern, '');
+
+                        // Remove if title appears in bold at start
+                        const titleBoldPattern = new RegExp(`^\\*\\*${escapedTitle}\\*\\*\\s*\\n`, 'i');
+                        cleanedContent = cleanedContent.replace(titleBoldPattern, '');
+                    }
 
                     // First, strip leading markdown delimiters before citations
                     cleanedContent = cleanedContent.replace(/\*\*\s*\n\n/g, '\n\n');
@@ -10138,7 +10156,7 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                 // Extract from sections and update in place
                 sections.forEach(section => {
-                    section.content = extractAndClean(section.content);
+                    section.content = extractAndClean(section.content, section.title);
                 });
 
                 // Extract from conclusion (will be used later in article data)
@@ -10954,10 +10972,28 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                 const fullCitations = [];
 
                 // Helper function to extract citations and clean content
-                function extractAndClean(content) {
+                function extractAndClean(content, sectionTitle = null) {
                     if (!content) return content;
 
                     let cleanedContent = content;
+
+                    // Remove duplicate section title if it appears at the start of content
+                    if (sectionTitle) {
+                        // Escape special regex characters in the title
+                        const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                        // Remove if title appears as plain text at start
+                        const titlePattern = new RegExp(`^${escapedTitle}\\s*\\n`, 'i');
+                        cleanedContent = cleanedContent.replace(titlePattern, '');
+
+                        // Remove if title appears as markdown header at start
+                        const titleHeaderPattern = new RegExp(`^#{1,6}\\s*${escapedTitle}\\s*\\n`, 'i');
+                        cleanedContent = cleanedContent.replace(titleHeaderPattern, '');
+
+                        // Remove if title appears in bold at start
+                        const titleBoldPattern = new RegExp(`^\\*\\*${escapedTitle}\\*\\*\\s*\\n`, 'i');
+                        cleanedContent = cleanedContent.replace(titleBoldPattern, '');
+                    }
 
                     // First, strip leading markdown delimiters before citations
                     cleanedContent = cleanedContent.replace(/\*\*\s*\n\n/g, '\n\n');
@@ -11018,7 +11054,7 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
 
                 // Extract from sections and update in place
                 generatedSections.forEach(section => {
-                    section.content = extractAndClean(section.content);
+                    section.content = extractAndClean(section.content, section.title);
                 });
 
                 // Extract from conclusion (will be used later in article data)
