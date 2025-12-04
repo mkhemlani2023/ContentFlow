@@ -7833,6 +7833,185 @@
             };
         }
 
+        // ===== INTERNAL LINKING SYSTEM =====
+
+        // Add internal links to article content based on published articles
+        async function addInternalLinksToArticle(articleContent) {
+            if (!currentUser) {
+                console.log('⚠️ User not logged in, skipping internal linking');
+                return articleContent;
+            }
+
+            try {
+                // Get all published articles
+                const result = await SupabaseService.getAllPublishedArticles();
+                if (!result.success || !result.data || result.data.length === 0) {
+                    console.log('📝 No published articles found for internal linking');
+                    return articleContent;
+                }
+
+                const publishedArticles = result.data;
+                console.log(`🔗 Found ${publishedArticles.length} published articles for internal linking`);
+
+                // Use AI to suggest relevant internal links
+                const linksToAdd = await suggestInternalLinks(articleContent, publishedArticles);
+
+                if (!linksToAdd || linksToAdd.length === 0) {
+                    console.log('✅ No relevant internal links found');
+                    return articleContent;
+                }
+
+                // Add links to content
+                let updatedContent = { ...articleContent };
+                linksToAdd.forEach(link => {
+                    updatedContent = insertInternalLink(updatedContent, link);
+                });
+
+                console.log(`✅ Added ${linksToAdd.length} internal links to article`);
+                return updatedContent;
+            } catch (error) {
+                console.error('❌ Error adding internal links:', error);
+                return articleContent; // Return original content on error
+            }
+        }
+
+        // Use AI to suggest which published articles to link to
+        async function suggestInternalLinks(articleContent, publishedArticles) {
+            try {
+                // Extract article text for analysis
+                const articleText = extractTextFromArticleContent(articleContent);
+
+                // Build list of published articles for the prompt
+                const articlesListText = publishedArticles.slice(0, 20).map((article, index) =>
+                    `${index + 1}. "${article.article_title}" - ${article.blog_name}`
+                ).join('\n');
+
+                const prompt = `You are an SEO expert specializing in internal linking strategies.
+
+Analyze this article content and suggest which of the published articles below would be most relevant for internal linking.
+
+ARTICLE EXCERPT (first 1000 chars):
+${articleText.substring(0, 1000)}
+
+PUBLISHED ARTICLES AVAILABLE FOR LINKING:
+${articlesListText}
+
+Instructions:
+- Select 2-4 most relevant published articles that would add value to readers
+- Consider topical relevance and contextual fit
+- Suggest specific anchor text (2-5 words) that naturally fits the content
+- Return ONLY a JSON array in this exact format:
+
+[
+  {"index": 1, "anchorText": "relevant phrase"},
+  {"index": 3, "anchorText": "another relevant phrase"}
+]
+
+Return ONLY the JSON array, no other text.`;
+
+                const response = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'openai/gpt-4o-mini',
+                        prompt: prompt,
+                        temperature: 0.3,
+                        max_tokens: 300
+                    })
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to get internal link suggestions');
+                    return [];
+                }
+
+                const data = await response.json();
+                const aiResponse = data.content || data.choices?.[0]?.message?.content || '';
+
+                // Parse AI response
+                const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
+                if (!jsonMatch) {
+                    console.log('No valid JSON found in AI response');
+                    return [];
+                }
+
+                const suggestions = JSON.parse(jsonMatch[0]);
+
+                // Map suggestions to actual published articles
+                const links = suggestions.map(sugg => {
+                    const article = publishedArticles[sugg.index - 1];
+                    if (!article) return null;
+
+                    return {
+                        url: article.post_url,
+                        title: article.article_title,
+                        anchorText: sugg.anchorText,
+                        blogName: article.blog_name
+                    };
+                }).filter(link => link !== null);
+
+                console.log(`🎯 AI suggested ${links.length} internal links:`, links);
+                return links;
+            } catch (error) {
+                console.error('Error suggesting internal links:', error);
+                return [];
+            }
+        }
+
+        // Extract plain text from article content object
+        function extractTextFromArticleContent(content) {
+            let text = '';
+
+            if (typeof content === 'string') {
+                return content;
+            }
+
+            if (content.title) text += content.title + ' ';
+            if (content.introduction) text += content.introduction + ' ';
+
+            if (content.sections && Array.isArray(content.sections)) {
+                content.sections.forEach(section => {
+                    if (section.title) text += section.title + ' ';
+                    if (section.content) text += section.content + ' ';
+                    if (section.subsections && Array.isArray(section.subsections)) {
+                        section.subsections.forEach(sub => {
+                            if (sub.title) text += sub.title + ' ';
+                            if (sub.content) text += sub.content + ' ';
+                        });
+                    }
+                });
+            }
+
+            if (content.conclusion) text += content.conclusion + ' ';
+
+            return text;
+        }
+
+        // Insert an internal link into article content
+        function insertInternalLink(articleContent, link) {
+            // For simplicity, add links to the introduction section
+            // You can enhance this to find the best placement in the content
+            if (articleContent.introduction && articleContent.introduction.includes(link.anchorText)) {
+                // Replace first occurrence of anchor text with link
+                const linkHTML = `<a href="${link.url}" target="_blank" rel="noopener" title="${link.title}">${link.anchorText}</a>`;
+                articleContent.introduction = articleContent.introduction.replace(link.anchorText, linkHTML);
+                console.log(`🔗 Added link: "${link.anchorText}" -> ${link.url}`);
+            } else if (articleContent.sections && Array.isArray(articleContent.sections)) {
+                // Try to find anchor text in sections
+                for (let i = 0; i < articleContent.sections.length; i++) {
+                    const section = articleContent.sections[i];
+                    if (section.content && section.content.includes(link.anchorText)) {
+                        const linkHTML = `<a href="${link.url}" target="_blank" rel="noopener" title="${link.title}">${link.anchorText}</a>`;
+                        section.content = section.content.replace(link.anchorText, linkHTML);
+                        console.log(`🔗 Added link in section ${i + 1}: "${link.anchorText}" -> ${link.url}`);
+                        break; // Only add once
+                    }
+                }
+            }
+
+            return articleContent;
+        }
+
         function toggleAddBlogForm() {
             const form = document.getElementById('addBlogForm');
             const button = document.getElementById('showAddBlogFormBtn');
