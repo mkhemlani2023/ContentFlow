@@ -279,7 +279,7 @@ const callSerperAutocompleteAPI = async (query, location = 'us') => {
     const data = await response.json();
     const responseTime = Date.now() - startTime;
 
-    console.log('✅ Serper Autocomplete API response:', JSON.stringify(data, null, 2));
+    console.log('Serper Autocomplete API response:', JSON.stringify(data, null, 2));
 
     return { data, responseTime, success: true };
   } catch (error) {
@@ -318,7 +318,7 @@ const callDataForSEOAPI = async (keyword, location = 2840, limit = 25) => {
     const data = await response.json();
     const responseTime = Date.now() - startTime;
 
-    console.log('✅ DataForSEO API response status:', data.status_message);
+    console.log('DataForSEO API response status:', data.status_message);
     console.log('   Cost:', data.cost, '| Time:', data.time);
 
     // CRITICAL: Correct response parsing path
@@ -336,7 +336,7 @@ const callDataForSEOAPI = async (keyword, location = 2840, limit = 25) => {
 
     throw new Error('No items found in DataForSEO response');
   } catch (error) {
-    console.error('❌ DataForSEO API error:', error.message);
+    console.error('DataForSEO API error:', error.message);
     throw new Error(`DataForSEO API error: ${error.message}`);
   }
 };
@@ -405,7 +405,7 @@ const callDataForSEOContentAPI = async (topic, wordCount, options = {}) => {
       supplementToken = result.supplementToken;
     }
 
-    console.log(`✅ Batched generation complete: ${numChunks} chunks, ${wordCount} words, $${totalCost.toFixed(4)}`);
+    console.log(`Batched generation complete: ${numChunks} chunks, ${wordCount} words, $${totalCost.toFixed(4)}`);
 
     return {
       content: fullContent,
@@ -414,7 +414,7 @@ const callDataForSEOContentAPI = async (topic, wordCount, options = {}) => {
       chunks: numChunks
     };
   } catch (error) {
-    console.error('❌ DataForSEO Content API error:', error.message);
+    console.error('DataForSEO Content API error:', error.message);
     throw new Error(`DataForSEO Content Generation failed: ${error.message}`);
   }
 };
@@ -453,7 +453,7 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
     requestBody[0].supplement_token = options.supplementToken;
   }
 
-  console.log('📊 DataforSEO request body:', JSON.stringify(requestBody, null, 2));
+  console.log('DataforSEO request body:', JSON.stringify(requestBody, null, 2));
 
   const response = await fetch('https://api.dataforseo.com/v3/content_generation/generate_text/live', {
     method: 'POST',
@@ -464,16 +464,16 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
     body: JSON.stringify(requestBody)
   });
 
-  console.log('📊 DataforSEO response status:', response.status, response.statusText);
+  console.log('DataforSEO response status:', response.status, response.statusText);
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('📊 DataforSEO error response:', errorText);
+    console.error('DataforSEO error response:', errorText);
     throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
   }
 
   const data = await response.json();
-  console.log('📊 DataforSEO response:', JSON.stringify(data, null, 2).substring(0, 500));
+  console.log('DataforSEO response:', JSON.stringify(data, null, 2).substring(0, 500));
 
   if (data.tasks && data.tasks[0]) {
     // Check for API errors
@@ -484,18 +484,18 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
     if (data.tasks[0].result && data.tasks[0].result.length > 0) {
       const result = data.tasks[0].result[0];
       // Log the full result to see all available fields
-      console.log('📊 DataforSEO result fields:', Object.keys(result));
-      console.log('📊 DataforSEO result:', JSON.stringify(result, null, 2).substring(0, 1000));
+      console.log('DataforSEO result fields:', Object.keys(result));
+      console.log('DataforSEO result:', JSON.stringify(result, null, 2).substring(0, 1000));
 
       // DataforSEO uses 'generated_text' not 'text'
       const content = result.generated_text || result.text || '';
-      console.log(`📊 Generated content preview: "${content.substring(0, 200)}..."`);
-      console.log(`📊 Generated content length: ${content.length} chars, ${content.split(/\s+/).length} words`);
+      console.log(`Generated content preview: "${content.substring(0, 200)}..."`);
+      console.log(`Generated content length: ${content.length} chars, ${content.split(/\s+/).length} words`);
 
       // Check for empty or very short content
       if (!content || content.trim().length < 10) {
-        console.error('📊 Warning: Generated content is too short or empty');
-        console.error('📊 Full result:', JSON.stringify(result, null, 2));
+        console.error('Warning: Generated content is too short or empty');
+        console.error('Full result:', JSON.stringify(result, null, 2));
         throw new Error(`DataforSEO returned insufficient content (${content.length} chars). Check API response.`);
       }
 
@@ -553,7 +553,7 @@ const processHybridKeywords = async (autocompleteData, originalKeyword) => {
       }
     });
 
-    console.log(`✅ DataForSEO returned ${metricsMap.size} keywords with metrics`);
+    console.log(`DataForSEO returned ${metricsMap.size} keywords with metrics`);
 
     // Priority 1: Add DataForSEO keywords with real metrics
     metricsMap.forEach((metrics, kwLower) => {
@@ -593,7 +593,7 @@ const processHybridKeywords = async (autocompleteData, originalKeyword) => {
       }
     });
 
-    console.log(`✅ Final result: ${keywords.length} keywords (${metricsMap.size} with metrics, ${keywords.length - metricsMap.size} from autocomplete only)`);
+    console.log(`Final result: ${keywords.length} keywords (${metricsMap.size} with metrics, ${keywords.length - metricsMap.size} from autocomplete only)`);
 
     return {
       success: true,
@@ -607,8 +607,8 @@ const processHybridKeywords = async (autocompleteData, originalKeyword) => {
       }
     };
   } catch (error) {
-    console.error('❌ DataForSEO enrichment failed:', error.message);
-    console.log('⚠️ Falling back to autocomplete-only data');
+    console.error('DataForSEO enrichment failed:', error.message);
+    console.log('WARNING: Falling back to autocomplete-only data');
 
     // Fallback to autocomplete-only if DataForSEO fails
     googleSuggestions.forEach((keyword, index) => {
@@ -665,7 +665,7 @@ const processAutocompleteKeywords = (autocompleteData, responseTime, originalKey
     });
   }
 
-  console.log(`✅ Processed ${keywords.length} keywords from Google Autocomplete`);
+  console.log(`Processed ${keywords.length} keywords from Google Autocomplete`);
 
   return {
     success: true,
@@ -1488,7 +1488,7 @@ exports.handler = async (event, context) => {
 
       // Check for required API keys
       if (!SERPER_API_KEY) {
-        console.error('❌ SERPER_API_KEY not configured');
+        console.error('SERPER_API_KEY not configured');
         return {
           statusCode: 503,
           headers,
@@ -1501,7 +1501,7 @@ exports.handler = async (event, context) => {
       }
 
       if (!DATAFORSEO_LOGIN || !DATAFORSEO_PASSWORD) {
-        console.error('❌ DataForSEO credentials not configured');
+        console.error('DataForSEO credentials not configured');
         return {
           statusCode: 503,
           headers,
@@ -1515,14 +1515,14 @@ exports.handler = async (event, context) => {
 
       try {
         // Step 1: Get real keyword suggestions from Google Autocomplete
-        console.log(`🔍 Step 1: Fetching autocomplete suggestions for "${keyword}"`);
+        console.log(`Step 1: Fetching autocomplete suggestions for "${keyword}"`);
         const autocompleteResult = await callSerperAutocompleteAPI(keyword, location);
 
         // Step 2: Enrich with real metrics from DataForSEO
-        console.log('📊 Step 2: Enriching with DataForSEO metrics...');
+        console.log('Step 2: Enriching with DataForSEO metrics...');
         const processedResult = await processHybridKeywords(autocompleteResult.data, keyword);
 
-        console.log(`✅ Returning ${processedResult.totalKeywords} keywords with real metrics`);
+        console.log(`Returning ${processedResult.totalKeywords} keywords with real metrics`);
         console.log(`   Data source: ${processedResult.dataSource}`);
         console.log(`   DataForSEO cost: $${processedResult.cost || 0}`);
 
@@ -1545,7 +1545,7 @@ exports.handler = async (event, context) => {
           })
         };
       } catch (error) {
-        console.error('❌ Hybrid keyword research failed:', error.message);
+        console.error('Hybrid keyword research failed:', error.message);
         return {
           statusCode: 500,
           headers,
@@ -2503,7 +2503,7 @@ Write the complete, detailed article now:`;
 
         // Route to appropriate provider
         if (isDataForSEO) {
-          console.log('📊 Using DataForSEO Content Generation API');
+          console.log('Using DataForSEO Content Generation API');
 
           // Extract keywords and subtopics from title
           const titleWords = title.split(' ').filter(w => w.length > 3);
@@ -2523,7 +2523,7 @@ Write the complete, detailed article now:`;
           articleContent = dataForSEOResult.content;
           apiCost = dataForSEOResult.cost;
 
-          console.log(`✅ DataForSEO generated ${dataForSEOResult.wordCount} words in ${dataForSEOResult.chunks || 1} chunk(s)`);
+          console.log(`DataForSEO generated ${dataForSEOResult.wordCount} words in ${dataForSEOResult.chunks || 1} chunk(s)`);
           console.log(`   Cost: $${apiCost.toFixed(4)}`);
         } else {
           // Make OpenRouter API request
@@ -3219,16 +3219,16 @@ Generate a professional, actionable outline that a content writer can follow to 
           const mediaId = parseInt(article.featured_media, 10);
           if (!isNaN(mediaId) && mediaId > 0) {
             postData.featured_media = mediaId;
-            console.log('✅ Setting featured_media:', postData.featured_media, 'Type:', typeof postData.featured_media);
+            console.log('Setting featured_media:', postData.featured_media, 'Type:', typeof postData.featured_media);
           } else {
-            console.log('❌ Invalid featured_media ID after parseInt:', {
+            console.log('Invalid featured_media ID after parseInt:', {
               original: article.featured_media,
               parsed: mediaId,
               isNaN: isNaN(mediaId)
             });
           }
         } else {
-          console.log('❌ No valid featured_media:', {
+          console.log('No valid featured_media:', {
             value: article.featured_media,
             hasValue: !!article.featured_media,
             isPositive: article.featured_media > 0
@@ -3263,7 +3263,7 @@ Generate a professional, actionable outline that a content writer can follow to 
           const responseData = await publishResponse.json();
 
           // Log what WordPress actually returned
-          console.log('✅ WordPress response:', {
+          console.log('WordPress response:', {
             id: responseData.id,
             link: responseData.link,
             featured_media: responseData.featured_media,
@@ -3615,13 +3615,13 @@ Generate a professional, actionable outline that a content writer can follow to 
               const createdPage = await createResponse.json();
               createdPages.push({ key, id: createdPage.id, title: pageData.title });
               pagesCreated++;
-              console.log(`✅ Created page: ${pageData.title} (ID: ${createdPage.id})`);
+              console.log(`Created page: ${pageData.title} (ID: ${createdPage.id})`);
             } else {
               const errorData = await createResponse.json();
-              console.warn(`⚠️ Failed to create ${pageData.title}:`, errorData.message);
+              console.warn(`WARNING: Failed to create ${pageData.title}:`, errorData.message);
             }
           } catch (error) {
-            console.warn(`⚠️ Error creating ${pageData.title}:`, error.message);
+            console.warn(`WARNING: Error creating ${pageData.title}:`, error.message);
           }
         }
 
@@ -3771,7 +3771,8 @@ Generate a professional, actionable outline that a content writer can follow to 
         const baseUrl = url.replace(/\/$/, '');
         const postsUrl = `${baseUrl}/wp-json/wp/v2/posts?per_page=${perPage}&page=${page}&_embed`;
 
-        console.log(`Fetching WordPress posts from: ${postsUrl}`);
+        console.log(`Fetching WordPress posts from: ${baseUrl}`);
+        console.log(`Username: ${username.substring(0, 3)}***`);
 
         const response = await fetch(postsUrl, {
           method: 'GET',
@@ -3780,6 +3781,8 @@ Generate a professional, actionable outline that a content writer can follow to 
             'Content-Type': 'application/json'
           }
         });
+
+        console.log(`Response status: ${response.status} ${response.statusText}`);
 
         if (response.ok) {
           const posts = await response.json();
@@ -3804,7 +3807,7 @@ Generate a professional, actionable outline that a content writer can follow to 
             source: post.meta?._generated_by === 'ContentFlow' ? 'contentflow' : 'wordpress'
           }));
 
-          console.log(`✅ Fetched ${formattedPosts.length} posts (page ${page}/${totalPages})`);
+          console.log(`Fetched ${formattedPosts.length} posts (page ${page}/${totalPages})`);
 
           return {
             statusCode: 200,
@@ -3822,14 +3825,25 @@ Generate a professional, actionable outline that a content writer can follow to 
           };
         } else {
           const errorText = await response.text();
-          console.error('WordPress fetch error:', errorText);
+          console.error('WordPress fetch error:', response.status, errorText);
+
+          let errorMessage = `Failed to fetch posts: ${response.status}`;
+          if (response.status === 401) {
+            errorMessage = 'Authentication failed. Please check your WordPress username and Application Password. Make sure the Application Password is active and has not been revoked.';
+          } else if (response.status === 403) {
+            errorMessage = 'Access forbidden. Your WordPress user account may not have sufficient permissions to access posts.';
+          } else if (response.status === 404) {
+            errorMessage = 'WordPress REST API not found. Please verify the blog URL is correct and the REST API is enabled.';
+          }
+
           return {
             statusCode: 200,
             headers,
             body: JSON.stringify({
               success: false,
-              message: `Failed to fetch posts: ${response.status}`,
-              details: errorText
+              message: errorMessage,
+              details: errorText,
+              httpStatus: response.status
             })
           };
         }
@@ -3874,10 +3888,10 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
 
       try {
-        console.log(`📊 DataforSEO Section: ${sectionType} - ${wordCount} words`);
-        console.log(`📊 Topic: ${topic.substring(0, 100)}...`);
+        console.log(`DataforSEO Section: ${sectionType} - ${wordCount} words`);
+        console.log(`Topic: ${topic.substring(0, 100)}...`);
         if (previousContext) {
-          console.log(`📚 Context provided: ${previousContext.substring(0, 200)}...`);
+          console.log(`Context provided: ${previousContext.substring(0, 200)}...`);
         }
 
         const result = await generateSingleDataForSEOContent(
@@ -3893,7 +3907,7 @@ Generate a professional, actionable outline that a content writer can follow to 
           }
         );
 
-        console.log(`✅ Section generated: ${result.content.split(/\s+/).length} words, $${result.cost.toFixed(4)}`);
+        console.log(`Section generated: ${result.content.split(/\s+/).length} words, $${result.cost.toFixed(4)}`);
 
         return {
           statusCode: 200,

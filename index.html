@@ -1288,10 +1288,10 @@
 
                     if (typeof supabase !== 'undefined' && supabase.createClient) {
                         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                        console.log('✅ Supabase client initialized successfully');
+                        console.log(' Supabase client initialized successfully');
                         return true;
                     } else {
-                        console.warn('⚠️ Supabase library not loaded');
+                        console.warn('WARNING: Supabase library not loaded');
                         return false;
                     }
                 } else {
@@ -1299,7 +1299,7 @@
                     return false;
                 }
             } catch (error) {
-                console.error('❌ Error initializing Supabase client:', error);
+                console.error('Error initializing Supabase client:', error);
                 return false;
             }
         }
@@ -1409,7 +1409,7 @@
                     return { success: false, error: 'User not logged in' };
                 }
                 try {
-                    console.log('🗑️ Deleting all articles for user:', currentUser.id);
+                    console.log('🗑 Deleting all articles for user:', currentUser.id);
 
                     // First get count of articles to delete
                     const { data: articles, error: countError } = await supabaseClient
@@ -1420,7 +1420,7 @@
                     if (countError) throw countError;
 
                     const count = articles?.length || 0;
-                    console.log(`📊 Found ${count} articles to delete`);
+                    console.log(` Found ${count} articles to delete`);
 
                     if (count === 0) {
                         return { success: true, count: 0, message: 'No articles to delete' };
@@ -1434,10 +1434,10 @@
 
                     if (error) throw error;
 
-                    console.log(`✅ Successfully deleted ${count} articles`);
+                    console.log(` Successfully deleted ${count} articles`);
                     return { success: true, count };
                 } catch (error) {
-                    console.error('❌ Error deleting all articles:', error);
+                    console.error('Error deleting all articles:', error);
                     return { success: false, error: error.message };
                 }
             },
@@ -4433,7 +4433,7 @@
             try {
                 // SIMPLE APPROACH: Create outline locally with EXACT title preservation
                 // No AI involved - just structure the outline sections
-                console.log('📝 Generating outline for:', keyword);
+                console.log(' Generating outline for:', keyword);
 
                 const outline = {
                     title: keyword, // USE EXACT ARTICLE IDEA TITLE - NO AI MODIFICATION
@@ -4489,7 +4489,7 @@
                     authoritySourcesNeeded: ['Research studies', 'Expert opinions', 'Industry data']
                 };
 
-                console.log('✅ Outline created with EXACT title:', outline.title);
+                console.log(' Outline created with EXACT title:', outline.title);
 
                 // Display the generated outline after a short delay
                 setTimeout(() => {
@@ -7704,12 +7704,41 @@
                     try {
                         const articles = await getAllArticlesForBlog(blog);
 
+                        // Calculate global blog statistics
+                        const globalStats = await calculateGlobalBlogStats(blog, articles);
+
                         articlesHTML += `
                             <div style="margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                     <h3 style="margin: 0; color: #1e293b; font-size: 18px;">${blog.name}</h3>
                                     <span style="color: #64748b; font-size: 13px;">${articles.length} article${articles.length !== 1 ? 's' : ''}</span>
                                 </div>
+
+                                ${globalStats.needsGASetup ? `
+                                    <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 16px; border-radius: 8px; margin-bottom: 15px;">
+                                        <div style="font-weight: 600; color: #92400e; margin-bottom: 8px; font-size: 14px;">Analytics Integration Required</div>
+                                        <div style="font-size: 13px; color: #78350f; margin-bottom: 10px;">Install Site Kit by Google to view real traffic data for your blog.</div>
+                                        <div style="font-size: 12px; color: #78350f; background: white; padding: 8px; border-radius: 4px; margin-top: 8px;">
+                                            <strong>Setup Instructions:</strong><br>
+                                            1. Install Site Kit plugin from WordPress.org<br>
+                                            2. Connect your Google Analytics account<br>
+                                            3. Refresh this page to see live traffic data
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <!-- Global Blog Statistics -->
+                                    <div style="background: white; padding: 16px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 12px; font-size: 14px;">Overall Blog Traffic</div>
+                                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
+                                            ${generateGlobalStatCard('30 Days', globalStats.days30)}
+                                            ${generateGlobalStatCard('60 Days', globalStats.days60)}
+                                            ${generateGlobalStatCard('90 Days', globalStats.days90)}
+                                            ${generateGlobalStatCard('6 Months', globalStats.months6)}
+                                            ${generateGlobalStatCard('1 Year', globalStats.year1)}
+                                        </div>
+                                    </div>
+                                `}
+
                                 ${articles.length === 0 ? `
                                     <p style="color: #64748b; text-align: center; padding: 20px;">This blog hasn't published any articles yet.</p>
                                 ` : await generatePublishedArticlesList(articles, blog.id)}
@@ -7744,22 +7773,7 @@
 
         // Generate HTML for list of published articles with traffic stats
         async function generatePublishedArticlesList(articles, blogId) {
-            let html = '';
-
-            // Check if we need GA setup (first article check)
-            const firstArticleStats = articles.length > 0 ? await calculateTrafficStats(blogId, articles[0].id, articles[0].url) : null;
-            const needsGASetup = firstArticleStats?.needsGASetup;
-
-            if (needsGASetup && articles.length > 0) {
-                html += `
-                    <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                        <div style="font-weight: 600; color: #92400e; margin-bottom: 4px;">Analytics Integration Required</div>
-                        <div style="font-size: 13px; color: #78350f;">Connect Google Analytics to view real traffic data for your articles.</div>
-                    </div>
-                `;
-            }
-
-            html += '<div style="display: flex; flex-direction: column; gap: 12px;">';
+            let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
 
             for (const article of articles) {
                 // Get traffic stats
@@ -7826,11 +7840,117 @@
             `;
         }
 
-        // Get real traffic stats for an article from Google Analytics
+        // Generate global blog stat card (similar but styled for blog-level overview)
+        function generateGlobalStatCard(period, stats) {
+            // If no data available, show setup message
+            if (stats.views === null || stats.views === undefined) {
+                return `
+                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; text-align: center;">
+                        <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">${period}</div>
+                        <div style="color: #94a3b8; font-size: 13px; font-weight: 500;">No Data</div>
+                    </div>
+                `;
+            }
+
+            const trendColor = stats.change >= 0 ? '#10b981' : '#ef4444';
+            const trendSymbol = stats.change >= 0 ? '↑' : '↓';
+            const changeText = stats.change >= 0 ? `+${stats.change}%` : `${stats.change}%`;
+
+            return `
+                <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 12px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0;">
+                    <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">${period}</div>
+                    <div style="color: #1e293b; font-size: 20px; font-weight: 700; margin-bottom: 3px;">${stats.views.toLocaleString()}</div>
+                    <div style="color: ${trendColor}; font-size: 12px; font-weight: 600;">${trendSymbol} ${changeText}</div>
+                </div>
+            `;
+        }
+
+        // Calculate global blog statistics by aggregating all articles
+        async function calculateGlobalBlogStats(blog, articles) {
+            try {
+                if (articles.length === 0) {
+                    return {
+                        needsGASetup: true,
+                        days30: { views: null, change: null },
+                        days60: { views: null, change: null },
+                        days90: { views: null, change: null },
+                        months6: { views: null, change: null },
+                        year1: { views: null, change: null }
+                    };
+                }
+
+                // Attempt to fetch from Site Kit Analytics module for entire blog
+                const siteKitResponse = await fetch(`${blog.url}/wp-json/google-site-kit/v1/modules/analytics-4/data/report`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(`${blog.username}:${blog.password}`),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        // No URL specified = entire site stats
+                        metrics: [{ name: 'screenPageViews' }],
+                        dimensions: [{ name: 'date' }],
+                        startDate: '365daysAgo',
+                        endDate: 'today'
+                    })
+                });
+
+                if (siteKitResponse.ok) {
+                    const siteKitData = await siteKitResponse.json();
+                    return processSiteKitData(siteKitData);
+                }
+
+                // If Site Kit not available, show setup message
+                return {
+                    needsGASetup: true,
+                    days30: { views: null, change: null },
+                    days60: { views: null, change: null },
+                    days90: { views: null, change: null },
+                    months6: { views: null, change: null },
+                    year1: { views: null, change: null }
+                };
+            } catch (error) {
+                console.error('Error fetching global blog stats:', error.message);
+                return { needsGASetup: true };
+            }
+        }
+
+        // Get real traffic stats for an article from Site Kit / Google Analytics
         async function calculateTrafficStats(blogId, postId, articleUrl) {
             try {
-                // For now, return placeholder that indicates real data is needed
-                // This will be populated when Google Analytics is connected
+                // Try to fetch from Site Kit first
+                const blogsResult = await SupabaseService.loadBlogs();
+                if (!blogsResult.success) {
+                    throw new Error('Could not load blog credentials');
+                }
+
+                const blog = blogsResult.data.find(b => b.id === blogId);
+                if (!blog) {
+                    throw new Error('Blog not found');
+                }
+
+                // Attempt to fetch from Site Kit Analytics module
+                const siteKitResponse = await fetch(`${blog.url}/wp-json/google-site-kit/v1/modules/analytics-4/data/report`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(`${blog.username}:${blog.password}`),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: articleUrl,
+                        metrics: [{ name: 'screenPageViews' }],
+                        dimensions: [{ name: 'date' }],
+                        startDate: '365daysAgo',
+                        endDate: 'today'
+                    })
+                });
+
+                if (siteKitResponse.ok) {
+                    const siteKitData = await siteKitResponse.json();
+                    return processSiteKitData(siteKitData);
+                }
+
+                // If Site Kit not available, show setup message
                 return {
                     days30: { views: null, change: null },
                     days60: { views: null, change: null },
@@ -7840,7 +7960,7 @@
                     needsGASetup: true
                 };
             } catch (error) {
-                console.error('Error fetching traffic stats:', error);
+                console.error('Error fetching traffic stats:', error.message);
                 return {
                     days30: { views: null, change: null },
                     days60: { views: null, change: null },
@@ -7852,12 +7972,82 @@
             }
         }
 
+        // Process Site Kit analytics data into our format
+        function processSiteKitData(data) {
+            try {
+                // Extract daily views from Site Kit response
+                const rows = data.rows || [];
+                const now = new Date();
+
+                // Calculate views for different periods
+                const get30DaysAgo = () => new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+                const get60DaysAgo = () => new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+                const get90DaysAgo = () => new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+                const get180DaysAgo = () => new Date(now.getTime() - (180 * 24 * 60 * 60 * 1000));
+
+                const viewsLast30 = sumViewsForPeriod(rows, get30DaysAgo(), now);
+                const viewsPrev30 = sumViewsForPeriod(rows, get60DaysAgo(), get30DaysAgo());
+                const viewsLast60 = sumViewsForPeriod(rows, get60DaysAgo(), now);
+                const viewsLast90 = sumViewsForPeriod(rows, get90DaysAgo(), now);
+                const viewsLast180 = sumViewsForPeriod(rows, get180DaysAgo(), now);
+
+                return {
+                    days30: {
+                        views: viewsLast30,
+                        change: calculateChange(viewsLast30, viewsPrev30)
+                    },
+                    days60: {
+                        views: viewsLast60,
+                        change: calculateChange(viewsLast60, viewsLast30)
+                    },
+                    days90: {
+                        views: viewsLast90,
+                        change: calculateChange(viewsLast90, viewsLast60)
+                    },
+                    months6: {
+                        views: viewsLast180,
+                        change: calculateChange(viewsLast180, viewsLast90)
+                    },
+                    year1: {
+                        views: rows.reduce((sum, row) => sum + (parseInt(row.metricValues?.[0]?.value || 0)), 0),
+                        change: 0
+                    },
+                    needsGASetup: false
+                };
+            } catch (error) {
+                console.error('Error processing Site Kit data:', error.message);
+                return {
+                    days30: { views: null, change: null },
+                    days60: { views: null, change: null },
+                    days90: { views: null, change: null },
+                    months6: { views: null, change: null },
+                    year1: { views: null, change: null },
+                    needsGASetup: true
+                };
+            }
+        }
+
+        function sumViewsForPeriod(rows, startDate, endDate) {
+            return rows.reduce((sum, row) => {
+                const rowDate = new Date(row.dimensionValues[0].value);
+                if (rowDate >= startDate && rowDate <= endDate) {
+                    return sum + parseInt(row.metricValues[0].value || 0);
+                }
+                return sum;
+            }, 0);
+        }
+
+        function calculateChange(current, previous) {
+            if (!previous || previous === 0) return 0;
+            return Math.round(((current - previous) / previous) * 100);
+        }
+
         // ===== INTERNAL LINKING SYSTEM =====
 
         // Add internal links to article content based on all articles (published + existing WordPress)
         async function addInternalLinksToArticle(articleContent) {
             if (!currentUser) {
-                console.log('⚠️ User not logged in, skipping internal linking');
+                console.log('WARNING: User not logged in, skipping internal linking');
                 return articleContent;
             }
 
@@ -7866,17 +8056,17 @@
                 const allArticles = await getAllArticlesForLinking();
 
                 if (!allArticles || allArticles.length === 0) {
-                    console.log('📝 No articles found for internal linking');
+                    console.log(' No articles found for internal linking');
                     return articleContent;
                 }
 
-                console.log(`🔗 Found ${allArticles.length} total articles for internal linking`);
+                console.log(` Found ${allArticles.length} total articles for internal linking`);
 
                 // Use AI to suggest relevant internal links
                 const linksToAdd = await suggestInternalLinks(articleContent, allArticles);
 
                 if (!linksToAdd || linksToAdd.length === 0) {
-                    console.log('✅ No relevant internal links found');
+                    console.log(' No relevant internal links found');
                     return articleContent;
                 }
 
@@ -7886,10 +8076,10 @@
                     updatedContent = insertInternalLink(updatedContent, link);
                 });
 
-                console.log(`✅ Added ${linksToAdd.length} internal links to article`);
+                console.log(` Added ${linksToAdd.length} internal links to article`);
                 return updatedContent;
             } catch (error) {
-                console.error('❌ Error adding internal links:', error);
+                console.error('Error adding internal links:', error);
                 return articleContent; // Return original content on error
             }
         }
@@ -7970,7 +8160,7 @@ Return ONLY the JSON array, no other text.`;
                     };
                 }).filter(link => link !== null);
 
-                console.log(`🎯 AI suggested ${links.length} internal links:`, links);
+                console.log(` AI suggested ${links.length} internal links:`, links);
                 return links;
             } catch (error) {
                 console.error('Error suggesting internal links:', error);
@@ -8015,7 +8205,7 @@ Return ONLY the JSON array, no other text.`;
                 // Replace first occurrence of anchor text with link
                 const linkHTML = `<a href="${link.url}" target="_blank" rel="noopener" title="${link.title}">${link.anchorText}</a>`;
                 articleContent.introduction = articleContent.introduction.replace(link.anchorText, linkHTML);
-                console.log(`🔗 Added link: "${link.anchorText}" -> ${link.url}`);
+                console.log(` Added link: "${link.anchorText}" -> ${link.url}`);
             } else if (articleContent.sections && Array.isArray(articleContent.sections)) {
                 // Try to find anchor text in sections
                 for (let i = 0; i < articleContent.sections.length; i++) {
@@ -8023,7 +8213,7 @@ Return ONLY the JSON array, no other text.`;
                     if (section.content && section.content.includes(link.anchorText)) {
                         const linkHTML = `<a href="${link.url}" target="_blank" rel="noopener" title="${link.title}">${link.anchorText}</a>`;
                         section.content = section.content.replace(link.anchorText, linkHTML);
-                        console.log(`🔗 Added link in section ${i + 1}: "${link.anchorText}" -> ${link.url}`);
+                        console.log(` Added link in section ${i + 1}: "${link.anchorText}" -> ${link.url}`);
                         break; // Only add once
                     }
                 }
@@ -8058,7 +8248,7 @@ Return ONLY the JSON array, no other text.`;
         // Fetch all WordPress posts from a blog
         async function fetchWordPressArticles(blog) {
             try {
-                console.log(`🔄 Fetching WordPress articles from ${blog.name}...`);
+                console.log(`Fetching WordPress articles from ${blog.name}...`);
 
                 const response = await fetch('/api/wordpress-fetch-posts', {
                     method: 'POST',
@@ -8072,19 +8262,18 @@ Return ONLY the JSON array, no other text.`;
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch: ${response.status}`);
-                }
-
                 const data = await response.json();
-                if (!data.success) {
-                    throw new Error(data.message || 'Failed to fetch articles');
+
+                if (!response.ok || !data.success) {
+                    // Use the detailed error message from the backend
+                    const errorMsg = data.message || `HTTP ${response.status}`;
+                    throw new Error(errorMsg);
                 }
 
-                console.log(`✅ Fetched ${data.posts.length} articles from WordPress`);
+                console.log(`Fetched ${data.posts.length} articles from ${blog.name}`);
                 return data.posts;
             } catch (error) {
-                console.error(`❌ Error fetching WordPress articles:`, error);
+                console.error(`Error fetching articles from ${blog.name}:`, error.message);
                 throw error;
             }
         }
@@ -8136,7 +8325,7 @@ Return ONLY the JSON array, no other text.`;
                 // Sort by date (newest first)
                 allArticles.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                console.log(`📊 Total articles for ${blog.name}: ${allArticles.length} (${appPublishedArticles.length} from app, ${allArticles.length - appPublishedArticles.length} from WordPress)`);
+                console.log(` Total articles for ${blog.name}: ${allArticles.length} (${appPublishedArticles.length} from app, ${allArticles.length - appPublishedArticles.length} from WordPress)`);
 
                 return allArticles;
             } catch (error) {
@@ -8164,7 +8353,7 @@ Return ONLY the JSON array, no other text.`;
                     }
                 }
 
-                console.log(`🔗 Total articles available for internal linking: ${allArticles.length}`);
+                console.log(` Total articles available for internal linking: ${allArticles.length}`);
                 return allArticles;
             } catch (error) {
                 console.error('Error getting all articles for linking:', error);
@@ -8704,7 +8893,7 @@ Return ONLY the JSON array, no other text.`;
             }
 
             try {
-                console.log('🗑️ User confirmed - deleting all articles...');
+                console.log('🗑 User confirmed - deleting all articles...');
 
                 // Show loading state
                 const savedArticlesLibrary = document.getElementById('savedArticlesLibrary');
@@ -8721,7 +8910,7 @@ Return ONLY the JSON array, no other text.`;
                 const result = await SupabaseService.deleteAllArticles();
 
                 if (result.success) {
-                    console.log(`✅ Successfully deleted ${result.count} articles`);
+                    console.log(` Successfully deleted ${result.count} articles`);
 
                     // Show success message
                     savedArticlesLibrary.innerHTML = `
@@ -8742,7 +8931,7 @@ Return ONLY the JSON array, no other text.`;
                     throw new Error(result.error || 'Failed to delete articles');
                 }
             } catch (error) {
-                console.error('❌ Error deleting all articles:', error);
+                console.error('Error deleting all articles:', error);
                 alert('Failed to delete all articles: ' + error.message);
                 // Reload to show current state
                 showSavedArticlesLibrary();
@@ -9013,7 +9202,7 @@ Return ONLY the JSON array, no other text.`;
         // Auto-track blog metrics when a blog is added
         async function autoTrackBlogMetrics(url, blogName) {
             try {
-                console.log(`📊 Auto-tracking metrics for: ${url}`);
+                console.log(` Auto-tracking metrics for: ${url}`);
 
                 // Call the backend API to fetch website metrics
                 const response = await fetch('/.netlify/functions/api', {
@@ -9044,11 +9233,11 @@ Return ONLY the JSON array, no other text.`;
                         if (error) {
                             console.error('Error saving metrics to database:', error);
                         } else {
-                            console.log('✅ Website metrics tracked and saved successfully');
+                            console.log(' Website metrics tracked and saved successfully');
                         }
                     }
                 } else {
-                    console.warn('⚠️ Could not fetch website metrics:', data.message);
+                    console.warn('WARNING: Could not fetch website metrics:', data.message);
                 }
             } catch (error) {
                 console.error('Error auto-tracking blog metrics:', error);
@@ -9231,7 +9420,7 @@ Return ONLY the JSON array, no other text.`;
                     throw new Error('Blog not found in database');
                 }
 
-                console.log('✅ Blog loaded:', { name: blog.name, url: blog.url });
+                console.log(' Blog loaded:', { name: blog.name, url: blog.url });
 
                 // Decode credentials
                 const username = atob(blog.username);
@@ -9243,7 +9432,7 @@ Return ONLY the JSON array, no other text.`;
                 // Create fetch with timeout
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => {
-                    console.error('⏱️ Request timed out after 30 seconds');
+                    console.error('Request timed out after 30 seconds');
                     controller.abort();
                 }, 30000); // 30 second timeout
 
@@ -9263,11 +9452,11 @@ Return ONLY the JSON array, no other text.`;
 
                     clearTimeout(timeoutId);
 
-                    console.log('📡 Response status:', response.status);
+                    console.log('Response status:', response.status);
 
                     if (!response.ok) {
                         const errorText = await response.text();
-                        console.error('❌ Response not OK:', errorText);
+                        console.error('Response not OK:', errorText);
                         throw new Error(`Server returned ${response.status}: ${response.statusText}`);
                     }
 
@@ -9281,7 +9470,7 @@ Return ONLY the JSON array, no other text.`;
                     }
 
                     if (testResult.success) {
-                        console.log('✅ Connection successful!');
+                        console.log(' Connection successful!');
 
                         // Update blog status in Supabase
                         await supabaseClient
@@ -9315,7 +9504,7 @@ Return ONLY the JSON array, no other text.`;
                 }
 
             } catch (error) {
-                console.error('❌ Blog connection test error:', error);
+                console.error('Blog connection test error:', error);
                 console.error('Error stack:', error.stack);
 
                 // Restore button on error
@@ -9531,7 +9720,7 @@ Return ONLY the JSON array, no other text.`;
                         });
                     }
 
-                    console.log(`🗑️ Cleared all cached data for deleted blog: ${blogId}`);
+                    console.log(`🗑 Cleared all cached data for deleted blog: ${blogId}`);
 
                     alert('✅ Blog deleted successfully!\n\nAll cached data has been cleared.');
                     displayBlogManagement();
@@ -10402,7 +10591,7 @@ Return ONLY the JSON array, no other text.`;
             const bodyWords = wordCount - introWords - conclusionWords;
             const wordsPerSection = Math.floor(bodyWords / numSections);
 
-            console.log(`📊 Article structure: ${wordCount} words = ${numSections} sections, ${wordsPerSection} words/section`);
+            console.log(` Article structure: ${wordCount} words = ${numSections} sections, ${wordsPerSection} words/section`);
 
             // Build stage names dynamically
             const stages = [
@@ -10482,7 +10671,7 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                 const outlineData = await outlineResponse.json();
                 // OpenRouter returns in OpenAI format: choices[0].message.content
                 const outlineContent = outlineData.choices?.[0]?.message?.content || outlineData.content || '';
-                console.log('📝 Outline response:', outlineContent.substring(0, 200));
+                console.log(' Outline response:', outlineContent.substring(0, 200));
 
                 // Parse outline into section titles
                 const outlineTitles = outlineContent
@@ -10508,14 +10697,14 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                 if (outlineTitles.length >= numSections) {
                     sectionTitles = outlineTitles.slice(0, numSections);
                 } else {
-                    console.warn(`⚠️ Only got ${outlineTitles.length} titles from outline, need ${numSections}. Using defaults.`);
+                    console.warn(`WARNING:Only got ${outlineTitles.length} titles from outline, need ${numSections}. Using defaults.`);
                     sectionTitles = defaultTitles.slice(0, numSections);
                 }
 
                 // Validate all titles are defined strings
                 sectionTitles = sectionTitles.map((title, index) => {
                     if (!title || typeof title !== 'string' || title.trim().length === 0) {
-                        console.warn(`⚠️ Invalid title at index ${index}, using default`);
+                        console.warn(`WARNING:Invalid title at index ${index}, using default`);
                         return defaultTitles[index] || `Section ${index + 1}`;
                     }
                     return title.trim();
@@ -10534,7 +10723,7 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                     `Introduction to ${keyword}. When referencing research, cite sources using [Author et al., Year] format. Mention key findings and conclusions.` // Description with citation instructions
                 );
                 updateProgressStage(stageIndex++, '✓ Introduction complete');
-                console.log(`✅ Introduction: ${introduction.split(/\s+/).length} words`);
+                console.log(` Introduction: ${introduction.split(/\s+/).length} words`);
 
                 // Step 3: Generate body sections with context
                 const sections = [];
@@ -10582,7 +10771,7 @@ When referencing clinical studies, scientific papers, or research findings:
                     });
 
                     updateProgressStage(stageIndex++, `✓ ${sectionTitle.substring(0, 20)}...`);
-                    console.log(`✅ Section ${i + 1}: ${sectionContent.split(/\s+/).length} words`);
+                    console.log(` Section ${i + 1}: ${sectionContent.split(/\s+/).length} words`);
                 }
 
                 // Step 4: Generate conclusion
@@ -10595,7 +10784,7 @@ When referencing clinical studies, scientific papers, or research findings:
                     `Write a conclusion summarizing the key points about ${title}. Use only flowing paragraphs without any headers or section titles.` // Description
                 );
                 updateProgressStage(stageIndex++, '✓ Conclusion complete');
-                console.log(`✅ Conclusion: ${conclusion.split(/\s+/).length} words`);
+                console.log(` Conclusion: ${conclusion.split(/\s+/).length} words`);
 
                 // Step 5: Generate FAQ using OpenRouter (better for structured Q&A format)
                 progress.updateMessage('❓ Generating FAQ section...');
@@ -10643,10 +10832,10 @@ Return ONLY the JSON array, no other text or markdown.`;
                                 // Validate the parsed FAQ
                                 if (Array.isArray(parsed) && parsed.length > 0) {
                                     faq = parsed.filter(item => item.question && item.answer);
-                                    console.log(`✅ Parsed ${faq.length} FAQ items`);
+                                    console.log(` Parsed ${faq.length} FAQ items`);
                                 }
                             } else {
-                                console.warn('⚠️ No JSON array found in FAQ response');
+                                console.warn('WARNING: No JSON array found in FAQ response');
                             }
                         } catch (e) {
                             console.error('Failed to parse FAQ JSON:', e.message);
@@ -10661,7 +10850,7 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                 // Fallback if FAQ generation failed
                 if (faq.length === 0) {
-                    console.warn('⚠️ Using fallback FAQ - generation failed');
+                    console.warn('WARNING: Using fallback FAQ - generation failed');
                     faq = [
                         { question: `What is ${keyword}?`, answer: `${keyword} refers to the main topic discussed in this article. It covers important aspects that can help you understand and apply this knowledge effectively.` },
                         { question: `Why is understanding ${keyword} important?`, answer: `Understanding ${keyword} is crucial for making informed decisions. The research and evidence presented in this article highlight its significance for health and well-being.` },
@@ -10672,7 +10861,7 @@ Return ONLY the JSON array, no other text or markdown.`;
                 }
 
                 updateProgressStage(stageIndex++, '✓ FAQ complete');
-                console.log(`✅ FAQ generated: ${faq.length} questions`);
+                console.log(` FAQ generated: ${faq.length} questions`);
 
                 // Step 6: Extract citations and generate References section
                 progress.updateMessage('Extracting citations and generating references...');
@@ -10861,7 +11050,7 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                 updateProgressStage(stageIndex, '✓ Article complete');
                 progress.updateMessage('🎉 Article generation complete!');
-                console.log(`🎯 Total SEO Pro Cost: $${totalCost.toFixed(4)}`);
+                console.log(` Total SEO Pro Cost: $${totalCost.toFixed(4)}`);
                 await new Promise(resolve => setTimeout(resolve, 500));
 
                 progress.close();
@@ -11457,7 +11646,7 @@ Key points: ${introData.keyPoints.join(', ')}
 Write ${introWords} words of engaging, informative content. Use double line breaks between paragraphs. Return ONLY the introduction text, no JSON, no markdown.`;
 
                 const introduction = await generatePhase(introPrompt, Math.floor(introWords * 2.0));
-                console.log('✅ Introduction generated:', introduction.substring(0, 100));
+                console.log(' Introduction generated:', introduction.substring(0, 100));
 
                 updateProgressStage(1, '✓ Introduction complete');
                 await new Promise(resolve => setTimeout(resolve, 200));
@@ -11508,7 +11697,7 @@ Write ${wordsPerSection} words of informative, engaging paragraphs. Use double l
                         subsections: []
                     });
 
-                    console.log(`✅ Section ${i + 1} generated:`, section.title);
+                    console.log(` Section ${i + 1} generated:`, section.title);
 
                     await new Promise(resolve => setTimeout(resolve, 200));
                 }
@@ -11536,7 +11725,7 @@ CRITICAL RULES:
 - Return ONLY the conclusion text, no JSON, no markdown, no headers`;
 
                 const conclusion = await generatePhase(conclusionPrompt, Math.floor(conclusionWords * 2.0));
-                console.log('✅ Conclusion generated:', conclusion.substring(0, 100));
+                console.log(' Conclusion generated:', conclusion.substring(0, 100));
 
                 updateProgressStage(3, '✓ Conclusion complete');
                 await new Promise(resolve => setTimeout(resolve, 200));
@@ -11561,9 +11750,9 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                     const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
                     if (jsonMatch) cleaned = jsonMatch[0];
                     faqItems = JSON.parse(cleaned);
-                    console.log('✅ FAQ generated:', faqItems.length, 'items');
+                    console.log(' FAQ generated:', faqItems.length, 'items');
                 } catch (err) {
-                    console.error('❌ Failed to parse FAQ, using fallback');
+                    console.error('Failed to parse FAQ, using fallback');
                     faqItems = (faqData.questions || []).map(q => ({
                         question: q,
                         answer: 'Answer content will be generated.'
@@ -11741,7 +11930,7 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                 }
 
                 finalArticle.metadata.actualWordCount = actualWordCount;
-                console.log('📊 Word Count:', actualWordCount, '/', targetWordCount);
+                console.log(' Word Count:', actualWordCount, '/', targetWordCount);
 
                 updateProgressStage(5, '✓ Assembly complete');
                 progress.updateMessage('✅ Article ready!');
@@ -12548,7 +12737,7 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                     console.log('👤 Humanizing article content silently...');
                     const humanizedArticle = await automaticallyHumanizeArticle(article);
                     article.content = humanizedArticle.content;
-                    console.log('✅ Content humanized successfully');
+                    console.log(' Content humanized successfully');
                 } catch (humanizeError) {
                     console.error('Humanization failed (continuing anyway):', humanizeError);
                 }
@@ -12579,8 +12768,8 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                         readability: calculateReadabilityGrade(finalContent)
                     };
 
-                    console.log('✅ Final SEO Score:', finalSEOScore);
-                    console.log('✅ Final AI Detection Score:', finalAIScore);
+                    console.log(' Final SEO Score:', finalSEOScore);
+                    console.log(' Final AI Detection Score:', finalAIScore);
 
                     updateStep(2, 'Quality check complete', 'success');
                     updateProgress(100);
@@ -12611,7 +12800,7 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
 
                 // Don't set finalScores - this will hide the quality check section
                 // Article will display without optimization scores
-                console.log('⚠️ Displaying article without optimization due to error:', error.message);
+                console.log('WARNING: Displaying article without optimization due to error:', error.message);
 
                 // Display the article silently without error message
                 displayGeneratedArticle(article, modelTier, `${modelTier} Article`);
@@ -12863,8 +13052,8 @@ OPTIMIZED VERSION (same length, better SEO):`;
 
         // Humanize a piece of content
         async function humanizeContent(text, tone, article) {
-            console.log('🔄 Humanizing content, length:', text.length);
-            console.log(`📊 Using humanization settings: Intensity=${humanizationSettings.intensity}, Temperature=${humanizationSettings.temperature}`);
+            console.log(' Humanizing content, length:', text.length);
+            console.log(` Using humanization settings: Intensity=${humanizationSettings.intensity}, Temperature=${humanizationSettings.temperature}`);
 
             // Get intensity-specific prompt style
             const preset = humanizationSettings.presets[humanizationSettings.intensity];
@@ -12899,7 +13088,7 @@ ${text}
 REWRITTEN VERSION (begin immediately with the content):`;
 
             try {
-                console.log('📡 Calling humanization API...');
+                console.log('Calling humanization API...');
                 const response = await fetch('/api/openrouter-generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -12914,7 +13103,7 @@ REWRITTEN VERSION (begin immediately with the content):`;
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    console.error('❌ Humanization API error:', response.status, errorData);
+                    console.error('Humanization API error:', response.status, errorData);
                     throw new Error(`API returned ${response.status}: ${errorData.error || 'Unknown error'}`);
                 }
 
@@ -12922,14 +13111,14 @@ REWRITTEN VERSION (begin immediately with the content):`;
                 const humanized = data.choices[0].message.content.trim();
 
                 if (humanized && humanized.length > 50) {
-                    console.log('✅ Humanization successful, new length:', humanized.length);
+                    console.log(' Humanization successful, new length:', humanized.length);
                     return humanized;
                 } else {
-                    console.warn('⚠️ Humanization returned short text, using original');
+                    console.warn('WARNING: Humanization returned short text, using original');
                     return text;
                 }
             } catch (error) {
-                console.error('❌ Humanization failed:', error.message);
+                console.error('Humanization failed:', error.message);
                 // Return original text if humanization fails - don't break the flow
                 return text;
             }
@@ -13355,7 +13544,7 @@ REWRITTEN VERSION (begin immediately with the content):`;
         async function autoSaveArticleToLibrary() {
             // Skip auto-save - article will be saved after images are added
             // This prevents duplicate saves and saves database space
-            console.log('ℹ️ Skipping auto-save - article will be saved after adding images');
+            console.log('INFO: Skipping auto-save - article will be saved after adding images');
             return;
         }
 
@@ -14831,7 +15020,7 @@ ${item.answer}
                     imageType: images
                 };
 
-                console.log('🚀 Starting article generation:', requestData);
+                console.log('Starting article generation:', requestData);
                 showDebugInfo(cleanId, index, `API Request: ${JSON.stringify(requestData, null, 2)}`);
 
                 const response = await fetch('/api/generate-article', {
@@ -14845,18 +15034,18 @@ ${item.answer}
                 // Update progress to step 2
                 updateProgress(cleanId, index, 50, 'AI is writing your article...', 3);
 
-                console.log('📡 API Response status:', response.status, response.statusText);
+                console.log('API Response status:', response.status, response.statusText);
                 showDebugInfo(cleanId, index, `Response Status: ${response.status} ${response.statusText}`);
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('❌ Article generation API error:', errorText);
+                    console.error('Article generation API error:', errorText);
                     showDebugInfo(cleanId, index, `API Error: ${errorText}`);
                     throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
                 }
 
                 const articleData = await response.json();
-                console.log('✅ Article generation response:', articleData);
+                console.log(' Article generation response:', articleData);
 
                 // Update progress to step 3
                 updateProgress(cleanId, index, 75, 'Processing article content...', 4);
@@ -14875,13 +15064,13 @@ ${item.answer}
                     }, 1000);
 
                 } else {
-                    console.error('❌ Invalid article data:', articleData);
+                    console.error('Invalid article data:', articleData);
                     showDebugInfo(cleanId, index, `Invalid Response: ${JSON.stringify(articleData, null, 2)}`);
                     throw new Error(articleData.message || 'API returned invalid article data');
                 }
 
             } catch (error) {
-                console.error('❌ Article generation error:', error);
+                console.error('Article generation error:', error);
                 showDebugInfo(cleanId, index, `Error: ${error.message}`);
 
                 // Refund credits on error
@@ -16332,7 +16521,7 @@ AI DETECTION SCORE (number only):`;
                         });
 
                         if (result.success) {
-                            console.log('✅ Article updated in Supabase');
+                            console.log(' Article updated in Supabase');
                         } else {
                             console.warn('Failed to update article in Supabase:', result.error);
                         }
@@ -16350,7 +16539,7 @@ AI DETECTION SCORE (number only):`;
 
                         if (result.success) {
                             window.currentGeneratedArticle.savedArticleId = result.data.id;
-                            console.log('✅ Article saved to Supabase');
+                            console.log(' Article saved to Supabase');
                         } else {
                             console.warn('Failed to save article to Supabase:', result.error);
                         }
@@ -16947,7 +17136,7 @@ Search Phrase:`;
                     simplified = words.slice(0, 5).join(' ');
                 }
 
-                console.log(`✅ Simplified "${keyword}" → "${simplified}"`);
+                console.log(` Simplified "${keyword}" → "${simplified}"`);
                 return simplified;
             } catch (error) {
                 console.error('❌ Error simplifying keyword:', error);
@@ -16956,7 +17145,7 @@ Search Phrase:`;
                 const skipWords = new Set(['the', 'a', 'an', 'how', 'why', 'what', 'when', 'where', 'to', 'of', 'for', 'in', 'on', 'at', 'by', 'with', 'between', 'understanding', 'exploring']);
                 const filtered = words.filter(w => !skipWords.has(w) && w.length > 2);
                 const fallback = filtered.slice(0, 5).join(' ') || keyword;
-                console.log(`⚠️ Fallback: "${keyword}" → "${fallback}"`);
+                console.log(`⚠ Fallback: "${keyword}" → "${fallback}"`);
                 return fallback;
             }
         }
@@ -17449,9 +17638,9 @@ Search Phrase:`;
             }));
             window.currentGeneratedArticle = article;
 
-            console.log('✅ Images embedded into article content');
-            console.log('📊 Total images:', article.images.length);
-            console.log('📝 Article structure updated:', {
+            console.log(' Images embedded into article content');
+            console.log(' Total images:', article.images.length);
+            console.log(' Article structure updated:', {
                 hasContent: !!article.content,
                 hasFeaturedImage: !!article.content.featuredImage,
                 sectionsCount: article.content.sections?.length || 0,
@@ -17482,7 +17671,7 @@ Search Phrase:`;
                             images: JSON.stringify(article.images),
                             updated_at: new Date().toISOString()
                         });
-                        console.log('✅ Article updated with images (ID: ' + article.savedArticleId + ')');
+                        console.log(' Article updated with images (ID: ' + article.savedArticleId + ')');
                     } else {
                         // Save as new article
                         const result = await SupabaseService.saveArticle({
@@ -17498,7 +17687,7 @@ Search Phrase:`;
                         if (result.success) {
                             article.savedArticleId = result.data.id;
                             window.currentGeneratedArticle.savedArticleId = result.data.id;
-                            console.log('✅ Article saved with images (ID: ' + result.data.id + ')');
+                            console.log(' Article saved with images (ID: ' + result.data.id + ')');
                         } else {
                             throw new Error(result.error || 'Failed to save article');
                         }
@@ -17546,10 +17735,10 @@ Search Phrase:`;
 
             // Always use the updated window.currentGeneratedArticle which has images embedded
             if (article.savedArticleId) {
-                console.log('✅ Loading from Supabase (ID: ' + article.savedArticleId + ')');
+                console.log(' Loading from Supabase (ID: ' + article.savedArticleId + ')');
                 viewSavedArticle(article.savedArticleId);
             } else {
-                console.log('✅ Displaying article with images from memory');
+                console.log(' Displaying article with images from memory');
                 // Ensure we have all the required data
                 const articleToDisplay = window.currentGeneratedArticle;
                 if (!articleToDisplay || !articleToDisplay.content) {
@@ -17629,7 +17818,7 @@ Search Phrase:`;
                         updated_at: new Date().toISOString()
                     });
 
-                    console.log('✅ Images removed and article updated (ID: ' + article.savedArticleId + ')');
+                    console.log(' Images removed and article updated (ID: ' + article.savedArticleId + ')');
 
                     // Show success message
                     alert('✅ All images have been removed from the article.\n\nThe article has been saved. You can add new images anytime.');
@@ -18244,15 +18433,15 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
             const hasBeenSetup = localStorage.getItem(blogSetupKey);
 
             if (!hasBeenSetup && blogs.length === 1) {
-                console.log('🎯 First-time blog detected - showing template setup before publish modal');
+                console.log(' First-time blog detected - showing template setup before publish modal');
                 try {
                     const wantsTemplate = await offerBlogTemplateSetup(firstBlog);
                     if (wantsTemplate) {
                         localStorage.setItem(blogSetupKey, 'true');
-                        console.log('✅ Template applied before publish');
+                        console.log(' Template applied before publish');
                     } else {
                         localStorage.setItem(blogSetupKey, 'declined');
-                        console.log('⏭️ Template declined before publish');
+                        console.log('⏭ Template declined before publish');
                     }
                 } catch (error) {
                     console.error('❌ Template setup error:', error);
@@ -18733,7 +18922,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     return;
                 }
 
-                console.log('🔗 Fetching categories from WordPress:', blog.url);
+                console.log(' Fetching categories from WordPress:', blog.url);
 
                 const username = atob(blog.username);
                 const password = atob(blog.password);
@@ -18760,7 +18949,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     categorySelect.innerHTML = '<option value="">Select a category (optional)</option>' +
                         categories.map(cat => `<option value="${cat.id}">${cat.name} (${cat.count} posts)</option>`).join('');
                     categorySelect.disabled = false;
-                    console.log(`✅ Loaded ${categories.length} categories from WordPress:`,
+                    console.log(` Loaded ${categories.length} categories from WordPress:`,
                         categories.map(c => c.name).join(', ') || 'No categories');
                 } else {
                     throw new Error(result2.message || 'Failed to load categories');
@@ -18881,7 +19070,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             // Blog has existing posts, mark as setup automatically
                             localStorage.setItem(blogSetupKey, 'existing');
                             hasBeenSetup = 'existing';
-                            console.log('✅ Blog has existing posts, marked as setup automatically');
+                            console.log(' Blog has existing posts, marked as setup automatically');
                         }
                     }
                 } catch (error) {
@@ -18898,7 +19087,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
             });
 
             if (!hasBeenSetup) {
-                console.log('⏸️ Blog not setup yet - showing template modal');
+                console.log('⏸ Blog not setup yet - showing template modal');
 
                 try {
                     // Close current modal
@@ -18912,15 +19101,15 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     if (wantsTemplate) {
                         // Template was applied, mark as setup
                         localStorage.setItem(blogSetupKey, 'true');
-                        console.log('✅ Template applied, marked as setup');
+                        console.log(' Template applied, marked as setup');
                     } else {
                         // User declined template, mark as setup anyway so we don't ask again
                         localStorage.setItem(blogSetupKey, 'declined');
-                        console.log('⏭️ Template declined, marked as declined');
+                        console.log('⏭ Template declined, marked as declined');
                     }
 
                     // Reopen publish modal to continue
-                    console.log('🔄 Reopening publish modal...');
+                    console.log(' Reopening publish modal...');
                     publishToWebsite();
                     return;
                 } catch (error) {
@@ -19059,7 +19248,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             // Download image data
                             const imgResponse = await fetch(img.url);
                             if (!imgResponse.ok) {
-                                console.warn(`⚠️ Failed to fetch image ${i + 1}:`, img.url);
+                                console.warn(`WARNING:Failed to fetch image ${i + 1}:`, img.url);
                                 continue;
                             }
 
@@ -19095,7 +19284,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                                 if (uploadedMedia.id && uploadedMedia.id > 0) {
                                     const mediaId = uploadedMedia.id;
 
-                                    console.log(`✅ Image ${i + 1} uploaded successfully:`, {
+                                    console.log(` Image ${i + 1} uploaded successfully:`, {
                                         id: mediaId,
                                         url: uploadedMedia.source_url,
                                         title: uploadedMedia.title?.rendered,
@@ -19119,12 +19308,12 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                                         });
 
                                         if (updateAltResponse.ok) {
-                                            console.log(`✅ Alt text set for image ${i + 1}:`, altText);
+                                            console.log(` Alt text set for image ${i + 1}:`, altText);
                                         } else {
-                                            console.warn(`⚠️ Failed to set alt text for image ${i + 1}`);
+                                            console.warn(`WARNING:Failed to set alt text for image ${i + 1}`);
                                         }
                                     } catch (altError) {
-                                        console.warn(`⚠️ Error setting alt text for image ${i + 1}:`, altError);
+                                        console.warn(`WARNING:Error setting alt text for image ${i + 1}:`, altError);
                                     }
 
                                     uploadedImages.push({
@@ -19268,7 +19457,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         });
 
                         if (sectionImageData) {
-                            console.log(`✅ Inserting image after section ${index} title`);
+                            console.log(` Inserting image after section ${index} title`);
                             htmlContent += `<!-- wp:image {"id":${sectionImageData.id},"align":"center","sizeSlug":"large"} -->\n`;
                             htmlContent += `<figure class="wp-block-image aligncenter size-large">`;
                             htmlContent += `<img src="${sectionImageData.url}" alt="${sectionImageData.alt}" class="wp-image-${sectionImageData.id}"/>`;
@@ -19364,7 +19553,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     throw new Error('Article content is empty or malformed. Cannot publish.');
                 }
 
-                console.log('📝 Article content built:', {
+                console.log(' Article content built:', {
                     contentLength: htmlContent.length,
                     hasImages: uploadedImages.length > 0,
                     imageCount: uploadedImages.length,
@@ -19442,7 +19631,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                 // Critical validation before sending
                 if (publishData.article.featured_media) {
-                    console.log('✅ FEATURED IMAGE WILL BE SET:', {
+                    console.log(' FEATURED IMAGE WILL BE SET:', {
                         id: publishData.article.featured_media,
                         isValid: publishData.article.featured_media > 0,
                         type: typeof publishData.article.featured_media
@@ -19463,10 +19652,10 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     body: JSON.stringify(publishData)
                 });
 
-                console.log('📡 WordPress API response status:', response.status);
+                console.log('WordPress API response status:', response.status);
 
                 const result = await response.json();
-                console.log('📡 WordPress API response:', result);
+                console.log('WordPress API response:', result);
 
                 progressBar.style.width = '100%';
 
@@ -20023,7 +20212,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             console.log('Ideas count:', data.ideas ? data.ideas.length : 0);
 
                             if (data.success && data.ideas && data.ideas.length > 0) {
-                                console.log('✅ Success! Displaying ideas...');
+                                console.log(' Success! Displaying ideas...');
                                 // Update progress to completion
                                 updateIdeasProgress(100, 'Formatting results...', '✅ Ideas generated successfully');
 
@@ -20257,7 +20446,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 </div>
             `;
 
-            console.log('📝 Displayed article ideas with Save buttons. Ideas count:', ideas.length);
+            console.log(' Displayed article ideas with Save buttons. Ideas count:', ideas.length);
 
             // Update the button to show success state
             const button = document.getElementById(`ideas-btn-${cleanId}`);
@@ -20899,7 +21088,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 });
             }
 
-            console.log('✅ Enter key handlers initialized');
+            console.log(' Enter key handlers initialized');
         }
 
         // Individual Image Management
