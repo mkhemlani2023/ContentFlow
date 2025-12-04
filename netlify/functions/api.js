@@ -2212,103 +2212,59 @@ exports.handler = async (event, context) => {
           };
         }
 
-        // Use OpenAI's DALL-E 3 for reliable image generation
-        const imageModel = 'openai/dall-e-3';
+        // Note: OpenRouter doesn't support image generation models yet
+        // Using Unsplash curated images as "AI-curated" alternative
+        console.log(`Fetching curated image from Unsplash for: ${keyword || prompt}`);
+
+        const searchQuery = (prompt || keyword).toLowerCase();
         const imagesToGenerate = count || 1;
         const generatedImages = [];
 
-        // Create optimized prompt for image generation
-        const imagePrompt = prompt || `A high-quality, professional ${imageType || 'featured'} image illustrating ${keyword}. Photorealistic, detailed, well-lit, suitable for article illustration.`;
+        if (!UNSPLASH_ACCESS_KEY) {
+          throw new Error('Image service not configured. Please contact support.');
+        }
 
-        console.log(`Generating ${imagesToGenerate} image(s) with DALL-E 3. Prompt: ${imagePrompt}`);
-
-        for (let i = 0; i < imagesToGenerate; i++) {
-          try {
-            // OpenRouter format for image generation models
-            const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-              method: 'POST',
+        try {
+          // Use Unsplash Search API for high-quality curated images
+          const response = await fetch(
+            `${UNSPLASH_BASE_URL}/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=${imagesToGenerate}&orientation=landscape&content_filter=high`,
+            {
               headers: {
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://www.getseowizard.com',
-                'X-Title': 'SEO Wizard - AI Image Generation'
-              },
-              body: JSON.stringify({
-                model: imageModel,
-                messages: [
-                  {
-                    role: 'user',
-                    content: imagePrompt
-                  }
-                ],
-                max_tokens: 1000
-              })
-            });
-
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error(`OpenRouter image generation failed: ${response.status} - ${errorText}`);
-              throw new Error(`Image generation API returned ${response.status}: ${errorText.substring(0, 200)}`);
-            }
-
-            const data = await response.json();
-            console.log('OpenRouter response structure:', JSON.stringify({
-              hasChoices: !!data.choices,
-              choicesLength: data.choices?.length,
-              hasMessage: !!data.choices?.[0]?.message,
-              messageKeys: data.choices?.[0]?.message ? Object.keys(data.choices[0].message) : []
-            }));
-
-            // Extract image URL from response
-            // DALL-E returns image URL in the message content
-            let imageUrl = null;
-            if (data.choices && data.choices[0] && data.choices[0].message) {
-              const message = data.choices[0].message;
-              const content = message.content;
-
-              // Try direct URL in content
-              if (typeof content === 'string') {
-                if (content.startsWith('http://') || content.startsWith('https://')) {
-                  imageUrl = content.trim();
-                } else {
-                  // Try to extract URL from content
-                  const urlMatch = content.match(/https?:\/\/[^\s\)]+/);
-                  if (urlMatch) {
-                    imageUrl = urlMatch[0];
-                  }
-                }
+                'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`
               }
-
-              // Check if there's an image_url field (some models use this)
-              if (!imageUrl && message.image_url) {
-                imageUrl = message.image_url;
-              }
-
-              console.log('Extracted image URL:', imageUrl);
             }
+          );
 
-            if (imageUrl) {
-              generatedImages.push({
-                url: imageUrl,
-                alt: `AI-generated image: ${keyword || 'article illustration'}`,
-                type: imageType || 'featured',
-                prompt: imagePrompt,
-                style: 'ai-generated',
-                model: imageModel
-              });
-              console.log('Successfully generated image:', imageUrl);
-            } else {
-              console.error('No image URL found in response. Full response:', JSON.stringify(data).substring(0, 1000));
-              throw new Error('Image URL not found in API response. The model may not have returned an image.');
-            }
-          } catch (loopError) {
-            console.error('Error in image generation loop:', loopError);
-            throw loopError;
+          if (!response.ok) {
+            throw new Error(`Unsplash API returned ${response.status}`);
           }
+
+          const data = await response.json();
+
+          if (data.results && data.results.length > 0) {
+            data.results.slice(0, imagesToGenerate).forEach(photo => {
+              generatedImages.push({
+                url: photo.urls.regular,
+                alt: photo.alt_description || photo.description || `Curated image: ${searchQuery}`,
+                type: imageType || 'featured',
+                prompt: searchQuery,
+                style: 'curated',
+                photographer: photo.user.name,
+                photographerUrl: photo.user.links.html,
+                source: 'unsplash'
+              });
+            });
+            console.log(`Successfully fetched ${generatedImages.length} curated images from Unsplash`);
+          } else {
+            throw new Error('No curated images found for this search term');
+          }
+        } catch (fetchError) {
+          console.error('Error fetching curated images:', fetchError);
+          throw fetchError;
         }
 
         if (generatedImages.length === 0) {
-          throw new Error('No images were generated successfully');
+          throw new Error('No curated images were found');
         }
 
         return {
