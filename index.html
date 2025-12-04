@@ -7543,10 +7543,10 @@
                     <!-- Tab Navigation -->
                     <div style="display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0;">
                         <button id="blogsTab" onclick="switchBlogManagementTab('blogs')" style="background: none; border: none; border-bottom: 3px solid #334155; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #334155; font-size: 14px; transition: all 0.2s;">
-                            📝 Managed Blogs (${blogs.length})
+                            Managed Blogs (${blogs.length})
                         </button>
                         <button id="publishedTab" onclick="switchBlogManagementTab('published')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #64748b; font-size: 14px; transition: all 0.2s;">
-                            📊 Published Articles
+                            Published Articles & Analytics
                         </button>
                     </div>
 
@@ -7675,8 +7675,8 @@
 
             publishedTabContent.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
-                    <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
-                    <p style="color: #64748b;">Loading published articles...</p>
+                    <div style="font-size: 18px; font-weight: 600; color: #334155; margin-bottom: 10px;">Fetching your content library</div>
+                    <p style="color: #64748b;">Connecting to WordPress and syncing articles...</p>
                 </div>
             `;
 
@@ -7686,11 +7686,10 @@
                 if (!blogsResult.success || !blogsResult.data || blogsResult.data.length === 0) {
                     publishedTabContent.innerHTML = `
                         <div style="text-align: center; padding: 60px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-                            <div style="font-size: 64px; margin-bottom: 15px;">📝</div>
-                            <h3 style="color: #1e293b; margin-bottom: 10px;">No Blogs Yet</h3>
-                            <p style="color: #64748b; margin-bottom: 20px;">Add a blog first to see published articles here.</p>
+                            <h3 style="color: #1e293b; margin-bottom: 10px; font-size: 20px;">No Blogs Connected</h3>
+                            <p style="color: #64748b; margin-bottom: 20px;">Connect your WordPress blog to start tracking articles and traffic.</p>
                             <button onclick="switchBlogManagementTab('blogs')" style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                                ➕ Add Blog
+                                Add Your First Blog
                             </button>
                         </div>
                     `;
@@ -7708,11 +7707,11 @@
                         articlesHTML += `
                             <div style="margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                    <h3 style="margin: 0; color: #1e293b; font-size: 18px;">📝 ${blog.name}</h3>
-                                    <span style="color: #64748b; font-size: 13px;">${articles.length} article${articles.length !== 1 ? 's' : ''} total</span>
+                                    <h3 style="margin: 0; color: #1e293b; font-size: 18px;">${blog.name}</h3>
+                                    <span style="color: #64748b; font-size: 13px;">${articles.length} article${articles.length !== 1 ? 's' : ''}</span>
                                 </div>
                                 ${articles.length === 0 ? `
-                                    <p style="color: #64748b; text-align: center; padding: 20px;">No articles found in this blog.</p>
+                                    <p style="color: #64748b; text-align: center; padding: 20px;">This blog hasn't published any articles yet.</p>
                                 ` : await generatePublishedArticlesList(articles, blog.id)}
                             </div>
                         `;
@@ -7720,8 +7719,9 @@
                         console.error(`Error loading articles for ${blog.name}:`, error);
                         articlesHTML += `
                             <div style="margin-bottom: 30px; background: #fef2f2; padding: 20px; border-radius: 12px; border: 1px solid #fecaca;">
-                                <h3 style="margin: 0; color: #991b1b; font-size: 18px;">📝 ${blog.name}</h3>
-                                <p style="color: #991b1b; margin-top: 10px;">Error loading articles: ${error.message}</p>
+                                <h3 style="margin: 0; color: #991b1b; font-size: 18px;">${blog.name}</h3>
+                                <p style="color: #991b1b; margin-top: 10px;">Failed to connect: ${error.message}</p>
+                                <p style="color: #78350f; font-size: 13px; margin-top: 8px;">Please check your WordPress credentials and try again.</p>
                             </div>
                         `;
                     }
@@ -7744,16 +7744,31 @@
 
         // Generate HTML for list of published articles with traffic stats
         async function generatePublishedArticlesList(articles, blogId) {
-            let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+            let html = '';
+
+            // Check if we need GA setup (first article check)
+            const firstArticleStats = articles.length > 0 ? await calculateTrafficStats(blogId, articles[0].id, articles[0].url) : null;
+            const needsGASetup = firstArticleStats?.needsGASetup;
+
+            if (needsGASetup && articles.length > 0) {
+                html += `
+                    <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="font-weight: 600; color: #92400e; margin-bottom: 4px;">Analytics Integration Required</div>
+                        <div style="font-size: 13px; color: #78350f;">Connect Google Analytics to view real traffic data for your articles.</div>
+                    </div>
+                `;
+            }
+
+            html += '<div style="display: flex; flex-direction: column; gap: 12px;">';
 
             for (const article of articles) {
-                // Calculate traffic stats (mock data for now - will be real when WordPress analytics integrated)
-                const trafficStats = await calculateTrafficStats(blogId, article.id);
+                // Get traffic stats
+                const trafficStats = await calculateTrafficStats(blogId, article.id, article.url);
 
                 // Source badge
                 const sourceBadge = article.source === 'contentflow'
-                    ? '<span style="background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">📱 ContentFlow</span>'
-                    : '<span style="background: #e2e8f0; color: #64748b; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">🌐 WordPress</span>';
+                    ? '<span style="background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">App Published</span>'
+                    : '<span style="background: #e2e8f0; color: #64748b; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">WordPress</span>';
 
                 html += `
                     <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
@@ -7764,8 +7779,8 @@
                                     ${sourceBadge}
                                 </div>
                                 <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                                    <span style="color: #64748b; font-size: 12px;">📅 ${new Date(article.date).toLocaleDateString()}</span>
-                                    <a href="${article.url}" target="_blank" style="color: #334155; font-size: 12px; text-decoration: none; font-weight: 500;" onmouseover="this.style.color='#10a37f'" onmouseout="this.style.color='#334155'">🔗 View Post</a>
+                                    <span style="color: #64748b; font-size: 12px;">Published ${new Date(article.date).toLocaleDateString()}</span>
+                                    <a href="${article.url}" target="_blank" style="color: #334155; font-size: 12px; text-decoration: none; font-weight: 500;" onmouseover="this.style.color='#10a37f'" onmouseout="this.style.color='#334155'">View Live Post →</a>
                                 </div>
                             </div>
                         </div>
@@ -7788,47 +7803,53 @@
 
         // Generate traffic stat card
         function generateTrafficStatCard(period, stats) {
+            // If no data available, show setup message
+            if (stats.views === null || stats.views === undefined) {
+                return `
+                    <div style="background: #f8fafc; padding: 10px; border-radius: 6px; text-align: center;">
+                        <div style="color: #64748b; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">${period}</div>
+                        <div style="color: #94a3b8; font-size: 12px; font-weight: 500;">GA Setup Required</div>
+                    </div>
+                `;
+            }
+
             const trendColor = stats.change >= 0 ? '#10b981' : '#ef4444';
-            const trendIcon = stats.change >= 0 ? '📈' : '📉';
+            const trendSymbol = stats.change >= 0 ? '↑' : '↓';
             const changeText = stats.change >= 0 ? `+${stats.change}%` : `${stats.change}%`;
 
             return `
                 <div style="background: #f8fafc; padding: 10px; border-radius: 6px; text-align: center;">
                     <div style="color: #64748b; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">${period}</div>
                     <div style="color: #1e293b; font-size: 16px; font-weight: 700; margin-bottom: 2px;">${stats.views.toLocaleString()}</div>
-                    <div style="color: ${trendColor}; font-size: 11px; font-weight: 600;">${trendIcon} ${changeText}</div>
+                    <div style="color: ${trendColor}; font-size: 11px; font-weight: 600;">${trendSymbol} ${changeText}</div>
                 </div>
             `;
         }
 
-        // Calculate traffic stats for an article (mock implementation - replace with real WordPress analytics)
-        async function calculateTrafficStats(blogId, postId) {
-            // TODO: Integrate with WordPress analytics or Google Analytics
-            // For now, return mock data
-            const baseViews = Math.floor(Math.random() * 500) + 100;
-
-            return {
-                days30: {
-                    views: Math.floor(baseViews * 0.3),
-                    change: Math.floor(Math.random() * 60) - 20 // -20% to +40%
-                },
-                days60: {
-                    views: Math.floor(baseViews * 0.6),
-                    change: Math.floor(Math.random() * 50) - 15
-                },
-                days90: {
-                    views: baseViews,
-                    change: Math.floor(Math.random() * 40) - 10
-                },
-                months6: {
-                    views: Math.floor(baseViews * 2),
-                    change: Math.floor(Math.random() * 30) - 5
-                },
-                year1: {
-                    views: Math.floor(baseViews * 3.5),
-                    change: Math.floor(Math.random() * 25)
-                }
-            };
+        // Get real traffic stats for an article from Google Analytics
+        async function calculateTrafficStats(blogId, postId, articleUrl) {
+            try {
+                // For now, return placeholder that indicates real data is needed
+                // This will be populated when Google Analytics is connected
+                return {
+                    days30: { views: null, change: null },
+                    days60: { views: null, change: null },
+                    days90: { views: null, change: null },
+                    months6: { views: null, change: null },
+                    year1: { views: null, change: null },
+                    needsGASetup: true
+                };
+            } catch (error) {
+                console.error('Error fetching traffic stats:', error);
+                return {
+                    days30: { views: null, change: null },
+                    days60: { views: null, change: null },
+                    days90: { views: null, change: null },
+                    months6: { views: null, change: null },
+                    year1: { views: null, change: null },
+                    needsGASetup: true
+                };
+            }
         }
 
         // ===== INTERNAL LINKING SYSTEM =====
