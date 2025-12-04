@@ -2212,76 +2212,98 @@ exports.handler = async (event, context) => {
           };
         }
 
-        // Use black-forest-labs/flux-schnell for image generation
-        const imageModel = 'black-forest-labs/flux-schnell';
+        // Use OpenAI's DALL-E 3 for reliable image generation
+        const imageModel = 'openai/dall-e-3';
         const imagesToGenerate = count || 1;
         const generatedImages = [];
 
         // Create optimized prompt for image generation
         const imagePrompt = prompt || `A high-quality, professional ${imageType || 'featured'} image illustrating ${keyword}. Photorealistic, detailed, well-lit, suitable for article illustration.`;
 
-        console.log(`Generating ${imagesToGenerate} image(s) with prompt: ${imagePrompt}`);
+        console.log(`Generating ${imagesToGenerate} image(s) with DALL-E 3. Prompt: ${imagePrompt}`);
 
         for (let i = 0; i < imagesToGenerate; i++) {
-          // OpenRouter uses chat/completions endpoint for image models
-          const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-              'Content-Type': 'application/json',
-              'HTTP-Referer': 'https://www.getseowizard.com',
-              'X-Title': 'SEO Wizard - AI Image Generation'
-            },
-            body: JSON.stringify({
-              model: imageModel,
-              messages: [
-                {
-                  role: 'user',
-                  content: imagePrompt
-                }
-              ]
-            })
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`OpenRouter image generation failed: ${response.status} - ${errorText}`);
-            throw new Error(`Image generation failed: ${response.status} ${response.statusText}`);
-          }
-
-          const data = await response.json();
-          console.log('OpenRouter response:', JSON.stringify(data).substring(0, 500));
-
-          // Extract image URL from response
-          // Flux models return image URL in the message content
-          let imageUrl = null;
-          if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-            const content = data.choices[0].message.content;
-            // The content might be a URL or contain a URL
-            if (content.startsWith('http://') || content.startsWith('https://')) {
-              imageUrl = content.trim();
-            } else {
-              // Try to extract URL from content
-              const urlMatch = content.match(/https?:\/\/[^\s]+/);
-              if (urlMatch) {
-                imageUrl = urlMatch[0];
-              }
-            }
-          }
-
-          if (imageUrl) {
-            generatedImages.push({
-              url: imageUrl,
-              alt: `AI-generated image: ${keyword || 'article illustration'}`,
-              type: imageType || 'featured',
-              prompt: imagePrompt,
-              style: 'ai-generated',
-              model: imageModel
+          try {
+            // OpenRouter format for image generation models
+            const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://www.getseowizard.com',
+                'X-Title': 'SEO Wizard - AI Image Generation'
+              },
+              body: JSON.stringify({
+                model: imageModel,
+                messages: [
+                  {
+                    role: 'user',
+                    content: imagePrompt
+                  }
+                ],
+                max_tokens: 1000
+              })
             });
-            console.log('Successfully generated image:', imageUrl);
-          } else {
-            console.error('No image URL found in response:', data);
-            throw new Error('Image URL not found in API response');
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error(`OpenRouter image generation failed: ${response.status} - ${errorText}`);
+              throw new Error(`Image generation API returned ${response.status}: ${errorText.substring(0, 200)}`);
+            }
+
+            const data = await response.json();
+            console.log('OpenRouter response structure:', JSON.stringify({
+              hasChoices: !!data.choices,
+              choicesLength: data.choices?.length,
+              hasMessage: !!data.choices?.[0]?.message,
+              messageKeys: data.choices?.[0]?.message ? Object.keys(data.choices[0].message) : []
+            }));
+
+            // Extract image URL from response
+            // DALL-E returns image URL in the message content
+            let imageUrl = null;
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+              const message = data.choices[0].message;
+              const content = message.content;
+
+              // Try direct URL in content
+              if (typeof content === 'string') {
+                if (content.startsWith('http://') || content.startsWith('https://')) {
+                  imageUrl = content.trim();
+                } else {
+                  // Try to extract URL from content
+                  const urlMatch = content.match(/https?:\/\/[^\s\)]+/);
+                  if (urlMatch) {
+                    imageUrl = urlMatch[0];
+                  }
+                }
+              }
+
+              // Check if there's an image_url field (some models use this)
+              if (!imageUrl && message.image_url) {
+                imageUrl = message.image_url;
+              }
+
+              console.log('Extracted image URL:', imageUrl);
+            }
+
+            if (imageUrl) {
+              generatedImages.push({
+                url: imageUrl,
+                alt: `AI-generated image: ${keyword || 'article illustration'}`,
+                type: imageType || 'featured',
+                prompt: imagePrompt,
+                style: 'ai-generated',
+                model: imageModel
+              });
+              console.log('Successfully generated image:', imageUrl);
+            } else {
+              console.error('No image URL found in response. Full response:', JSON.stringify(data).substring(0, 1000));
+              throw new Error('Image URL not found in API response. The model may not have returned an image.');
+            }
+          } catch (loopError) {
+            console.error('Error in image generation loop:', loopError);
+            throw loopError;
           }
         }
 

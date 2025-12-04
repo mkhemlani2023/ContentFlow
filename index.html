@@ -16442,11 +16442,11 @@ Main Noun(s):`;
                                         <button onclick="searchImagesForSection('${section.id}')" style="background: #334155; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap;">
                                             🔍 Search Stock
                                         </button>
-                                        <button onclick="generateAIImageForSection('${section.id}')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; box-shadow: 0 2px 4px rgba(102,126,234,0.3);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                                            ✨ Generate AI (10 credits)
+                                        <button onclick="generateAIImageForSection('${section.id}')" style="background: linear-gradient(135deg, #10a37f 0%, #16a34a 100%); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; box-shadow: 0 2px 4px rgba(16,163,127,0.3);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                            ✨ DALL-E 3 (10 credits)
                                         </button>
                                     </div>
-                                    <div style="font-size: 11px; color: #64748b;">💡 Search stock photos or generate custom AI images (costs 10 credits per image)</div>
+                                    <div style="font-size: 11px; color: #64748b;">💡 Search stock photos or generate custom AI images with DALL-E 3 (10 credits per image)</div>
                                 </div>
 
                                 <div id="images-${section.id}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; min-height: 50px;">
@@ -16595,7 +16595,7 @@ Main Noun(s):`;
                 return;
             }
 
-            imagesContainer.innerHTML = '<p style="color: #64748b; font-size: 14px;">✨ Generating AI image... (this may take 10-30 seconds)</p>';
+            imagesContainer.innerHTML = '<p style="color: #64748b; font-size: 14px;">✨ Generating AI image with DALL-E 3... (this may take 15-45 seconds)</p>';
 
             try {
                 const response = await fetch('/api/generate-images', {
@@ -16621,10 +16621,10 @@ Main Noun(s):`;
                     // Show generated image
                     const img = result.images[0];
                     imagesContainer.innerHTML = `
-                        <div onclick="selectImage('${sectionId}', '${img.url.replace(/'/g, "\\'")}', '${(img.alt || prompt).replace(/'/g, "\\'")}', 'AI Generated', '', 'ai')" style="cursor: pointer; border: 3px solid #8b5cf6; border-radius: 12px; overflow: hidden; transition: all 0.2s; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 3px;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <div onclick="selectImage('${sectionId}', '${img.url.replace(/'/g, "\\'")}', '${(img.alt || prompt).replace(/'/g, "\\'")}', 'DALL-E 3', '', 'ai')" style="cursor: pointer; border: 3px solid #10a37f; border-radius: 12px; overflow: hidden; transition: all 0.2s; background: linear-gradient(135deg, #10a37f 0%, #16a34a 100%); padding: 3px;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <img src="${img.url}" alt="${img.alt || prompt}" style="width: 100%; height: 300px; object-fit: cover; border-radius: 9px;">
                             <div style="padding: 12px; background: white; border-radius: 0 0 9px 9px;">
-                                <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 600; color: #8b5cf6;">✨ AI Generated</p>
+                                <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 600; color: #10a37f;">✨ DALL-E 3 Generated</p>
                                 <p style="margin: 0; font-size: 11px; color: #64748b;">Cost: 10 credits</p>
                             </div>
                         </div>
@@ -16633,7 +16633,7 @@ Main Noun(s):`;
                     // Show success message
                     const successMsg = document.createElement('div');
                     successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; z-index: 30000; box-shadow: 0 4px 6px rgba(0,0,0,0.3);';
-                    successMsg.textContent = '✨ AI image generated! 10 credits used.';
+                    successMsg.textContent = '✨ DALL-E 3 image generated! 10 credits used.';
                     document.body.appendChild(successMsg);
                     setTimeout(() => {
                         successMsg.style.transition = 'opacity 0.3s';
