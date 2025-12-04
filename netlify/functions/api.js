@@ -2212,8 +2212,8 @@ exports.handler = async (event, context) => {
           };
         }
 
-        // Use black-forest-labs/flux-schnell (fast and free) or flux-pro for better quality
-        const imageModel = 'black-forest-labs/flux-schnell'; // Fast and free model
+        // Use black-forest-labs/flux-schnell for image generation
+        const imageModel = 'black-forest-labs/flux-schnell';
         const imagesToGenerate = count || 1;
         const generatedImages = [];
 
@@ -2223,6 +2223,7 @@ exports.handler = async (event, context) => {
         console.log(`Generating ${imagesToGenerate} image(s) with prompt: ${imagePrompt}`);
 
         for (let i = 0; i < imagesToGenerate; i++) {
+          // OpenRouter uses chat/completions endpoint for image models
           const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
             method: 'POST',
             headers: {
@@ -2233,27 +2234,39 @@ exports.handler = async (event, context) => {
             },
             body: JSON.stringify({
               model: imageModel,
-              prompt: imagePrompt,
-              n: 1,
-              size: '1024x1024'
+              messages: [
+                {
+                  role: 'user',
+                  content: imagePrompt
+                }
+              ]
             })
           });
 
           if (!response.ok) {
             const errorText = await response.text();
-            console.error(`OpenRouter image generation failed: ${response.status} ${errorText}`);
-            throw new Error(`Image generation failed: ${response.statusText}`);
+            console.error(`OpenRouter image generation failed: ${response.status} - ${errorText}`);
+            throw new Error(`Image generation failed: ${response.status} ${response.statusText}`);
           }
 
           const data = await response.json();
+          console.log('OpenRouter response:', JSON.stringify(data).substring(0, 500));
 
-          // Extract image URL from response (format varies by model)
+          // Extract image URL from response
+          // Flux models return image URL in the message content
           let imageUrl = null;
-          if (data.data && data.data[0] && data.data[0].url) {
-            imageUrl = data.data[0].url;
-          } else if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-            // Some models return image URL in message content
-            imageUrl = data.choices[0].message.content;
+          if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+            const content = data.choices[0].message.content;
+            // The content might be a URL or contain a URL
+            if (content.startsWith('http://') || content.startsWith('https://')) {
+              imageUrl = content.trim();
+            } else {
+              // Try to extract URL from content
+              const urlMatch = content.match(/https?:\/\/[^\s]+/);
+              if (urlMatch) {
+                imageUrl = urlMatch[0];
+              }
+            }
           }
 
           if (imageUrl) {
@@ -2265,6 +2278,10 @@ exports.handler = async (event, context) => {
               style: 'ai-generated',
               model: imageModel
             });
+            console.log('Successfully generated image:', imageUrl);
+          } else {
+            console.error('No image URL found in response:', data);
+            throw new Error('Image URL not found in API response');
           }
         }
 
