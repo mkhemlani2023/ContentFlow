@@ -2186,7 +2186,7 @@ exports.handler = async (event, context) => {
     // Image Generation (Placeholder - can be extended with DALL-E, Stable Diffusion, etc.)
     if (path === '/api/generate-images' && method === 'POST') {
       try {
-        const { keyword, imageType, count, prompt } = JSON.parse(body);
+        const { keyword, imageType, count, prompt } = body;
 
         if (!keyword && !prompt) {
           return {
