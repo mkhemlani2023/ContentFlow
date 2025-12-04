@@ -21,6 +21,12 @@ const DATAFORSEO_LOGIN = process.env.DATAFORSEO_LOGIN || 'info@getseowizard.com'
 const DATAFORSEO_PASSWORD = process.env.DATAFORSEO_PASSWORD || '380e0892107eaca7';
 const DATAFORSEO_BASE_URL = 'https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_suggestions/live';
 
+// Google OAuth credentials
+const GOOGLE_OAUTH_CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID;
+const GOOGLE_OAUTH_CLIENT_SECRET = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+const GOOGLE_OAUTH_REDIRECT_URI = process.env.GOOGLE_OAUTH_REDIRECT_URI || 'https://www.getseowizard.com/oauth/google/callback';
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY; // 32-byte key for AES-256
+
 // Domain Authority and Backlink Estimation Functions
 const estimateDomainAuthority = (domain) => {
   // High authority domains (80-95 DA)
@@ -3861,27 +3867,361 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
     }
 
-    // Google Analytics Data API - Fetch traffic stats using service account
-    if (path === '/api/google-analytics-report' && method === 'POST') {
-      const { propertyId, serviceAccountJson, startDate, endDate, url } = body;
+    // ===== GOOGLE OAUTH2 ENDPOINTS =====
 
-      if (!propertyId || !serviceAccountJson) {
+    // OAuth2 Start - Redirects user to Google consent screen
+    if (path === '/oauth/google/start' && method === 'GET') {
+      const { blog_id } = query;
+
+      if (!blog_id) {
         return {
           statusCode: 400,
           headers,
           body: JSON.stringify({
             success: false,
-            message: 'Property ID and service account credentials are required'
+            message: 'blog_id parameter is required'
+          })
+        };
+      }
+
+      // Generate state parameter for CSRF protection
+      const state = Buffer.from(JSON.stringify({
+        blog_id,
+        timestamp: Date.now(),
+        random: Math.random().toString(36).substring(7)
+      })).toString('base64');
+
+      // Build Google OAuth URL
+      const params = new URLSearchParams({
+        client_id: GOOGLE_OAUTH_CLIENT_ID,
+        redirect_uri: GOOGLE_OAUTH_REDIRECT_URI,
+        response_type: 'code',
+        scope: 'https://www.googleapis.com/auth/analytics.readonly',
+        access_type: 'offline', // Request refresh token
+        prompt: 'consent', // Force consent to get refresh token
+        state
+      });
+
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+
+      return {
+        statusCode: 302,
+        headers: {
+          ...headers,
+          'Location': authUrl
+        },
+        body: ''
+      };
+    }
+
+    // OAuth2 Callback - Handles authorization code from Google
+    if (path === '/oauth/google/callback' && method === 'GET') {
+      const { code, state, error } = query;
+
+      if (error) {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'text/html' },
+          body: `
+            <!DOCTYPE html>
+            <html>
+            <head><title>OAuth Error</title></head>
+            <body>
+              <script>
+                window.opener.postMessage({
+                  type: 'oauth_error',
+                  error: '${error}'
+                }, '*');
+                window.close();
+              </script>
+              <p>Authorization denied. You can close this window.</p>
+            </body>
+            </html>
+          `
+        };
+      }
+
+      if (!code || !state) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Missing authorization code or state'
           })
         };
       }
 
       try {
-        // Parse service account credentials
-        const credentials = JSON.parse(Buffer.from(serviceAccountJson, 'base64').toString('utf-8'));
+        // Parse and validate state
+        const stateData = JSON.parse(Buffer.from(state, 'base64').toString('utf-8'));
+        const { blog_id } = stateData;
 
-        // Get OAuth2 access token using service account
-        const accessToken = await getGoogleAccessToken(credentials);
+        // Exchange authorization code for tokens
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            code,
+            client_id: GOOGLE_OAUTH_CLIENT_ID,
+            client_secret: GOOGLE_OAUTH_CLIENT_SECRET,
+            redirect_uri: GOOGLE_OAUTH_REDIRECT_URI,
+            grant_type: 'authorization_code'
+          })
+        });
+
+        if (!tokenResponse.ok) {
+          const errorText = await tokenResponse.text();
+          throw new Error(`Token exchange failed: ${errorText}`);
+        }
+
+        const tokens = await tokenResponse.json();
+        const { access_token, refresh_token, expires_in } = tokens;
+
+        // Encrypt tokens before sending to frontend
+        const encryptedAccessToken = encryptToken(access_token);
+        const encryptedRefreshToken = refresh_token ? encryptToken(refresh_token) : null;
+        const expiryTime = new Date(Date.now() + (expires_in * 1000)).toISOString();
+
+        // Return HTML that posts message to parent window
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'text/html' },
+          body: `
+            <!DOCTYPE html>
+            <html>
+            <head><title>OAuth Success</title></head>
+            <body>
+              <script>
+                window.opener.postMessage({
+                  type: 'oauth_success',
+                  blog_id: '${blog_id}',
+                  access_token: '${encryptedAccessToken}',
+                  refresh_token: '${encryptedRefreshToken || ''}',
+                  token_expiry: '${expiryTime}'
+                }, '*');
+                window.close();
+              </script>
+              <p>Authorization successful! You can close this window.</p>
+            </body>
+            </html>
+          `
+        };
+
+      } catch (error) {
+        console.error('OAuth callback error:', error);
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'text/html' },
+          body: `
+            <!DOCTYPE html>
+            <html>
+            <head><title>OAuth Error</title></head>
+            <body>
+              <script>
+                window.opener.postMessage({
+                  type: 'oauth_error',
+                  error: '${error.message}'
+                }, '*');
+                window.close();
+              </script>
+              <p>Authorization failed: ${error.message}. You can close this window.</p>
+            </body>
+            </html>
+          `
+        };
+      }
+    }
+
+    // Fetch user's GA4 properties after OAuth
+    if (path === '/api/google-analytics-properties' && method === 'POST') {
+      const { accessToken } = body;
+
+      if (!accessToken) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Access token is required'
+          })
+        };
+      }
+
+      try {
+        // Decrypt access token
+        const decryptedToken = decryptToken(accessToken);
+
+        // Fetch account summaries from Google Analytics Admin API
+        const response = await fetch('https://analyticsadmin.googleapis.com/v1beta/accountSummaries', {
+          headers: {
+            'Authorization': `Bearer ${decryptedToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`GA Admin API error: ${errorText}`);
+        }
+
+        const data = await response.json();
+
+        // Extract GA4 properties (property names starting with "properties/")
+        const properties = [];
+        if (data.accountSummaries) {
+          data.accountSummaries.forEach(account => {
+            if (account.propertySummaries) {
+              account.propertySummaries.forEach(prop => {
+                // GA4 properties have numeric IDs
+                if (prop.property && prop.property.match(/^properties\/\d+$/)) {
+                  const propertyId = prop.property.split('/')[1];
+                  properties.push({
+                    id: propertyId,
+                    name: prop.displayName,
+                    account: account.displayName
+                  });
+                }
+              });
+            }
+          });
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            properties
+          })
+        };
+
+      } catch (error) {
+        console.error('Error fetching GA properties:', error);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Failed to fetch GA4 properties',
+            error: error.message
+          })
+        };
+      }
+    }
+
+    // Token encryption/decryption helpers
+    function encryptToken(token) {
+      if (!ENCRYPTION_KEY) {
+        throw new Error('ENCRYPTION_KEY environment variable not set');
+      }
+
+      const crypto = require('crypto');
+      const algorithm = 'aes-256-gcm';
+      const key = Buffer.from(ENCRYPTION_KEY, 'hex'); // 32-byte key as hex string
+
+      // Generate random IV
+      const iv = crypto.randomBytes(16);
+      const cipher = crypto.createCipheriv(algorithm, key, iv);
+
+      let encrypted = cipher.update(token, 'utf8', 'hex');
+      encrypted += cipher.final('hex');
+
+      const authTag = cipher.getAuthTag();
+
+      // Return: iv + authTag + encrypted (all hex)
+      return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
+    }
+
+    function decryptToken(encryptedData) {
+      if (!ENCRYPTION_KEY) {
+        throw new Error('ENCRYPTION_KEY environment variable not set');
+      }
+
+      const crypto = require('crypto');
+      const algorithm = 'aes-256-gcm';
+      const key = Buffer.from(ENCRYPTION_KEY, 'hex');
+
+      // Parse encrypted data
+      const [ivHex, authTagHex, encryptedHex] = encryptedData.split(':');
+      const iv = Buffer.from(ivHex, 'hex');
+      const authTag = Buffer.from(authTagHex, 'hex');
+
+      const decipher = crypto.createDecipheriv(algorithm, key, iv);
+      decipher.setAuthTag(authTag);
+
+      let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+
+      return decrypted;
+    }
+
+    // Google Analytics Data API - Fetch traffic stats using OAuth or service account
+    if (path === '/api/google-analytics-report' && method === 'POST') {
+      const { propertyId, serviceAccountJson, oauthAccessToken, oauthRefreshToken, tokenExpiry, startDate, endDate, url } = body;
+
+      // Support both OAuth tokens and service account (for backwards compatibility)
+      if (!propertyId || (!serviceAccountJson && !oauthAccessToken)) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Property ID and either OAuth tokens or service account credentials are required'
+          })
+        };
+      }
+
+      try {
+        let accessToken;
+        let newAccessToken = null;
+        let newTokenExpiry = null;
+
+        // Check if using OAuth tokens
+        if (oauthAccessToken) {
+          // Decrypt access token
+          accessToken = decryptToken(oauthAccessToken);
+
+          // Check if token is expired or will expire soon (within 5 minutes)
+          const now = new Date();
+          const expiry = new Date(tokenExpiry);
+          const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+
+          if (expiry < fiveMinutesFromNow && oauthRefreshToken) {
+            console.log('Access token expired or expiring soon, refreshing...');
+
+            // Refresh the token
+            const decryptedRefreshToken = decryptToken(oauthRefreshToken);
+            const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({
+                client_id: GOOGLE_OAUTH_CLIENT_ID,
+                client_secret: GOOGLE_OAUTH_CLIENT_SECRET,
+                refresh_token: decryptedRefreshToken,
+                grant_type: 'refresh_token'
+              })
+            });
+
+            if (!refreshResponse.ok) {
+              const errorText = await refreshResponse.text();
+              throw new Error(`Token refresh failed: ${errorText}`);
+            }
+
+            const refreshData = await refreshResponse.json();
+            accessToken = refreshData.access_token;
+
+            // Encrypt new access token to return to frontend
+            newAccessToken = encryptToken(accessToken);
+            newTokenExpiry = new Date(now.getTime() + (refreshData.expires_in * 1000)).toISOString();
+
+            console.log('Token refreshed successfully');
+          }
+        } else {
+          // Use service account (legacy method)
+          const credentials = JSON.parse(Buffer.from(serviceAccountJson, 'base64').toString('utf-8'));
+          accessToken = await getGoogleAccessToken(credentials);
+        }
 
         // Make request to Google Analytics Data API
         const analyticsUrl = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
@@ -3922,13 +4262,21 @@ Generate a professional, actionable outline that a content writer can follow to 
 
         const analyticsData = await analyticsResponse.json();
 
+        // Include refreshed tokens in response if they were updated
+        const responseBody = {
+          success: true,
+          data: analyticsData
+        };
+
+        if (newAccessToken) {
+          responseBody.newAccessToken = newAccessToken;
+          responseBody.newTokenExpiry = newTokenExpiry;
+        }
+
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify({
-            success: true,
-            data: analyticsData
-          })
+          body: JSON.stringify(responseBody)
         };
 
       } catch (error) {
