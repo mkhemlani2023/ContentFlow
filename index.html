@@ -9601,6 +9601,172 @@ Return ONLY the JSON array, no other text.`;
             console.log('Disconnected Google Analytics');
         }
 
+        // ===== EDIT MODAL OAUTH FUNCTIONS =====
+
+        let currentEditBlogId = null;
+
+        // Connect Google Analytics in Edit Modal
+        async function connectGoogleAnalyticsEdit(blogId) {
+            currentEditBlogId = blogId;
+            currentOAuthBlogId = blogId;
+
+            // Open OAuth popup
+            const width = 600;
+            const height = 700;
+            const left = (screen.width / 2) - (width / 2);
+            const top = (screen.height / 2) - (height / 2);
+
+            const popup = window.open(
+                `/oauth/google/start?blog_id=${blogId}`,
+                'oauth_popup',
+                `width=${width},height=${height},left=${left},top=${top},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`
+            );
+
+            if (!popup) {
+                alert('Popup blocked! Please allow popups for this site and try again.');
+                return;
+            }
+
+            // Listen for OAuth callback message
+            window.addEventListener('message', handleOAuthMessageEdit);
+        }
+
+        // Handle OAuth callback in Edit Modal
+        async function handleOAuthMessageEdit(event) {
+            if (!event.data || !event.data.type) {
+                return;
+            }
+
+            if (event.data.type === 'oauth_success') {
+                console.log('OAuth success received for edit');
+
+                // Store tokens temporarily
+                currentGATokens = {
+                    access_token: event.data.access_token,
+                    refresh_token: event.data.refresh_token,
+                    token_expiry: event.data.token_expiry
+                };
+
+                // Update UI to show connected status
+                document.getElementById('editGaConnectSection').style.display = 'none';
+                document.getElementById('editGaConnectedStatus').style.display = 'block';
+
+                // Fetch and display GA4 properties
+                try {
+                    await loadGAPropertiesEdit(event.data.access_token);
+                } catch (error) {
+                    console.error('Error loading GA properties:', error);
+                    alert('Connected successfully, but failed to load properties. Error: ' + error.message);
+                }
+
+                // Remove event listener
+                window.removeEventListener('message', handleOAuthMessageEdit);
+            } else if (event.data.type === 'oauth_error') {
+                console.error('OAuth error:', event.data.error);
+                alert('Google Analytics connection failed: ' + event.data.error);
+                window.removeEventListener('message', handleOAuthMessageEdit);
+            }
+        }
+
+        // Load GA Properties in Edit Modal
+        async function loadGAPropertiesEdit(accessToken) {
+            console.log('Fetching GA4 properties for edit...');
+
+            const response = await fetch('/api/google-analytics-properties', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accessToken })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to fetch properties');
+            }
+
+            const properties = result.properties || [];
+
+            if (properties.length === 0) {
+                alert('No GA4 properties found. Please make sure you have access to at least one Google Analytics 4 property.');
+                return;
+            }
+
+            // Show property selector
+            document.getElementById('editGaPropertySelector').style.display = 'block';
+
+            // Populate dropdown
+            const dropdown = document.getElementById('editGaPropertyDropdown');
+            dropdown.innerHTML = `
+                <option value="">Select a GA4 property...</option>
+                ${properties.map(p => `
+                    <option value="${p.id}" data-name="${p.name}" data-account="${p.account}">
+                        ${p.name} (${p.account})
+                    </option>
+                `).join('')}
+            `;
+
+            console.log(`Loaded ${properties.length} GA4 properties for edit`);
+        }
+
+        // Handle property selection in Edit Modal
+        function handlePropertySelectionEdit() {
+            const dropdown = document.getElementById('editGaPropertyDropdown');
+            const selectedOption = dropdown.options[dropdown.selectedIndex];
+
+            if (!selectedOption || !selectedOption.value) {
+                return;
+            }
+
+            const propertyId = selectedOption.value;
+            const propertyName = selectedOption.getAttribute('data-name');
+            const accountName = selectedOption.getAttribute('data-account');
+
+            // Update info display
+            const infoDiv = document.getElementById('editGaPropertyInfo');
+            infoDiv.textContent = `Property: ${propertyName} (${accountName})`;
+
+            // Store selected property ID in tokens
+            if (currentGATokens) {
+                currentGATokens.property_id = propertyId;
+            }
+
+            console.log('Selected GA4 property in edit:', propertyId);
+        }
+
+        // Disconnect GA in Edit Modal
+        async function disconnectGAEdit(blogId) {
+            if (!confirm('Are you sure you want to disconnect Google Analytics? Traffic statistics will no longer be available for this blog.')) {
+                return;
+            }
+
+            try {
+                // Update database to clear OAuth tokens
+                await SupabaseService.updateBlog(blogId, {
+                    ga_access_token: null,
+                    ga_refresh_token: null,
+                    ga_token_expiry: null,
+                    ga_property_id: null
+                });
+
+                // Clear local state
+                currentGATokens = null;
+                currentEditBlogId = null;
+
+                // Close the edit modal
+                document.querySelector('[style*="position: fixed"]').remove();
+
+                // Refresh blog list
+                await displayBlogManagement();
+
+                alert('Google Analytics disconnected successfully!');
+            } catch (error) {
+                console.error('Error disconnecting GA:', error);
+                alert('Failed to disconnect Google Analytics: ' + error.message);
+            }
+        }
+
+        // ===== END EDIT MODAL OAUTH FUNCTIONS =====
+
         // ===== END GOOGLE ANALYTICS OAUTH FUNCTIONS =====
 
         async function addBlog() {
@@ -9998,6 +10164,54 @@ Return ONLY the JSON array, no other text.`;
                                 <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 500;">API Key (Optional)</label>
                                 <input type="text" id="editBlogApiKey" value="${apiKey}" placeholder="For platforms that require API keys" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px;">
                             </div>
+
+                            <!-- Google Analytics Section -->
+                            <div id="editGaSection" style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
+                                <h4 style="color: #475569; margin: 0 0 10px 0; font-size: 14px; font-weight: 600;">Google Analytics (Optional)</h4>
+                                <div style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
+                                    Connect Google Analytics to view real traffic statistics for your articles.
+                                </div>
+
+                                <!-- OAuth Connection Status -->
+                                <div id="editGaConnectedStatus" style="display: ${blog.ga_access_token ? 'block' : 'none'}; background: #f0fdf4; border: 1px solid #86efac; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span style="font-size: 16px;">✓</span>
+                                            <span style="font-size: 13px; color: #166534; font-weight: 500;">Google Analytics Connected</span>
+                                        </div>
+                                        <button onclick="disconnectGAEdit('${blogId}')" style="background: transparent; color: #dc2626; border: 1px solid #fca5a5; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                                            Disconnect
+                                        </button>
+                                    </div>
+                                    <div id="editGaPropertyInfo" style="font-size: 11px; color: #15803d; margin-top: 6px;">
+                                        ${blog.ga_property_id ? `Property ID: ${blog.ga_property_id}` : ''}
+                                    </div>
+                                </div>
+
+                                <!-- OAuth Connect Button -->
+                                <div id="editGaConnectSection" style="display: ${blog.ga_access_token ? 'none' : 'block'};">
+                                    <button onclick="connectGoogleAnalyticsEdit('${blogId}')" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; background: #4285f4; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(66, 133, 244, 0.3);" onmouseover="this.style.background='#357ae8'" onmouseout="this.style.background='#4285f4'">
+                                        <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+                                            <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                                            <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                                            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                                        </svg>
+                                        Connect Google Analytics
+                                    </button>
+                                    <div style="font-size: 11px; color: #64748b; margin-top: 8px; text-align: center;">
+                                        Securely connect with your Google account in 2 clicks
+                                    </div>
+                                </div>
+
+                                <!-- GA Property Selection Dropdown -->
+                                <div id="editGaPropertySelector" style="display: none; margin-top: 12px;">
+                                    <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">Select GA4 Property</label>
+                                    <select id="editGaPropertyDropdown" onchange="handlePropertySelectionEdit()" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; color: #334155;">
+                                        <option value="">Loading properties...</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
                         <div style="display: flex; gap: 12px; margin-top: 30px;">
@@ -10051,6 +10265,15 @@ Return ONLY the JSON array, no other text.`;
                 updated_at: new Date().toISOString()
             };
 
+            // Add OAuth tokens if user connected/changed Google Analytics
+            if (currentGATokens && currentGATokens.property_id) {
+                updatedBlog.ga_property_id = currentGATokens.property_id;
+                updatedBlog.ga_access_token = currentGATokens.access_token;
+                updatedBlog.ga_refresh_token = currentGATokens.refresh_token;
+                updatedBlog.ga_token_expiry = currentGATokens.token_expiry;
+                console.log('Updating blog with new OAuth tokens for GA property:', currentGATokens.property_id);
+            }
+
             try {
                 const { data, error } = await supabaseClient
                     .from('blogs')
@@ -10060,7 +10283,14 @@ Return ONLY the JSON array, no other text.`;
 
                 if (error) throw error;
 
-                alert('✅ Blog updated successfully!');
+                const gaMessage = currentGATokens && currentGATokens.property_id
+                    ? ' Google Analytics connection updated.'
+                    : '';
+                alert(`Blog updated successfully!${gaMessage}`);
+
+                // Clear OAuth state
+                currentGATokens = null;
+                currentEditBlogId = null;
 
                 // Close modal
                 document.querySelector('[style*="position: fixed"]').remove();
