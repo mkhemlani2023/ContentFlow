@@ -30,7 +30,13 @@
   to = "/.netlify/functions/api"
   status = 200
 
-# SPA fallback for client-side routing (except API calls)
+# Redirect OAuth routes to the api serverless function
+[[redirects]]
+  from = "/oauth/*"
+  to = "/.netlify/functions/api"
+  status = 200
+
+# SPA fallback for client-side routing (except API and OAuth calls)
 [[redirects]]
   from = "/*"
   to = "/index.html"
