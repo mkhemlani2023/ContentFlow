@@ -9463,16 +9463,23 @@ Return ONLY the JSON array, no other text.`;
             const left = (screen.width / 2) - (width / 2);
             const top = (screen.height / 2) - (height / 2);
 
+            console.log('Attempting to open OAuth popup...');
+
             const popup = window.open(
                 `/oauth/google/start?blog_id=${tempBlogId}`,
                 'oauth_popup',
                 `width=${width},height=${height},left=${left},top=${top},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`
             );
 
-            if (!popup) {
-                alert('Popup blocked! Please allow popups for this site and try again.');
+            console.log('Popup reference:', popup);
+
+            if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                console.error('Popup was blocked or failed to open');
+                alert('Popup blocked! Please allow popups for this site:\n\n1. Look for a popup blocker icon in your address bar\n2. Click it and allow popups for getseowizard.com\n3. Try clicking "Connect Google Analytics" again');
                 return;
             }
+
+            console.log('Popup opened successfully, listening for OAuth callback...');
 
             // Listen for OAuth callback message
             window.addEventListener('message', handleOAuthMessage);
