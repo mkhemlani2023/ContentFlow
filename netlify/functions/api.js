@@ -1427,6 +1427,7 @@ exports.handler = async (event, context) => {
 
     const method = event.httpMethod;
     const body = event.body ? JSON.parse(event.body) : {};
+    const query = event.queryStringParameters || {};
 
     console.log(`${method} ${path}`, body);
 
