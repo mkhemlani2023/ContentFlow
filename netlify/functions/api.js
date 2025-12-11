@@ -4235,12 +4235,23 @@ Generate a professional, actionable outline that a content writer can follow to 
 
         // Add URL filter if specified (for individual article stats)
         if (url) {
+          // Extract just the path from the URL (GA4 pagePath doesn't include domain)
+          // e.g., "https://example.com/article-title/" -> "/article-title/"
+          let pagePath = url;
+          try {
+            const urlObj = new URL(url);
+            pagePath = urlObj.pathname;
+          } catch (e) {
+            // If URL parsing fails, assume it's already a path
+            pagePath = url.startsWith('/') ? url : `/${url}`;
+          }
+
           requestBody.dimensionFilter = {
             filter: {
               fieldName: 'pagePath',
               stringFilter: {
-                matchType: 'CONTAINS',
-                value: url
+                matchType: 'EXACT',
+                value: pagePath
               }
             }
           };
