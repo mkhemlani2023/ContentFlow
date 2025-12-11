@@ -8450,13 +8450,17 @@ Return ONLY the JSON array, no other text.`;
             try {
                 console.log(`Fetching WordPress articles from ${blog.name}...`);
 
+                // Decode credentials (they're stored base64 encoded in Supabase)
+                const username = blog.username ? atob(blog.username) : '';
+                const password = blog.password ? atob(blog.password) : '';
+
                 const response = await fetch('/api/wordpress-fetch-posts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         url: blog.url,
-                        username: blog.username,
-                        password: blog.password,
+                        username: username,
+                        password: password,
                         perPage: 100,
                         page: 1
                     })
