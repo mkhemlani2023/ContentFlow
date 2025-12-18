@@ -8399,26 +8399,63 @@ Return ONLY the JSON array, no other text.`;
 
         // Insert an internal link into article content
         function insertInternalLink(articleContent, link) {
-            // For simplicity, add links to the introduction section
-            // You can enhance this to find the best placement in the content
+            // Internal links should open in the same tab for better UX
+            // Only use target="_blank" for external links
+            const linkHTML = `<a href="${link.url}" title="${link.title}">${link.anchorText}</a>`;
+
+            // Try to find and replace anchor text in introduction first
             if (articleContent.introduction && articleContent.introduction.includes(link.anchorText)) {
                 // Replace first occurrence of anchor text with link
-                const linkHTML = `<a href="${link.url}" target="_blank" rel="noopener" title="${link.title}">${link.anchorText}</a>`;
                 articleContent.introduction = articleContent.introduction.replace(link.anchorText, linkHTML);
                 console.log(` Added link: "${link.anchorText}" -> ${link.url}`);
-            } else if (articleContent.sections && Array.isArray(articleContent.sections)) {
-                // Try to find anchor text in sections
+                return articleContent;
+            }
+
+            // Try to find anchor text in sections
+            if (articleContent.sections && Array.isArray(articleContent.sections)) {
                 for (let i = 0; i < articleContent.sections.length; i++) {
                     const section = articleContent.sections[i];
                     if (section.content && section.content.includes(link.anchorText)) {
-                        const linkHTML = `<a href="${link.url}" target="_blank" rel="noopener" title="${link.title}">${link.anchorText}</a>`;
                         section.content = section.content.replace(link.anchorText, linkHTML);
                         console.log(` Added link in section ${i + 1}: "${link.anchorText}" -> ${link.url}`);
-                        break; // Only add once
+                        return articleContent; // Only add once
                     }
                 }
             }
 
+            // If anchor text not found in content, try case-insensitive search
+            const anchorTextLower = link.anchorText.toLowerCase();
+
+            // Search in introduction (case-insensitive)
+            if (articleContent.introduction) {
+                const introLower = articleContent.introduction.toLowerCase();
+                const index = introLower.indexOf(anchorTextLower);
+                if (index !== -1) {
+                    const originalText = articleContent.introduction.substring(index, index + link.anchorText.length);
+                    articleContent.introduction = articleContent.introduction.replace(originalText, linkHTML);
+                    console.log(` Added link (case-insensitive): "${originalText}" -> ${link.url}`);
+                    return articleContent;
+                }
+            }
+
+            // Search in sections (case-insensitive)
+            if (articleContent.sections && Array.isArray(articleContent.sections)) {
+                for (let i = 0; i < articleContent.sections.length; i++) {
+                    const section = articleContent.sections[i];
+                    if (section.content) {
+                        const sectionLower = section.content.toLowerCase();
+                        const index = sectionLower.indexOf(anchorTextLower);
+                        if (index !== -1) {
+                            const originalText = section.content.substring(index, index + link.anchorText.length);
+                            section.content = section.content.replace(originalText, linkHTML);
+                            console.log(` Added link in section ${i + 1} (case-insensitive): "${originalText}" -> ${link.url}`);
+                            return articleContent;
+                        }
+                    }
+                }
+            }
+
+            console.log(` Could not find anchor text "${link.anchorText}" in article content`);
             return articleContent;
         }
 
@@ -19820,6 +19857,47 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     <div>🔑 Authenticating...</div>
                 `;
                 progressBar.style.width = '10%';
+
+                // Step 0: Add internal links to article content (if published articles exist)
+                statusDiv.innerHTML = `
+                    <div>✅ Connected to ${selectedBlog.name}</div>
+                    <div>✅ Authenticated</div>
+                    <div>🔗 Analyzing internal link opportunities...</div>
+                `;
+                progressBar.style.width = '15%';
+
+                try {
+                    console.log('🔗 Starting internal linking analysis...');
+                    const updatedArticleContent = await addInternalLinksToArticle(article.content);
+
+                    // Update article content with internal links
+                    if (updatedArticleContent !== article.content) {
+                        article.content = updatedArticleContent;
+                        console.log('✅ Internal links added to article');
+
+                        statusDiv.innerHTML = `
+                            <div>✅ Connected to ${selectedBlog.name}</div>
+                            <div>✅ Authenticated</div>
+                            <div>✅ Internal links added</div>
+                        `;
+                    } else {
+                        console.log('ℹ️ No internal links added (no matching articles found)');
+                        statusDiv.innerHTML = `
+                            <div>✅ Connected to ${selectedBlog.name}</div>
+                            <div>✅ Authenticated</div>
+                            <div>ℹ️ No internal link opportunities found</div>
+                        `;
+                    }
+                } catch (linkError) {
+                    console.warn('⚠️ Internal linking failed, continuing with publish:', linkError);
+                    statusDiv.innerHTML = `
+                        <div>✅ Connected to ${selectedBlog.name}</div>
+                        <div>✅ Authenticated</div>
+                        <div>⚠️ Internal linking skipped</div>
+                    `;
+                }
+
+                progressBar.style.width = '20%';
 
                 // Step 1: Upload images to WordPress media library if they exist
                 let uploadedImages = [];
