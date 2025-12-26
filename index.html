@@ -8450,7 +8450,7 @@
 
             try {
                 // Call backend AI research endpoint
-                const response = await fetch('/.netlify/functions/api/affiliate-research', {
+                const response = await fetch('/api/affiliate-research', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
