@@ -7841,6 +7841,14 @@
                     source: article.source
                 });
 
+                // Extract just the path from URL for debugging
+                try {
+                    const urlObj = new URL(article.url);
+                    console.log(`   📍 Article path that will be sent to GA: ${urlObj.pathname}`);
+                } catch (e) {
+                    console.warn(`   ⚠️ Invalid URL format: ${article.url}`);
+                }
+
                 // Get traffic stats
                 const trafficStats = await calculateTrafficStats(blogId, article.id, article.url);
 
@@ -8097,7 +8105,8 @@
                         success: gaData.success,
                         hasData: !!gaData.data,
                         rowCount: gaData.data?.rows?.length || 0,
-                        errorMessage: gaData.message
+                        message: gaData.message,
+                        error: gaData.error
                     });
 
                     if (gaData.success) {
@@ -8112,7 +8121,12 @@
 
                         return processGoogleAnalyticsData(gaData.data);
                     } else {
-                        console.warn(`❌ GA API returned success=false:`, gaData.message);
+                        console.error(`❌ GA API returned success=false for article:`, {
+                            message: gaData.message,
+                            error: gaData.error,
+                            articleUrl: requestBody.url,
+                            propertyId: requestBody.propertyId
+                        });
                     }
                 } else {
                     const errorData = await gaResponse.json().catch(() => ({}));
