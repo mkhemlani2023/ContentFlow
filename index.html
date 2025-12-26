@@ -8093,7 +8093,7 @@
 
                 if (gaResponse.ok) {
                     const gaData = await gaResponse.json();
-                    console.log(`📊 GA data received for "${article.title?.substring(0, 50)}...":`, {
+                    console.log(`📊 GA data received:`, {
                         success: gaData.success,
                         hasData: !!gaData.data,
                         rowCount: gaData.data?.rows?.length || 0,
