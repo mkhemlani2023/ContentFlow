@@ -7832,8 +7832,19 @@
             let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
 
             for (const article of articles) {
+                // Debug logging
+                console.log(`📊 Fetching traffic stats for article:`, {
+                    title: article.title,
+                    id: article.id,
+                    url: article.url,
+                    blogId: blogId,
+                    source: article.source
+                });
+
                 // Get traffic stats
                 const trafficStats = await calculateTrafficStats(blogId, article.id, article.url);
+
+                console.log(`📈 Traffic stats received:`, trafficStats);
 
                 // Source badge
                 const sourceBadge = article.source === 'contentflow'
@@ -8008,6 +8019,12 @@
         // Get real traffic stats for an article from Google Analytics
         async function calculateTrafficStats(blogId, postId, articleUrl) {
             try {
+                console.log(`🔍 calculateTrafficStats called:`, {
+                    blogId,
+                    postId,
+                    articleUrl
+                });
+
                 const blogsResult = await SupabaseService.loadBlogs();
                 if (!blogsResult.success) {
                     throw new Error('Could not load blog credentials');
@@ -8022,7 +8039,15 @@
                 const hasOAuth = blog.ga_property_id && blog.ga_access_token;
                 const hasServiceAccount = blog.ga_property_id && blog.ga_credentials;
 
+                console.log(`🔐 GA Configuration:`, {
+                    blogName: blog.name,
+                    hasOAuth,
+                    hasServiceAccount,
+                    propertyId: blog.ga_property_id ? 'Set' : 'Not set'
+                });
+
                 if (!hasOAuth && !hasServiceAccount) {
+                    console.log(`⚠️ No GA configuration found for blog: ${blog.name}`);
                     return {
                         days30: { views: null, change: null },
                         days60: { views: null, change: null },
@@ -8050,6 +8075,13 @@
                     requestBody.serviceAccountJson = blog.ga_credentials;
                 }
 
+                console.log(`📤 Sending GA request for article:`, {
+                    url: '/api/google-analytics-report',
+                    propertyId: requestBody.propertyId,
+                    articleUrl: requestBody.url,
+                    authMethod: hasOAuth ? 'OAuth' : 'ServiceAccount'
+                });
+
                 // Fetch from Google Analytics Data API via our backend
                 const gaResponse = await fetch('/api/google-analytics-report', {
                     method: 'POST',
@@ -8057,8 +8089,17 @@
                     body: JSON.stringify(requestBody)
                 });
 
+                console.log(`📥 GA response status:`, gaResponse.status);
+
                 if (gaResponse.ok) {
                     const gaData = await gaResponse.json();
+                    console.log(`📊 GA data received for "${article.title?.substring(0, 50)}...":`, {
+                        success: gaData.success,
+                        hasData: !!gaData.data,
+                        rowCount: gaData.data?.rows?.length || 0,
+                        errorMessage: gaData.message
+                    });
+
                     if (gaData.success) {
                         // Handle token refresh - update blog in Supabase if tokens were refreshed
                         if (gaData.newAccessToken && hasOAuth) {
@@ -8070,7 +8111,15 @@
                         }
 
                         return processGoogleAnalyticsData(gaData.data);
+                    } else {
+                        console.warn(`❌ GA API returned success=false:`, gaData.message);
                     }
+                } else {
+                    const errorData = await gaResponse.json().catch(() => ({}));
+                    console.error(`❌ GA API request failed:`, {
+                        status: gaResponse.status,
+                        message: errorData.message || 'Unknown error'
+                    });
                 }
 
                 // If GA not available, show setup message
