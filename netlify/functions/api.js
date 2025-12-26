@@ -2437,6 +2437,10 @@ RESEARCH CITATION REQUIREMENTS - MANDATORY:
 - Example of INCORRECT citation: "Research in 2024 shows this is effective." or "Recent studies suggest..."
 - If you cannot provide specific citations, write based on established knowledge WITHOUT claiming recent research
 - Use varied citation integration: "According to [specific authors]...", "[Author name]'s research demonstrated...", "Findings from [specific study] revealed..."
+- CRITICAL: DO NOT add partial author names or incomplete citations at the end of sections (e.g., "Wang," "De", "Roberfroid,")
+- Include ALL full citations ONLY in a dedicated References section at the very end of the article
+- Within the article body, cite inline with full attribution (author name, year, publication)
+- NEVER leave dangling partial citations or incomplete author names at section endings
 
 STRUCTURE REQUIREMENTS:
 1. **Introduction** (200-300 words)
