@@ -4537,11 +4537,75 @@ Generate a professional, actionable outline that a content writer can follow to 
           }
         }
 
-        // Step 2: Use AI to analyze search results and extract affiliate program details
-        const analysisPrompt = `You are an expert affiliate marketing analyst. Analyze the following web search results for the "${program_name}" affiliate program and extract key details.
+        // Step 2: Perform keyword research to find rankable opportunities
+        console.log(`🔍 Performing keyword research for ${program_name}...`);
 
-Search Results:
+        const keywordSearchTerms = [
+          `${program_name} review`,
+          `${program_name} discount`,
+          `best ${program_name}`,
+          `${program_name} vs`,
+          `${program_name} worth it`,
+          `${program_name} alternatives`
+        ];
+
+        let keywordData = [];
+
+        // Search for keyword opportunities
+        for (const term of keywordSearchTerms) {
+          try {
+            const kwResponse = await fetch(`${SERPER_BASE_URL}/search`, {
+              method: 'POST',
+              headers: {
+                'X-API-KEY': SERPER_API_KEY,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                q: term,
+                num: 3,
+                gl: 'us',
+                hl: 'en'
+              })
+            });
+
+            const kwData = await kwResponse.json();
+
+            if (kwData.organic && kwData.organic.length > 0) {
+              keywordData.push({
+                keyword: term,
+                results: kwData.organic.slice(0, 3).map(r => ({
+                  title: r.title,
+                  snippet: r.snippet,
+                  position: r.position
+                })),
+                // Estimate difficulty based on domain authority of ranking pages
+                estimatedDifficulty: kwData.organic[0].position <= 3 ? 'High' :
+                                    kwData.organic[0].position <= 7 ? 'Medium' : 'Low'
+              });
+            }
+          } catch (kwError) {
+            console.warn(`Keyword research failed for "${term}":`, kwError.message);
+          }
+        }
+
+        // Step 3: Use AI to analyze search results, keyword opportunities, and extract affiliate program details
+        const keywordContext = keywordData.length > 0
+          ? keywordData.map(kw => `Keyword: "${kw.keyword}" (Difficulty: ${kw.estimatedDifficulty})\nTop Results: ${kw.results.map(r => r.title).join(', ')}`).join('\n\n')
+          : 'No keyword data available';
+
+        const analysisPrompt = `You are an expert affiliate marketing and SEO analyst. Analyze the following information for the "${program_name}" affiliate program and create a comprehensive SEO-driven affiliate strategy.
+
+AFFILIATE PROGRAM INFORMATION:
 ${searchContext || 'No search results available'}
+
+KEYWORD RESEARCH & RANKING OPPORTUNITIES:
+${keywordContext}
+
+STRATEGIC OBJECTIVES:
+1. Identify HIGH-VOLUME, LOW-COMPETITION keywords that can actually rank
+2. Create content ideas designed to rank for these specific keywords
+3. Ensure each article naturally incorporates affiliate links (NOT forced or salesy)
+4. Focus on commercial intent keywords that drive conversions
 
 Extract and return the following information in JSON format. If information is not available, use null:
 
@@ -4566,20 +4630,50 @@ Extract and return the following information in JSON format. If information is n
   },
   "target_audience": "Who this affiliate program is best suited for (1-2 sentences)",
   "content_opportunities": {
-    "review_articles": ["3-5 article title ideas for product reviews"],
-    "comparison_articles": ["3-5 article title ideas comparing to competitors"],
-    "guide_articles": ["3-5 article title ideas for how-to guides"],
-    "keywords": ["10-15 high-intent keywords for affiliate content that drive sales"]
+    "seo_keywords": [
+      {
+        "keyword": "Primary keyword to target",
+        "search_intent": "informational/commercial/transactional",
+        "estimated_difficulty": "low/medium/high",
+        "monthly_search_volume_estimate": "Rough estimate like '1k-10k' or 'High'",
+        "why_it_ranks": "Brief explanation of ranking opportunity"
+      }
+    ],
+    "review_articles": [
+      {
+        "title": "SEO-optimized article title targeting a specific keyword",
+        "target_keyword": "The main keyword this article targets",
+        "ranking_potential": "low/medium/high",
+        "affiliate_link_opportunities": "Where and how to naturally place affiliate links (e.g., 'In product comparison table', 'After explaining benefits', 'In conclusion with discount code')"
+      }
+    ],
+    "comparison_articles": [
+      {
+        "title": "SEO-optimized comparison title",
+        "target_keyword": "Keyword being targeted",
+        "ranking_potential": "low/medium/high",
+        "affiliate_link_opportunities": "Natural placement strategy"
+      }
+    ],
+    "guide_articles": [
+      {
+        "title": "How-to guide title targeting a keyword",
+        "target_keyword": "Keyword being targeted",
+        "ranking_potential": "low/medium/high",
+        "affiliate_link_opportunities": "Natural placement strategy"
+      }
+    ]
   },
   "competitive_analysis": "How this program compares to similar affiliate programs (2-3 sentences)"
 }
 
-IMPORTANT GUIDELINES FOR CONTENT IDEAS:
-- All article titles should be designed to naturally incorporate affiliate links
-- Focus on commercial intent keywords that indicate readiness to purchase
-- Titles should sound helpful and informative, NOT salesy
-- Each article type should allow for natural affiliate link placement
-- Keywords should have buying intent (e.g., "best", "review", "vs", "worth it", "how to use")
+CRITICAL GUIDELINES:
+1. KEYWORD RESEARCH FIRST: Base ALL content ideas on actual keywords from the research data provided
+2. RANKING POTENTIAL: Only suggest articles for keywords with realistic ranking opportunities
+3. NATURAL LINK PLACEMENT: Each article must have clear, non-salesy places to add affiliate links
+4. COMMERCIAL INTENT: Prioritize keywords that show buying intent
+5. SEO-OPTIMIZED TITLES: Titles must include target keywords naturally
+6. SPECIFIC STRATEGIES: Don't just say "add affiliate links" - specify WHERE and HOW (e.g., "After explaining gut health benefits, introduce product as solution with affiliate link")
 
 Return ONLY the JSON object, no additional text.`;
 
