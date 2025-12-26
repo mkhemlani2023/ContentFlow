@@ -4635,32 +4635,35 @@ Extract and return the following information in JSON format. If information is n
         "keyword": "Primary keyword to target",
         "search_intent": "informational/commercial/transactional",
         "estimated_difficulty": "low/medium/high",
-        "monthly_search_volume_estimate": "Rough estimate like '1k-10k' or 'High'",
-        "why_it_ranks": "Brief explanation of ranking opportunity"
+        "monthly_search_volume_estimate": "Specific number estimate like '2,400' or range like '1,000-10,000'",
+        "why_it_ranks": "Brief explanation of ranking opportunity based on SERP analysis"
       }
     ],
     "review_articles": [
       {
-        "title": "SEO-optimized article title targeting a specific keyword",
-        "target_keyword": "The main keyword this article targets",
+        "title": "Complete SEO-optimized article title with keyword naturally included",
+        "target_keyword": "Exact keyword phrase this targets",
+        "monthly_searches": "Estimated monthly searches as number",
         "ranking_potential": "low/medium/high",
-        "affiliate_link_opportunities": "Where and how to naturally place affiliate links (e.g., 'In product comparison table', 'After explaining benefits', 'In conclusion with discount code')"
+        "affiliate_link_opportunities": "SPECIFIC placement strategy with context (e.g., 'After section explaining gut microbiome science, introduce Viome test as personalized solution with affiliate link to purchase page')"
       }
     ],
     "comparison_articles": [
       {
-        "title": "SEO-optimized comparison title",
-        "target_keyword": "Keyword being targeted",
+        "title": "Complete comparison title with both products/brands",
+        "target_keyword": "Exact comparison keyword",
+        "monthly_searches": "Estimated monthly searches",
         "ranking_potential": "low/medium/high",
-        "affiliate_link_opportunities": "Natural placement strategy"
+        "affiliate_link_opportunities": "SPECIFIC placement (e.g., 'In side-by-side comparison table, link product name to affiliate page. In conclusion, recommend winner with affiliate link and discount code')"
       }
     ],
     "guide_articles": [
       {
-        "title": "How-to guide title targeting a keyword",
-        "target_keyword": "Keyword being targeted",
+        "title": "Complete how-to title with keyword",
+        "target_keyword": "Exact keyword phrase",
+        "monthly_searches": "Estimated monthly searches",
         "ranking_potential": "low/medium/high",
-        "affiliate_link_opportunities": "Natural placement strategy"
+        "affiliate_link_opportunities": "SPECIFIC placement (e.g., 'After explaining the process, recommend specific product as best tool with affiliate link in step-by-step instructions')"
       }
     ]
   },
@@ -4668,12 +4671,18 @@ Extract and return the following information in JSON format. If information is n
 }
 
 CRITICAL GUIDELINES:
-1. KEYWORD RESEARCH FIRST: Base ALL content ideas on actual keywords from the research data provided
-2. RANKING POTENTIAL: Only suggest articles for keywords with realistic ranking opportunities
-3. NATURAL LINK PLACEMENT: Each article must have clear, non-salesy places to add affiliate links
-4. COMMERCIAL INTENT: Prioritize keywords that show buying intent
-5. SEO-OPTIMIZED TITLES: Titles must include target keywords naturally
-6. SPECIFIC STRATEGIES: Don't just say "add affiliate links" - specify WHERE and HOW (e.g., "After explaining gut health benefits, introduce product as solution with affiliate link")
+1. KEYWORD RESEARCH FIRST: Base ALL content ideas on actual keywords from the research data provided above
+2. PROVIDE AT LEAST 5 IDEAS FOR EACH TYPE: 5+ review articles, 5+ comparison articles, 5+ guide articles
+3. INCLUDE SEARCH VOLUMES: Every article must have estimated monthly searches (use the keyword data provided)
+4. RANKING POTENTIAL: Analyze actual SERP competition to determine low/medium/high
+5. NATURAL LINK PLACEMENT: Each article needs SPECIFIC, DETAILED link placement instructions with context
+6. COMMERCIAL INTENT: Prioritize keywords that show buying intent (review, vs, best, worth it, discount, etc.)
+7. SEO-OPTIMIZED TITLES: Include target keyword naturally in title
+8. COMPLETE TITLES: Don't use placeholders - write full, compelling article titles
+
+EXAMPLE OF GOOD vs BAD:
+❌ BAD: "Review article about product"
+✅ GOOD: "Viome Gut Intelligence Test Review 2024: Is It Worth $199?" (target: "viome review", 2,400 searches/month, medium difficulty)
 
 Return ONLY the JSON object, no additional text.`;
 

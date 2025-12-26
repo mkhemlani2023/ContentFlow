@@ -8393,10 +8393,18 @@
                     </div>
 
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #64748b; font-weight: 600;">Program URL (Optional)</label>
-                        <input type="url" id="affiliateProgramUrl" placeholder="https://affiliate-program-url.com" style="width: 100%;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #64748b; font-weight: 600;">Your Affiliate Link *</label>
+                        <input type="url" id="affiliateLinkTemplate" placeholder="https://viome.com/ref/YOURCODE or https://affiliate-network.com/track?id=12345" style="width: 100%;">
                         <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
-                            Link to the affiliate program website or affiliate dashboard
+                            🔗 Your unique affiliate tracking link - all sales will be credited to this link
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #64748b; font-weight: 600;">Program URL (Optional)</label>
+                        <input type="url" id="affiliateProgramUrl" placeholder="https://affiliate-program-homepage.com" style="width: 100%;">
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                            Link to the affiliate program website or dashboard (optional)
                         </div>
                     </div>
 
@@ -8431,10 +8439,16 @@
         // Add affiliate program with AI research
         async function addAffiliateProgram(blogId) {
             const programName = document.getElementById('affiliateProgramName').value.trim();
+            const affiliateLink = document.getElementById('affiliateLinkTemplate').value.trim();
             const programUrl = document.getElementById('affiliateProgramUrl').value.trim();
 
             if (!programName) {
                 showToast('Please enter a program name', 'error');
+                return;
+            }
+
+            if (!affiliateLink) {
+                showToast('Please enter your affiliate link - this is how sales will be tracked!', 'error');
                 return;
             }
 
@@ -8471,6 +8485,7 @@
                     blog_id: blogId,
                     program_name: programName,
                     program_url: programUrl || result.program_url,
+                    affiliate_link_template: affiliateLink,
                     network: result.network,
                     commission_rate: result.commission_rate,
                     commission_type: result.commission_type,
@@ -8655,10 +8670,14 @@
                                             <span style="background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">${article.type}</span>
                                         </div>
 
-                                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 8px;">
+                                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 8px;">
                                             <div>
                                                 <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Target Keyword</div>
                                                 <div style="color: #334155; font-size: 13px; font-weight: 500;">${article.target_keyword || 'Not specified'}</div>
+                                            </div>
+                                            <div>
+                                                <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Monthly Searches</div>
+                                                <div style="color: #10b981; font-size: 13px; font-weight: 600;">${article.monthly_searches ? (typeof article.monthly_searches === 'number' ? article.monthly_searches.toLocaleString() : article.monthly_searches) : 'N/A'}</div>
                                             </div>
                                             <div>
                                                 <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Ranking Potential</div>
