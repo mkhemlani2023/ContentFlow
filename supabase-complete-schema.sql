@@ -221,50 +221,83 @@ ALTER TABLE article_traffic ENABLE ROW LEVEL SECURITY;
 ALTER TABLE affiliate_programs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE affiliate_content ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (safe to run multiple times)
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
+    DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
+    DROP POLICY IF EXISTS "Users can view own articles" ON articles;
+    DROP POLICY IF EXISTS "Users can insert own articles" ON articles;
+    DROP POLICY IF EXISTS "Users can update own articles" ON articles;
+    DROP POLICY IF EXISTS "Users can delete own articles" ON articles;
+    DROP POLICY IF EXISTS "Users can view own blogs" ON blogs;
+    DROP POLICY IF EXISTS "Users can insert own blogs" ON blogs;
+    DROP POLICY IF EXISTS "Users can update own blogs" ON blogs;
+    DROP POLICY IF EXISTS "Users can delete own blogs" ON blogs;
+    DROP POLICY IF EXISTS "Users can view own publish logs" ON publish_logs;
+    DROP POLICY IF EXISTS "Users can insert own publish logs" ON publish_logs;
+    DROP POLICY IF EXISTS "Users can view own metrics" ON website_metrics;
+    DROP POLICY IF EXISTS "Users can insert own metrics" ON website_metrics;
+    DROP POLICY IF EXISTS "Users can view own transactions" ON credit_transactions;
+    DROP POLICY IF EXISTS "Users can insert own transactions" ON credit_transactions;
+    DROP POLICY IF EXISTS "Users can view own traffic" ON article_traffic;
+    DROP POLICY IF EXISTS "Users can insert own traffic" ON article_traffic;
+    DROP POLICY IF EXISTS "Users can update own traffic" ON article_traffic;
+    DROP POLICY IF EXISTS "Users can view own affiliate programs" ON affiliate_programs;
+    DROP POLICY IF EXISTS "Users can insert own affiliate programs" ON affiliate_programs;
+    DROP POLICY IF EXISTS "Users can update own affiliate programs" ON affiliate_programs;
+    DROP POLICY IF EXISTS "Users can delete own affiliate programs" ON affiliate_programs;
+    DROP POLICY IF EXISTS "Users can view own affiliate content" ON affiliate_content;
+    DROP POLICY IF EXISTS "Users can insert own affiliate content" ON affiliate_content;
+    DROP POLICY IF EXISTS "Users can update own affiliate content" ON affiliate_content;
+    DROP POLICY IF EXISTS "Users can delete own affiliate content" ON affiliate_content;
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
 -- User Profiles Policies
-CREATE POLICY IF NOT EXISTS "Users can view own profile" ON user_profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY IF NOT EXISTS "Users can update own profile" ON user_profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can view own profile" ON user_profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON user_profiles FOR UPDATE USING (auth.uid() = id);
 
 -- Articles Policies
-CREATE POLICY IF NOT EXISTS "Users can view own articles" ON articles FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert own articles" ON articles FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own articles" ON articles FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can delete own articles" ON articles FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own articles" ON articles FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own articles" ON articles FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own articles" ON articles FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own articles" ON articles FOR DELETE USING (auth.uid() = user_id);
 
 -- Blogs Policies
-CREATE POLICY IF NOT EXISTS "Users can view own blogs" ON blogs FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert own blogs" ON blogs FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own blogs" ON blogs FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can delete own blogs" ON blogs FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own blogs" ON blogs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own blogs" ON blogs FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own blogs" ON blogs FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own blogs" ON blogs FOR DELETE USING (auth.uid() = user_id);
 
 -- Publish Logs Policies
-CREATE POLICY IF NOT EXISTS "Users can view own publish logs" ON publish_logs FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert own publish logs" ON publish_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view own publish logs" ON publish_logs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own publish logs" ON publish_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Website Metrics Policies
-CREATE POLICY IF NOT EXISTS "Users can view own metrics" ON website_metrics FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert own metrics" ON website_metrics FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view own metrics" ON website_metrics FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own metrics" ON website_metrics FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Credit Transactions Policies
-CREATE POLICY IF NOT EXISTS "Users can view own transactions" ON credit_transactions FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert own transactions" ON credit_transactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view own transactions" ON credit_transactions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own transactions" ON credit_transactions FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Article Traffic Policies
-CREATE POLICY IF NOT EXISTS "Users can view own traffic" ON article_traffic FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert own traffic" ON article_traffic FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own traffic" ON article_traffic FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own traffic" ON article_traffic FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own traffic" ON article_traffic FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own traffic" ON article_traffic FOR UPDATE USING (auth.uid() = user_id);
 
 -- Affiliate Programs Policies
-CREATE POLICY IF NOT EXISTS "Users can view own affiliate programs" ON affiliate_programs FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert own affiliate programs" ON affiliate_programs FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own affiliate programs" ON affiliate_programs FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can delete own affiliate programs" ON affiliate_programs FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own affiliate programs" ON affiliate_programs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own affiliate programs" ON affiliate_programs FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own affiliate programs" ON affiliate_programs FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own affiliate programs" ON affiliate_programs FOR DELETE USING (auth.uid() = user_id);
 
 -- Affiliate Content Policies
-CREATE POLICY IF NOT EXISTS "Users can view own affiliate content" ON affiliate_content FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert own affiliate content" ON affiliate_content FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own affiliate content" ON affiliate_content FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can delete own affiliate content" ON affiliate_content FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own affiliate content" ON affiliate_content FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own affiliate content" ON affiliate_content FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own affiliate content" ON affiliate_content FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own affiliate content" ON affiliate_content FOR DELETE USING (auth.uid() = user_id);
 
 -- ========================================
 -- TRIGGERS
@@ -279,12 +312,19 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- Drop existing triggers if they exist
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
+DROP TRIGGER IF EXISTS update_articles_updated_at ON articles;
+DROP TRIGGER IF EXISTS update_blogs_updated_at ON blogs;
+DROP TRIGGER IF EXISTS update_affiliate_programs_updated_at ON affiliate_programs;
+DROP TRIGGER IF EXISTS update_affiliate_content_updated_at ON affiliate_content;
+
 -- Apply triggers to all tables with updated_at
-CREATE TRIGGER IF NOT EXISTS update_user_profiles_updated_at BEFORE UPDATE ON user_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_articles_updated_at BEFORE UPDATE ON articles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_blogs_updated_at BEFORE UPDATE ON blogs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_affiliate_programs_updated_at BEFORE UPDATE ON affiliate_programs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_affiliate_content_updated_at BEFORE UPDATE ON affiliate_content FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON user_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_articles_updated_at BEFORE UPDATE ON articles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_blogs_updated_at BEFORE UPDATE ON blogs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_affiliate_programs_updated_at BEFORE UPDATE ON affiliate_programs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_affiliate_content_updated_at BEFORE UPDATE ON affiliate_content FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ========================================
 -- VERIFICATION
