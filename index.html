@@ -8565,7 +8565,10 @@
                     contentOpportunities = typeof program.content_opportunities === 'string'
                         ? JSON.parse(program.content_opportunities)
                         : program.content_opportunities;
+
+                    console.log('🔍 Content Opportunities:', contentOpportunities);
                 } catch (e) {
+                    console.error('Failed to parse content opportunities:', e);
                     contentOpportunities = null;
                 }
 
