@@ -4272,8 +4272,24 @@ Generate a professional, actionable outline that a content writer can follow to 
 
         if (!analyticsResponse.ok) {
           const errorText = await analyticsResponse.text();
-          console.error('Google Analytics API error:', errorText);
-          throw new Error(`GA API returned ${analyticsResponse.status}: ${errorText}`);
+          console.error('Google Analytics API error:', {
+            status: analyticsResponse.status,
+            statusText: analyticsResponse.statusText,
+            propertyId: propertyId,
+            url: url,
+            errorText: errorText
+          });
+
+          // Parse error details if possible
+          let errorDetails = errorText;
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorDetails = errorJson.error?.message || errorText;
+          } catch (e) {
+            // Keep as text
+          }
+
+          throw new Error(`GA API error (${analyticsResponse.status}): ${errorDetails}`);
         }
 
         const analyticsData = await analyticsResponse.json();
@@ -4296,14 +4312,21 @@ Generate a professional, actionable outline that a content writer can follow to 
         };
 
       } catch (error) {
-        console.error('Google Analytics fetch error:', error);
+        console.error('Google Analytics fetch error:', {
+          error: error.message,
+          stack: error.stack,
+          propertyId: propertyId,
+          url: url
+        });
         return {
           statusCode: 200,
           headers,
           body: JSON.stringify({
             success: false,
             message: 'Failed to fetch analytics data',
-            error: error.message
+            error: error.message,
+            propertyId: propertyId,
+            requestedUrl: url
           })
         };
       }
