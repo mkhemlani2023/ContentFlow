@@ -8545,9 +8545,190 @@
             showToast('Detailed view coming soon! For now, use the Generate Content button to create affiliate articles.', 'info');
         }
 
-        // Generate affiliate content (placeholder for now)
-        function generateAffiliateContent(programId, blogId) {
-            showToast('Content generation integration coming next! This will create conversion-optimized articles with natural affiliate links.', 'info');
+        // Generate affiliate content
+        async function generateAffiliateContent(programId, blogId) {
+            try {
+                // Load affiliate program details
+                const programsResult = await SupabaseService.loadAffiliatePrograms(blogId);
+                if (!programsResult.success) {
+                    throw new Error('Failed to load affiliate program');
+                }
+
+                const program = programsResult.data.find(p => p.id === programId);
+                if (!program) {
+                    throw new Error('Affiliate program not found');
+                }
+
+                // Parse content opportunities
+                let contentOpportunities;
+                try {
+                    contentOpportunities = typeof program.content_opportunities === 'string'
+                        ? JSON.parse(program.content_opportunities)
+                        : program.content_opportunities;
+                } catch (e) {
+                    contentOpportunities = null;
+                }
+
+                if (!contentOpportunities) {
+                    showToast('No content opportunities found. Try re-adding the program.', 'error');
+                    return;
+                }
+
+                // Show content opportunities modal
+                showAffiliateContentModal(program, contentOpportunities, blogId);
+
+            } catch (error) {
+                console.error('Error generating affiliate content:', error);
+                showToast('Failed to load content opportunities: ' + error.message, 'error');
+            }
+        }
+
+        // Show affiliate content opportunities modal
+        function showAffiliateContentModal(program, opportunities, blogId) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+
+            // Combine all article types
+            const allArticles = [];
+
+            if (opportunities.review_articles && Array.isArray(opportunities.review_articles)) {
+                opportunities.review_articles.forEach(article => {
+                    allArticles.push({
+                        ...article,
+                        type: 'Review Article',
+                        emoji: '⭐'
+                    });
+                });
+            }
+
+            if (opportunities.comparison_articles && Array.isArray(opportunities.comparison_articles)) {
+                opportunities.comparison_articles.forEach(article => {
+                    allArticles.push({
+                        ...article,
+                        type: 'Comparison Article',
+                        emoji: '⚖️'
+                    });
+                });
+            }
+
+            if (opportunities.guide_articles && Array.isArray(opportunities.guide_articles)) {
+                opportunities.guide_articles.forEach(article => {
+                    allArticles.push({
+                        ...article,
+                        type: 'How-To Guide',
+                        emoji: '📚'
+                    });
+                });
+            }
+
+            modalContent.innerHTML = `
+                <div style="padding: 30px; max-height: 80vh; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0; color: #1e293b;">Generate Affiliate Content - ${program.program_name}</h2>
+                        <button onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;" onmouseover="this.style.color='#1e293b'" onmouseout="this.style.color='#64748b'">×</button>
+                    </div>
+
+                    <div style="background: #f0fdf4; padding: 16px; border-radius: 8px; border: 1px solid #86efac; margin-bottom: 20px;">
+                        <div style="color: #166534; font-size: 13px; font-weight: 600; margin-bottom: 8px;">🎯 SEO Strategy</div>
+                        <div style="color: #15803d; font-size: 12px;">
+                            These articles are designed to rank for specific keywords and naturally incorporate affiliate links.
+                            Each article includes strategic link placement for maximum conversions.
+                        </div>
+                    </div>
+
+                    <h3 style="color: #1e293b; margin-bottom: 15px; font-size: 16px;">Select an Article to Generate:</h3>
+
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        ${allArticles.map((article, index) => `
+                            <div style="background: white; border: 2px solid #e2e8f0; padding: 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
+                                 onmouseover="this.style.borderColor='#10a37f'; this.style.boxShadow='0 4px 12px rgba(16, 163, 127, 0.15)'"
+                                 onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'"
+                                 onclick="startAffiliateArticleGeneration('${program.id}', '${blogId}', ${index})">
+                                <div style="display: flex; align-items: start; gap: 12px;">
+                                    <div style="font-size: 24px;">${article.emoji}</div>
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                            <h4 style="margin: 0; color: #1e293b; font-size: 15px; font-weight: 600;">${article.title || 'Untitled Article'}</h4>
+                                            <span style="background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">${article.type}</span>
+                                        </div>
+
+                                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 8px;">
+                                            <div>
+                                                <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Target Keyword</div>
+                                                <div style="color: #334155; font-size: 13px; font-weight: 500;">${article.target_keyword || 'Not specified'}</div>
+                                            </div>
+                                            <div>
+                                                <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Ranking Potential</div>
+                                                <div style="color: ${article.ranking_potential === 'high' ? '#10b981' : article.ranking_potential === 'medium' ? '#f59e0b' : '#64748b'}; font-size: 13px; font-weight: 600; text-transform: capitalize;">${article.ranking_potential || 'Unknown'}</div>
+                                            </div>
+                                        </div>
+
+                                        ${article.affiliate_link_opportunities ? `
+                                            <div style="background: #fef3c7; padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 3px solid #f59e0b;">
+                                                <div style="color: #92400e; font-size: 11px; font-weight: 600; margin-bottom: 4px;">💡 Link Placement Strategy</div>
+                                                <div style="color: #78350f; font-size: 12px;">${article.affiliate_link_opportunities}</div>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    ${allArticles.length === 0 ? `
+                        <div style="text-align: center; padding: 40px; background: #f8fafc; border-radius: 8px; border: 2px dashed #e2e8f0;">
+                            <div style="font-size: 36px; margin-bottom: 10px;">📝</div>
+                            <p style="color: #64748b; margin: 0;">No article ideas found. Try re-adding the affiliate program.</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            // Store opportunities for later use
+            window.currentAffiliateData = {
+                program: program,
+                opportunities: opportunities,
+                allArticles: allArticles,
+                blogId: blogId
+            };
+
+            modal.style.display = 'flex';
+        }
+
+        // Start generating affiliate article
+        async function startAffiliateArticleGeneration(programId, blogId, articleIndex) {
+            const data = window.currentAffiliateData;
+            if (!data || !data.allArticles || !data.allArticles[articleIndex]) {
+                showToast('Article data not found', 'error');
+                return;
+            }
+
+            const article = data.allArticles[articleIndex];
+            const program = data.program;
+
+            closeModal();
+
+            // Navigate to article generation with pre-filled affiliate data
+            showToast('Preparing affiliate article generation...', 'info');
+
+            // Use the target keyword as the main keyword for generation
+            const keyword = article.target_keyword || article.title;
+
+            // Store affiliate context for article generation
+            window.affiliateContext = {
+                programId: programId,
+                programName: program.program_name,
+                affiliateLink: program.affiliate_link_template || program.program_url,
+                linkPlacementStrategy: article.affiliate_link_opportunities,
+                commission: program.commission_rate,
+                targetKeyword: keyword,
+                articleType: article.type
+            };
+
+            // Populate the keyword field and switch to article generation view
+            document.getElementById('keyword').value = keyword;
+
+            showToast(`Ready to generate: "${article.title}". Click Generate Article to create conversion-optimized content!`, 'success');
         }
 
         // Close modal
