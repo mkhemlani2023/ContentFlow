@@ -1730,6 +1730,173 @@
                     console.error('Error loading article traffic:', error);
                     return { success: false, error: error.message };
                 }
+            },
+
+            // ===== AFFILIATE PROGRAMS METHODS =====
+
+            // Save affiliate program
+            async saveAffiliateProgram(program) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_programs')
+                        .insert([{
+                            user_id: currentUser.id,
+                            blog_id: program.blog_id,
+                            program_name: program.program_name,
+                            program_url: program.program_url,
+                            network: program.network,
+                            commission_rate: program.commission_rate,
+                            commission_type: program.commission_type,
+                            cookie_duration: program.cookie_duration,
+                            minimum_payout: program.minimum_payout,
+                            payment_frequency: program.payment_frequency,
+                            payment_methods: program.payment_methods,
+                            affiliate_id: program.affiliate_id,
+                            affiliate_link_template: program.affiliate_link_template,
+                            tracking_params: program.tracking_params,
+                            terms_summary: program.terms_summary,
+                            program_requirements: program.program_requirements,
+                            prohibited_content: program.prohibited_content,
+                            disclosure_required: program.disclosure_required,
+                            ai_summary: program.ai_summary,
+                            target_audience: program.target_audience,
+                            content_opportunities: program.content_opportunities,
+                            competitive_analysis: program.competitive_analysis,
+                            signup_status: program.signup_status || 'pending',
+                            status: program.status || 'active'
+                        }])
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error saving affiliate program:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load affiliate programs for a blog
+            async loadAffiliatePrograms(blogId = null) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    let query = supabaseClient
+                        .from('affiliate_programs')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .order('created_at', { ascending: false });
+
+                    if (blogId) {
+                        query = query.eq('blog_id', blogId);
+                    }
+
+                    const { data, error } = await query;
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading affiliate programs:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Update affiliate program
+            async updateAffiliateProgram(id, updates) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_programs')
+                        .update(updates)
+                        .eq('id', id)
+                        .eq('user_id', currentUser.id)
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error updating affiliate program:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Delete affiliate program
+            async deleteAffiliateProgram(id) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { error } = await supabaseClient
+                        .from('affiliate_programs')
+                        .delete()
+                        .eq('id', id)
+                        .eq('user_id', currentUser.id);
+
+                    if (error) throw error;
+                    return { success: true };
+                } catch (error) {
+                    console.error('Error deleting affiliate program:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Save affiliate content tracking
+            async saveAffiliateContent(content) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_content')
+                        .insert([{
+                            user_id: currentUser.id,
+                            article_id: content.article_id,
+                            blog_id: content.blog_id,
+                            affiliate_program_id: content.affiliate_program_id,
+                            article_title: content.article_title,
+                            article_url: content.article_url,
+                            affiliate_links_count: content.affiliate_links_count,
+                            primary_cta: content.primary_cta,
+                            predicted_monthly_traffic: content.predicted_monthly_traffic,
+                            predicted_conversion_rate: content.predicted_conversion_rate,
+                            predicted_monthly_revenue: content.predicted_monthly_revenue,
+                            content_type: content.content_type,
+                            target_keywords: content.target_keywords
+                        }])
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error saving affiliate content:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load affiliate content for a program
+            async loadAffiliateContent(programId) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_content')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .eq('affiliate_program_id', programId)
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading affiliate content:', error);
+                    return { success: false, error: error.message };
+                }
             }
         };
 
@@ -7553,6 +7720,9 @@
                         <button id="publishedTab" onclick="switchBlogManagementTab('published')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #64748b; font-size: 14px; transition: all 0.2s;">
                             Published Articles & Analytics
                         </button>
+                        <button id="affiliateTab" onclick="switchBlogManagementTab('affiliate')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #64748b; font-size: 14px; transition: all 0.2s;">
+                            💰 Affiliate Programs
+                        </button>
                     </div>
 
                     <!-- Blogs Tab Content -->
@@ -7684,6 +7854,14 @@
                             <p style="color: #64748b;">Loading published articles...</p>
                         </div>
                     </div>
+
+                    <!-- Affiliate Programs Tab Content -->
+                    <div id="affiliateTabContent" style="display: none;">
+                        <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">💰</div>
+                            <p style="color: #64748b;">Loading affiliate programs...</p>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -7696,28 +7874,41 @@
         function switchBlogManagementTab(tab) {
             const blogsTab = document.getElementById('blogsTab');
             const publishedTab = document.getElementById('publishedTab');
+            const affiliateTab = document.getElementById('affiliateTab');
             const blogsTabContent = document.getElementById('blogsTabContent');
             const publishedTabContent = document.getElementById('publishedTabContent');
+            const affiliateTabContent = document.getElementById('affiliateTabContent');
+
+            // Reset all tabs
+            blogsTab.style.borderBottom = '3px solid transparent';
+            blogsTab.style.color = '#64748b';
+            publishedTab.style.borderBottom = '3px solid transparent';
+            publishedTab.style.color = '#64748b';
+            affiliateTab.style.borderBottom = '3px solid transparent';
+            affiliateTab.style.color = '#64748b';
+            blogsTabContent.style.display = 'none';
+            publishedTabContent.style.display = 'none';
+            affiliateTabContent.style.display = 'none';
 
             if (tab === 'blogs') {
                 // Show blogs tab
                 blogsTab.style.borderBottom = '3px solid #334155';
                 blogsTab.style.color = '#334155';
-                publishedTab.style.borderBottom = '3px solid transparent';
-                publishedTab.style.color = '#64748b';
                 blogsTabContent.style.display = 'block';
-                publishedTabContent.style.display = 'none';
             } else if (tab === 'published') {
                 // Show published articles tab
-                blogsTab.style.borderBottom = '3px solid transparent';
-                blogsTab.style.color = '#64748b';
                 publishedTab.style.borderBottom = '3px solid #334155';
                 publishedTab.style.color = '#334155';
-                blogsTabContent.style.display = 'none';
                 publishedTabContent.style.display = 'block';
-
                 // Load published articles when tab is opened
                 loadPublishedArticlesView();
+            } else if (tab === 'affiliate') {
+                // Show affiliate programs tab
+                affiliateTab.style.borderBottom = '3px solid #334155';
+                affiliateTab.style.color = '#334155';
+                affiliateTabContent.style.display = 'block';
+                // Load affiliate programs when tab is opened
+                loadAffiliateProgramsView();
             }
         }
 
@@ -8022,6 +8213,341 @@
                 console.error('Error fetching global blog stats:', error.message);
                 return { needsGASetup: true };
             }
+        }
+
+        // Load and display affiliate programs
+        async function loadAffiliateProgramsView() {
+            const affiliateTabContent = document.getElementById('affiliateTabContent');
+
+            affiliateTabContent.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 18px; font-weight: 600; color: #334155; margin-bottom: 10px;">Loading affiliate programs</div>
+                    <p style="color: #64748b;">Fetching your monetization setup...</p>
+                </div>
+            `;
+
+            try {
+                // Load all blogs first
+                const blogsResult = await SupabaseService.loadBlogs();
+                if (!blogsResult.success || !blogsResult.data || blogsResult.data.length === 0) {
+                    affiliateTabContent.innerHTML = `
+                        <div style="text-align: center; padding: 60px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">💰</div>
+                            <h3 style="color: #1e293b; margin-bottom: 10px; font-size: 20px;">No Blogs Connected</h3>
+                            <p style="color: #64748b; margin-bottom: 20px;">Connect a blog first to start managing affiliate programs.</p>
+                            <button onclick="switchBlogManagementTab('blogs')" style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                Add Your First Blog
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const blogs = blogsResult.data;
+
+                // Generate affiliate program sections for each blog
+                let programsHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #1e293b; margin-bottom: 15px;">🎯 Affiliate Program Management</h3>
+                        <p style="color: #64748b; margin-bottom: 25px; font-size: 14px;">
+                            Add affiliate programs to your blogs to generate revenue-optimized content that drives sales naturally.
+                        </p>
+                    </div>
+                `;
+
+                for (const blog of blogs) {
+                    // Load affiliate programs for this blog
+                    const programsResult = await SupabaseService.loadAffiliatePrograms(blog.id);
+                    const programs = programsResult.success ? programsResult.data : [];
+
+                    programsHTML += `
+                        <div style="margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <div>
+                                    <h4 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 600;">${blog.name}</h4>
+                                    <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">${programs.length} affiliate program${programs.length !== 1 ? 's' : ''}</p>
+                                </div>
+                                <button onclick="showAddAffiliateProgramForm('${blog.id}', '${blog.name}')" style="background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s; box-shadow: 0 2px 8px rgba(16, 163, 127, 0.3);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(16, 163, 127, 0.4)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 8px rgba(16, 163, 127, 0.3)'">
+                                    ➕ Add Affiliate Program
+                                </button>
+                            </div>
+
+                            ${programs.length === 0 ? `
+                                <div style="background: white; padding: 40px; border-radius: 8px; text-align: center; border: 2px dashed #e2e8f0;">
+                                    <div style="font-size: 36px; margin-bottom: 10px;">💸</div>
+                                    <p style="color: #64748b; margin: 0;">No affiliate programs yet for this blog.</p>
+                                    <p style="color: #94a3b8; font-size: 13px; margin-top: 8px;">Add programs like Viome or Seed to start generating revenue content.</p>
+                                </div>
+                            ` : `
+                                <div style="display: flex; flex-direction: column; gap: 12px;">
+                                    ${programs.map(program => generateAffiliateProgramCard(program, blog)).join('')}
+                                </div>
+                            `}
+                        </div>
+                    `;
+                }
+
+                affiliateTabContent.innerHTML = programsHTML;
+
+            } catch (error) {
+                console.error('Error loading affiliate programs:', error);
+                affiliateTabContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px; background: #fef2f2; border-radius: 12px; border: 1px solid #fecaca;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+                        <p style="color: #991b1b;">Error loading affiliate programs: ${error.message}</p>
+                        <button onclick="loadAffiliateProgramsView()" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-top: 15px;">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Generate affiliate program card
+        function generateAffiliateProgramCard(program, blog) {
+            const statusBadge = program.signup_status === 'approved' || program.signup_status === 'active'
+                ? `<span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">✓ Active</span>`
+                : program.signup_status === 'pending'
+                ? `<span style="background: #f59e0b; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">⏱ Pending</span>`
+                : `<span style="background: #64748b; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">${program.signup_status}</span>`;
+
+            const aiInsights = program.ai_summary ? JSON.parse(program.ai_summary) : null;
+
+            return `
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                                <h5 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 600;">${program.program_name}</h5>
+                                ${statusBadge}
+                            </div>
+                            ${program.network ? `<p style="color: #64748b; font-size: 12px; margin: 0;">Network: ${program.network}</p>` : ''}
+                        </div>
+                        <button onclick="viewAffiliateDetails('${program.id}')" style="background: #f1f5f9; color: #334155; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                            View Details
+                        </button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+                        ${program.commission_rate ? `
+                            <div>
+                                <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Commission</div>
+                                <div style="color: #1e293b; font-size: 14px; font-weight: 600;">${program.commission_rate}</div>
+                            </div>
+                        ` : ''}
+                        ${program.cookie_duration ? `
+                            <div>
+                                <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Cookie Duration</div>
+                                <div style="color: #1e293b; font-size: 14px; font-weight: 600;">${program.cookie_duration}</div>
+                            </div>
+                        ` : ''}
+                        ${program.minimum_payout ? `
+                            <div>
+                                <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Min. Payout</div>
+                                <div style="color: #1e293b; font-size: 14px; font-weight: 600;">$${program.minimum_payout}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    ${aiInsights ? `
+                        <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; margin-top: 12px; border: 1px solid #86efac;">
+                            <div style="color: #166534; font-size: 12px; font-weight: 600; margin-bottom: 6px;">AI Insights</div>
+                            <div style="color: #15803d; font-size: 12px;">${aiInsights.overview || 'AI analysis available'}</div>
+                        </div>
+                    ` : ''}
+
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button onclick="generateAffiliateContent('${program.id}', '${blog.id}')" style="flex: 1; background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            ✨ Generate Content
+                        </button>
+                        <button onclick="deleteAffiliateProgram('${program.id}')" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show add affiliate program form
+        function showAddAffiliateProgramForm(blogId, blogName) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+
+            modalContent.innerHTML = `
+                <div style="padding: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0; color: #1e293b;">Add Affiliate Program</h2>
+                        <button onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;" onmouseover="this.style.color='#1e293b'" onmouseout="this.style.color='#64748b'">×</button>
+                    </div>
+
+                    <p style="color: #64748b; margin-bottom: 20px; font-size: 14px;">
+                        Adding to: <strong>${blogName}</strong>
+                    </p>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #64748b; font-weight: 600;">Program Name *</label>
+                        <input type="text" id="affiliateProgramName" placeholder="e.g., Viome, Seed Probiotics" style="width: 100%;">
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                            Enter the affiliate program or company name
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #64748b; font-weight: 600;">Program URL (Optional)</label>
+                        <input type="url" id="affiliateProgramUrl" placeholder="https://affiliate-program-url.com" style="width: 100%;">
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                            Link to the affiliate program website or affiliate dashboard
+                        </div>
+                    </div>
+
+                    <div style="background: #f0fdf4; padding: 16px; border-radius: 8px; border: 1px solid #86efac; margin-bottom: 20px;">
+                        <div style="color: #166534; font-size: 13px; font-weight: 600; margin-bottom: 8px;">🤖 AI Research</div>
+                        <div style="color: #15803d; font-size: 12px;">
+                            Our AI will automatically research the program to find:
+                        </div>
+                        <ul style="color: #15803d; font-size: 12px; margin: 8px 0 0 20px; padding: 0;">
+                            <li>Commission rates and payment terms</li>
+                            <li>Cookie duration and tracking details</li>
+                            <li>Best keywords for affiliate content</li>
+                            <li>Content ideas with traffic potential</li>
+                            <li>Natural ways to embed affiliate links</li>
+                        </ul>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="closeModal()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                            Cancel
+                        </button>
+                        <button onclick="addAffiliateProgram('${blogId}')" style="flex: 1; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(16, 163, 127, 0.3);">
+                            🔍 Research & Add Program
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+        }
+
+        // Add affiliate program with AI research
+        async function addAffiliateProgram(blogId) {
+            const programName = document.getElementById('affiliateProgramName').value.trim();
+            const programUrl = document.getElementById('affiliateProgramUrl').value.trim();
+
+            if (!programName) {
+                showToast('Please enter a program name', 'error');
+                return;
+            }
+
+            const modalContent = document.getElementById('modal-content');
+            modalContent.innerHTML = `
+                <div style="padding: 40px; text-align: center;">
+                    <div class="spinner" style="margin: 0 auto 20px;"></div>
+                    <h3 style="color: #1e293b; margin-bottom: 10px;">Researching ${programName}...</h3>
+                    <p style="color: #64748b; font-size: 14px;">Our AI is analyzing the affiliate program, commission structure, and content opportunities.</p>
+                    <p style="color: #94a3b8; font-size: 12px; margin-top: 15px;">This may take 30-60 seconds</p>
+                </div>
+            `;
+
+            try {
+                // Call backend AI research endpoint
+                const response = await fetch('/.netlify/functions/api/affiliate-research', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        program_name: programName,
+                        program_url: programUrl,
+                        blog_id: blogId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to research affiliate program');
+                }
+
+                // Save the affiliate program with AI insights to Supabase
+                const saveResult = await SupabaseService.saveAffiliateProgram({
+                    blog_id: blogId,
+                    program_name: programName,
+                    program_url: programUrl || result.program_url,
+                    network: result.network,
+                    commission_rate: result.commission_rate,
+                    commission_type: result.commission_type,
+                    cookie_duration: result.cookie_duration,
+                    minimum_payout: result.minimum_payout,
+                    payment_frequency: result.payment_frequency,
+                    payment_methods: result.payment_methods,
+                    terms_summary: result.terms_summary,
+                    program_requirements: result.program_requirements,
+                    prohibited_content: result.prohibited_content,
+                    disclosure_required: result.disclosure_required,
+                    ai_summary: JSON.stringify(result.ai_summary),
+                    target_audience: result.target_audience,
+                    content_opportunities: JSON.stringify(result.content_opportunities),
+                    competitive_analysis: result.competitive_analysis,
+                    signup_status: 'pending',
+                    status: 'active'
+                });
+
+                if (!saveResult.success) {
+                    throw new Error(saveResult.error || 'Failed to save affiliate program');
+                }
+
+                closeModal();
+                showToast(`✅ ${programName} added successfully!`, 'success');
+                loadAffiliateProgramsView(); // Reload the view
+
+            } catch (error) {
+                console.error('Error adding affiliate program:', error);
+                modalContent.innerHTML = `
+                    <div style="padding: 40px; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+                        <h3 style="color: #991b1b; margin-bottom: 10px;">Research Failed</h3>
+                        <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">${error.message}</p>
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button onclick="closeModal()" style="background: #f1f5f9; color: #334155; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                Close
+                            </button>
+                            <button onclick="addAffiliateProgram('${blogId}')" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                Try Again
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Delete affiliate program
+        async function deleteAffiliateProgram(programId) {
+            if (!confirm('Are you sure you want to delete this affiliate program? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const result = await SupabaseService.deleteAffiliateProgram(programId);
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to delete affiliate program');
+                }
+
+                showToast('Affiliate program deleted successfully', 'success');
+                loadAffiliateProgramsView(); // Reload the view
+
+            } catch (error) {
+                console.error('Error deleting affiliate program:', error);
+                showToast('Failed to delete affiliate program: ' + error.message, 'error');
+            }
+        }
+
+        // View affiliate program details (placeholder for now)
+        function viewAffiliateDetails(programId) {
+            showToast('Detailed view coming soon! For now, use the Generate Content button to create affiliate articles.', 'info');
+        }
+
+        // Generate affiliate content (placeholder for now)
+        function generateAffiliateContent(programId, blogId) {
+            showToast('Content generation integration coming next! This will create conversion-optimized articles with natural affiliate links.', 'info');
         }
 
         // Get real traffic stats for an article from Google Analytics

@@ -4463,6 +4463,208 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
     }
 
+    // Affiliate Program Research endpoint
+    if (path === '/api/affiliate-research' && method === 'POST') {
+      const { program_name, program_url, blog_id } = body;
+
+      if (!program_name) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Program name is required'
+          })
+        };
+      }
+
+      try {
+        console.log(`🔍 Researching affiliate program: ${program_name}`);
+
+        // Step 1: Web search for affiliate program information
+        const searchQuery = program_url
+          ? `${program_name} affiliate program commission rates terms`
+          : `${program_name} affiliate program`;
+
+        let affiliateInfo = {
+          program_url: program_url || '',
+          network: null,
+          commission_rate: null,
+          commission_type: null,
+          cookie_duration: null,
+          minimum_payout: null,
+          payment_frequency: null,
+          payment_methods: [],
+          terms_summary: null,
+          program_requirements: null,
+          prohibited_content: [],
+          disclosure_required: true
+        };
+
+        // Perform web search
+        const searchResponse = await fetch(`${SERPER_BASE_URL}/search`, {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': SERPER_API_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            q: searchQuery,
+            num: 5,
+            gl: 'us',
+            hl: 'en'
+          })
+        });
+
+        const searchData = await searchResponse.json();
+
+        // Extract useful information from search results
+        let searchContext = '';
+        if (searchData.organic && searchData.organic.length > 0) {
+          searchContext = searchData.organic
+            .slice(0, 5)
+            .map(result => `Title: ${result.title}\nSnippet: ${result.snippet}\nURL: ${result.link}`)
+            .join('\n\n');
+        }
+
+        // If no program URL was provided, try to find it from search results
+        if (!affiliateInfo.program_url && searchData.organic && searchData.organic.length > 0) {
+          const programResult = searchData.organic.find(r =>
+            r.link && (r.link.includes('affiliate') || r.title.toLowerCase().includes('affiliate'))
+          );
+          if (programResult) {
+            affiliateInfo.program_url = programResult.link;
+          }
+        }
+
+        // Step 2: Use AI to analyze search results and extract affiliate program details
+        const analysisPrompt = `You are an expert affiliate marketing analyst. Analyze the following web search results for the "${program_name}" affiliate program and extract key details.
+
+Search Results:
+${searchContext || 'No search results available'}
+
+Extract and return the following information in JSON format. If information is not available, use null:
+
+{
+  "network": "Name of the affiliate network (e.g., ShareASale, Impact, CJ, Direct)",
+  "commission_rate": "Commission rate (e.g., '10%', '$50 per sale', '5-15% tiered')",
+  "commission_type": "Type: 'percentage', 'flat', 'tiered', or 'hybrid'",
+  "cookie_duration": "Cookie duration (e.g., '30 days', '60 days', 'lifetime')",
+  "minimum_payout": "Minimum payout amount as number (e.g., 50 for $50)",
+  "payment_frequency": "How often they pay (e.g., 'monthly', 'net-30', 'net-60')",
+  "payment_methods": ["Array of payment methods like PayPal, Direct Deposit, Wire"],
+  "terms_summary": "2-3 sentence summary of key terms and conditions",
+  "program_requirements": "Requirements to join or maintain affiliate status",
+  "prohibited_content": ["Array of prohibited content types or practices"],
+  "ai_summary": {
+    "overview": "1-2 sentence overview of what this company/product does",
+    "products": ["Array of main products or services"],
+    "commission_structure": "Detailed explanation of how commissions work",
+    "pros": ["3-5 advantages of this affiliate program"],
+    "cons": ["2-3 potential disadvantages or challenges"],
+    "best_content_types": ["Best types of content for this affiliate program"]
+  },
+  "target_audience": "Who this affiliate program is best suited for (1-2 sentences)",
+  "content_opportunities": {
+    "review_articles": ["3-5 article title ideas for product reviews"],
+    "comparison_articles": ["3-5 article title ideas comparing to competitors"],
+    "guide_articles": ["3-5 article title ideas for how-to guides"],
+    "keywords": ["10-15 high-intent keywords for affiliate content that drive sales"]
+  },
+  "competitive_analysis": "How this program compares to similar affiliate programs (2-3 sentences)"
+}
+
+IMPORTANT GUIDELINES FOR CONTENT IDEAS:
+- All article titles should be designed to naturally incorporate affiliate links
+- Focus on commercial intent keywords that indicate readiness to purchase
+- Titles should sound helpful and informative, NOT salesy
+- Each article type should allow for natural affiliate link placement
+- Keywords should have buying intent (e.g., "best", "review", "vs", "worth it", "how to use")
+
+Return ONLY the JSON object, no additional text.`;
+
+        const aiResponse = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://getseowizard.com',
+            'X-Title': 'SEO Wizard - Affiliate Research'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [
+              {
+                role: 'user',
+                content: analysisPrompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 2000
+          })
+        });
+
+        const aiData = await aiResponse.json();
+
+        if (!aiData.choices || !aiData.choices[0]) {
+          throw new Error('AI analysis failed to return results');
+        }
+
+        let aiAnalysis;
+        try {
+          const aiContent = aiData.choices[0].message.content;
+          // Remove markdown code blocks if present
+          const jsonMatch = aiContent.match(/```json\n([\s\S]*?)\n```/) || aiContent.match(/```\n([\s\S]*?)\n```/);
+          const jsonString = jsonMatch ? jsonMatch[1] : aiContent;
+          aiAnalysis = JSON.parse(jsonString);
+        } catch (parseError) {
+          console.error('Failed to parse AI response:', parseError);
+          throw new Error('Failed to parse AI analysis results');
+        }
+
+        // Merge AI analysis with affiliate info
+        const result = {
+          success: true,
+          program_url: affiliateInfo.program_url || aiAnalysis.program_url,
+          network: aiAnalysis.network,
+          commission_rate: aiAnalysis.commission_rate,
+          commission_type: aiAnalysis.commission_type,
+          cookie_duration: aiAnalysis.cookie_duration,
+          minimum_payout: aiAnalysis.minimum_payout,
+          payment_frequency: aiAnalysis.payment_frequency,
+          payment_methods: aiAnalysis.payment_methods,
+          terms_summary: aiAnalysis.terms_summary,
+          program_requirements: aiAnalysis.program_requirements,
+          prohibited_content: aiAnalysis.prohibited_content,
+          disclosure_required: true,
+          ai_summary: aiAnalysis.ai_summary,
+          target_audience: aiAnalysis.target_audience,
+          content_opportunities: aiAnalysis.content_opportunities,
+          competitive_analysis: aiAnalysis.competitive_analysis
+        };
+
+        console.log(`✅ Affiliate research completed for: ${program_name}`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(result)
+        };
+
+      } catch (error) {
+        console.error('Affiliate research error:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Failed to research affiliate program',
+            message: error.message
+          })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
@@ -4487,7 +4689,8 @@ Generate a professional, actionable outline that a content writer can follow to 
           'POST /api/wordpress-test-connection',
           'POST /api/wordpress-publish',
           'POST /api/wordpress-categories',
-          'POST /api/wordpress-create-category'
+          'POST /api/wordpress-create-category',
+          'POST /api/affiliate-research'
         ]
       })
     };
