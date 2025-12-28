@@ -8458,10 +8458,34 @@
                 <div style="padding: 40px; text-align: center;">
                     <div class="spinner" style="margin: 0 auto 20px;"></div>
                     <h3 style="color: #1e293b; margin-bottom: 10px;">Researching ${programName}...</h3>
+                    <div id="progress-status" style="color: #10a37f; font-size: 14px; font-weight: 600; margin-bottom: 10px;">
+                        🔍 Searching for affiliate program information...
+                    </div>
                     <p style="color: #64748b; font-size: 14px;">Our AI is analyzing the affiliate program, commission structure, and content opportunities.</p>
                     <p style="color: #94a3b8; font-size: 12px; margin-top: 15px;">This may take 30-60 seconds</p>
                 </div>
             `;
+
+            // Animate progress status
+            const progressMessages = [
+                '🔍 Searching for affiliate program information...',
+                '📊 Analyzing commission rates and terms...',
+                '💡 Generating content ideas...',
+                '🎯 Identifying ranking opportunities...',
+                '✍️ Creating article suggestions...'
+            ];
+
+            let messageIndex = 0;
+            const progressInterval = setInterval(() => {
+                messageIndex = (messageIndex + 1) % progressMessages.length;
+                const statusEl = document.getElementById('progress-status');
+                if (statusEl) {
+                    statusEl.textContent = progressMessages[messageIndex];
+                    statusEl.style.animation = 'fadeIn 0.5s ease-in';
+                } else {
+                    clearInterval(progressInterval);
+                }
+            }, 3000);
 
             try {
                 // Call backend AI research endpoint
@@ -8525,12 +8549,14 @@
                     throw new Error(saveResult.error || 'Failed to save affiliate program');
                 }
 
+                clearInterval(progressInterval);
                 closeModal();
                 showToast(`✅ ${programName} added successfully!`, 'success');
                 loadAffiliateProgramsView(); // Reload the view
 
             } catch (error) {
                 console.error('Error adding affiliate program:', error);
+                clearInterval(progressInterval);
                 modalContent.innerHTML = `
                     <div style="padding: 40px; text-align: center;">
                         <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
@@ -8546,6 +8572,9 @@
                         </div>
                     </div>
                 `;
+            } finally {
+                // Clean up progress animation interval
+                clearInterval(progressInterval);
             }
         }
 
