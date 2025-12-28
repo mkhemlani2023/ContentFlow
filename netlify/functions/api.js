@@ -4482,9 +4482,10 @@ Generate a professional, actionable outline that a content writer can follow to 
         console.log(`🔍 Researching affiliate program: ${program_name}`);
 
         // Step 1: Web search for affiliate program information
+        // If URL provided, search for that specific site's affiliate program
         const searchQuery = program_url
-          ? `${program_name} affiliate program commission rates terms`
-          : `${program_name} affiliate program`;
+          ? `site:${program_url.replace(/^https?:\/\//, '').replace(/\/$/, '')} affiliate program OR commission rates OR partner program`
+          : `${program_name} affiliate program commission rates terms`;
 
         let affiliateInfo = {
           program_url: program_url || '',
@@ -4500,6 +4501,8 @@ Generate a professional, actionable outline that a content writer can follow to 
           prohibited_content: [],
           disclosure_required: true
         };
+
+        console.log(`🔍 Search query: ${searchQuery}`);
 
         // Perform web search
         const searchResponse = await fetch(`${SERPER_BASE_URL}/search`, {
