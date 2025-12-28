@@ -8658,10 +8658,9 @@
 
                     <div style="display: flex; flex-direction: column; gap: 12px;">
                         ${allArticles.map((article, index) => `
-                            <div style="background: white; border: 2px solid #e2e8f0; padding: 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
+                            <div style="background: white; border: 2px solid #e2e8f0; padding: 16px; border-radius: 8px; transition: all 0.2s;"
                                  onmouseover="this.style.borderColor='#10a37f'; this.style.boxShadow='0 4px 12px rgba(16, 163, 127, 0.15)'"
-                                 onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'"
-                                 onclick="startAffiliateArticleGeneration('${program.id}', '${blogId}', ${index})">
+                                 onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
                                 <div style="display: flex; align-items: start; gap: 12px;">
                                     <div style="font-size: 24px;">${article.emoji}</div>
                                     <div style="flex: 1;">
@@ -8691,6 +8690,13 @@
                                                 <div style="color: #78350f; font-size: 12px;">${article.affiliate_link_opportunities}</div>
                                             </div>
                                         ` : ''}
+
+                                        <button onclick="event.stopPropagation(); startAffiliateArticleGeneration('${program.id}', '${blogId}', ${index})"
+                                                style="width: 100%; margin-top: 12px; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; box-shadow: 0 2px 6px rgba(16, 163, 127, 0.3); transition: all 0.2s;"
+                                                onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(16, 163, 127, 0.4)'"
+                                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(16, 163, 127, 0.3)'">
+                                            ✍️ Generate Article
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -8728,11 +8734,6 @@
             const article = data.allArticles[articleIndex];
             const program = data.program;
 
-            closeModal();
-
-            // Navigate to article generation with pre-filled affiliate data
-            showToast('Preparing affiliate article generation...', 'info');
-
             // Use the target keyword as the main keyword for generation
             const keyword = article.target_keyword || article.title;
 
@@ -8744,13 +8745,115 @@
                 linkPlacementStrategy: article.affiliate_link_opportunities,
                 commission: program.commission_rate,
                 targetKeyword: keyword,
-                articleType: article.type
+                articleType: article.type,
+                monthlySearches: article.monthly_searches,
+                rankingPotential: article.ranking_potential
             };
 
-            // Populate the keyword field and switch to article generation view
-            document.getElementById('keyword').value = keyword;
+            // Show article generation modal
+            showAffiliateArticleGenerationModal(article, program);
+        }
 
-            showToast(`Ready to generate: "${article.title}". Click Generate Article to create conversion-optimized content!`, 'success');
+        // Show modal for affiliate article generation
+        function showAffiliateArticleGenerationModal(article, program) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+
+            const wordCount = 2000;
+            const difficulty = article.ranking_potential || 'medium';
+            const intent = 'commercial';
+
+            modalContent.innerHTML = `
+                <div style="padding: 30px; max-width: 600px;">
+                    <h2 style="color: #1e293b; margin: 0 0 20px 0; font-size: 22px;">✍️ Generate Affiliate Article</h2>
+
+                    <div style="background: #f0fdf4; padding: 16px; border-radius: 8px; border: 1px solid #86efac; margin-bottom: 20px;">
+                        <div style="color: #166534; font-size: 15px; font-weight: 600; margin-bottom: 8px;">${article.title}</div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                            <div>
+                                <div style="color: #15803d; font-size: 11px;">Target Keyword</div>
+                                <div style="color: #166534; font-size: 13px; font-weight: 600;">${article.target_keyword}</div>
+                            </div>
+                            <div>
+                                <div style="color: #15803d; font-size: 11px;">Monthly Searches</div>
+                                <div style="color: #166534; font-size: 13px; font-weight: 600;">${article.monthly_searches ? (typeof article.monthly_searches === 'number' ? article.monthly_searches.toLocaleString() : article.monthly_searches) : 'N/A'}</div>
+                            </div>
+                            <div>
+                                <div style="color: #15803d; font-size: 11px;">Affiliate Program</div>
+                                <div style="color: #166534; font-size: 13px; font-weight: 600;">${program.program_name}</div>
+                            </div>
+                            <div>
+                                <div style="color: #15803d; font-size: 11px;">Article Type</div>
+                                <div style="color: #166534; font-size: 13px; font-weight: 600;">${article.type}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${article.affiliate_link_opportunities ? `
+                        <div style="background: #fef3c7; padding: 14px; border-radius: 8px; border-left: 3px solid #f59e0b; margin-bottom: 20px;">
+                            <div style="color: #92400e; font-size: 12px; font-weight: 600; margin-bottom: 6px;">💡 Link Placement Strategy</div>
+                            <div style="color: #78350f; font-size: 12px;">${article.affiliate_link_opportunities}</div>
+                        </div>
+                    ` : ''}
+
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="color: #64748b; font-size: 13px; font-weight: 600; margin-bottom: 12px;">Choose Article Quality:</div>
+
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <button onclick="generateAffiliateArticle('${article.title.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}', 'basic', 25)"
+                                    style="width: 100%; background: #64748b; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; text-align: left; transition: all 0.2s;"
+                                    onmouseover="this.style.background='#475569'"
+                                    onmouseout="this.style.background='#64748b'">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span>⚡ Basic (GPT-4o-mini)</span>
+                                    <span style="font-size: 12px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px;">25 credits</span>
+                                </div>
+                            </button>
+
+                            <button onclick="generateAffiliateArticle('${article.title.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}', 'premium', 50)"
+                                    style="width: 100%; background: #78716c; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; text-align: left; transition: all 0.2s;"
+                                    onmouseover="this.style.background='#57534e'"
+                                    onmouseout="this.style.background='#78716c'">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span>🚀 Premium (GPT-4o)</span>
+                                    <span style="font-size: 12px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px;">50 credits</span>
+                                </div>
+                            </button>
+
+                            <button onclick="generateAffiliateArticle('${article.title.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}', 'enterprise', 85)"
+                                    style="width: 100%; background: #334155; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; text-align: left; transition: all 0.2s;"
+                                    onmouseover="this.style.background='#1e293b'"
+                                    onmouseout="this.style.background='#334155'">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span>💎 Enterprise (Claude Sonnet)</span>
+                                    <span style="font-size: 12px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px;">85 credits</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="closeModal()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+        }
+
+        // Generate affiliate article with selected model
+        async function generateAffiliateArticle(title, wordCount, difficulty, intent, modelTier, creditCost) {
+            closeModal();
+
+            try {
+                // Generate article with affiliate context
+                await generateArticleWithOutline(title, wordCount, difficulty, intent, modelTier, creditCost);
+            } catch (error) {
+                console.error('Affiliate article generation error:', error);
+                showToast('Failed to generate article: ' + error.message, 'error');
+            }
         }
 
         // Close modal

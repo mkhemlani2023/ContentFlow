@@ -4643,7 +4643,7 @@ Extract and return the following information in JSON format. If information is n
       {
         "title": "Complete SEO-optimized article title with keyword naturally included",
         "target_keyword": "Exact keyword phrase this targets",
-        "monthly_searches": "Estimated monthly searches as number",
+        "monthly_searches": 2400,
         "ranking_potential": "low/medium/high",
         "affiliate_link_opportunities": "SPECIFIC placement strategy with context (e.g., 'After section explaining gut microbiome science, introduce Viome test as personalized solution with affiliate link to purchase page')"
       }
@@ -4652,7 +4652,7 @@ Extract and return the following information in JSON format. If information is n
       {
         "title": "Complete comparison title with both products/brands",
         "target_keyword": "Exact comparison keyword",
-        "monthly_searches": "Estimated monthly searches",
+        "monthly_searches": 1800,
         "ranking_potential": "low/medium/high",
         "affiliate_link_opportunities": "SPECIFIC placement (e.g., 'In side-by-side comparison table, link product name to affiliate page. In conclusion, recommend winner with affiliate link and discount code')"
       }
@@ -4661,7 +4661,7 @@ Extract and return the following information in JSON format. If information is n
       {
         "title": "Complete how-to title with keyword",
         "target_keyword": "Exact keyword phrase",
-        "monthly_searches": "Estimated monthly searches",
+        "monthly_searches": 3200,
         "ranking_potential": "low/medium/high",
         "affiliate_link_opportunities": "SPECIFIC placement (e.g., 'After explaining the process, recommend specific product as best tool with affiliate link in step-by-step instructions')"
       }
@@ -4673,7 +4673,10 @@ Extract and return the following information in JSON format. If information is n
 CRITICAL GUIDELINES:
 1. KEYWORD RESEARCH FIRST: Base ALL content ideas on actual keywords from the research data provided above
 2. PROVIDE AT LEAST 5 IDEAS FOR EACH TYPE: 5+ review articles, 5+ comparison articles, 5+ guide articles
-3. INCLUDE SEARCH VOLUMES: Every article must have estimated monthly searches (use the keyword data provided)
+3. INCLUDE SEARCH VOLUMES: Every article MUST have "monthly_searches" as a NUMBER (e.g., 2400, not "2,400" or "2.4k")
+   - Use whole numbers only (e.g., 2400, 1800, 950)
+   - NO strings, NO commas, NO ranges, NO text - ONLY numbers
+   - If exact data unavailable, provide best numeric estimate based on keyword research
 4. RANKING POTENTIAL: Analyze actual SERP competition to determine low/medium/high
 5. NATURAL LINK PLACEMENT: Each article needs SPECIFIC, DETAILED link placement instructions with context
 6. COMMERCIAL INTENT: Prioritize keywords that show buying intent (review, vs, best, worth it, discount, etc.)
