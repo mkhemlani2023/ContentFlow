@@ -8393,10 +8393,10 @@
                     </div>
 
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #64748b; font-weight: 600;">Your Affiliate Link *</label>
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #64748b; font-weight: 600;">Your Affiliate Link (Optional)</label>
                         <input type="url" id="affiliateLinkTemplate" placeholder="https://viome.com/ref/YOURCODE or https://affiliate-network.com/track?id=12345" style="width: 100%;">
                         <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
-                            🔗 Your unique affiliate tracking link - all sales will be credited to this link
+                            🔗 Your unique affiliate tracking link - leave empty for testing without a real program
                         </div>
                     </div>
 
@@ -8447,10 +8447,11 @@
                 return;
             }
 
-            if (!affiliateLink) {
-                showToast('Please enter your affiliate link - this is how sales will be tracked!', 'error');
-                return;
-            }
+            // Affiliate link is now optional for testing purposes
+            // if (!affiliateLink) {
+            //     showToast('Please enter your affiliate link - this is how sales will be tracked!', 'error');
+            //     return;
+            // }
 
             const modalContent = document.getElementById('modal-content');
             modalContent.innerHTML = `
