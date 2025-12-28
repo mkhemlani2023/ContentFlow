@@ -4537,66 +4537,18 @@ Generate a professional, actionable outline that a content writer can follow to 
           }
         }
 
-        // Step 2: Perform keyword research to find rankable opportunities
-        console.log(`🔍 Performing keyword research for ${program_name}...`);
+        // Step 2: Skip detailed keyword research to avoid timeouts
+        // AI will generate content ideas based on general knowledge instead
+        console.log(`🤖 Generating content ideas for ${program_name}...`);
 
-        // REDUCED: Only 3 keyword searches to avoid timeout (was 6)
-        const keywordSearchTerms = [
-          `${program_name} review`,
-          `${program_name} vs`,
-          `best ${program_name}`
-        ];
-
-        let keywordData = [];
-
-        // Search for keyword opportunities
-        for (const term of keywordSearchTerms) {
-          try {
-            const kwResponse = await fetch(`${SERPER_BASE_URL}/search`, {
-              method: 'POST',
-              headers: {
-                'X-API-KEY': SERPER_API_KEY,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                q: term,
-                num: 3,
-                gl: 'us',
-                hl: 'en'
-              })
-            });
-
-            const kwData = await kwResponse.json();
-
-            if (kwData.organic && kwData.organic.length > 0) {
-              keywordData.push({
-                keyword: term,
-                results: kwData.organic.slice(0, 3).map(r => ({
-                  title: r.title,
-                  snippet: r.snippet,
-                  position: r.position
-                })),
-                // Estimate difficulty based on domain authority of ranking pages
-                estimatedDifficulty: kwData.organic[0].position <= 3 ? 'High' :
-                                    kwData.organic[0].position <= 7 ? 'Medium' : 'Low'
-              });
-            }
-          } catch (kwError) {
-            console.warn(`Keyword research failed for "${term}":`, kwError.message);
-          }
-        }
-
-        // Step 3: Use AI to analyze search results, keyword opportunities, and extract affiliate program details
-        const keywordContext = keywordData.length > 0
-          ? keywordData.map(kw => `Keyword: "${kw.keyword}" (Difficulty: ${kw.estimatedDifficulty})\nTop Results: ${kw.results.map(r => r.title).join(', ')}`).join('\n\n')
-          : 'No keyword data available';
+        const keywordContext = `Generate content ideas for "${program_name}" based on common affiliate marketing best practices and typical search patterns for this type of product/service.`;
 
         const analysisPrompt = `You are an expert affiliate marketing and SEO analyst. Analyze the following information for the "${program_name}" affiliate program and create a comprehensive SEO-driven affiliate strategy.
 
 AFFILIATE PROGRAM INFORMATION:
 ${searchContext || 'No search results available'}
 
-KEYWORD RESEARCH & RANKING OPPORTUNITIES:
+CONTENT STRATEGY:
 ${keywordContext}
 
 STRATEGIC OBJECTIVES:
