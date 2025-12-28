@@ -4482,10 +4482,7 @@ Generate a professional, actionable outline that a content writer can follow to 
         console.log(`🔍 Researching affiliate program: ${program_name}`);
 
         // Step 1: Web search for affiliate program information
-        // If URL provided, search for that specific site's affiliate program
-        const searchQuery = program_url
-          ? `site:${program_url.replace(/^https?:\/\//, '').replace(/\/$/, '')} affiliate program OR commission rates OR partner program`
-          : `${program_name} affiliate program commission rates terms`;
+        let searchQuery = `${program_name} affiliate program commission rates terms`;
 
         let affiliateInfo = {
           program_url: program_url || '',
@@ -4505,21 +4502,35 @@ Generate a professional, actionable outline that a content writer can follow to 
         console.log(`🔍 Search query: ${searchQuery}`);
 
         // Perform web search
-        const searchResponse = await fetch(`${SERPER_BASE_URL}/search`, {
-          method: 'POST',
-          headers: {
-            'X-API-KEY': SERPER_API_KEY,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            q: searchQuery,
-            num: 5,
-            gl: 'us',
-            hl: 'en'
-          })
-        });
+        let searchResponse;
+        let searchData;
 
-        const searchData = await searchResponse.json();
+        try {
+          searchResponse = await fetch(`${SERPER_BASE_URL}/search`, {
+            method: 'POST',
+            headers: {
+              'X-API-KEY': SERPER_API_KEY,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              q: searchQuery,
+              num: 5,
+              gl: 'us',
+              hl: 'en'
+            })
+          });
+
+          searchData = await searchResponse.json();
+
+          if (!searchResponse.ok) {
+            console.error('Serper API error:', searchData);
+            throw new Error('Search API returned an error');
+          }
+        } catch (searchError) {
+          console.error('Search failed:', searchError);
+          // Continue with limited data
+          searchData = { organic: [] };
+        }
 
         // Extract useful information from search results
         let searchContext = '';
@@ -4528,6 +4539,9 @@ Generate a professional, actionable outline that a content writer can follow to 
             .slice(0, 5)
             .map(result => `Title: ${result.title}\nSnippet: ${result.snippet}\nURL: ${result.link}`)
             .join('\n\n');
+        } else {
+          // If no search results, provide basic context
+          searchContext = `Program Name: ${program_name}\n${program_url ? `Website: ${program_url}` : 'No additional information available'}`;
         }
 
         // If no program URL was provided, try to find it from search results
@@ -4642,43 +4656,60 @@ EXAMPLE OF GOOD vs BAD:
 
 Return ONLY the JSON object, no additional text.`;
 
-        const aiResponse = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://getseowizard.com',
-            'X-Title': 'SEO Wizard - Affiliate Research'
-          },
-          body: JSON.stringify({
-            model: 'openai/gpt-4o-mini',
-            messages: [
-              {
-                role: 'user',
-                content: analysisPrompt
-              }
-            ],
-            temperature: 0.7,
-            max_tokens: 4000
-          })
-        });
+        let aiResponse;
+        let aiData;
 
-        const aiData = await aiResponse.json();
+        try {
+          aiResponse = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://getseowizard.com',
+              'X-Title': 'SEO Wizard - Affiliate Research'
+            },
+            body: JSON.stringify({
+              model: 'openai/gpt-4o-mini',
+              messages: [
+                {
+                  role: 'user',
+                  content: analysisPrompt
+                }
+              ],
+              temperature: 0.7,
+              max_tokens: 4000
+            })
+          });
 
-        if (!aiData.choices || !aiData.choices[0]) {
-          throw new Error('AI analysis failed to return results');
+          aiData = await aiResponse.json();
+
+          if (!aiResponse.ok) {
+            console.error('OpenRouter API error:', aiData);
+            throw new Error(`AI API error: ${aiData.error?.message || 'Unknown error'}`);
+          }
+
+          if (!aiData.choices || !aiData.choices[0]) {
+            console.error('AI returned no choices:', aiData);
+            throw new Error('AI analysis failed to return results');
+          }
+        } catch (aiError) {
+          console.error('AI request failed:', aiError);
+          throw new Error(`AI analysis failed: ${aiError.message}`);
         }
 
         let aiAnalysis;
         try {
           const aiContent = aiData.choices[0].message.content;
+          console.log('AI response preview:', aiContent.substring(0, 200));
+
           // Remove markdown code blocks if present
           const jsonMatch = aiContent.match(/```json\n([\s\S]*?)\n```/) || aiContent.match(/```\n([\s\S]*?)\n```/);
           const jsonString = jsonMatch ? jsonMatch[1] : aiContent;
           aiAnalysis = JSON.parse(jsonString);
         } catch (parseError) {
           console.error('Failed to parse AI response:', parseError);
-          throw new Error('Failed to parse AI analysis results');
+          console.error('AI content:', aiData.choices[0]?.message?.content?.substring(0, 500));
+          throw new Error('Failed to parse AI analysis results - AI may have returned invalid JSON');
         }
 
         // Merge AI analysis with affiliate info
@@ -4711,14 +4742,17 @@ Return ONLY the JSON object, no additional text.`;
         };
 
       } catch (error) {
-        console.error('Affiliate research error:', error);
+        console.error('❌ Affiliate research error:', error);
+        console.error('Error details:', { name: error.name, message: error.message });
+
         return {
-          statusCode: 500,
+          statusCode: 200, // Return 200 instead of 500 to avoid 502 gateway errors
           headers,
           body: JSON.stringify({
             success: false,
             error: 'Failed to research affiliate program',
-            message: error.message
+            message: error.message,
+            errorType: error.name
           })
         };
       }
