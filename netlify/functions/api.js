@@ -4540,13 +4540,11 @@ Generate a professional, actionable outline that a content writer can follow to 
         // Step 2: Perform keyword research to find rankable opportunities
         console.log(`🔍 Performing keyword research for ${program_name}...`);
 
+        // REDUCED: Only 3 keyword searches to avoid timeout (was 6)
         const keywordSearchTerms = [
           `${program_name} review`,
-          `${program_name} discount`,
-          `best ${program_name}`,
           `${program_name} vs`,
-          `${program_name} worth it`,
-          `${program_name} alternatives`
+          `best ${program_name}`
         ];
 
         let keywordData = [];
@@ -4706,7 +4704,7 @@ Return ONLY the JSON object, no additional text.`;
               }
             ],
             temperature: 0.7,
-            max_tokens: 2000
+            max_tokens: 4000
           })
         });
 

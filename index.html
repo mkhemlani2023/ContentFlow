@@ -8475,7 +8475,22 @@
                     })
                 });
 
-                const result = await response.json();
+                // Check for timeout or other HTTP errors
+                if (response.status === 504) {
+                    throw new Error('Research is taking longer than expected. Please try again with a simpler program name or check your internet connection.');
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Server error (${response.status}). Please try again.`);
+                }
+
+                let result;
+                try {
+                    result = await response.json();
+                } catch (parseError) {
+                    console.error('Failed to parse response:', parseError);
+                    throw new Error('Invalid response from server. Please try again.');
+                }
 
                 if (!result.success) {
                     throw new Error(result.error || 'Failed to research affiliate program');
