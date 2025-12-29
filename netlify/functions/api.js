@@ -4744,7 +4744,7 @@ RULES:
 
         const apiStartTime = Date.now();
         console.log(`[${new Date().toISOString()}] Starting OpenRouter API call...`);
-        console.log(`Model: gpt-4o-mini`);
+        console.log(`Model: claude-3-haiku (FAST)`);
         console.log(`Max tokens: 2000`);
         console.log(`Prompt length: ${analysisPrompt.length} characters`);
 
@@ -4758,7 +4758,7 @@ RULES:
               'X-Title': 'SEO Wizard - Affiliate Research'
             },
             body: JSON.stringify({
-              model: 'openai/gpt-4o-mini',
+              model: 'anthropic/claude-3-haiku',
               messages: [
                 {
                   role: 'user',
