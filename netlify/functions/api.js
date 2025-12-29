@@ -4660,21 +4660,12 @@ Use your knowledge about this affiliate program to provide accurate information.
 
         const keywordContext = `Generate content ideas for "${program_name}" based on common affiliate marketing best practices and typical search patterns for this type of product/service.`;
 
-        const analysisPrompt = `You are an expert affiliate marketing and SEO analyst. Analyze the following information for the "${program_name}" affiliate program and create a comprehensive SEO-driven affiliate strategy.
+        const analysisPrompt = `Generate affiliate content ideas for "${program_name}". Return ONLY valid JSON, no markdown.
 
-AFFILIATE PROGRAM INFORMATION:
-${searchContext || 'No search results available'}
+Program: ${program_name}
+${program_url ? `Website: ${program_url}` : ''}
 
-CONTENT STRATEGY:
-${keywordContext}
-
-STRATEGIC OBJECTIVES:
-1. Identify HIGH-VOLUME, LOW-COMPETITION keywords that can actually rank
-2. Create content ideas designed to rank for these specific keywords
-3. Ensure each article naturally incorporates affiliate links (NOT forced or salesy)
-4. Focus on commercial intent keywords that drive conversions
-
-Extract and return the following information in JSON format. If information is not available, use null:
+Provide realistic estimates. Return this exact JSON structure:
 
 {
   "network": "Name of the affiliate network (e.g., ShareASale, Impact, CJ, Direct)",
@@ -4737,24 +4728,12 @@ Extract and return the following information in JSON format. If information is n
   "competitive_analysis": "How this program compares to similar affiliate programs (2-3 sentences)"
 }
 
-CRITICAL GUIDELINES:
-1. KEYWORD RESEARCH FIRST: Base ALL content ideas on actual keywords from the research data provided above
-2. PROVIDE AT LEAST 5 IDEAS FOR EACH TYPE: 5+ review articles, 5+ comparison articles, 5+ guide articles
-3. INCLUDE SEARCH VOLUMES: Every article MUST have "monthly_searches" as a NUMBER (e.g., 2400, not "2,400" or "2.4k")
-   - Use whole numbers only (e.g., 2400, 1800, 950)
-   - NO strings, NO commas, NO ranges, NO text - ONLY numbers
-   - If exact data unavailable, provide best numeric estimate based on keyword research
-4. RANKING POTENTIAL: Analyze actual SERP competition to determine low/medium/high
-5. NATURAL LINK PLACEMENT: Each article needs SPECIFIC, DETAILED link placement instructions with context
-6. COMMERCIAL INTENT: Prioritize keywords that show buying intent (review, vs, best, worth it, discount, etc.)
-7. SEO-OPTIMIZED TITLES: Include target keyword naturally in title
-8. COMPLETE TITLES: Don't use placeholders - write full, compelling article titles
-
-EXAMPLE OF GOOD vs BAD:
-❌ BAD: "Review article about product"
-✅ GOOD: "Viome Gut Intelligence Test Review 2024: Is It Worth $199?" (target: "viome review", 2,400 searches/month, medium difficulty)
-
-Return ONLY the JSON object, no additional text.`;
+RULES:
+- Provide exactly 5 articles for each type (review_articles, comparison_articles, guide_articles)
+- monthly_searches MUST be a number (e.g., 2400, not "2,400")
+- ranking_potential must be: "low", "medium", or "high"
+- Make realistic estimates if you don't have exact data
+- Return ONLY valid JSON, no markdown code blocks`;
 
         let aiResponse;
         let aiData;
@@ -4776,8 +4755,8 @@ Return ONLY the JSON object, no additional text.`;
                   content: analysisPrompt
                 }
               ],
-              temperature: 0.7,
-              max_tokens: 3000
+              temperature: 0.5,
+              max_tokens: 2000
             })
           });
 
