@@ -4482,7 +4482,7 @@ Generate a professional, actionable outline that a content writer can follow to 
         console.log(`🔍 Researching affiliate program: ${program_name}`);
 
         // TEMPORARY: Check if we should use mock data for testing
-        const useMockData = true; // Set to false once OpenRouter is working
+        const useMockData = false; // Set to true for testing without API calls
 
         if (useMockData) {
           console.log('⚠️ Using mock data for testing');
