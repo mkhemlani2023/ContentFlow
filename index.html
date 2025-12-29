@@ -4418,20 +4418,23 @@
                     `}
 
                     <!-- Affiliate Program Selector -->
-                    <div id="affiliate-selector-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin: 20px 0; padding: 16px; background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%); border-radius: 8px; border: 1px solid #cbd5e1;">
+                    <div id="affiliate-selector-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin: 20px 0; padding: 16px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 8px; border: 2px solid #fb923c;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
                             <span style="font-size: 18px;">💰</span>
-                            <h4 style="margin: 0; color: #1e293b; font-size: 14px; font-weight: 600;">Affiliate Program (Optional)</h4>
+                            <h4 style="margin: 0; color: #1e293b; font-size: 15px; font-weight: 700;">Add Affiliate Links to Articles</h4>
                         </div>
-                        <div style="font-size: 12px; color: #64748b; margin-bottom: 12px; line-height: 1.5;">
-                            Associate an affiliate program to automatically inject product links into generated articles.
+                        <div style="font-size: 13px; color: #c2410c; margin-bottom: 12px; line-height: 1.5; font-weight: 600;">
+                            ⚠️ SELECT A PROGRAM BELOW to automatically insert affiliate links into generated articles
                         </div>
                         <select id="affiliate-program-select-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}"
-                                style="width: 100%; padding: 10px 12px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white; cursor: pointer; color: #334155; font-weight: 500;"
+                                style="width: 100%; padding: 12px 14px; border: 3px solid #fb923c; border-radius: 6px; font-size: 14px; background: white; cursor: pointer; color: #1e293b; font-weight: 600;"
                                 onchange="updateSelectedAffiliateProgram('${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')">
-                            <option value="">No affiliate program</option>
+                            <option value="">⚠️ No affiliate program selected (articles won't have affiliate links)</option>
                             <option value="loading" disabled>Loading programs...</option>
                         </select>
+                        <div id="affiliate-selection-status-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin-top: 10px; padding: 8px; background: #fee2e2; border-radius: 4px; border: 1px solid #fca5a5; font-size: 12px; color: #991b1b; font-weight: 600;">
+                            ❌ No affiliate program selected - articles will NOT include affiliate links
+                        </div>
                     </div>
 
                     <!-- Action Buttons -->
@@ -4540,6 +4543,7 @@
         // Update selected affiliate program for a keyword
         function updateSelectedAffiliateProgram(cleanId) {
             const selectElement = document.getElementById(`affiliate-program-select-${cleanId}`);
+            const statusElement = document.getElementById(`affiliate-selection-status-${cleanId}`);
             const selectedValue = selectElement.value;
 
             if (selectedValue) {
@@ -4547,13 +4551,30 @@
                 const programData = selectedOption.getAttribute('data-program');
 
                 if (programData) {
-                    window.keywordAffiliatePrograms[cleanId] = JSON.parse(programData);
-                    console.log('Affiliate program selected for keyword:', cleanId, window.keywordAffiliatePrograms[cleanId]);
+                    const program = JSON.parse(programData);
+                    window.keywordAffiliatePrograms[cleanId] = program;
+                    console.log('✅ Affiliate program selected for keyword:', cleanId, program);
+
+                    // Update status indicator to show success
+                    if (statusElement) {
+                        statusElement.style.background = '#d1fae5';
+                        statusElement.style.borderColor = '#6ee7b7';
+                        statusElement.style.color = '#065f46';
+                        statusElement.innerHTML = `✅ ${program.program_name} selected - affiliate links will be added to generated articles`;
+                    }
                 }
             } else {
                 // No affiliate program selected
                 delete window.keywordAffiliatePrograms[cleanId];
-                console.log('Affiliate program removed for keyword:', cleanId);
+                console.log('❌ No affiliate program selected for keyword:', cleanId);
+
+                // Update status indicator to show warning
+                if (statusElement) {
+                    statusElement.style.background = '#fee2e2';
+                    statusElement.style.borderColor = '#fca5a5';
+                    statusElement.style.color = '#991b1b';
+                    statusElement.innerHTML = '❌ No affiliate program selected - articles will NOT include affiliate links';
+                }
             }
         }
 
@@ -6407,6 +6428,10 @@
             // Use original research keyword if available, fallback to title
             const keyword = window.originalResearchKeyword || title;
 
+            // Get affiliate program if one was selected for this keyword
+            const cleanKeyword = keyword.replace(/[^a-zA-Z0-9]/g, '');
+            const affiliateProgram = window.keywordAffiliatePrograms?.[cleanKeyword] || null;
+
             console.log('=== CONFIRM ARTICLE GENERATION ===');
             console.log('Article Title:', title);
             console.log('Focus Keyword (from research):', keyword);
@@ -6416,6 +6441,7 @@
             console.log('Model Tier:', modelTier);
             console.log('Image Type:', imageType);
             console.log('Total Credits:', totalCredits);
+            console.log('🔗 Affiliate Program:', affiliateProgram ? affiliateProgram.program_name : 'None');
 
             // Close both modals
             closeConfirmationModal();
@@ -6426,8 +6452,8 @@
                 if (imageType === 'none') {
                     // Generate article without images using the correct workflow
                     console.log('Calling generateArticleWithOutline (no images)...');
-                    // Pass TITLE as first param (article title), not keyword
-                    await generateArticleWithOutline(title, wordCount, difficulty, intent, modelTier, window.selectedCredits);
+                    // Pass TITLE as first param (article title), not keyword, AND affiliate program
+                    await generateArticleWithOutline(title, wordCount, difficulty, intent, modelTier, window.selectedCredits, affiliateProgram);
                 } else {
                     // Generate article with images
                     console.log('Calling generateArticleWithImages...');
@@ -6439,8 +6465,8 @@
                     };
                     const imageTier = imageTierMap[imageType] || 'Featured Image';
 
-                    // Pass TITLE as first param (article title), not keyword
-                    await generateArticleWithImages(title, wordCount, difficulty, intent, modelTier, imageTier, totalCredits);
+                    // Pass TITLE as first param (article title), not keyword, AND affiliate program
+                    await generateArticleWithImages(title, wordCount, difficulty, intent, modelTier, imageTier, totalCredits, affiliateProgram);
                 }
 
             } catch (error) {
