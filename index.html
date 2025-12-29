@@ -8446,12 +8446,15 @@
                     ` : ''}
 
                     <div style="display: flex; gap: 8px; margin-top: 12px;">
-                        <button onclick="generateAffiliateContent('${program.id}', '${blog.id}')" style="flex: 1; background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                            ✨ Generate Content
+                        <button onclick="deleteAffiliateProgram('${program.id}')" style="flex: 1; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
+                            🗑 Delete Program
                         </button>
-                        <button onclick="deleteAffiliateProgram('${program.id}')" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
-                            Delete
-                        </button>
+                    </div>
+                    <div style="background: #eff6ff; padding: 10px; border-radius: 6px; margin-top: 10px; border: 1px solid #bfdbfe;">
+                        <div style="color: #1e40af; font-size: 11px; font-weight: 600;">💡 How to Use</div>
+                        <div style="color: #1e40af; font-size: 11px; margin-top: 4px;">
+                            Go to <strong>Keyword Research</strong> → Expand a keyword → Select this program → Generate articles with affiliate links integrated
+                        </div>
                     </div>
                 </div>
             `;
