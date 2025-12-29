@@ -13591,11 +13591,26 @@ CRITICAL RULES:
 
                 const introData = outlineStructure.outline.introduction;
                 const introWords = Math.floor(targetWordCount * 0.12); // 12% of total (increased)
+
+                // Check if introduction should have affiliate link
+                const introPlacement = affiliatePlacementStrategy?.placements.find(p => p.section.toLowerCase().includes('introduction'));
+                const introAffiliateContext = introPlacement ? `
+
+🔗 AFFILIATE LINK REQUIRED IN INTRODUCTION:
+Product: ${affiliateProgram.program_name}
+Strategy: ${introPlacement.strategy}
+Context: ${introPlacement.context}
+Anchor text: ${introPlacement.anchorText}
+Link format: [${introPlacement.anchorText}](${affiliateProgram.affiliate_link})
+
+CRITICAL: Include this link naturally in the introduction.
+` : '';
+
                 const introPrompt = `Write the introduction for an article about "${keyword}". IMPORTANT: Write exactly ${introWords} words. Year: ${new Date().getFullYear()}.
 
 Purpose: ${introData.purpose}
 Key points: ${introData.keyPoints.join(', ')}
-${affiliateContext}
+${introAffiliateContext}
 Write ${introWords} words of engaging, informative content. Use double line breaks between paragraphs. Return ONLY the introduction text, no JSON, no markdown.`;
 
                 const introduction = await generatePhase(introPrompt, Math.floor(introWords * 2.0));
@@ -13626,12 +13641,27 @@ Write ${introWords} words of engaging, informative content. Use double line brea
                     const section = sections[i];
                     const subsectionList = section.subsections?.map(s => `- ${s.title}: ${s.keyPoints?.join(', ')}`).join('\n') || '';
 
+                    // Check if this section should have an affiliate link
+                    const sectionPlacement = affiliatePlacementStrategy?.placements.find(p => p.section === section.title);
+                    const sectionAffiliateContext = sectionPlacement ? `
+
+🔗 AFFILIATE LINK REQUIRED IN THIS SECTION:
+Product: ${affiliateProgram.program_name}
+Strategy: ${sectionPlacement.strategy}
+Context for insertion: ${sectionPlacement.context}
+Anchor text: ${sectionPlacement.anchorText}
+Link format: [${sectionPlacement.anchorText}](${affiliateProgram.affiliate_link})
+
+CRITICAL: You MUST include this affiliate link in this section exactly as specified above.
+Make it feel natural and helpful - introduce it ${sectionPlacement.context.toLowerCase()}.
+` : (affiliateProgram ? `\nNote: No affiliate link needed in this section.` : '');
+
                     const sectionPrompt = `Write content for this section of an article about "${keyword}". IMPORTANT: Write exactly ${wordsPerSection} words. Year: ${new Date().getFullYear()}.
 
 Section: ${section.title}
 Key points: ${section.keyPoints?.join(', ')}
 ${subsectionList ? `Subsections to cover:\n${subsectionList}` : ''}
-${affiliateContext}
+${sectionAffiliateContext}
 CITATION REQUIREMENTS - Chicago Manual of Style:
 When referencing clinical studies, scientific papers, or research findings:
 - Use in-text citations: (Author Year) or (Author et al. Year) for 3+ authors
@@ -13664,11 +13694,26 @@ Write ${wordsPerSection} words of informative, engaging paragraphs. Use double l
 
                 const conclusionWords = Math.floor(targetWordCount * 0.10); // 10% of total
                 const conclusionData = outlineStructure.outline.conclusion;
+
+                // Check if conclusion should have affiliate link
+                const conclusionPlacement = affiliatePlacementStrategy?.placements.find(p => p.section.toLowerCase().includes('conclusion'));
+                const conclusionAffiliateContext = conclusionPlacement ? `
+
+🔗 AFFILIATE LINK REQUIRED IN CONCLUSION:
+Product: ${affiliateProgram.program_name}
+Strategy: ${conclusionPlacement.strategy}
+Context: ${conclusionPlacement.context}
+Anchor text: ${conclusionPlacement.anchorText}
+Link format: [${conclusionPlacement.anchorText}](${affiliateProgram.affiliate_link})
+
+CRITICAL: Include this final recommendation with link in the conclusion.
+` : '';
+
                 const conclusionPrompt = `Write the conclusion for an article about "${keyword}". IMPORTANT: Write exactly ${conclusionWords} words. Year: ${new Date().getFullYear()}.
 
 Purpose: ${conclusionData.purpose}
 Key points: ${conclusionData.keyPoints.join(', ')}
-${affiliateContext}
+${conclusionAffiliateContext}
 Write ${conclusionWords} words wrapping up the article. Use double line breaks between paragraphs.
 
 CRITICAL RULES:
