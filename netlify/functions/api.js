@@ -4658,19 +4658,54 @@ Generate a professional, actionable outline that a content writer can follow to 
 
         console.log(`🤖 Generating content ideas for ${program_name} using AI knowledge...`);
 
-        // Create context from provided information only
-        const searchContext = `Program Name: ${program_name}${program_url ? `\nWebsite: ${program_url}` : ''}
+        // Fetch website content if URL is provided
+        let websiteContext = '';
+        if (program_url) {
+          console.log(`[${new Date().toISOString()}] Fetching website content from: ${program_url}`);
+          try {
+            const websiteResponse = await fetch(program_url, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; ContentFlow/1.0; +https://contentflow.app)'
+              },
+              timeout: 8000 // 8 second timeout
+            });
 
-Use your knowledge about this affiliate program to provide accurate information. If you don't have specific details, make reasonable estimates based on industry standards.`;
+            if (websiteResponse.ok) {
+              const html = await websiteResponse.text();
+              // Extract text content from HTML (simple extraction)
+              const textContent = html
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+                .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Remove styles
+                .replace(/<[^>]+>/g, ' ') // Remove HTML tags
+                .replace(/\s+/g, ' ') // Normalize whitespace
+                .trim()
+                .substring(0, 3000); // Limit to first 3000 chars
 
-        const keywordContext = `Generate content ideas for "${program_name}" based on common affiliate marketing best practices and typical search patterns for this type of product/service.`;
+              websiteContext = `\n\nWEBSITE CONTENT FROM ${program_url}:\n${textContent}\n\nUse this content to understand what ${program_name} actually does and offers.`;
+              console.log(`[${new Date().toISOString()}] Successfully fetched website content (${textContent.length} chars)`);
+            } else {
+              console.log(`[${new Date().toISOString()}] Website fetch failed with status: ${websiteResponse.status}`);
+            }
+          } catch (fetchError) {
+            console.log(`[${new Date().toISOString()}] Website fetch error: ${fetchError.message}`);
+            // Continue without website content
+          }
+        }
+
+        const searchContext = `Program Name: ${program_name}${program_url ? `\nWebsite: ${program_url}` : ''}${websiteContext}
+
+Use the website content above to understand exactly what this company does. Generate content ideas specific to their actual products and services.`;
+
+        const keywordContext = `Generate content ideas for "${program_name}" based on their actual website content and offerings.`;
 
         const analysisPrompt = `Generate affiliate content ideas for "${program_name}". Return ONLY valid JSON, no markdown.
 
 Program: ${program_name}
 ${program_url ? `Website: ${program_url}` : ''}
 ${focus_keywords ? `FOCUS AREAS: ${focus_keywords} - All content must be about these specific topics/keywords` : ''}
+${websiteContext}
 
+${websiteContext ? `CRITICAL: Use the website content above to understand what ${program_name} specifically does. Do NOT confuse it with other similar companies.` : ''}
 ${focus_keywords ? `IMPORTANT: This affiliate program is specifically about "${focus_keywords}". Generate content ideas that target these exact topics, NOT general or unrelated topics.` : ''}
 
 Provide realistic estimates. Return this exact JSON structure:
