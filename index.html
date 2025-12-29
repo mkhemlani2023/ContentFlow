@@ -4417,6 +4417,23 @@
                         </div>
                     `}
 
+                    <!-- Affiliate Program Selector -->
+                    <div id="affiliate-selector-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin: 20px 0; padding: 16px; background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%); border-radius: 8px; border: 1px solid #cbd5e1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 18px;">💰</span>
+                            <h4 style="margin: 0; color: #1e293b; font-size: 14px; font-weight: 600;">Affiliate Program (Optional)</h4>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b; margin-bottom: 12px; line-height: 1.5;">
+                            Associate an affiliate program to automatically inject product links into generated articles.
+                        </div>
+                        <select id="affiliate-program-select-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}"
+                                style="width: 100%; padding: 10px 12px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white; cursor: pointer; color: #334155; font-weight: 500;"
+                                onchange="updateSelectedAffiliateProgram('${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')">
+                            <option value="">No affiliate program</option>
+                            <option value="loading" disabled>Loading programs...</option>
+                        </select>
+                    </div>
+
                     <!-- Action Buttons -->
                     <div class="keyword-actions">
                         <button class="action-btn primary" onclick="generateArticleIdeasWithCredits('${keywordData.keyword.replace(/'/g, "\\'")}', '${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')"
@@ -4441,6 +4458,9 @@
                     ${keywordData.snippet ? `<div class="keyword-snippet">${keywordData.snippet.substring(0, 150)}...</div>` : ''}
                 </div>
             `;
+
+            // Load affiliate programs for the dropdown
+            loadAffiliateProgramsForKeyword(keywordData.keyword.replace(/[^a-zA-Z0-9]/g, ''));
         }
 
         function hideKeywordDetails() {
@@ -4473,10 +4493,79 @@
             }
         }
 
+        // Global variable to store affiliate program selections for keywords
+        window.keywordAffiliatePrograms = {};
+
+        // Load affiliate programs for the keyword dropdown
+        async function loadAffiliateProgramsForKeyword(cleanId) {
+            const selectElement = document.getElementById(`affiliate-program-select-${cleanId}`);
+            if (!selectElement) return;
+
+            try {
+                // Get all blogs first
+                const blogsResult = await SupabaseService.loadBlogs();
+                if (!blogsResult.success || !blogsResult.data || blogsResult.data.length === 0) {
+                    selectElement.innerHTML = '<option value="">No blogs found - add a blog first</option>';
+                    return;
+                }
+
+                // Load all affiliate programs across all blogs
+                let allPrograms = [];
+                for (const blog of blogsResult.data) {
+                    const programsResult = await SupabaseService.loadAffiliatePrograms(blog.id);
+                    if (programsResult.success && programsResult.data) {
+                        allPrograms = allPrograms.concat(programsResult.data.map(p => ({ ...p, blogName: blog.name })));
+                    }
+                }
+
+                // Update dropdown
+                if (allPrograms.length === 0) {
+                    selectElement.innerHTML = '<option value="">No affiliate programs - add one in Blog Management</option>';
+                } else {
+                    selectElement.innerHTML = `
+                        <option value="">No affiliate program</option>
+                        ${allPrograms.map(program => `
+                            <option value="${program.id}" data-program='${JSON.stringify(program)}'>
+                                ${program.program_name} (${program.blogName})
+                            </option>
+                        `).join('')}
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading affiliate programs:', error);
+                selectElement.innerHTML = '<option value="">Error loading programs</option>';
+            }
+        }
+
+        // Update selected affiliate program for a keyword
+        function updateSelectedAffiliateProgram(cleanId) {
+            const selectElement = document.getElementById(`affiliate-program-select-${cleanId}`);
+            const selectedValue = selectElement.value;
+
+            if (selectedValue) {
+                const selectedOption = selectElement.options[selectElement.selectedIndex];
+                const programData = selectedOption.getAttribute('data-program');
+
+                if (programData) {
+                    window.keywordAffiliatePrograms[cleanId] = JSON.parse(programData);
+                    console.log('Affiliate program selected for keyword:', cleanId, window.keywordAffiliatePrograms[cleanId]);
+                }
+            } else {
+                // No affiliate program selected
+                delete window.keywordAffiliatePrograms[cleanId];
+                console.log('Affiliate program removed for keyword:', cleanId);
+            }
+        }
+
         // Article generation options display
         function showArticleGenerationOptions(keyword, wordCount, difficulty, intent) {
             const timestamp = Date.now();
-            const optionsId = `options-${keyword.replace(/[^a-zA-Z0-9]/g, '')}-${timestamp}`;
+            const cleanId = keyword.replace(/[^a-zA-Z0-9]/g, '');
+            const optionsId = `options-${cleanId}-${timestamp}`;
+
+            // Get the selected affiliate program for this keyword (if any)
+            const affiliateProgram = window.keywordAffiliatePrograms[cleanId] || null;
+            const affiliateProgramJson = affiliateProgram ? JSON.stringify(affiliateProgram).replace(/'/g, "\\'") : 'null';
 
             const optionsContainer = document.createElement('div');
             optionsContainer.id = optionsId;
@@ -4500,7 +4589,7 @@
                                         <span style="background: #334155; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">25 CREDITS</span>
                                     </div>
                                     <div style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Fast, efficient content using GPT-3.5 Turbo. Perfect for blog posts and informational content.</div>
-                                    <button onclick="generateArticleWithModel('${keyword.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}', 'basic', 25)"
+                                    <button onclick="generateArticleWithModel('${keyword.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}', 'basic', 25, '${affiliateProgramJson}')"
                                             style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; width: 100%; transition: all 0.2s;"
                                             onmouseover="this.style.background='#1E293B'" onmouseout="this.style.background='#334155'">
                                         Generate Article (25 credits)
@@ -4513,7 +4602,7 @@
                                         <span style="background: #475569; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">50 CREDITS</span>
                                     </div>
                                     <div style="font-size: 13px; color: #64748b; margin-bottom: 12px;">High-quality content using GPT-4. Better research, structure, and engagement.</div>
-                                    <button onclick="generateArticleWithModel('${keyword.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}', 'premium', 50)"
+                                    <button onclick="generateArticleWithModel('${keyword.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}', 'premium', 50, '${affiliateProgramJson}')"
                                             style="background: #475569; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; width: 100%; transition: all 0.2s;"
                                             onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#475569'">
                                         Generate Article (50 credits)
@@ -4526,7 +4615,7 @@
                                         <span style="background: #1E293B; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">85 CREDITS</span>
                                     </div>
                                     <div style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Top-tier content with advanced models. Includes research, citations, and optimal structure.</div>
-                                    <button onclick="generateArticleWithModel('${keyword.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}', 'enterprise', 85)"
+                                    <button onclick="generateArticleWithModel('${keyword.replace(/'/g, "\\'")}', ${wordCount}, '${difficulty}', '${intent}', 'enterprise', 85, '${affiliateProgramJson}')"
                                             style="background: #1E293B; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; width: 100%; transition: all 0.2s;"
                                             onmouseover="this.style.background='#0F172A'" onmouseout="this.style.background='#1E293B'">
                                         Generate Article (85 credits)
@@ -12138,9 +12227,12 @@ Return ONLY the JSON array, no other text.`;
         }
 
         // Article generation functions
-        async function generateArticleWithModel(keyword, wordCount, difficulty, intent, modelTier, creditCost) {
+        async function generateArticleWithModel(keyword, wordCount, difficulty, intent, modelTier, creditCost, affiliateProgramJson = 'null') {
+            // Parse the affiliate program if provided
+            const affiliateProgram = affiliateProgramJson !== 'null' ? JSON.parse(affiliateProgramJson) : null;
+
             // Credit check happens in generateArticleWithOutline() - no duplicate check needed here
-            await generateArticleWithOutline(keyword, wordCount, difficulty, intent, modelTier, creditCost);
+            await generateArticleWithOutline(keyword, wordCount, difficulty, intent, modelTier, creditCost, affiliateProgram);
         }
 
         // Show humanization settings reminder before generation
@@ -12216,7 +12308,7 @@ Return ONLY the JSON array, no other text.`;
             });
         }
 
-        async function generateArticleWithOutline(keyword, wordCount, difficulty, intent, modelTier, creditCost) {
+        async function generateArticleWithOutline(keyword, wordCount, difficulty, intent, modelTier, creditCost, affiliateProgram = null) {
             // Deduct credits upfront for the complete process
             if (!deductCredits(creditCost)) {
                 alert('Unable to deduct credits. Please try again.');
@@ -12225,7 +12317,7 @@ Return ONLY the JSON array, no other text.`;
 
             // Step 1: Generate outline first
             // keyword IS the article title from the article idea
-            await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, keyword);
+            await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, keyword, affiliateProgram);
         }
 
         // DataforSEO Content Generation - generates outline first, then fills content modularly
@@ -12887,10 +12979,10 @@ Return ONLY the JSON array, no other text or markdown.`;
             return faq;
         }
 
-        async function generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, articleTitle = null) {
+        async function generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, articleTitle = null, affiliateProgram = null) {
             // Check if using DataforSEO - route to backend API
             if (modelTier.toLowerCase() === 'dataforseo') {
-                return await generateArticleWithDataforSEO(keyword, wordCount, difficulty, intent, articleTitle);
+                return await generateArticleWithDataforSEO(keyword, wordCount, difficulty, intent, articleTitle, affiliateProgram);
             }
 
             // Show comprehensive progress modal
@@ -13083,7 +13175,7 @@ TITLE CREATION RULES:
 
                 // Close progress modal and show outline for review
                 setTimeout(() => progress.close(), 1500);
-                await showOutlineForReviewAndEdit(outlineStructure, keyword, wordCount, difficulty, intent, modelTier, config);
+                await showOutlineForReviewAndEdit(outlineStructure, keyword, wordCount, difficulty, intent, modelTier, config, affiliateProgram);
 
             } catch (error) {
                 console.error('Article generation error:', error);
@@ -13096,7 +13188,7 @@ TITLE CREATION RULES:
         }
 
 
-        async function showOutlineForReviewAndEdit(outlineStructure, keyword, wordCount, difficulty, intent, modelTier, config) {
+        async function showOutlineForReviewAndEdit(outlineStructure, keyword, wordCount, difficulty, intent, modelTier, config, affiliateProgram = null) {
             // Create editable outline display
             const modal = document.createElement('div');
             modal.id = 'outlineReviewModal';
@@ -13197,7 +13289,8 @@ TITLE CREATION RULES:
                 difficulty,
                 intent,
                 modelTier,
-                config
+                config,
+                affiliateProgram
             };
         }
 
@@ -13246,14 +13339,27 @@ TITLE CREATION RULES:
             if (modal) modal.remove();
 
             // Now generate the article from the edited outline
-            await generateArticleFromOutline(outlineStructure, keyword, modelTier, config);
+            const { affiliateProgram } = window.currentOutlineData;
+            await generateArticleFromOutline(outlineStructure, keyword, modelTier, config, affiliateProgram);
         }
 
-        async function generateArticleFromOutline(outlineStructure, keyword, modelTier, config) {
+        async function generateArticleFromOutline(outlineStructure, keyword, modelTier, config, affiliateProgram = null) {
             // Multi-phase generation to avoid timeouts
             const sections = outlineStructure.outline?.sections || [];
             const numSections = sections.length;
             const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
+
+            // Build affiliate program context if provided
+            const affiliateContext = affiliateProgram ? `
+AFFILIATE PRODUCT INTEGRATION (IMPORTANT):
+- Product: ${affiliateProgram.program_name}
+- Link: ${affiliateProgram.affiliate_link || 'Product link'}
+- Focus: ${affiliateProgram.focus_keywords || affiliateProgram.program_name}
+- NATURALLY mention this product 1-2 times where relevant
+- Include the affiliate link when mentioning the product like this: [${affiliateProgram.program_name}](${affiliateProgram.affiliate_link})
+- Make recommendations feel organic and helpful, not forced or salesy
+- Only mention where it genuinely adds value to the reader
+` : '';
 
             const progress = showProgressModal({
                 title: 'Step 2: Generating Article (Multi-Phase)',
@@ -13311,7 +13417,7 @@ TITLE CREATION RULES:
 
 Purpose: ${introData.purpose}
 Key points: ${introData.keyPoints.join(', ')}
-
+${affiliateContext}
 Write ${introWords} words of engaging, informative content. Use double line breaks between paragraphs. Return ONLY the introduction text, no JSON, no markdown.`;
 
                 const introduction = await generatePhase(introPrompt, Math.floor(introWords * 2.0));
@@ -13347,7 +13453,7 @@ Write ${introWords} words of engaging, informative content. Use double line brea
 Section: ${section.title}
 Key points: ${section.keyPoints?.join(', ')}
 ${subsectionList ? `Subsections to cover:\n${subsectionList}` : ''}
-
+${affiliateContext}
 CITATION REQUIREMENTS - Chicago Manual of Style:
 When referencing clinical studies, scientific papers, or research findings:
 - Use in-text citations: (Author Year) or (Author et al. Year) for 3+ authors
@@ -13384,7 +13490,7 @@ Write ${wordsPerSection} words of informative, engaging paragraphs. Use double l
 
 Purpose: ${conclusionData.purpose}
 Key points: ${conclusionData.keyPoints.join(', ')}
-
+${affiliateContext}
 Write ${conclusionWords} words wrapping up the article. Use double line breaks between paragraphs.
 
 CRITICAL RULES:
