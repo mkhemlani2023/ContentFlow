@@ -13496,6 +13496,13 @@ CRITICAL: Select sections where the product recommendation genuinely helps the r
             let affiliatePlacementStrategy = null;
 
             if (affiliateProgram) {
+                // Use placeholder link if no actual affiliate link provided yet
+                const affiliateLink = affiliateProgram.affiliate_link ||
+                    `https://www.${affiliateProgram.program_name.toLowerCase().replace(/\s+/g, '')}.com`;
+
+                // Store the link for use in prompts
+                affiliateProgram.displayLink = affiliateLink;
+
                 // Determine optimal placement sections for affiliate links
                 affiliatePlacementStrategy = await determineAffiliateLinkPlacement(
                     outlineStructure,
@@ -13506,14 +13513,14 @@ CRITICAL: Select sections where the product recommendation genuinely helps the r
                 affiliateContext = `
 AFFILIATE PRODUCT INTEGRATION - STRATEGIC PLACEMENT:
 Product: ${affiliateProgram.program_name}
-Link: ${affiliateProgram.affiliate_link || 'Product link'}
+Link: ${affiliateProgram.displayLink}
 Focus: ${affiliateProgram.focus_keywords || affiliateProgram.program_name}
 
 PLACEMENT STRATEGY (High-Conversion Locations):
 ${affiliatePlacementStrategy.placements.map((p, i) => `
 ${i + 1}. ${p.section}: ${p.strategy}
    Context: ${p.context}
-   Link format: [${p.anchorText}](${affiliateProgram.affiliate_link})
+   Link format: [${p.anchorText}](${affiliateProgram.displayLink})
 `).join('')}
 
 CRITICAL RULES:
@@ -13601,7 +13608,7 @@ Product: ${affiliateProgram.program_name}
 Strategy: ${introPlacement.strategy}
 Context: ${introPlacement.context}
 Anchor text: ${introPlacement.anchorText}
-Link format: [${introPlacement.anchorText}](${affiliateProgram.affiliate_link})
+Link format: [${introPlacement.anchorText}](${affiliateProgram.displayLink})
 
 CRITICAL: Include this link naturally in the introduction.
 ` : '';
@@ -13650,7 +13657,7 @@ Product: ${affiliateProgram.program_name}
 Strategy: ${sectionPlacement.strategy}
 Context for insertion: ${sectionPlacement.context}
 Anchor text: ${sectionPlacement.anchorText}
-Link format: [${sectionPlacement.anchorText}](${affiliateProgram.affiliate_link})
+Link format: [${sectionPlacement.anchorText}](${affiliateProgram.displayLink})
 
 CRITICAL: You MUST include this affiliate link in this section exactly as specified above.
 Make it feel natural and helpful - introduce it ${sectionPlacement.context.toLowerCase()}.
@@ -13704,7 +13711,7 @@ Product: ${affiliateProgram.program_name}
 Strategy: ${conclusionPlacement.strategy}
 Context: ${conclusionPlacement.context}
 Anchor text: ${conclusionPlacement.anchorText}
-Link format: [${conclusionPlacement.anchorText}](${affiliateProgram.affiliate_link})
+Link format: [${conclusionPlacement.anchorText}](${affiliateProgram.displayLink})
 
 CRITICAL: Include this final recommendation with link in the conclusion.
 ` : '';
