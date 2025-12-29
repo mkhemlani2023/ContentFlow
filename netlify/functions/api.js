@@ -4465,7 +4465,7 @@ Generate a professional, actionable outline that a content writer can follow to 
 
     // Affiliate Program Research endpoint
     if (path === '/api/affiliate-research' && method === 'POST') {
-      const { program_name, program_url, blog_id } = body;
+      const { program_name, program_url, focus_keywords, blog_id } = body;
 
       if (!program_name) {
         return {
@@ -4482,6 +4482,7 @@ Generate a professional, actionable outline that a content writer can follow to 
         console.log(`\n========== AFFILIATE RESEARCH START ==========`);
         console.log(`Program: ${program_name}`);
         console.log(`URL: ${program_url || 'Not provided'}`);
+        console.log(`Focus Keywords: ${focus_keywords || 'Not provided'}`);
         console.log(`Blog ID: ${blog_id}`);
         console.log(`Timestamp: ${new Date().toISOString()}`);
 
@@ -4668,6 +4669,9 @@ Use your knowledge about this affiliate program to provide accurate information.
 
 Program: ${program_name}
 ${program_url ? `Website: ${program_url}` : ''}
+${focus_keywords ? `FOCUS AREAS: ${focus_keywords} - All content must be about these specific topics/keywords` : ''}
+
+${focus_keywords ? `IMPORTANT: This affiliate program is specifically about "${focus_keywords}". Generate content ideas that target these exact topics, NOT general or unrelated topics.` : ''}
 
 Provide realistic estimates. Return this exact JSON structure:
 
