@@ -4481,6 +4481,158 @@ Generate a professional, actionable outline that a content writer can follow to 
       try {
         console.log(`🔍 Researching affiliate program: ${program_name}`);
 
+        // TEMPORARY: Check if we should use mock data for testing
+        const useMockData = true; // Set to false once OpenRouter is working
+
+        if (useMockData) {
+          console.log('⚠️ Using mock data for testing');
+
+          const mockResult = {
+            success: true,
+            program_url: program_url || `https://${program_name.toLowerCase().replace(/\s+/g, '')}.com`,
+            network: 'Direct',
+            commission_rate: '10% per sale',
+            commission_type: 'percentage',
+            cookie_duration: '30 days',
+            minimum_payout: 50,
+            payment_frequency: 'monthly',
+            payment_methods: ['PayPal', 'Direct Deposit'],
+            terms_summary: 'Standard affiliate terms apply. Must disclose affiliate relationship.',
+            program_requirements: 'Active website or social media presence required',
+            prohibited_content: ['Spam', 'False claims'],
+            disclosure_required: true,
+            ai_summary: {
+              overview: `${program_name} is a popular affiliate program.`,
+              products: ['Main product', 'Premium offering'],
+              commission_structure: 'Earn commission on all referred sales',
+              pros: ['Good commission rate', 'Reputable brand', 'Easy to promote'],
+              cons: ['Competitive niche', '30-day cookie'],
+              best_content_types: ['Reviews', 'Comparisons', 'How-to guides']
+            },
+            target_audience: 'Content creators and bloggers in the health and wellness space',
+            content_opportunities: {
+              review_articles: [
+                {
+                  title: `${program_name} Review 2024: Is It Worth It?`,
+                  target_keyword: `${program_name.toLowerCase()} review`,
+                  monthly_searches: 2400,
+                  ranking_potential: 'medium',
+                  affiliate_link_opportunities: 'Include affiliate link in review summary and product comparison table'
+                },
+                {
+                  title: `Honest ${program_name} Review: My Experience After 3 Months`,
+                  target_keyword: `${program_name.toLowerCase()} honest review`,
+                  monthly_searches: 880,
+                  ranking_potential: 'high',
+                  affiliate_link_opportunities: 'Add affiliate link in personal results section and final verdict'
+                },
+                {
+                  title: `${program_name} Review: Pros, Cons, and Is It Right for You?`,
+                  target_keyword: `is ${program_name.toLowerCase()} worth it`,
+                  monthly_searches: 1200,
+                  ranking_potential: 'medium',
+                  affiliate_link_opportunities: 'Include in pros/cons summary and recommendation section'
+                },
+                {
+                  title: `${program_name} 2024 Review: Features, Pricing & Alternatives`,
+                  target_keyword: `${program_name.toLowerCase()} pricing`,
+                  monthly_searches: 950,
+                  ranking_potential: 'medium',
+                  affiliate_link_opportunities: 'Link in pricing comparison table and sign-up CTA'
+                },
+                {
+                  title: `${program_name} Customer Reviews: What Real Users Say`,
+                  target_keyword: `${program_name.toLowerCase()} customer reviews`,
+                  monthly_searches: 720,
+                  ranking_potential: 'high',
+                  affiliate_link_opportunities: 'Add after customer testimonials and in conclusion'
+                }
+              ],
+              comparison_articles: [
+                {
+                  title: `${program_name} vs Competitor: Which Is Better in 2024?`,
+                  target_keyword: `${program_name.toLowerCase()} vs`,
+                  monthly_searches: 1500,
+                  ranking_potential: 'medium',
+                  affiliate_link_opportunities: 'Include in comparison table and final recommendation'
+                },
+                {
+                  title: `Best ${program_name} Alternatives: Top 5 Competitors Compared`,
+                  target_keyword: `${program_name.toLowerCase()} alternatives`,
+                  monthly_searches: 1100,
+                  ranking_potential: 'high',
+                  affiliate_link_opportunities: 'Link each alternative in comparison chart'
+                },
+                {
+                  title: `${program_name} vs Alternative A: Side-by-Side Comparison`,
+                  target_keyword: `${program_name.toLowerCase()} comparison`,
+                  monthly_searches: 890,
+                  ranking_potential: 'medium',
+                  affiliate_link_opportunities: 'Add in feature comparison and pricing sections'
+                },
+                {
+                  title: `Which Is Better: ${program_name} or Competitor B?`,
+                  target_keyword: `${program_name.toLowerCase()} or`,
+                  monthly_searches: 670,
+                  ranking_potential: 'high',
+                  affiliate_link_opportunities: 'Include in winner announcement and CTA'
+                },
+                {
+                  title: `${program_name} Competitors: How It Stacks Up Against the Rest`,
+                  target_keyword: `${program_name.toLowerCase()} competitors`,
+                  monthly_searches: 580,
+                  ranking_potential: 'medium',
+                  affiliate_link_opportunities: 'Link in competitive analysis table'
+                }
+              ],
+              guide_articles: [
+                {
+                  title: `How to Get Started with ${program_name}: Complete Guide`,
+                  target_keyword: `how to use ${program_name.toLowerCase()}`,
+                  monthly_searches: 1800,
+                  ranking_potential: 'high',
+                  affiliate_link_opportunities: 'Add in getting started section and step-by-step guide'
+                },
+                {
+                  title: `${program_name} Tutorial: Step-by-Step Guide for Beginners`,
+                  target_keyword: `${program_name.toLowerCase()} tutorial`,
+                  monthly_searches: 1300,
+                  ranking_potential: 'medium',
+                  affiliate_link_opportunities: 'Include in tutorial introduction and resource links'
+                },
+                {
+                  title: `How to Maximize Results with ${program_name}: Expert Tips`,
+                  target_keyword: `${program_name.toLowerCase()} tips`,
+                  monthly_searches: 920,
+                  ranking_potential: 'high',
+                  affiliate_link_opportunities: 'Add in tips section and recommended tools'
+                },
+                {
+                  title: `${program_name} for Beginners: Everything You Need to Know`,
+                  target_keyword: `${program_name.toLowerCase()} for beginners`,
+                  monthly_searches: 780,
+                  ranking_potential: 'medium',
+                  affiliate_link_opportunities: 'Include in beginner resources and getting started CTA'
+                },
+                {
+                  title: `The Ultimate ${program_name} Guide: Features, Setup & Best Practices`,
+                  target_keyword: `${program_name.toLowerCase()} guide`,
+                  monthly_searches: 650,
+                  ranking_potential: 'medium',
+                  affiliate_link_opportunities: 'Link in setup instructions and best practices section'
+                }
+              ]
+            },
+            competitive_analysis: `${program_name} offers competitive commission rates and has strong brand recognition in its market segment.`
+          };
+
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify(mockResult)
+          };
+        }
+
         // SKIP WEB SEARCH ENTIRELY TO AVOID TIMEOUT
         // AI will work from its knowledge base instead
 
