@@ -4465,7 +4465,16 @@ Generate a professional, actionable outline that a content writer can follow to 
 
     // Affiliate Program Research endpoint
     if (path === '/api/affiliate-research' && method === 'POST') {
-      const { program_name, program_url, focus_keywords, blog_id } = body;
+      const {
+        program_name,
+        program_url,
+        focus_keywords,
+        blog_id,
+        user_provided_network,
+        user_provided_commission,
+        user_provided_cookie_duration,
+        user_provided_min_payout
+      } = body;
 
       if (!program_name) {
         return {
@@ -4900,15 +4909,16 @@ RULES:
           throw new Error(`Failed to parse AI response. Preview: ${preview}`);
         }
 
-        // Merge AI analysis with affiliate info
+        // Merge AI analysis with affiliate info, prioritizing user-provided values
         const result = {
           success: true,
           program_url: affiliateInfo.program_url || aiAnalysis.program_url,
-          network: aiAnalysis.network,
-          commission_rate: aiAnalysis.commission_rate,
+          // Use user-provided values if available, otherwise use AI estimates
+          network: user_provided_network || aiAnalysis.network,
+          commission_rate: user_provided_commission || aiAnalysis.commission_rate,
           commission_type: aiAnalysis.commission_type,
-          cookie_duration: aiAnalysis.cookie_duration,
-          minimum_payout: aiAnalysis.minimum_payout,
+          cookie_duration: user_provided_cookie_duration || aiAnalysis.cookie_duration,
+          minimum_payout: user_provided_min_payout || aiAnalysis.minimum_payout,
           payment_frequency: aiAnalysis.payment_frequency,
           payment_methods: aiAnalysis.payment_methods,
           terms_summary: aiAnalysis.terms_summary,
@@ -4918,8 +4928,24 @@ RULES:
           ai_summary: aiAnalysis.ai_summary,
           target_audience: aiAnalysis.target_audience,
           content_opportunities: aiAnalysis.content_opportunities,
-          competitive_analysis: aiAnalysis.competitive_analysis
+          competitive_analysis: aiAnalysis.competitive_analysis,
+          // Track which values are user-provided vs AI-estimated
+          user_overrides: {
+            network: !!user_provided_network,
+            commission_rate: !!user_provided_commission,
+            cookie_duration: !!user_provided_cookie_duration,
+            minimum_payout: !!user_provided_min_payout
+          }
         };
+
+        // Log user-provided overrides
+        if (user_provided_network || user_provided_commission || user_provided_cookie_duration || user_provided_min_payout) {
+          console.log('📝 User-provided values used (overriding AI estimates):');
+          if (user_provided_network) console.log(`  - Network: ${user_provided_network}`);
+          if (user_provided_commission) console.log(`  - Commission: ${user_provided_commission}`);
+          if (user_provided_cookie_duration) console.log(`  - Cookie Duration: ${user_provided_cookie_duration}`);
+          if (user_provided_min_payout) console.log(`  - Min Payout: ${user_provided_min_payout}`);
+        }
 
         console.log(`✅ Affiliate research completed for: ${program_name}`);
         console.log(`========== AFFILIATE RESEARCH END ==========\n`);
