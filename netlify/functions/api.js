@@ -4481,8 +4481,8 @@ Generate a professional, actionable outline that a content writer can follow to 
       try {
         console.log(`🔍 Researching affiliate program: ${program_name}`);
 
-        // Step 1: Web search for affiliate program information
-        let searchQuery = `${program_name} affiliate program commission rates terms`;
+        // SKIP WEB SEARCH ENTIRELY TO AVOID TIMEOUT
+        // AI will work from its knowledge base instead
 
         let affiliateInfo = {
           program_url: program_url || '',
@@ -4499,64 +4499,12 @@ Generate a professional, actionable outline that a content writer can follow to 
           disclosure_required: true
         };
 
-        console.log(`🔍 Search query: ${searchQuery}`);
+        console.log(`🤖 Generating content ideas for ${program_name} using AI knowledge...`);
 
-        // Perform web search
-        let searchResponse;
-        let searchData;
+        // Create context from provided information only
+        const searchContext = `Program Name: ${program_name}${program_url ? `\nWebsite: ${program_url}` : ''}
 
-        try {
-          searchResponse = await fetch(`${SERPER_BASE_URL}/search`, {
-            method: 'POST',
-            headers: {
-              'X-API-KEY': SERPER_API_KEY,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              q: searchQuery,
-              num: 5,
-              gl: 'us',
-              hl: 'en'
-            })
-          });
-
-          searchData = await searchResponse.json();
-
-          if (!searchResponse.ok) {
-            console.error('Serper API error:', searchData);
-            throw new Error('Search API returned an error');
-          }
-        } catch (searchError) {
-          console.error('Search failed:', searchError);
-          // Continue with limited data
-          searchData = { organic: [] };
-        }
-
-        // Extract useful information from search results
-        let searchContext = '';
-        if (searchData.organic && searchData.organic.length > 0) {
-          searchContext = searchData.organic
-            .slice(0, 5)
-            .map(result => `Title: ${result.title}\nSnippet: ${result.snippet}\nURL: ${result.link}`)
-            .join('\n\n');
-        } else {
-          // If no search results, provide basic context
-          searchContext = `Program Name: ${program_name}\n${program_url ? `Website: ${program_url}` : 'No additional information available'}`;
-        }
-
-        // If no program URL was provided, try to find it from search results
-        if (!affiliateInfo.program_url && searchData.organic && searchData.organic.length > 0) {
-          const programResult = searchData.organic.find(r =>
-            r.link && (r.link.includes('affiliate') || r.title.toLowerCase().includes('affiliate'))
-          );
-          if (programResult) {
-            affiliateInfo.program_url = programResult.link;
-          }
-        }
-
-        // Step 2: Skip detailed keyword research to avoid timeouts
-        // AI will generate content ideas based on general knowledge instead
-        console.log(`🤖 Generating content ideas for ${program_name}...`);
+Use your knowledge about this affiliate program to provide accurate information. If you don't have specific details, make reasonable estimates based on industry standards.`;
 
         const keywordContext = `Generate content ideas for "${program_name}" based on common affiliate marketing best practices and typical search patterns for this type of product/service.`;
 
@@ -4677,7 +4625,7 @@ Return ONLY the JSON object, no additional text.`;
                 }
               ],
               temperature: 0.7,
-              max_tokens: 4000
+              max_tokens: 3000
             })
           });
 
