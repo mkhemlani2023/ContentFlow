@@ -4687,11 +4687,20 @@ Generate a professional, actionable outline that a content writer can follow to 
                 .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Remove styles
                 .replace(/<[^>]+>/g, ' ') // Remove HTML tags
                 .replace(/\s+/g, ' ') // Normalize whitespace
-                .trim()
-                .substring(0, 3000); // Limit to first 3000 chars
+                .trim();
 
-              websiteContext = `\n\nWEBSITE CONTENT FROM ${program_url}:\n${textContent}\n\nUse this content to understand what ${program_name} actually does and offers.`;
-              console.log(`[${new Date().toISOString()}] Successfully fetched website content (${textContent.length} chars)`);
+              // For affiliate program pages, get more content (up to 8000 chars)
+              // For regular pages, keep it shorter (3000 chars)
+              const isAffiliatePage = program_url.toLowerCase().includes('affiliate') ||
+                                      program_url.toLowerCase().includes('partner') ||
+                                      textContent.toLowerCase().includes('affiliate program') ||
+                                      textContent.toLowerCase().includes('commission rate');
+
+              const contentLength = isAffiliatePage ? 8000 : 3000;
+              const finalContent = textContent.substring(0, contentLength);
+
+              websiteContext = `\n\nWEBSITE CONTENT FROM ${program_url}:\n${finalContent}\n\n${isAffiliatePage ? 'This appears to be an affiliate program page with specific commission details. EXTRACT the exact values mentioned.' : 'Use this content to understand what ' + program_name + ' actually does and offers.'}`;
+              console.log(`[${new Date().toISOString()}] Successfully fetched website content (${finalContent.length} chars, affiliate page: ${isAffiliatePage})`);
             } else {
               console.log(`[${new Date().toISOString()}] Website fetch failed with status: ${websiteResponse.status}`);
             }
@@ -4707,26 +4716,38 @@ Use the website content above to understand exactly what this company does. Gene
 
         const keywordContext = `Generate content ideas for "${program_name}" based on their actual website content and offerings.`;
 
-        const analysisPrompt = `Generate affiliate content ideas for "${program_name}". Return ONLY valid JSON, no markdown.
+        const analysisPrompt = `Analyze the affiliate program for "${program_name}". Return ONLY valid JSON, no markdown.
 
 Program: ${program_name}
 ${program_url ? `Website: ${program_url}` : ''}
 ${focus_keywords ? `FOCUS AREAS: ${focus_keywords} - All content must be about these specific topics/keywords` : ''}
 ${websiteContext}
 
-${websiteContext ? `CRITICAL: Use the website content above to understand what ${program_name} specifically does. Do NOT confuse it with other similar companies.` : ''}
+${websiteContext ? `CRITICAL INSTRUCTIONS FOR EXTRACTING AFFILIATE DETAILS:
+1. The website content above contains REAL affiliate program information
+2. CAREFULLY READ and EXTRACT the actual commission rate, cookie duration, payout details from the text
+3. Do NOT make up values or estimate - use ONLY what you find in the website content
+4. Examples of what to look for and extract EXACTLY:
+   - "up to 20% commission" → use "Up to 20%"
+   - "$100 minimum payout" → use 100 as the number
+   - "90 days" or "90 day cookie" → use "90 days"
+   - "Everflow" → use "Everflow" as network
+   - "PayPal or ACH" → use ["PayPal", "ACH Bank Transfer"]
+5. If the website mentions specific percentages, tiers, or amounts - use those EXACT values
+6. Do NOT confuse ${program_name} with other similar companies
+7. This is REAL DATA extraction, not estimation` : ''}
 ${focus_keywords ? `IMPORTANT: This affiliate program is specifically about "${focus_keywords}". Generate content ideas that target these exact topics, NOT general or unrelated topics.` : ''}
 
-Provide realistic estimates. Return this exact JSON structure:
+${websiteContext ? 'EXTRACT real details from the website content above by carefully reading it. Do NOT estimate or guess.' : 'Provide realistic estimates based on industry standards since no website content is available.'} Return this exact JSON structure:
 
 {
-  "network": "Name of the affiliate network (e.g., ShareASale, Impact, CJ, Direct)",
-  "commission_rate": "Commission rate (e.g., '10%', '$50 per sale', '5-15% tiered')",
-  "commission_type": "Type: 'percentage', 'flat', 'tiered', or 'hybrid'",
-  "cookie_duration": "Cookie duration (e.g., '30 days', '60 days', 'lifetime')",
-  "minimum_payout": "Minimum payout amount as number (e.g., 50 for $50)",
-  "payment_frequency": "How often they pay (e.g., 'monthly', 'net-30', 'net-60')",
-  "payment_methods": ["Array of payment methods like PayPal, Direct Deposit, Wire"],
+  "network": "EXTRACT from content if mentioned (e.g., 'Everflow', 'ShareASale', 'Impact', 'Direct'). If not found, estimate.",
+  "commission_rate": "EXTRACT EXACT rate from content (e.g., 'Up to 20%', '15%', '$50 per sale'). If content says 'up to 20%' do NOT change it to '10-15%'.",
+  "commission_type": "Based on commission_rate: 'percentage', 'flat', 'tiered', or 'hybrid'",
+  "cookie_duration": "EXTRACT from content (e.g., '90 days', '30 days', '60 days'). If not found, estimate based on industry.",
+  "minimum_payout": "EXTRACT as number from content (e.g., if '$100' is mentioned, use 100). If not found, estimate.",
+  "payment_frequency": "EXTRACT from content (e.g., 'Monthly', 'Monthly (30 Day Hold)', 'net-30'). If not found, use 'Monthly'.",
+  "payment_methods": ["EXTRACT from content (e.g., 'PayPal', 'ACH Bank Transfer', 'Wire'). If not found, use common methods"],
   "terms_summary": "2-3 sentence summary of key terms and conditions",
   "program_requirements": "Requirements to join or maintain affiliate status",
   "prohibited_content": ["Array of prohibited content types or practices"],
