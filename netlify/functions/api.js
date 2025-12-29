@@ -4808,25 +4808,52 @@ RULES:
         try {
           const aiContent = aiData.choices[0].message.content;
           console.log(`AI response length: ${aiContent.length} characters`);
-          console.log('AI response preview:', aiContent.substring(0, 200) + '...');
+          console.log('AI response (first 300 chars):', aiContent.substring(0, 300));
 
-          // Remove markdown code blocks if present
+          // Try multiple methods to extract JSON
+          let jsonString = aiContent;
+
+          // Method 1: Try to extract from markdown code blocks
           const jsonMatch = aiContent.match(/```json\n([\s\S]*?)\n```/) || aiContent.match(/```\n([\s\S]*?)\n```/);
-          const jsonString = jsonMatch ? jsonMatch[1] : aiContent;
-
           if (jsonMatch) {
-            console.log('Found JSON in markdown code blocks, extracting...');
+            jsonString = jsonMatch[1];
+            console.log('✓ Extracted JSON from markdown code blocks');
           }
 
+          // Method 2: Try to find JSON between curly braces
+          const braceMatch = aiContent.match(/\{[\s\S]*\}/);
+          if (!jsonMatch && braceMatch) {
+            jsonString = braceMatch[0];
+            console.log('✓ Extracted JSON using brace matching');
+          }
+
+          // Method 3: Clean up common issues
+          jsonString = jsonString.trim();
+
+          // Remove any text before the first {
+          const firstBrace = jsonString.indexOf('{');
+          if (firstBrace > 0) {
+            jsonString = jsonString.substring(firstBrace);
+            console.log('✓ Removed text before JSON');
+          }
+
+          // Remove any text after the last }
+          const lastBrace = jsonString.lastIndexOf('}');
+          if (lastBrace > 0 && lastBrace < jsonString.length - 1) {
+            jsonString = jsonString.substring(0, lastBrace + 1);
+            console.log('✓ Removed text after JSON');
+          }
+
+          console.log('Attempting to parse JSON...');
           aiAnalysis = JSON.parse(jsonString);
+
           console.log(`✅ JSON parsed successfully in ${Date.now() - parseStartTime}ms`);
           console.log(`Articles generated: ${(aiAnalysis.content_opportunities?.review_articles?.length || 0) + (aiAnalysis.content_opportunities?.comparison_articles?.length || 0) + (aiAnalysis.content_opportunities?.guide_articles?.length || 0)}`);
         } catch (parseError) {
           console.error('❌ Failed to parse AI response');
           console.error('Parse error:', parseError.message);
           console.error('Error at position:', parseError.message.match(/position (\d+)/)?.[1]);
-          console.error('AI content (first 500 chars):', aiData.choices[0]?.message?.content?.substring(0, 500));
-          console.error('AI content (last 500 chars):', aiData.choices[0]?.message?.content?.slice(-500));
+          console.error('AI content (full):', aiData.choices[0]?.message?.content);
           throw new Error('Failed to parse AI analysis results - AI may have returned invalid JSON');
         }
 
