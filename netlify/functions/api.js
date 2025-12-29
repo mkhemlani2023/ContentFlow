@@ -4853,8 +4853,12 @@ RULES:
           console.error('❌ Failed to parse AI response');
           console.error('Parse error:', parseError.message);
           console.error('Error at position:', parseError.message.match(/position (\d+)/)?.[1]);
-          console.error('AI content (full):', aiData.choices[0]?.message?.content);
-          throw new Error('Failed to parse AI analysis results - AI may have returned invalid JSON');
+          const fullContent = aiData.choices[0]?.message?.content || '';
+          console.error('AI content (full):', fullContent);
+
+          // Include preview in error message for debugging
+          const preview = fullContent.substring(0, 500);
+          throw new Error(`Failed to parse AI response. Preview: ${preview}`);
         }
 
         // Merge AI analysis with affiliate info
