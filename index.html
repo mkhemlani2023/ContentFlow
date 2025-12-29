@@ -13386,29 +13386,158 @@ TITLE CREATION RULES:
             await generateArticleFromOutline(outlineStructure, keyword, modelTier, config, affiliateProgram);
         }
 
+        // Determine strategic affiliate link placement using AI
+        async function determineAffiliateLinkPlacement(outlineStructure, affiliateProgram, keyword) {
+            const sections = outlineStructure.outline?.sections || [];
+            const sectionSummary = sections.map(s => `- ${s.title}: ${s.purpose}`).join('\n');
+
+            const placementPrompt = `Analyze this article outline and determine the BEST 2-3 places to insert affiliate links for "${affiliateProgram.program_name}" (${affiliateProgram.focus_keywords}).
+
+Article: "${outlineStructure.outline.title}"
+Keyword: "${keyword}"
+
+Sections:
+${sectionSummary}
+
+Product: ${affiliateProgram.program_name}
+Focus: ${affiliateProgram.focus_keywords}
+
+Determine the 2-3 HIGHEST CONVERTING placements where:
+1. The reader is actively seeking solutions
+2. The product recommendation feels natural and helpful
+3. It's positioned AFTER explaining a problem or need
+4. Maximum click-through likelihood
+
+Return ONLY valid JSON with this structure:
+{
+  "placements": [
+    {
+      "section": "Exact section title from outline",
+      "strategy": "Why this placement converts (e.g., 'After explaining benefits, recommend as solution')",
+      "context": "Specific sentence/paragraph context for insertion (e.g., 'After listing health benefits, introduce product as easiest way to achieve them')",
+      "anchorText": "Natural anchor text for link (e.g., 'Echo Water hydrogen system', 'try Echo Water', 'Echo Water machine')"
+    }
+  ]
+}
+
+CRITICAL: Select sections where the product recommendation genuinely helps the reader. Avoid forcing links where they don't fit naturally.`;
+
+            try {
+                const response = await fetch('/api/openrouter-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'openai/gpt-4o-mini',
+                        prompt: placementPrompt,
+                        temperature: 0.7,
+                        max_tokens: 1000,
+                        stream: true
+                    })
+                });
+
+                if (!response.ok) {
+                    console.error('Affiliate placement analysis failed, using default strategy');
+                    return getDefaultPlacementStrategy(sections, affiliateProgram);
+                }
+
+                const data = await response.json();
+                const content = data.choices[0].message.content;
+
+                // Parse JSON response
+                const jsonMatch = content.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const placementData = JSON.parse(jsonMatch[0]);
+                    console.log('✅ Affiliate placement strategy:', placementData);
+                    return placementData;
+                }
+
+                return getDefaultPlacementStrategy(sections, affiliateProgram);
+            } catch (error) {
+                console.error('Error determining affiliate placement:', error);
+                return getDefaultPlacementStrategy(sections, affiliateProgram);
+            }
+        }
+
+        // Fallback strategy if AI analysis fails
+        function getDefaultPlacementStrategy(sections, affiliateProgram) {
+            const placements = [];
+
+            // Place in middle section (after explaining problem/need)
+            if (sections.length >= 3) {
+                const midSection = sections[Math.floor(sections.length / 2)];
+                placements.push({
+                    section: midSection.title,
+                    strategy: "After explaining the topic, recommend as solution",
+                    context: "After discussing benefits or features, introduce product as practical implementation",
+                    anchorText: affiliateProgram.program_name
+                });
+            }
+
+            // Place in conclusion or last section
+            const lastSection = sections[sections.length - 1] || sections[0];
+            placements.push({
+                section: lastSection.title,
+                strategy: "Final recommendation before conclusion",
+                context: "Summarize value and provide direct recommendation with link",
+                anchorText: `try ${affiliateProgram.program_name}`
+            });
+
+            return { placements };
+        }
+
         async function generateArticleFromOutline(outlineStructure, keyword, modelTier, config, affiliateProgram = null) {
             // Multi-phase generation to avoid timeouts
             const sections = outlineStructure.outline?.sections || [];
             const numSections = sections.length;
             const targetWordCount = outlineStructure.metadata?.wordCount || 2000;
 
-            // Build affiliate program context if provided
-            const affiliateContext = affiliateProgram ? `
-AFFILIATE PRODUCT INTEGRATION (IMPORTANT):
-- Product: ${affiliateProgram.program_name}
-- Link: ${affiliateProgram.affiliate_link || 'Product link'}
-- Focus: ${affiliateProgram.focus_keywords || affiliateProgram.program_name}
-- NATURALLY mention this product 1-2 times where relevant
-- Include the affiliate link when mentioning the product like this: [${affiliateProgram.program_name}](${affiliateProgram.affiliate_link})
-- Make recommendations feel organic and helpful, not forced or salesy
-- Only mention where it genuinely adds value to the reader
-` : '';
+            // Build strategic affiliate link placement instructions
+            let affiliateContext = '';
+            let affiliatePlacementStrategy = null;
+
+            if (affiliateProgram) {
+                // Determine optimal placement sections for affiliate links
+                affiliatePlacementStrategy = await determineAffiliateLinkPlacement(
+                    outlineStructure,
+                    affiliateProgram,
+                    keyword
+                );
+
+                affiliateContext = `
+AFFILIATE PRODUCT INTEGRATION - STRATEGIC PLACEMENT:
+Product: ${affiliateProgram.program_name}
+Link: ${affiliateProgram.affiliate_link || 'Product link'}
+Focus: ${affiliateProgram.focus_keywords || affiliateProgram.program_name}
+
+PLACEMENT STRATEGY (High-Conversion Locations):
+${affiliatePlacementStrategy.placements.map((p, i) => `
+${i + 1}. ${p.section}: ${p.strategy}
+   Context: ${p.context}
+   Link format: [${p.anchorText}](${affiliateProgram.affiliate_link})
+`).join('')}
+
+CRITICAL RULES:
+- Include ${affiliatePlacementStrategy.placements.length} affiliate links in the exact sections specified above
+- Use natural, helpful language - "I recommend...", "Consider trying...", "A great option is..."
+- Links must feel like genuine recommendations, not ads
+- Place links where readers are seeking solutions (after explaining problems/needs)
+- Use the specific anchor text and context provided for each placement
+`;
+            }
 
             const progress = showProgressModal({
                 title: 'Step 2: Generating Article (Multi-Phase)',
                 initialMessage: `Generating article in ${numSections + 3} phases to avoid timeouts...`,
                 icon: '📄',
-                stages: [
+                stages: affiliateProgram ? [
+                    'Analyzing affiliate placement',
+                    'Introduction',
+                    `Sections (0/${numSections})`,
+                    'Conclusion',
+                    'FAQ',
+                    'Assembly',
+                    'Complete'
+                ] : [
                     'Preparing',
                     'Introduction',
                     `Sections (0/${numSections})`,
@@ -13421,11 +13550,17 @@ AFFILIATE PRODUCT INTEGRATION (IMPORTANT):
                 manualStageControl: true
             });
 
-            progress.updateTechnicalInfo(`Model: ${config.model}\nPhases: ${numSections + 3}\nTarget: ${targetWordCount}w`);
+            const techInfo = `Model: ${config.model}\nPhases: ${numSections + 3}\nTarget: ${targetWordCount}w${affiliateProgram ? `\nAffiliate: ${affiliateProgram.program_name}` : ''}`;
+            progress.updateTechnicalInfo(techInfo);
 
             try {
-                updateProgressStage(0, '✓ Outline loaded');
-                await new Promise(resolve => setTimeout(resolve, 300));
+                if (affiliateProgram && affiliatePlacementStrategy) {
+                    updateProgressStage(0, `✓ ${affiliatePlacementStrategy.placements.length} strategic placements identified`);
+                    progress.updateMessage(`Affiliate links will be placed in: ${affiliatePlacementStrategy.placements.map(p => p.section).join(', ')}`);
+                } else {
+                    updateProgressStage(0, '✓ Outline loaded');
+                }
+                await new Promise(resolve => setTimeout(resolve, 500));
 
                 // Helper function to call OpenRouter for each phase
                 async function generatePhase(prompt, maxTokens = 800) {
