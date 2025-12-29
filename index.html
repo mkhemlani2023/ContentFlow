@@ -8517,7 +8517,9 @@
                 }
 
                 if (!result.success) {
-                    throw new Error(result.error || 'Failed to research affiliate program');
+                    const errorMsg = result.message || result.error || 'Failed to research affiliate program';
+                    console.error('API Error Details:', result);
+                    throw new Error(errorMsg);
                 }
 
                 // Save the affiliate program with AI insights to Supabase
