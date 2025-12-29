@@ -4479,7 +4479,11 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
 
       try {
-        console.log(`🔍 Researching affiliate program: ${program_name}`);
+        console.log(`\n========== AFFILIATE RESEARCH START ==========`);
+        console.log(`Program: ${program_name}`);
+        console.log(`URL: ${program_url || 'Not provided'}`);
+        console.log(`Blog ID: ${blog_id}`);
+        console.log(`Timestamp: ${new Date().toISOString()}`);
 
         // TEMPORARY: Check if we should use mock data for testing
         const useMockData = false; // Set to true for testing without API calls
@@ -4738,6 +4742,12 @@ RULES:
         let aiResponse;
         let aiData;
 
+        const apiStartTime = Date.now();
+        console.log(`[${new Date().toISOString()}] Starting OpenRouter API call...`);
+        console.log(`Model: gpt-4o-mini`);
+        console.log(`Max tokens: 2000`);
+        console.log(`Prompt length: ${analysisPrompt.length} characters`);
+
         try {
           aiResponse = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
             method: 'POST',
@@ -4760,34 +4770,63 @@ RULES:
             })
           });
 
+          const apiDuration = Date.now() - apiStartTime;
+          console.log(`[${new Date().toISOString()}] OpenRouter API responded in ${apiDuration}ms`);
+
           aiData = await aiResponse.json();
+          console.log(`Response status: ${aiResponse.status}`);
+          console.log(`Response ok: ${aiResponse.ok}`);
 
           if (!aiResponse.ok) {
-            console.error('OpenRouter API error:', aiData);
-            throw new Error(`AI API error: ${aiData.error?.message || 'Unknown error'}`);
+            console.error('❌ OpenRouter API error:', JSON.stringify(aiData, null, 2));
+            console.error(`Status: ${aiResponse.status}`);
+            console.error(`Status text: ${aiResponse.statusText}`);
+            throw new Error(`AI API error: ${aiData.error?.message || aiResponse.statusText || 'Unknown error'}`);
           }
 
           if (!aiData.choices || !aiData.choices[0]) {
-            console.error('AI returned no choices:', aiData);
+            console.error('❌ AI returned no choices');
+            console.error('Full response:', JSON.stringify(aiData, null, 2));
             throw new Error('AI analysis failed to return results');
           }
+
+          console.log(`✅ AI response received successfully`);
+          console.log(`Total API time: ${Date.now() - apiStartTime}ms`);
         } catch (aiError) {
-          console.error('AI request failed:', aiError);
+          const apiDuration = Date.now() - apiStartTime;
+          console.error(`❌ AI request failed after ${apiDuration}ms`);
+          console.error('Error name:', aiError.name);
+          console.error('Error message:', aiError.message);
+          console.error('Error stack:', aiError.stack);
           throw new Error(`AI analysis failed: ${aiError.message}`);
         }
 
         let aiAnalysis;
+        const parseStartTime = Date.now();
+        console.log(`[${new Date().toISOString()}] Parsing AI response...`);
+
         try {
           const aiContent = aiData.choices[0].message.content;
-          console.log('AI response preview:', aiContent.substring(0, 200));
+          console.log(`AI response length: ${aiContent.length} characters`);
+          console.log('AI response preview:', aiContent.substring(0, 200) + '...');
 
           // Remove markdown code blocks if present
           const jsonMatch = aiContent.match(/```json\n([\s\S]*?)\n```/) || aiContent.match(/```\n([\s\S]*?)\n```/);
           const jsonString = jsonMatch ? jsonMatch[1] : aiContent;
+
+          if (jsonMatch) {
+            console.log('Found JSON in markdown code blocks, extracting...');
+          }
+
           aiAnalysis = JSON.parse(jsonString);
+          console.log(`✅ JSON parsed successfully in ${Date.now() - parseStartTime}ms`);
+          console.log(`Articles generated: ${(aiAnalysis.content_opportunities?.review_articles?.length || 0) + (aiAnalysis.content_opportunities?.comparison_articles?.length || 0) + (aiAnalysis.content_opportunities?.guide_articles?.length || 0)}`);
         } catch (parseError) {
-          console.error('Failed to parse AI response:', parseError);
-          console.error('AI content:', aiData.choices[0]?.message?.content?.substring(0, 500));
+          console.error('❌ Failed to parse AI response');
+          console.error('Parse error:', parseError.message);
+          console.error('Error at position:', parseError.message.match(/position (\d+)/)?.[1]);
+          console.error('AI content (first 500 chars):', aiData.choices[0]?.message?.content?.substring(0, 500));
+          console.error('AI content (last 500 chars):', aiData.choices[0]?.message?.content?.slice(-500));
           throw new Error('Failed to parse AI analysis results - AI may have returned invalid JSON');
         }
 
@@ -4813,6 +4852,7 @@ RULES:
         };
 
         console.log(`✅ Affiliate research completed for: ${program_name}`);
+        console.log(`========== AFFILIATE RESEARCH END ==========\n`);
 
         return {
           statusCode: 200,
@@ -4821,8 +4861,12 @@ RULES:
         };
 
       } catch (error) {
-        console.error('❌ Affiliate research error:', error);
-        console.error('Error details:', { name: error.name, message: error.message });
+        console.error(`\n========== AFFILIATE RESEARCH ERROR ==========`);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('Timestamp:', new Date().toISOString());
+        console.error(`========== ERROR END ==========\n`);
 
         return {
           statusCode: 200, // Return 200 instead of 500 to avoid 502 gateway errors
@@ -4831,7 +4875,8 @@ RULES:
             success: false,
             error: 'Failed to research affiliate program',
             message: error.message,
-            errorType: error.name
+            errorType: error.name,
+            timestamp: new Date().toISOString()
           })
         };
       }
