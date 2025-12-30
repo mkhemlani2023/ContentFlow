@@ -12581,16 +12581,13 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
                         [keyword, title], // Sub-topics for context
                         `Section about ${sectionTitle} for article on ${keyword}. Continue the article naturally, building upon what was already covered. Do NOT repeat information from previous sections.
 
-CITATION REQUIREMENTS - Chicago Manual of Style:
+CITATION REQUIREMENTS:
 When referencing clinical studies, scientific papers, or research findings:
-- Use in-text citations: (Author Year) or (Author et al. Year) for 3+ authors
-- Mention primary conclusions or key findings from the research
-- Provide complete citations with: Author(s), Year, "Article Title," Journal Name Volume(Issue): Pages, DOI or URL
-- Example in-text: "Research demonstrates neuroprotective effects (Smith et al. 2023)"
-- Example full citation: Smith, John A., Mary B. Johnson, and Robert C. Lee. 2023. "Neuroprotective Effects of Nicotine in Parkinson Disease Patients: A Randomized Clinical Trial." Journal of Neurology 45(2): 123-145. https://doi.org/10.1234/jn.2023.123
-- CRITICAL: Only cite real, verifiable research from reputable peer-reviewed journals
-- Do NOT fabricate citations - if you reference research, it must be real
-- Include DOI or direct URL to the paper whenever possible`, // Chicago style citation instructions
+- Use ONLY in-text citations: (Author Year) or (Author et al. Year) for 3+ authors
+- Example: "Research demonstrates neuroprotective effects (Smith et al. 2023)"
+- DO NOT include full citations (title, journal, pages, DOI) in the content
+- Full citations will be extracted and added to References section automatically
+- Only cite real, verifiable research from reputable peer-reviewed journals`, // Simplified citation instructions
                         fullContext // Pass context from introduction and previous sections
                     );
 
@@ -14007,75 +14004,102 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                 updateProgressStage(5, '✓ Assembly complete');
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                // Phase 6: Affiliate Link Insertion (if program selected)
-                if (affiliateProgram && affiliatePlacementStrategy) {
+                // Phase 6: Affiliate Link Insertion (GUARANTEED if program selected)
+                if (affiliateProgram) {
+                    console.log('🔗 === PHASE 6: AFFILIATE LINK INSERTION ===');
+                    console.log('Affiliate Program:', affiliateProgram.program_name);
+                    console.log('Affiliate Link:', affiliateProgram.displayLink);
+                    console.log('Total Sections:', generatedSections.length);
+
                     updateProgressStage(6, 'Inserting affiliate links...');
-                    progress.updateMessage('🔗 Adding affiliate links to designated sections...');
+                    progress.updateMessage('🔗 Adding affiliate links to article sections...');
 
-                    // Check each section for affiliate links
                     let linksAdded = 0;
-                    for (const placement of affiliatePlacementStrategy.placements) {
-                        const targetSection = generatedSections.find(s => s.title === placement.section);
+                    const linkText = affiliateProgram.displayLink;
 
-                        if (targetSection) {
-                            const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${affiliateProgram.displayLink.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
-                            const hasLink = linkPattern.test(targetSection.content);
-
-                            if (!hasLink) {
-                                console.log(`⚠️ Affiliate link missing in section "${targetSection.title}" - inserting now`);
-
-                                // Insert link at the end of the section content, before the last paragraph
-                                const paragraphs = targetSection.content.split('\n\n');
-                                if (paragraphs.length > 1) {
-                                    // Insert before last paragraph with natural recommendation
-                                    const recommendationText = `\n\nFor those looking to experience these benefits, [${placement.anchorText}](${affiliateProgram.displayLink}) offers a reliable solution for incorporating hydrogen water into your daily routine.`;
-                                    paragraphs.splice(paragraphs.length - 1, 0, recommendationText.trim());
-                                    targetSection.content = paragraphs.join('\n\n');
-                                    linksAdded++;
-                                    console.log(`✅ Added affiliate link to "${targetSection.title}"`);
-                                } else {
-                                    // Single paragraph - append to end
-                                    targetSection.content += `\n\nFor those looking to implement this, [${placement.anchorText}](${affiliateProgram.displayLink}) provides an excellent option.`;
-                                    linksAdded++;
-                                    console.log(`✅ Added affiliate link to "${targetSection.title}"`);
-                                }
-                            } else {
-                                console.log(`✅ Affiliate link already present in "${targetSection.title}"`);
-                                linksAdded++;
-                            }
-                        }
+                    // STRATEGY: Insert links into middle and last sections (highest conversion spots)
+                    const sectionsToAddLinks = [];
+                    if (generatedSections.length >= 3) {
+                        // Add to middle section (after problem is explained)
+                        sectionsToAddLinks.push(Math.floor(generatedSections.length / 2));
+                        // Add to second-to-last section (before conclusion)
+                        sectionsToAddLinks.push(generatedSections.length - 2);
+                    } else if (generatedSections.length === 2) {
+                        // Just add to last section
+                        sectionsToAddLinks.push(1);
+                    } else if (generatedSections.length === 1) {
+                        // Add to the only section
+                        sectionsToAddLinks.push(0);
                     }
 
-                    // Also check conclusion if it was designated for a link
-                    const conclusionPlacement = affiliatePlacementStrategy.placements.find(p =>
-                        p.section.toLowerCase().includes('conclusion')
-                    );
-                    if (conclusionPlacement) {
-                        const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${affiliateProgram.displayLink.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
-                        const hasLink = linkPattern.test(cleanConclusion);
+                    console.log('Will insert links in section indices:', sectionsToAddLinks);
 
-                        if (!hasLink) {
-                            console.log(`⚠️ Affiliate link missing in conclusion - inserting now`);
-                            const paragraphs = cleanConclusion.split('\n\n');
-                            if (paragraphs.length > 1) {
-                                const recommendationText = `\n\nTo get started, consider exploring [${conclusionPlacement.anchorText}](${affiliateProgram.displayLink}) for a quality hydrogen water solution.`;
-                                paragraphs.splice(paragraphs.length - 1, 0, recommendationText.trim());
-                                cleanConclusion = paragraphs.join('\n\n');
-                                finalArticle.content.conclusion = cleanConclusion;
-                                linksAdded++;
-                                console.log(`✅ Added affiliate link to conclusion`);
-                            }
-                        } else {
-                            console.log(`✅ Affiliate link already present in conclusion`);
+                    for (const sectionIndex of sectionsToAddLinks) {
+                        const section = generatedSections[sectionIndex];
+                        if (!section) continue;
+
+                        console.log(`Checking section ${sectionIndex}: "${section.title}"`);
+
+                        // Check if link already exists
+                        const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
+                        const hasLink = linkPattern.test(section.content);
+
+                        if (hasLink) {
+                            console.log(`✅ Link already present in "${section.title}"`);
                             linksAdded++;
+                        } else {
+                            console.log(`⚠️ Link missing in "${section.title}" - inserting now`);
+
+                            // Insert link at strategic position (before last paragraph)
+                            const paragraphs = section.content.split('\n\n').filter(p => p.trim());
+
+                            if (paragraphs.length > 1) {
+                                // Insert before last paragraph
+                                const linkRecommendation = `For those interested in experiencing these benefits, [${affiliateProgram.program_name}](${linkText}) provides a high-quality hydrogen water solution worth considering.`;
+                                paragraphs.splice(paragraphs.length - 1, 0, linkRecommendation);
+                                section.content = paragraphs.join('\n\n');
+                            } else {
+                                // Single paragraph - append
+                                section.content += `\n\nFor more information, check out [${affiliateProgram.program_name}](${linkText}) for quality hydrogen water products.`;
+                            }
+
+                            linksAdded++;
+                            console.log(`✅ Successfully added link to "${section.title}"`);
                         }
                     }
 
-                    updateProgressStage(6, `✓ ${linksAdded} affiliate link${linksAdded !== 1 ? 's' : ''} inserted`);
-                    console.log(`🔗 AFFILIATE LINK INSERTION COMPLETE: ${linksAdded} link(s) added`);
+                    // ALSO add to conclusion (final CTA)
+                    console.log('Checking conclusion for affiliate link...');
+                    const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
+                    const conclusionHasLink = linkPattern.test(cleanConclusion);
+
+                    if (!conclusionHasLink) {
+                        console.log('⚠️ Link missing in conclusion - inserting now');
+                        const paragraphs = cleanConclusion.split('\n\n').filter(p => p.trim());
+
+                        if (paragraphs.length > 1) {
+                            const finalCTA = `To get started with hydrogen water, consider [${affiliateProgram.program_name}](${linkText}) for a reliable and effective solution.`;
+                            paragraphs.splice(paragraphs.length - 1, 0, finalCTA);
+                            cleanConclusion = paragraphs.join('\n\n');
+                            finalArticle.content.conclusion = cleanConclusion;
+                        } else {
+                            cleanConclusion += `\n\nExplore [${affiliateProgram.program_name}](${linkText}) to learn more about quality hydrogen water options.`;
+                            finalArticle.content.conclusion = cleanConclusion;
+                        }
+                        linksAdded++;
+                        console.log('✅ Successfully added link to conclusion');
+                    } else {
+                        console.log('✅ Link already present in conclusion');
+                        linksAdded++;
+                    }
+
+                    updateProgressStage(6, `✓ ${linksAdded} affiliate link${linksAdded !== 1 ? 's' : ''} added`);
+                    console.log(`🔗 PHASE 6 COMPLETE: ${linksAdded} affiliate link(s) inserted`);
+                    console.log('=== END AFFILIATE LINK INSERTION ===');
                     await new Promise(resolve => setTimeout(resolve, 500));
                 } else {
-                    updateProgressStage(6, '✓ Complete (no affiliate links)');
+                    updateProgressStage(6, '✓ Complete');
+                    console.log('No affiliate program selected - skipping link insertion');
                 }
 
                 progress.updateMessage('✅ Article ready!');
