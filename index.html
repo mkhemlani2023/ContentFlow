@@ -13660,6 +13660,11 @@ CRITICAL: Include this link naturally in the introduction.
 Purpose: ${introData.purpose}
 Key points: ${introData.keyPoints.join(', ')}
 ${introAffiliateContext}
+CITATION REQUIREMENTS:
+- Use ONLY in-text citations: (Author Year) or (Author et al. Year)
+- DO NOT include full citations (title, journal, DOI) in the content
+- Example: "Studies show benefits (Ohsawa et al. 2007)"
+
 Write ${introWords} words of engaging, informative content. Use double line breaks between paragraphs. Return ONLY the introduction text, no JSON, no markdown.`;
 
                 const introduction = await generatePhase(introPrompt, Math.floor(introWords * 2.0));
@@ -13719,12 +13724,13 @@ Section: ${section.title}
 Key points: ${section.keyPoints?.join(', ')}
 ${subsectionList ? `Subsections to cover:\n${subsectionList}` : ''}
 ${sectionAffiliateContext}
-CITATION REQUIREMENTS - Chicago Manual of Style:
+CITATION REQUIREMENTS:
 When referencing clinical studies, scientific papers, or research findings:
-- Use in-text citations: (Author Year) or (Author et al. Year) for 3+ authors
-- Provide complete citations: Author(s). Year. "Article Title." Journal Name Volume(Issue): Pages. DOI or URL
+- Use ONLY in-text citations in this format: (Author Year) or (Author et al. Year) for 3+ authors
+- Example: "Studies show hydrogen water benefits (Ohsawa et al. 2007)"
+- DO NOT include full citations (title, journal, DOI) in the content
+- Full citations will be added to the References section automatically
 - Only cite real, verifiable research from reputable peer-reviewed journals
-- Include DOI or direct URL when available
 
 Write ${wordsPerSection} words of informative, engaging paragraphs. Use double line breaks between paragraphs. Return ONLY the content text, no JSON, no formatting.`;
 
@@ -13777,6 +13783,11 @@ CRITICAL: Include this final recommendation with link in the conclusion.
 Purpose: ${conclusionData.purpose}
 Key points: ${conclusionData.keyPoints.join(', ')}
 ${conclusionAffiliateContext}
+CITATION REQUIREMENTS:
+- Use ONLY in-text citations: (Author Year) or (Author et al. Year)
+- DO NOT include full citations (title, journal, DOI) in the content
+- Example: "Studies confirm benefits (Smith et al. 2023)"
+
 Write ${conclusionWords} words wrapping up the article. Use double line breaks between paragraphs.
 
 CRITICAL RULES:
@@ -14121,7 +14132,7 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
             }
         }
 
-        async function generateArticleWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier, totalCredits) {
+        async function generateArticleWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier, totalCredits, affiliateProgram = null) {
             // Calculate credit costs
             const articleCreditCost = modelTier === 'dataforseo' ? 8 : modelTier === 'basic' ? 25 : modelTier === 'premium' ? 50 : 85;
             const imageCreditCost = totalCredits - articleCreditCost;
@@ -14131,6 +14142,7 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
             console.log('Model Tier:', modelTier);
             console.log('Image Tier:', imageTier);
             console.log('Total Credits:', totalCredits);
+            console.log('Affiliate Program:', affiliateProgram ? affiliateProgram.program_name : 'None');
 
             // Check credit requirement using consistent system
             if (!checkCreditRequirement(`${modelTier} Article + Images`, totalCredits)) {
@@ -14157,7 +14169,7 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
             // Generate outline first (user can edit), then article
             // The outline workflow will eventually call generateArticleFromOutline
             // keyword IS the article title from the article idea
-            await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, keyword);
+            await generateOutlineFirst(keyword, wordCount, difficulty, intent, modelTier, keyword, affiliateProgram);
         }
 
         async function generateArticleContentWithImages(keyword, wordCount, difficulty, intent, modelTier, imageTier) {
