@@ -3116,6 +3116,135 @@ Generate a professional, actionable outline that a content writer can follow to 
       }
     }
 
+    // OpenRouter AI Image Generation Endpoint
+    if (path === '/api/openrouter-images' && method === 'POST') {
+      try {
+        const requestBody = JSON.parse(event.body || '{}');
+        const { prompt, count = 1, model = 'google/gemini-2.5-flash-image-preview' } = requestBody;
+
+        console.log('OpenRouter image generation:', { prompt, count, model });
+
+        if (!prompt) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'Prompt parameter is required'
+            })
+          };
+        }
+
+        if (!OPENROUTER_API_KEY) {
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'OpenRouter API key not configured'
+            })
+          };
+        }
+
+        const images = [];
+
+        // Generate images one at a time (OpenRouter generates 1 per request)
+        for (let i = 0; i < count; i++) {
+          try {
+            const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://www.getseowizard.com',
+                'X-Title': 'SEO Wizard Content Flow'
+              },
+              body: JSON.stringify({
+                model: model,
+                messages: [
+                  {
+                    role: 'user',
+                    content: prompt
+                  }
+                ],
+                modalities: ['image', 'text']
+              })
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error(`OpenRouter image gen error (${i + 1}/${count}):`, errorText);
+              throw new Error(`OpenRouter API returned ${response.status}: ${errorText}`);
+            }
+
+            const data = await response.json();
+            console.log(`OpenRouter response (${i + 1}/${count}):`, JSON.stringify(data).substring(0, 200));
+
+            // Extract base64 image from response
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+              const message = data.choices[0].message;
+
+              // Images come in the images array as base64 data URLs
+              if (message.images && message.images.length > 0) {
+                const imageData = message.images[0];
+                const base64Url = imageData.image_url?.url || imageData.url;
+
+                if (base64Url) {
+                  images.push({
+                    url: base64Url, // base64 data URL: "data:image/png;base64,..."
+                    alt: prompt,
+                    type: i === 0 ? 'featured' : 'supporting',
+                    source: 'openrouter',
+                    model: model,
+                    isBase64: true
+                  });
+                  console.log(`✓ Generated image ${i + 1}/${count}`);
+                }
+              }
+            }
+          } catch (genError) {
+            console.error(`Failed to generate image ${i + 1}/${count}:`, genError.message);
+            // Continue with next image
+          }
+        }
+
+        if (images.length === 0) {
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              message: 'Failed to generate any images'
+            })
+          };
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            images,
+            source: 'openrouter-ai',
+            model: model,
+            total: images.length
+          })
+        };
+
+      } catch (error) {
+        console.error('OpenRouter Image Generation Error:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Image generation failed',
+            error: error.message
+          })
+        };
+      }
+    }
+
     // WordPress Test Connection endpoint
     if (path === '/api/wordpress-test-connection' && method === 'POST') {
       const { url, username, password, signinUrl } = body;
@@ -5020,6 +5149,7 @@ RULES:
           'POST /api/dataforseo-section',
           'POST /api/content-outline',
           'POST /api/pexels-images',
+          'POST /api/openrouter-images',
           'POST /api/wordpress-test-connection',
           'POST /api/wordpress-publish',
           'POST /api/wordpress-categories',

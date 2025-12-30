@@ -967,9 +967,9 @@
                 <div style="font-size: 12px; color: #64748b; line-height: 1.5; margin-bottom: 15px;">
                     <strong style="color: #1e293b;">Complete Step 4 first</strong><br>
                     Choose image generation option:<br>
-                    • Featured Image: +10 credits<br>
-                    • Featured + Section: +15 credits<br>
-                    • Full Gallery: +20 credits
+                    • Stock Featured Image: +10 credits<br>
+                    • AI Featured Image: +15 credits<br>
+                    • Stock Featured + Sections: +30 credits
                 </div>
 
                 <div style="font-size: 12px; color: #64748b; line-height: 1.5;">
@@ -6358,8 +6358,9 @@
 
             const imageNames = {
                 'none': 'No Images',
-                'featured': 'Featured Image Only',
-                'full': 'Featured + Section Images'
+                'featured': 'Featured Image Only (Stock Photos)',
+                'ai-featured': 'AI-Generated Featured Image',
+                'full': 'Featured + Section Images (Stock Photos)'
             };
 
             // Create confirmation dialog
@@ -14392,9 +14393,90 @@ Make the content engaging, informative, and optimized for search engines. Includ
             }
         }
 
+        // AI Image Generation using OpenRouter
+        async function generateAIImages(keyword, imageCount) {
+            console.log('🎨 === AI IMAGE GENERATION ===');
+            console.log('Keyword:', keyword);
+            console.log('Count:', imageCount);
+
+            try {
+                // Create a detailed image prompt based on the article topic
+                const prompt = `Create a professional, high-quality featured image for an article about "${keyword}". The image should be visually appealing, relevant to the topic, and suitable for a blog post. Style: modern, clean, professional. No text or watermarks.`;
+
+                console.log('Image prompt:', prompt);
+
+                const response = await fetch('/api/openrouter-images', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        count: imageCount,
+                        model: 'google/gemini-2.5-flash-image-preview'
+                    })
+                });
+
+                console.log('API response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API error response:', errorText);
+                    throw new Error(`AI image API returned ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('API response data:', data);
+
+                if (!data.success || !data.images || !Array.isArray(data.images)) {
+                    console.error('Invalid response format - no images array');
+                    throw new Error('Invalid API response format');
+                }
+
+                console.log(`✓ Successfully generated ${data.images.length} AI images`);
+
+                // Return in the expected format
+                return data.images.map((img, index) => ({
+                    url: img.url, // base64 data URL
+                    alt: keyword,
+                    type: index === 0 ? 'featured' : 'supporting',
+                    photographer: 'AI Generated',
+                    photographerUrl: null,
+                    source: 'openrouter-ai',
+                    isBase64: true
+                }));
+
+            } catch (error) {
+                console.error('=== AI IMAGE GENERATION FAILED ===');
+                console.error('Error:', error);
+                console.error('Error message:', error.message);
+                console.error('Falling back to placeholder images...');
+
+                // Return placeholder if AI generation fails
+                const placeholders = [];
+                for (let i = 0; i < imageCount; i++) {
+                    placeholders.push({
+                        url: `https://picsum.photos/seed/${encodeURIComponent(keyword)}-${i}/1200/675`,
+                        alt: keyword,
+                        type: i === 0 ? 'featured' : 'supporting',
+                        photographer: 'Placeholder',
+                        photographerUrl: null,
+                        source: 'placeholder'
+                    });
+                }
+                return placeholders;
+            }
+        }
+
         async function generateImagesForArticle(keyword, imageTier, imageCount) {
             console.log('=== generateImagesForArticle CALLED ===');
             console.log('Input params:', {keyword, imageTier, imageCount});
+
+            // Check if using AI image generation
+            if (imageTier === 'AI-Generated Featured Image' || imageTier?.toLowerCase().includes('ai')) {
+                console.log('🎨 Using AI image generation via OpenRouter');
+                return await generateAIImages(keyword, imageCount);
+            }
 
             // Extract most specific/relevant keywords from title
             // Remove generic words like "guide", "tips", "how to", people words
@@ -23011,8 +23093,9 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             <h4 style="color: #1e293b; margin-bottom: 15px;">🖼️ Image Options</h4>
                             <select id="bulkImageSelect" onchange="updateBulkCostSummary()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
                                 <option value="none|0">No Images</option>
-                                <option value="featured|10" selected>Featured Image Only (+10 credits per article)</option>
-                                <option value="full|30">Featured + Section Images (+30 credits per article)</option>
+                                <option value="featured|10" selected>Featured Image - Stock Photo (+10 credits)</option>
+                                <option value="ai-featured|15">Featured Image - AI Generated (+15 credits)</option>
+                                <option value="full|30">Featured + Section Images - Stock (+30 credits)</option>
                             </select>
                         </div>
 
