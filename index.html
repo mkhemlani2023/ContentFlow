@@ -12827,6 +12827,14 @@ Return ONLY the JSON array, no other text or markdown.`;
                 if (affiliateProgram) {
                     console.log('🔗 === PHASE 6: AFFILIATE LINK INSERTION (DataforSEO) ===');
                     console.log('Affiliate Program:', affiliateProgram.program_name);
+
+                    // Generate displayLink if not already set
+                    if (!affiliateProgram.displayLink) {
+                        const affiliateLink = affiliateProgram.affiliate_link ||
+                            `https://www.${affiliateProgram.program_name.toLowerCase().replace(/\s+/g, '')}.com`;
+                        affiliateProgram.displayLink = affiliateLink;
+                    }
+
                     console.log('Affiliate Link:', affiliateProgram.displayLink);
                     console.log('Total Sections:', sections.length);
 
