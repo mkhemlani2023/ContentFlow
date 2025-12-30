@@ -4418,22 +4418,22 @@
                     `}
 
                     <!-- Affiliate Program Selector -->
-                    <div id="affiliate-selector-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin: 20px 0; padding: 16px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 8px; border: 2px solid #fb923c;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                            <span style="font-size: 18px;">💰</span>
-                            <h4 style="margin: 0; color: #1e293b; font-size: 15px; font-weight: 700;">Add Affiliate Links to Articles</h4>
+                    <div id="affiliate-selector-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin: 20px 0; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <span style="font-size: 16px;">🔗</span>
+                            <h4 style="margin: 0; color: #475569; font-size: 14px; font-weight: 600;">Affiliate Program (Optional)</h4>
                         </div>
-                        <div style="font-size: 13px; color: #c2410c; margin-bottom: 12px; line-height: 1.5; font-weight: 600;">
-                            ⚠️ SELECT A PROGRAM BELOW to automatically insert affiliate links into generated articles
+                        <div style="font-size: 12px; color: #64748b; margin-bottom: 10px; line-height: 1.5;">
+                            Select a program to automatically include affiliate links in generated articles
                         </div>
                         <select id="affiliate-program-select-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}"
-                                style="width: 100%; padding: 12px 14px; border: 3px solid #fb923c; border-radius: 6px; font-size: 14px; background: white; cursor: pointer; color: #1e293b; font-weight: 600;"
+                                style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white; cursor: pointer; color: #334155;"
                                 onchange="updateSelectedAffiliateProgram('${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')">
-                            <option value="">⚠️ No affiliate program selected (articles won't have affiliate links)</option>
+                            <option value="">No affiliate program</option>
                             <option value="loading" disabled>Loading programs...</option>
                         </select>
-                        <div id="affiliate-selection-status-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin-top: 10px; padding: 8px; background: #fee2e2; border-radius: 4px; border: 1px solid #fca5a5; font-size: 12px; color: #991b1b; font-weight: 600;">
-                            ❌ No affiliate program selected - articles will NOT include affiliate links
+                        <div id="affiliate-selection-status-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin-top: 8px; padding: 6px 10px; background: #f1f5f9; border-radius: 4px; border-left: 3px solid #94a3b8; font-size: 11px; color: #475569;">
+                            No program selected
                         </div>
                     </div>
 
@@ -4557,10 +4557,10 @@
 
                     // Update status indicator to show success
                     if (statusElement) {
-                        statusElement.style.background = '#d1fae5';
-                        statusElement.style.borderColor = '#6ee7b7';
+                        statusElement.style.background = '#ecfdf5';
+                        statusElement.style.borderLeft = '3px solid #10b981';
                         statusElement.style.color = '#065f46';
-                        statusElement.innerHTML = `✅ ${program.program_name} selected - affiliate links will be added to generated articles`;
+                        statusElement.innerHTML = `<strong>${program.program_name}</strong> - Links will be added automatically`;
                     }
                 }
             } else {
@@ -4568,12 +4568,12 @@
                 delete window.keywordAffiliatePrograms[cleanId];
                 console.log('❌ No affiliate program selected for keyword:', cleanId);
 
-                // Update status indicator to show warning
+                // Update status indicator to neutral state
                 if (statusElement) {
-                    statusElement.style.background = '#fee2e2';
-                    statusElement.style.borderColor = '#fca5a5';
-                    statusElement.style.color = '#991b1b';
-                    statusElement.innerHTML = '❌ No affiliate program selected - articles will NOT include affiliate links';
+                    statusElement.style.background = '#f1f5f9';
+                    statusElement.style.borderLeft = '3px solid #94a3b8';
+                    statusElement.style.color = '#475569';
+                    statusElement.innerHTML = 'No program selected';
                 }
             }
         }
@@ -13585,7 +13585,7 @@ CRITICAL RULES:
                     'Conclusion',
                     'FAQ',
                     'Assembly',
-                    'Complete'
+                    'Inserting affiliate links'
                 ] : [
                     'Preparing',
                     'Introduction',
@@ -13994,10 +13994,80 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                 console.log(' Word Count:', actualWordCount, '/', targetWordCount);
 
                 updateProgressStage(5, '✓ Assembly complete');
-                progress.updateMessage('✅ Article ready!');
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                updateProgressStage(6, '✓ Complete');
+                // Phase 6: Affiliate Link Insertion (if program selected)
+                if (affiliateProgram && affiliatePlacementStrategy) {
+                    updateProgressStage(6, 'Inserting affiliate links...');
+                    progress.updateMessage('🔗 Adding affiliate links to designated sections...');
+
+                    // Check each section for affiliate links
+                    let linksAdded = 0;
+                    for (const placement of affiliatePlacementStrategy.placements) {
+                        const targetSection = generatedSections.find(s => s.title === placement.section);
+
+                        if (targetSection) {
+                            const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${affiliateProgram.displayLink.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
+                            const hasLink = linkPattern.test(targetSection.content);
+
+                            if (!hasLink) {
+                                console.log(`⚠️ Affiliate link missing in section "${targetSection.title}" - inserting now`);
+
+                                // Insert link at the end of the section content, before the last paragraph
+                                const paragraphs = targetSection.content.split('\n\n');
+                                if (paragraphs.length > 1) {
+                                    // Insert before last paragraph with natural recommendation
+                                    const recommendationText = `\n\nFor those looking to experience these benefits, [${placement.anchorText}](${affiliateProgram.displayLink}) offers a reliable solution for incorporating hydrogen water into your daily routine.`;
+                                    paragraphs.splice(paragraphs.length - 1, 0, recommendationText.trim());
+                                    targetSection.content = paragraphs.join('\n\n');
+                                    linksAdded++;
+                                    console.log(`✅ Added affiliate link to "${targetSection.title}"`);
+                                } else {
+                                    // Single paragraph - append to end
+                                    targetSection.content += `\n\nFor those looking to implement this, [${placement.anchorText}](${affiliateProgram.displayLink}) provides an excellent option.`;
+                                    linksAdded++;
+                                    console.log(`✅ Added affiliate link to "${targetSection.title}"`);
+                                }
+                            } else {
+                                console.log(`✅ Affiliate link already present in "${targetSection.title}"`);
+                                linksAdded++;
+                            }
+                        }
+                    }
+
+                    // Also check conclusion if it was designated for a link
+                    const conclusionPlacement = affiliatePlacementStrategy.placements.find(p =>
+                        p.section.toLowerCase().includes('conclusion')
+                    );
+                    if (conclusionPlacement) {
+                        const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${affiliateProgram.displayLink.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
+                        const hasLink = linkPattern.test(cleanConclusion);
+
+                        if (!hasLink) {
+                            console.log(`⚠️ Affiliate link missing in conclusion - inserting now`);
+                            const paragraphs = cleanConclusion.split('\n\n');
+                            if (paragraphs.length > 1) {
+                                const recommendationText = `\n\nTo get started, consider exploring [${conclusionPlacement.anchorText}](${affiliateProgram.displayLink}) for a quality hydrogen water solution.`;
+                                paragraphs.splice(paragraphs.length - 1, 0, recommendationText.trim());
+                                cleanConclusion = paragraphs.join('\n\n');
+                                finalArticle.content.conclusion = cleanConclusion;
+                                linksAdded++;
+                                console.log(`✅ Added affiliate link to conclusion`);
+                            }
+                        } else {
+                            console.log(`✅ Affiliate link already present in conclusion`);
+                            linksAdded++;
+                        }
+                    }
+
+                    updateProgressStage(6, `✓ ${linksAdded} affiliate link${linksAdded !== 1 ? 's' : ''} inserted`);
+                    console.log(`🔗 AFFILIATE LINK INSERTION COMPLETE: ${linksAdded} link(s) added`);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } else {
+                    updateProgressStage(6, '✓ Complete (no affiliate links)');
+                }
+
+                progress.updateMessage('✅ Article ready!');
                 console.log('=== MULTI-PHASE ARTICLE COMPLETE ===');
                 console.log('Sections:', finalArticle.content.sections.length);
                 console.log('FAQs:', finalArticle.content.faq.length);
@@ -14895,16 +14965,19 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
             let seoScore = 0;
             let scoreBreakdown = {};
 
-            // Word count (optimal 800-2500) - More generous scoring
+            // Word count (optimal 1200-2500) - More nuanced scoring
             let wordCountScore = 0;
-            if (wordCount >= 1200 && wordCount <= 2500) wordCountScore = 25;
-            else if (wordCount >= 800) wordCountScore = 22;
-            else if (wordCount >= 500) wordCountScore = 18;
-            else wordCountScore = 15;
+            if (wordCount >= 1800 && wordCount <= 2200) wordCountScore = 25; // Sweet spot
+            else if (wordCount >= 1500 && wordCount <= 2500) wordCountScore = 23; // Very good
+            else if (wordCount >= 1200 && wordCount < 1500) wordCountScore = 21; // Good
+            else if (wordCount >= 1000) wordCountScore = 19; // Acceptable
+            else if (wordCount >= 800) wordCountScore = 17; // Minimum
+            else if (wordCount >= 600) wordCountScore = 14; // Below minimum
+            else wordCountScore = 10; // Too short
             seoScore += wordCountScore;
             scoreBreakdown.wordCount = { actual: wordCount, score: wordCountScore };
 
-            // Keyword usage - More generous
+            // Keyword usage - More nuanced density scoring
             const keyword = article.metadata?.focusKeyword || article.metadata?.keyword || '';
             let keywordScore = 0;
             let keywordCount = 0;
@@ -14914,56 +14987,103 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
                 const matches = fullText.match(regex);
                 keywordCount = matches ? matches.length : 0;
                 kdPercent = (keywordCount / wordCount) * 100;
-                if (kdPercent >= 0.5 && kdPercent <= 3) keywordScore = 25;
-                else if (kdPercent > 0) keywordScore = 20;
-                else keywordScore = 15; // Even without keyword, give some points
+                // Optimal: 1-2.5%, Good: 0.5-1% or 2.5-3%, Acceptable: 0.3-0.5% or 3-4%
+                if (kdPercent >= 1.0 && kdPercent <= 2.0) keywordScore = 25; // Perfect density
+                else if (kdPercent >= 0.8 && kdPercent < 1.0) keywordScore = 23; // Good
+                else if (kdPercent > 2.0 && kdPercent <= 2.5) keywordScore = 23; // Good
+                else if (kdPercent >= 0.5 && kdPercent < 0.8) keywordScore = 20; // Acceptable
+                else if (kdPercent > 2.5 && kdPercent <= 3.0) keywordScore = 20; // Acceptable
+                else if (kdPercent > 3.0 && kdPercent <= 4.0) keywordScore = 16; // Too high
+                else if (kdPercent > 0 && kdPercent < 0.5) keywordScore = 14; // Too low
+                else if (kdPercent > 4.0) keywordScore = 10; // Keyword stuffing
+                else keywordScore = 12; // No keyword found
             } else {
-                keywordScore = 15; // Give base points if no keyword specified
+                keywordScore = 12; // No keyword specified
             }
             seoScore += keywordScore;
             scoreBreakdown.keyword = { keyword, count: keywordCount, density: kdPercent.toFixed(2) + '%', score: keywordScore };
 
-            // Header usage - More generous
+            // Header usage - More nuanced based on content length
             let headerCount = 1; // title
             if (content.sections) headerCount += content.sections.length;
             if (content.conclusion) headerCount++;
             let headerScore = 0;
-            if (headerCount >= 6) headerScore = 20;
-            else if (headerCount >= 4) headerScore = 18;
-            else if (headerCount >= 2) headerScore = 15;
-            else headerScore = 12;
+            // Ideal ratio: 1 header per 200-300 words
+            const idealHeaderCount = Math.round(wordCount / 250);
+            const headerDiff = Math.abs(headerCount - idealHeaderCount);
+            if (headerDiff === 0) headerScore = 20; // Perfect
+            else if (headerDiff <= 1) headerScore = 19; // Very good
+            else if (headerDiff <= 2) headerScore = 17; // Good
+            else if (headerDiff <= 3) headerScore = 15; // Acceptable
+            else if (headerDiff <= 4) headerScore = 13; // Below average
+            else headerScore = 11; // Poor structure
             seoScore += headerScore;
-            scoreBreakdown.headers = { count: headerCount, score: headerScore };
+            scoreBreakdown.headers = { count: headerCount, ideal: idealHeaderCount, score: headerScore };
 
-            // Readability - More generous scoring
+            // Readability - More nuanced Flesch scoring
             const sentences = fullText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
             const syllables = words.reduce((count, word) => count + estimateSyllables(word), 0);
             const fleschScore = Math.max(0, Math.min(100,
                 206.835 - 1.015 * (wordCount / Math.max(1, sentences)) - 84.6 * (syllables / wordCount)
             ));
             let readabilityScore = 0;
-            if (fleschScore >= 60) readabilityScore = 20;
-            else if (fleschScore >= 50) readabilityScore = 18;
-            else if (fleschScore >= 40) readabilityScore = 15;
-            else readabilityScore = 12;
+            // Flesch: 70-80 = Very Easy, 60-70 = Easy, 50-60 = Fairly Easy, 30-50 = Difficult
+            if (fleschScore >= 70) readabilityScore = 20; // Very easy (ideal for web)
+            else if (fleschScore >= 65) readabilityScore = 19; // Easy
+            else if (fleschScore >= 60) readabilityScore = 18; // Easy
+            else if (fleschScore >= 55) readabilityScore = 17; // Fairly easy
+            else if (fleschScore >= 50) readabilityScore = 15; // Fairly easy
+            else if (fleschScore >= 45) readabilityScore = 13; // Standard
+            else if (fleschScore >= 40) readabilityScore = 11; // Fairly difficult
+            else readabilityScore = 9; // Difficult
             seoScore += readabilityScore;
             scoreBreakdown.readability = { fleschScore: fleschScore.toFixed(1), score: readabilityScore };
 
-            // Content structure bonuses
+            // Content structure bonuses - More nuanced
             let structureScore = 0;
             if (content.introduction) structureScore += 5;
             if (content.conclusion) structureScore += 5;
+            // Bonus points for having FAQ
+            if (content.faq && content.faq.length >= 3) structureScore += 2;
+            // Bonus for having references/citations
+            if (content.references || fullText.includes('http')) structureScore += 2;
+            // Penalty if FAQ is missing (expected for SEO)
+            if (!content.faq || content.faq.length === 0) structureScore -= 1;
             seoScore += structureScore;
-            scoreBreakdown.structure = { hasIntro: !!content.introduction, hasConclusion: !!content.conclusion, score: structureScore };
+            scoreBreakdown.structure = {
+                hasIntro: !!content.introduction,
+                hasConclusion: !!content.conclusion,
+                hasFAQ: !!(content.faq && content.faq.length > 0),
+                hasReferences: !!(content.references || fullText.includes('http')),
+                score: structureScore
+            };
 
-            const finalScore = Math.min(100, seoScore);
+            // Additional quality factors (up to 6 bonus/penalty points)
+            let qualityAdjustment = 0;
+            // Check for very short paragraphs (sign of poor quality)
+            const shortParas = fullText.split('\n\n').filter(p => p.split(/\s+/).length < 30).length;
+            if (shortParas > 5) qualityAdjustment -= 2;
+            // Check for good paragraph variety
+            const avgWordsPerSection = wordCount / Math.max(1, (content.sections?.length || 1));
+            if (avgWordsPerSection >= 250 && avgWordsPerSection <= 400) qualityAdjustment += 2;
+            // Check sentence variety (good range of sentence lengths)
+            const sentenceLengths = fullText.split(/[.!?]+/).map(s => s.split(/\s+/).length);
+            const avgSentenceLength = sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length;
+            if (avgSentenceLength >= 15 && avgSentenceLength <= 25) qualityAdjustment += 2;
+            else if (avgSentenceLength < 10 || avgSentenceLength > 35) qualityAdjustment -= 1;
+
+            seoScore += qualityAdjustment;
+            scoreBreakdown.quality = { adjustment: qualityAdjustment };
+
+            const finalScore = Math.min(100, Math.max(0, seoScore));
 
             console.log('📊 SEO Score Calculation Breakdown:');
             console.log('  Word Count:', scoreBreakdown.wordCount.actual, 'words →', scoreBreakdown.wordCount.score, 'points');
             console.log('  Keyword:', scoreBreakdown.keyword.keyword || 'none', '(', scoreBreakdown.keyword.count, 'times,', scoreBreakdown.keyword.density, 'density) →', scoreBreakdown.keyword.score, 'points');
-            console.log('  Headers:', scoreBreakdown.headers.count, '→', scoreBreakdown.headers.score, 'points');
+            console.log('  Headers:', scoreBreakdown.headers.count, '(ideal:', scoreBreakdown.headers.ideal + ') →', scoreBreakdown.headers.score, 'points');
             console.log('  Readability: Flesch', scoreBreakdown.readability.fleschScore, '→', scoreBreakdown.readability.score, 'points');
-            console.log('  Structure: Intro?', scoreBreakdown.structure.hasIntro, 'Conclusion?', scoreBreakdown.structure.hasConclusion, '→', scoreBreakdown.structure.score, 'points');
+            console.log('  Structure: Intro?', scoreBreakdown.structure.hasIntro, 'Conclusion?', scoreBreakdown.structure.hasConclusion, 'FAQ?', scoreBreakdown.structure.hasFAQ, 'Refs?', scoreBreakdown.structure.hasReferences, '→', scoreBreakdown.structure.score, 'points');
+            console.log('  Quality Adjustment:', scoreBreakdown.quality.adjustment >= 0 ? '+' + scoreBreakdown.quality.adjustment : scoreBreakdown.quality.adjustment, 'points');
             console.log('  🎯 TOTAL SEO SCORE:', finalScore, '/100');
 
             return finalScore;
