@@ -4521,19 +4521,30 @@
                     }
                 }
 
-                // Update dropdown
+                // Store programs in global object for safe access (avoid JSON escaping issues)
+                if (!window.affiliateProgramsById) {
+                    window.affiliateProgramsById = {};
+                }
+
+                allPrograms.forEach(program => {
+                    window.affiliateProgramsById[program.id] = program;
+                });
+
+                // Update dropdown - only store ID, not full JSON (fixes unterminated string error)
                 if (allPrograms.length === 0) {
                     selectElement.innerHTML = '<option value="">No affiliate programs - add one in Blog Management</option>';
                 } else {
                     selectElement.innerHTML = `
                         <option value="">No affiliate program</option>
                         ${allPrograms.map(program => `
-                            <option value="${program.id}" data-program='${JSON.stringify(program)}'>
+                            <option value="${program.id}">
                                 ${program.program_name} (${program.blogName})
                             </option>
                         `).join('')}
                     `;
                 }
+
+                console.log('✅ Loaded', allPrograms.length, 'affiliate programs for keyword:', cleanId);
             } catch (error) {
                 console.error('Error loading affiliate programs:', error);
                 selectElement.innerHTML = '<option value="">Error loading programs</option>';
@@ -4547,13 +4558,12 @@
             const selectedValue = selectElement.value;
 
             if (selectedValue) {
-                const selectedOption = selectElement.options[selectElement.selectedIndex];
-                const programData = selectedOption.getAttribute('data-program');
+                // Get program from global storage (safer than JSON parsing from attribute)
+                const program = window.affiliateProgramsById?.[selectedValue];
 
-                if (programData) {
-                    const program = JSON.parse(programData);
+                if (program) {
                     window.keywordAffiliatePrograms[cleanId] = program;
-                    console.log('✅ Affiliate program selected for keyword:', cleanId, program);
+                    console.log('✅ Affiliate program selected:', cleanId, '→', program.program_name);
 
                     // Update status indicator to show success
                     if (statusElement) {
@@ -4562,11 +4572,13 @@
                         statusElement.style.color = '#065f46';
                         statusElement.innerHTML = `<strong>${program.program_name}</strong> - Links will be added automatically`;
                     }
+                } else {
+                    console.error('⚠️ Program not found in global storage:', selectedValue);
                 }
             } else {
                 // No affiliate program selected
                 delete window.keywordAffiliatePrograms[cleanId];
-                console.log('❌ No affiliate program selected for keyword:', cleanId);
+                console.log('No affiliate program selected for keyword:', cleanId);
 
                 // Update status indicator to neutral state
                 if (statusElement) {
