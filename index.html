@@ -6195,6 +6195,19 @@
                             </div>
                         </div>
 
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="color: #1e293b; margin-bottom: 15px;">🖼️ Image Options</h4>
+                            <select id="imageTypeSelect" onchange="updateImageSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
+                                <option value="none|0">No Images</option>
+                                <option value="featured|10">Featured Image - Stock Photo (+10 credits)</option>
+                                <option value="ai-featured|15">Featured Image - AI Generated (+15 credits) ✨ NEW</option>
+                                <option value="full|30">Featured + Section Images - Stock (+30 credits)</option>
+                            </select>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 6px; font-style: italic;">
+                                AI-generated images are unique and custom-tailored to your article content.
+                            </div>
+                        </div>
+
                         <div id="costSummary" style="display: none; background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #334155;">
                             <div style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">💰 Cost Summary</div>
                             <div id="costBreakdown" style="font-size: 14px; color: #475569;"></div>
@@ -6286,9 +6299,15 @@
         }
 
         function updateImageSelection() {
-            // Images removed - function kept for compatibility
-            window.selectedImageType = 'none';
-            window.selectedImageCredits = 0;
+            const imageSelect = document.getElementById('imageTypeSelect');
+            if (imageSelect && imageSelect.value) {
+                const [imageType, credits] = imageSelect.value.split('|');
+                window.selectedImageType = imageType;
+                window.selectedImageCredits = parseInt(credits) || 0;
+            } else {
+                window.selectedImageType = 'none';
+                window.selectedImageCredits = 0;
+            }
             updateCostSummary();
             updateGenerateButton();
         }
@@ -6297,13 +6316,20 @@
             const costSummary = document.getElementById('costSummary');
             const costBreakdown = document.getElementById('costBreakdown');
 
-            const totalCredits = window.selectedCredits;
+            const totalCredits = window.selectedCredits + (window.selectedImageCredits || 0);
             const totalCost = (totalCredits * 0.01).toFixed(2);
 
             if (totalCredits > 0) {
                 costSummary.style.display = 'block';
 
                 let breakdown = `<strong>Article Generation:</strong> ${window.selectedCredits} credits<br>`;
+
+                if (window.selectedImageCredits > 0) {
+                    const imageTypeLabel = window.selectedImageType === 'ai-featured' ? 'AI-Generated Image' :
+                                          window.selectedImageType === 'featured' ? 'Stock Photo' :
+                                          'Stock Photos (Multi)';
+                    breakdown += `<strong>Images (${imageTypeLabel}):</strong> ${window.selectedImageCredits} credits<br>`;
+                }
 
                 breakdown += `<div style="border-top: 1px solid #334155; padding-top: 8px; margin-top: 8px; font-size: 16px;"><strong>Total: ${totalCredits} credits (~$${totalCost})</strong></div>`;
 
@@ -6474,6 +6500,7 @@
                     // Map image type to tier name
                     const imageTierMap = {
                         'featured': 'Featured Image',
+                        'ai-featured': 'AI-Generated Featured Image',
                         'full': 'Featured + 2 Others'
                     };
                     const imageTier = imageTierMap[imageType] || 'Featured Image';
