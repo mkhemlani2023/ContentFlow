@@ -21985,8 +21985,10 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     const cleanIntro = stripImageHTML(article.content.introduction);
                     const introParagraphs = cleanIntro.split(/\n\n+/).filter(p => p.trim());
                     introParagraphs.forEach(paragraph => {
+                        // Convert Markdown links [text](url) to HTML <a href="url">text</a>
+                        const htmlParagraph = paragraph.trim().replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
                         htmlContent += `<!-- wp:paragraph -->\n`;
-                        htmlContent += `<p style="text-align: left;">${paragraph.trim()}</p>\n`;
+                        htmlContent += `<p style="text-align: left;">${htmlParagraph}</p>\n`;
                         htmlContent += `<!-- /wp:paragraph -->\n\n`;
                     });
                 }
@@ -22060,8 +22062,10 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             // Split content by double newlines for proper paragraph formatting
                             const paragraphs = cleanContent.split(/\n\n+/).filter(p => p.trim());
                             paragraphs.forEach(paragraph => {
+                                // Convert Markdown links [text](url) to HTML <a href="url">text</a>
+                                const htmlParagraph = paragraph.trim().replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
                                 htmlContent += `<!-- wp:paragraph -->\n`;
-                                htmlContent += `<p style="text-align: left;">${paragraph.trim()}</p>\n`;
+                                htmlContent += `<p style="text-align: left;">${htmlParagraph}</p>\n`;
                                 htmlContent += `<!-- /wp:paragraph -->\n\n`;
                             });
                         }
@@ -22075,8 +22079,10 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     htmlContent += `<!-- /wp:heading -->\n\n`;
                     const conclusionParagraphs = article.content.conclusion.split(/\n\n+/).filter(p => p.trim());
                     conclusionParagraphs.forEach(paragraph => {
+                        // Convert Markdown links [text](url) to HTML <a href="url">text</a>
+                        const htmlParagraph = paragraph.trim().replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
                         htmlContent += `<!-- wp:paragraph -->\n`;
-                        htmlContent += `<p style="text-align: left;">${paragraph.trim()}</p>\n`;
+                        htmlContent += `<p style="text-align: left;">${htmlParagraph}</p>\n`;
                         htmlContent += `<!-- /wp:paragraph -->\n\n`;
                     });
                 }
@@ -22092,8 +22098,10 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             htmlContent += `<!-- wp:heading {"level":3} -->\n`;
                             htmlContent += `<h3 id="${faqAnchor}">${qa.question}</h3>\n`;
                             htmlContent += `<!-- /wp:heading -->\n\n`;
+                            // Convert Markdown links [text](url) to HTML <a href="url">text</a>
+                            const htmlAnswer = qa.answer.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
                             htmlContent += `<!-- wp:paragraph -->\n`;
-                            htmlContent += `<p style="text-align: left;">${qa.answer}</p>\n`;
+                            htmlContent += `<p style="text-align: left;">${htmlAnswer}</p>\n`;
                             htmlContent += `<!-- /wp:paragraph -->\n\n`;
                         }
                     });
