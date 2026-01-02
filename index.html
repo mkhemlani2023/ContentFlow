@@ -12869,9 +12869,10 @@ Return ONLY the JSON array, no other text or markdown.`;
                     // First, strip leading markdown delimiters before citations
                     cleanedContent = cleanedContent.replace(/\*\*\s*\n\n/g, '\n\n');
 
-                    // Pattern to match Chicago-style citations (handles markdown in journal names)
-                    // Matches: Author, Name(s). Year. "Title." *Journal* or Journal Vol(Issue): Pages. URL
-                    const citationPattern = /([A-Z][a-zA-Z]+,\s+[A-Z][a-zA-Z\s\.,]+?\d{4}\.\s+"[^"]+"\s+[\*_]?[A-Za-z\s&\*_]+[\*_]?\s+\d+[^\n]*?https?:\/\/[^\s]+)/gm;
+                    // Enhanced pattern to match Chicago-style citations
+                    // Matches: Author(s), et al. Year. "Title." Journal Name. Volume(Issue): Pages. DOI/URL
+                    // More flexible pattern that handles variations in spacing and formatting
+                    const citationPattern = /^([A-Z][a-zA-Z]+,\s+[A-Z]\.?,?\s+(?:et al\.|[A-Za-z\s\.,]+?)?\s*\d{4}\.\s+"[^"]+"\s+[A-Za-z\s&:]+\.\s+\d+.*?https?:\/\/[^\s]+)$/gm;
 
                     // Extract full Chicago-style citations
                     let match;
@@ -12887,6 +12888,19 @@ Return ONLY the JSON array, no other text or markdown.`;
                         // Remove citation from content
                         cleanedContent = cleanedContent.replace(match[0], '').trim();
                     }
+
+                    // Also look for multi-line citations (sometimes they wrap)
+                    const multiLineCitationPattern = /\n\n([A-Z][a-zA-Z]+,\s+[A-Z]\.?.*?\d{4}\..*?https?:\/\/[^\s]+)\n\n/gs;
+                    cleanedContent = cleanedContent.replace(multiLineCitationPattern, (match, citation) => {
+                        let cleanCitation = citation.trim();
+                        cleanCitation = cleanCitation.replace(/\*([^\*]+)\*/g, '$1');
+                        cleanCitation = cleanCitation.replace(/_([^_]+)_/g, '$1');
+
+                        if (!fullCitations.includes(cleanCitation)) {
+                            fullCitations.push(cleanCitation);
+                        }
+                        return '\n\n'; // Keep the paragraph breaks but remove citation
+                    });
 
                     // Also look for "References:" headers followed by citations
                     const refSectionPattern = /References?:\s*([\s\S]*?)(?=\n\n[A-Z]|\n\n$|$)/gi;
@@ -14127,9 +14141,10 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                     // First, strip leading markdown delimiters before citations
                     cleanedContent = cleanedContent.replace(/\*\*\s*\n\n/g, '\n\n');
 
-                    // Pattern to match Chicago-style citations (handles markdown in journal names)
-                    // Matches: Author, Name(s). Year. "Title." *Journal* or Journal Vol(Issue): Pages. URL
-                    const citationPattern = /([A-Z][a-zA-Z]+,\s+[A-Z][a-zA-Z\s\.,]+?\d{4}\.\s+"[^"]+"\s+[\*_]?[A-Za-z\s&\*_]+[\*_]?\s+\d+[^\n]*?https?:\/\/[^\s]+)/gm;
+                    // Enhanced pattern to match Chicago-style citations
+                    // Matches: Author(s), et al. Year. "Title." Journal Name. Volume(Issue): Pages. DOI/URL
+                    // More flexible pattern that handles variations in spacing and formatting
+                    const citationPattern = /^([A-Z][a-zA-Z]+,\s+[A-Z]\.?,?\s+(?:et al\.|[A-Za-z\s\.,]+?)?\s*\d{4}\.\s+"[^"]+"\s+[A-Za-z\s&:]+\.\s+\d+.*?https?:\/\/[^\s]+)$/gm;
 
                     // Extract full Chicago-style citations
                     let match;
@@ -14145,6 +14160,19 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                         // Remove citation from content
                         cleanedContent = cleanedContent.replace(match[0], '').trim();
                     }
+
+                    // Also look for multi-line citations (sometimes they wrap)
+                    const multiLineCitationPattern = /\n\n([A-Z][a-zA-Z]+,\s+[A-Z]\.?.*?\d{4}\..*?https?:\/\/[^\s]+)\n\n/gs;
+                    cleanedContent = cleanedContent.replace(multiLineCitationPattern, (match, citation) => {
+                        let cleanCitation = citation.trim();
+                        cleanCitation = cleanCitation.replace(/\*([^\*]+)\*/g, '$1');
+                        cleanCitation = cleanCitation.replace(/_([^_]+)_/g, '$1');
+
+                        if (!fullCitations.includes(cleanCitation)) {
+                            fullCitations.push(cleanCitation);
+                        }
+                        return '\n\n'; // Keep the paragraph breaks but remove citation
+                    });
 
                     // Also look for "References:" headers followed by citations
                     const refSectionPattern = /References?:\s*([\s\S]*?)(?=\n\n[A-Z]|\n\n$|$)/gi;
