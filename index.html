@@ -4417,6 +4417,29 @@
                         </div>
                     `}
 
+                    <!-- Blog/Website Context Selector -->
+                    <div id="blog-selector-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin: 20px 0; padding: 16px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <span style="font-size: 16px;">🌐</span>
+                            <h4 style="margin: 0; color: #0369a1; font-size: 14px; font-weight: 600;">Target Blog/Website</h4>
+                        </div>
+                        <div style="font-size: 12px; color: #0c4a6e; margin-bottom: 10px; line-height: 1.5;">
+                            Select which blog(s) this content is for - helps tailor article ideas to your site's topic
+                        </div>
+                        <select id="blog-context-select-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}"
+                                multiple
+                                style="width: 100%; padding: 10px 12px; border: 1px solid #7dd3fc; border-radius: 6px; font-size: 13px; background: white; cursor: pointer; color: #0c4a6e; min-height: 80px;"
+                                onchange="updateSelectedBlogContext('${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')">
+                            <option value="">Loading blogs...</option>
+                        </select>
+                        <div style="font-size: 11px; color: #0c4a6e; margin-top: 6px; font-style: italic;">
+                            💡 Tip: Hold Ctrl/Cmd to select multiple blogs
+                        </div>
+                        <div id="blog-selection-status-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin-top: 8px; padding: 6px 10px; background: #e0f2fe; border-radius: 4px; border-left: 3px solid #0ea5e9; font-size: 11px; color: #0c4a6e;">
+                            No blog selected
+                        </div>
+                    </div>
+
                     <!-- Affiliate Program Selector -->
                     <div id="affiliate-selector-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin: 20px 0; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
@@ -4464,6 +4487,8 @@
 
             // Load affiliate programs for the dropdown
             loadAffiliateProgramsForKeyword(keywordData.keyword.replace(/[^a-zA-Z0-9]/g, ''));
+            // Load blogs for the blog context dropdown
+            loadBlogsForKeyword(keywordData.keyword.replace(/[^a-zA-Z0-9]/g, ''));
         }
 
         function hideKeywordDetails() {
@@ -4586,6 +4611,76 @@
                     statusElement.style.borderLeft = '3px solid #94a3b8';
                     statusElement.style.color = '#475569';
                     statusElement.innerHTML = 'No program selected';
+                }
+            }
+        }
+
+        // Global variable to store blog context selections for keywords
+        window.keywordBlogContexts = {};
+
+        // Load blogs for the blog context dropdown
+        async function loadBlogsForKeyword(cleanId) {
+            const selectElement = document.getElementById(`blog-context-select-${cleanId}`);
+            if (!selectElement) return;
+
+            try {
+                const blogsResult = await SupabaseService.loadBlogs();
+                if (!blogsResult.success || !blogsResult.data || blogsResult.data.length === 0) {
+                    selectElement.innerHTML = '<option value="">No blogs found - add a blog first</option>';
+                    return;
+                }
+
+                const blogs = blogsResult.data;
+                selectElement.innerHTML = blogs.map(blog => `
+                    <option value="${blog.id}">
+                        ${blog.name} ${blog.description ? '- ' + blog.description.substring(0, 50) : ''}
+                    </option>
+                `).join('');
+
+                console.log('✅ Loaded', blogs.length, 'blogs for keyword:', cleanId);
+            } catch (error) {
+                console.error('Error loading blogs:', error);
+                selectElement.innerHTML = '<option value="">Error loading blogs</option>';
+            }
+        }
+
+        // Update selected blog context for a keyword
+        function updateSelectedBlogContext(cleanId) {
+            const selectElement = document.getElementById(`blog-context-select-${cleanId}`);
+            const statusElement = document.getElementById(`blog-selection-status-${cleanId}`);
+
+            if (!selectElement) return;
+
+            // Get all selected options
+            const selectedOptions = Array.from(selectElement.selectedOptions);
+            const selectedBlogs = selectedOptions.map(opt => ({
+                id: opt.value,
+                name: opt.text
+            }));
+
+            if (selectedBlogs.length > 0) {
+                // Store blog contexts in global variable
+                window.keywordBlogContexts[cleanId] = selectedBlogs;
+                console.log('✅ Blog context selected:', cleanId, '→', selectedBlogs.map(b => b.name).join(', '));
+
+                // Update status indicator
+                if (statusElement) {
+                    statusElement.style.background = '#e0f2fe';
+                    statusElement.style.borderLeft = '3px solid #0ea5e9';
+                    statusElement.style.color = '#0c4a6e';
+                    statusElement.innerHTML = `✓ Selected: ${selectedBlogs.map(b => b.name).join(', ')}`;
+                }
+            } else {
+                // No blogs selected
+                delete window.keywordBlogContexts[cleanId];
+                console.log('No blogs selected for keyword:', cleanId);
+
+                // Update status indicator to neutral state
+                if (statusElement) {
+                    statusElement.style.background = '#e0f2fe';
+                    statusElement.style.borderLeft = '3px solid #0ea5e9';
+                    statusElement.style.color = '#0c4a6e';
+                    statusElement.innerHTML = 'No blog selected';
                 }
             }
         }
@@ -22784,12 +22879,19 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     try {
                         updateIdeasProgress(30 + (attempt * 10), 'Generating ideas...', attempt > 1 ? `Retry attempt ${attempt}...` : 'AI processing your request...');
 
+                        // Get blog context if selected
+                        const blogContexts = window.keywordBlogContexts?.[cleanId] || [];
+                        const blogNames = blogContexts.map(b => b.name);
+
                         const response = await fetchWithTimeout('/api/article-ideas', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify({ keyword })
+                            body: JSON.stringify({
+                                keyword,
+                                blogContext: blogNames.length > 0 ? blogNames.join(', ') : null
+                            })
                         }, 60000); // 60 second timeout
 
                         // If successful, break out of retry loop

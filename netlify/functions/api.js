@@ -1073,14 +1073,17 @@ const getModelConfig = (modelType) => {
   };
 };
 
-const callOpenRouterAPI = async (keyword, modelType = 'free') => {
+const callOpenRouterAPI = async (keyword, modelType = 'free', blogContext = null) => {
   try {
     const { model } = getModelConfig(modelType);
 
     // Create context-aware, intelligent prompt based on keyword analysis
     const currentYear = new Date().getFullYear();
 
-    const prompt = `You are an expert SEO content strategist. Analyze the keyword "${keyword}" and generate 10 highly relevant, contextually appropriate article ideas that real users would actually search for.
+    // Add blog context to prompt if provided
+    const blogContextText = blogContext ? `\n\nBLOG CONTEXT: These articles will be published on: ${blogContext}. Ensure the article ideas align with the blog's topic/niche and audience.` : '';
+
+    const prompt = `You are an expert SEO content strategist. Analyze the keyword "${keyword}" and generate 10 highly relevant, contextually appropriate article ideas that real users would actually search for.${blogContextText}
 
 STEP 1 - KEYWORD ANALYSIS:
 First, determine what "${keyword}" represents:
@@ -1616,7 +1619,7 @@ exports.handler = async (event, context) => {
 
     // Article Ideas endpoint (OpenRouter)
     if (path === '/api/article-ideas' && method === 'POST') {
-      const { keyword, modelType = 'free' } = body;
+      const { keyword, modelType = 'free', blogContext = null } = body;
 
       if (!keyword) {
         return {
@@ -1642,8 +1645,8 @@ exports.handler = async (event, context) => {
       }
 
       try {
-        console.log('Article ideas request - keyword:', keyword, 'modelType:', modelType);
-        const { articles, responseTime } = await callOpenRouterAPI(keyword, modelType);
+        console.log('Article ideas request - keyword:', keyword, 'modelType:', modelType, 'blogContext:', blogContext);
+        const { articles, responseTime } = await callOpenRouterAPI(keyword, modelType, blogContext);
         const { cost } = getModelConfig(modelType);
 
         console.log('Article ideas generated successfully:', articles.length, 'articles');
