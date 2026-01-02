@@ -12724,10 +12724,11 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
 
 CITATION REQUIREMENTS:
 When referencing clinical studies, scientific papers, or research findings:
-- Use ONLY in-text citations: (Author Year) or (Author et al. Year) for 3+ authors
+- Use in-text citations in parentheses: (Author Year) or (Author et al. Year) for 3+ authors
 - Example: "Research demonstrates neuroprotective effects (Smith et al. 2023)"
-- DO NOT include full citations (title, journal, pages, DOI) in the content
-- Full citations will be extracted and added to References section automatically
+- IMPORTANT: After each in-text citation, include the full citation in Chicago format on the same or next line
+- Full citation format: Author(s). Year. "Title." Journal Name. Volume(Issue): Pages. DOI or URL
+- Example: Smith, J., et al. 2023. "Neuroprotective Effects of Exercise." Journal of Neuroscience. 43(2): 245-260. https://doi.org/10.1234/example
 - Only cite real, verifiable research from reputable peer-reviewed journals`, // Simplified citation instructions
                         fullContext // Pass context from introduction and previous sections
                     );
@@ -13977,10 +13978,11 @@ ${subsectionList ? `Subsections to cover:\n${subsectionList}` : ''}
 ${sectionAffiliateContext}
 CITATION REQUIREMENTS:
 When referencing clinical studies, scientific papers, or research findings:
-- Use ONLY in-text citations in this format: (Author Year) or (Author et al. Year) for 3+ authors
+- Use in-text citations in parentheses: (Author Year) or (Author et al. Year) for 3+ authors
 - Example: "Studies show hydrogen water benefits (Ohsawa et al. 2007)"
-- DO NOT include full citations (title, journal, DOI) in the content
-- Full citations will be added to the References section automatically
+- IMPORTANT: After each in-text citation, include the full citation in Chicago format on the same or next line
+- Full citation format: Author(s). Year. "Title." Journal Name. Volume(Issue): Pages. DOI or URL
+- Example: Ohsawa, I., et al. 2007. "Hydrogen acts as a therapeutic antioxidant." Nature Medicine. 13(6): 688-694. https://doi.org/10.1038/nm1577
 - Only cite real, verifiable research from reputable peer-reviewed journals
 
 Write ${wordsPerSection} words of informative, engaging paragraphs. Use double line breaks between paragraphs. Return ONLY the content text, no JSON, no formatting.`;
