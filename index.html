@@ -13097,6 +13097,36 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                 progress.close();
 
+                // Check if images should be generated
+                if (window.pendingImageGeneration && window.pendingImageGeneration.imageTier) {
+                    console.log('🖼️ Image generation requested:', window.pendingImageGeneration);
+                    const { imageTier } = window.pendingImageGeneration;
+
+                    // Determine how many images to generate
+                    const imageCount = imageTier === 'AI-Generated Featured Image' ? 1 : 3;
+
+                    console.log(`Generating ${imageCount} AI image(s) for article...`);
+
+                    try {
+                        // Generate images
+                        const images = await generateAIImages(keyword, imageCount);
+
+                        if (images && images.length > 0) {
+                            console.log(`✅ Generated ${images.length} AI images`);
+                            // Add images to article data
+                            articleData.images = images;
+                        } else {
+                            console.warn('⚠️ No images generated - displaying article without images');
+                        }
+                    } catch (imageError) {
+                        console.error('❌ Image generation failed:', imageError);
+                        console.log('Displaying article without images');
+                    }
+
+                    // Clear pending image generation
+                    window.pendingImageGeneration = null;
+                }
+
                 // Display the generated article
                 displayGeneratedArticle(articleData, 'dataforseo', 25);
 
