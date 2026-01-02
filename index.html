@@ -22326,19 +22326,30 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                 // Set featured_media only if user assigned an image to 'title' section
                 let featuredMediaId = null;
+
+                console.log('🔍 DEBUG: Looking for featured image in uploadedImages:', uploadedImages.map(img => ({
+                    id: img.id,
+                    type: img.type,
+                    sectionId: img.sectionId,
+                    url: img.url?.substring(0, 50) + '...'
+                })));
+
                 const featuredImage = uploadedImages.find(img =>
                     img.type === 'featured' || img.sectionId === 'title'
                 );
+
                 if (featuredImage) {
                     featuredMediaId = featuredImage.id;
-                    console.log('📸 Featured media set:', {
+                    console.log('✅ 📸 Featured media FOUND and SET:', {
                         id: featuredMediaId,
                         sectionId: featuredImage.sectionId,
                         type: featuredImage.type,
                         note: 'This will be displayed by WordPress theme (position varies by theme)'
                     });
                 } else {
-                    console.log('📸 No featured media - no image assigned to title');
+                    console.warn('⚠️ 📸 No featured media found! Uploaded images:', uploadedImages.length);
+                    console.warn('⚠️ Looking for: type="featured" OR sectionId="title"');
+                    console.warn('⚠️ Available types:', uploadedImages.map(img => img.type).join(', '));
                 }
 
                 // DEBUG: Log first 1000 characters of HTML content to verify no duplicate images
