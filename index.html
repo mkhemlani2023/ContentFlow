@@ -15754,7 +15754,7 @@ REWRITTEN VERSION (begin immediately with the content):`;
             console.log('creditCost:', creditCost);
 
             try {
-                const { metadata, tableOfContents, content } = articleData;
+                const { metadata, tableOfContents, content, images } = articleData;
 
                 // Validate required data
                 if (!content) {
@@ -15894,6 +15894,16 @@ REWRITTEN VERSION (begin immediately with the content):`;
 
                             <!-- Article Content -->
                             <div style="line-height: 1.7; color: #374151;">
+                                <!-- Featured Image -->
+                                ${images && images.length > 0 && images[0].url ? `
+                                <div style="margin-bottom: 30px;">
+                                    <img src="${images[0].url}"
+                                         alt="${images[0].alt || content.title || 'Featured image'}"
+                                         style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                    ${images[0].caption ? `<p style="text-align: center; font-size: 14px; color: #6b7280; margin-top: 10px; font-style: italic;">${images[0].caption}</p>` : ''}
+                                </div>
+                                ` : ''}
+
                                 <!-- Introduction -->
                                 ${content.introduction ? `
                                 <div style="font-size: 18px; margin-bottom: 30px; padding: 20px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #64748b;">
@@ -15902,7 +15912,7 @@ REWRITTEN VERSION (begin immediately with the content):`;
                                 ` : ''}
 
                                 <!-- Main Sections -->
-                                ${content.sections && content.sections.length > 0 ? content.sections.map(section => {
+                                ${content.sections && content.sections.length > 0 ? content.sections.map((section, sectionIndex) => {
                                     // Detect if content is a JSON string and parse it
                                     let sectionContent = section.content;
                                     if (typeof sectionContent === 'string' && sectionContent.trim().startsWith('{')) {
@@ -15914,11 +15924,23 @@ REWRITTEN VERSION (begin immediately with the content):`;
                                         }
                                     }
 
+                                    // Get section image (skip first image as it's featured)
+                                    const sectionImageIndex = sectionIndex + 1;
+                                    const sectionImage = images && images.length > sectionImageIndex ? images[sectionImageIndex] : null;
+
                                     return `
                                     <div style="margin-bottom: 40px;">
                                         <h2 id="${section.anchor || ''}" style="color: #1f2937; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb;">
                                             ${section.title}
                                         </h2>
+                                        ${sectionImage && sectionImage.url ? `
+                                        <div style="margin-bottom: 25px;">
+                                            <img src="${sectionImage.url}"
+                                                 alt="${sectionImage.alt || section.title || 'Section image'}"
+                                                 style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                            ${sectionImage.caption ? `<p style="text-align: center; font-size: 14px; color: #6b7280; margin-top: 10px; font-style: italic;">${sectionImage.caption}</p>` : ''}
+                                        </div>
+                                        ` : ''}
                                         <div style="margin-bottom: 25px;">
                                             ${sectionContent ? sectionContent.split('\n\n').map(para => `<p style="margin-bottom: 15px;">${para}</p>`).join('') : ''}
                                         </div>
