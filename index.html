@@ -22033,14 +22033,29 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         console.log(`📸 Uploading image ${i + 1}/${imagesToUpload.length}:`, img);
 
                         try {
-                            // Download image data
-                            const imgResponse = await fetch(img.url);
-                            if (!imgResponse.ok) {
-                                console.warn(`WARNING:Failed to fetch image ${i + 1}:`, img.url);
-                                continue;
-                            }
+                            let imgBlob;
 
-                            const imgBlob = await imgResponse.blob();
+                            // Check if this is a base64 data URL (AI-generated image)
+                            if (img.url.startsWith('data:')) {
+                                console.log(`📸 Converting base64 data URL to blob for image ${i + 1}`);
+
+                                // Convert base64 data URL to blob
+                                const base64Response = await fetch(img.url);
+                                imgBlob = await base64Response.blob();
+
+                                console.log(`📸 Base64 conversion successful:`, {
+                                    size: imgBlob.size,
+                                    type: imgBlob.type
+                                });
+                            } else {
+                                // Regular URL - download image data
+                                const imgResponse = await fetch(img.url);
+                                if (!imgResponse.ok) {
+                                    console.warn(`WARNING:Failed to fetch image ${i + 1}:`, img.url);
+                                    continue;
+                                }
+                                imgBlob = await imgResponse.blob();
+                            }
 
                             // Detect actual image type from blob
                             const contentType = imgBlob.type || 'image/jpeg';
