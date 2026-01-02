@@ -4417,6 +4417,26 @@
                         </div>
                     `}
 
+                    <!-- Affiliate Program Selector -->
+                    <div id="affiliate-selector-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin: 20px 0; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <span style="font-size: 16px;">🔗</span>
+                            <h4 style="margin: 0; color: #475569; font-size: 14px; font-weight: 600;">Affiliate Program (Optional)</h4>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b; margin-bottom: 10px; line-height: 1.5;">
+                            Select a program to automatically include affiliate links in generated articles
+                        </div>
+                        <select id="affiliate-program-select-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}"
+                                style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white; cursor: pointer; color: #334155;"
+                                onchange="updateSelectedAffiliateProgram('${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')">
+                            <option value="">No affiliate program</option>
+                            <option value="loading" disabled>Loading programs...</option>
+                        </select>
+                        <div id="affiliate-selection-status-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin-top: 8px; padding: 6px 10px; background: #f1f5f9; border-radius: 4px; border-left: 3px solid #94a3b8; font-size: 11px; color: #475569;">
+                            No program selected
+                        </div>
+                    </div>
+
                     <!-- Blog/Website Context Selector -->
                     <div id="blog-selector-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin: 20px 0; padding: 16px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
@@ -4437,26 +4457,6 @@
                         </div>
                         <div id="blog-selection-status-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin-top: 8px; padding: 6px 10px; background: #e0f2fe; border-radius: 4px; border-left: 3px solid #0ea5e9; font-size: 11px; color: #0c4a6e;">
                             No blog selected
-                        </div>
-                    </div>
-
-                    <!-- Affiliate Program Selector -->
-                    <div id="affiliate-selector-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin: 20px 0; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                            <span style="font-size: 16px;">🔗</span>
-                            <h4 style="margin: 0; color: #475569; font-size: 14px; font-weight: 600;">Affiliate Program (Optional)</h4>
-                        </div>
-                        <div style="font-size: 12px; color: #64748b; margin-bottom: 10px; line-height: 1.5;">
-                            Select a program to automatically include affiliate links in generated articles
-                        </div>
-                        <select id="affiliate-program-select-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}"
-                                style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white; cursor: pointer; color: #334155;"
-                                onchange="updateSelectedAffiliateProgram('${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}')">
-                            <option value="">No affiliate program</option>
-                            <option value="loading" disabled>Loading programs...</option>
-                        </select>
-                        <div id="affiliate-selection-status-${keywordData.keyword.replace(/[^a-zA-Z0-9]/g, '')}" style="margin-top: 8px; padding: 6px 10px; background: #f1f5f9; border-radius: 4px; border-left: 3px solid #94a3b8; font-size: 11px; color: #475569;">
-                            No program selected
                         </div>
                     </div>
 
