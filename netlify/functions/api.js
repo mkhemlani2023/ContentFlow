@@ -1081,7 +1081,13 @@ const callOpenRouterAPI = async (keyword, modelType = 'free', blogContext = null
     const currentYear = new Date().getFullYear();
 
     // Add blog context to prompt if provided
-    const blogContextText = blogContext ? `\n\nBLOG CONTEXT: These articles will be published on: ${blogContext}. Ensure the article ideas align with the blog's topic/niche and audience.` : '';
+    const blogContextText = blogContext ? `\n\n🎯 CRITICAL REQUIREMENT - BLOG CONTEXT:
+These articles MUST be published on: "${blogContext}"
+- You MUST connect the keyword "${keyword}" to the blog's niche/topic
+- ALL article ideas MUST be relevant to ${blogContext}'s audience
+- If the keyword doesn't naturally fit the blog's topic, create articles that bridge them
+- Example: If blog is "Parkinson's Disease Blog" and keyword is "meditation", focus on "meditation for Parkinson's patients", "how meditation helps Parkinson's symptoms", etc.
+- NEVER generate generic articles - they MUST serve the blog's specific audience` : '';
 
     const prompt = `You are an expert SEO content strategist. Analyze the keyword "${keyword}" and generate 10 highly relevant, contextually appropriate article ideas that real users would actually search for.${blogContextText}
 
@@ -1090,9 +1096,9 @@ First, determine what "${keyword}" represents:
 - What industry/category does it belong to?
 - What type of user typically searches for this?
 - What problems/needs does this keyword address?
-- What's the typical search intent and user journey stage?
+- What's the typical search intent and user journey stage?${blogContext ? `\n- CRITICAL: How does "${keyword}" relate to "${blogContext}"? You MUST find this connection.` : ''}
 
-STEP 2 - CONTEXT-AWARE ARTICLE GENERATION:
+STEP 2 - CONTEXT-AWARE ARTICLE GENERATION${blogContext ? ` FOR ${blogContext.toUpperCase()}` : ''}:
 Create article ideas that:
 ✅ Directly address user problems related to "${keyword}"
 ✅ Reflect natural search behavior patterns for this topic
@@ -1128,13 +1134,13 @@ ARTICLE TYPES TO CONSIDER (where naturally relevant):
 
 OUTPUT REQUIREMENTS:
 For each article idea, provide:
-- title: Specific, contextual title that naturally includes "${keyword}" and addresses real user need
+- title: Specific, contextual title that naturally includes "${keyword}" and addresses real user need${blogContext ? `\n  * MUST be relevant to ${blogContext}'s audience and niche\n  * MUST connect "${keyword}" to the blog's topic (e.g., if blog is about Parkinson's and keyword is "meditation", title must be like "Meditation Techniques for Parkinson's Patients")` : ''}
   * Must be unique and topic-specific (not a template)
   * Must directly address searcher intent
   * Must avoid all forbidden generic patterns
   * Examples of GOOD titles: "How [Topic] Affects [Specific Outcome]", "Understanding [Specific Mechanism] in [Context]", "[Number] Ways [Topic] Impacts [Specific Area]"
   * Examples of BAD titles: "Complete Guide to X", "Key Insights on X", "Everything About X"
-- audience: Specific demographic who would genuinely search for this
+- audience: Specific demographic who would genuinely search for this${blogContext ? ` (must be relevant to ${blogContext})` : ''}
 - wordCount: Realistic length based on topic complexity (1000-2000 words max, shorter is better)
 - intent: Actual search intent (informational, commercial, navigational, transactional)
 - description: Clear explanation of what problem this solves or value it provides (be specific, not generic)
