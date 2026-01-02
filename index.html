@@ -6296,7 +6296,7 @@
                                 <option value="none|0">No Images</option>
                                 <option value="featured|10">Featured Image - Stock Photo (+10 credits)</option>
                                 <option value="ai-featured|15">Featured Image - AI Generated (+15 credits) ✨</option>
-                                <option value="ai-full|45">Featured + Section Images - AI Generated (+45 credits) ✨ NEW</option>
+                                <option value="ai-full|90">Featured + ALL Section Images - AI Generated (+90 credits) ✨ NEW</option>
                                 <option value="full|30">Featured + Section Images - Stock (+30 credits)</option>
                             </select>
                             <div style="font-size: 12px; color: #64748b; margin-top: 6px; font-style: italic;">
@@ -6422,7 +6422,7 @@
 
                 if (window.selectedImageCredits > 0) {
                     const imageTypeLabel = window.selectedImageType === 'ai-featured' ? 'AI-Generated Featured Image' :
-                                          window.selectedImageType === 'ai-full' ? 'AI-Generated Featured + Section Images' :
+                                          window.selectedImageType === 'ai-full' ? 'AI-Generated Featured + ALL Section Images' :
                                           window.selectedImageType === 'featured' ? 'Stock Photo' :
                                           'Stock Photos (Multi)';
                     breakdown += `<strong>Images (${imageTypeLabel}):</strong> ${window.selectedImageCredits} credits<br>`;
@@ -6483,7 +6483,7 @@
                 'none': 'No Images',
                 'featured': 'Featured Image Only (Stock Photos)',
                 'ai-featured': 'AI-Generated Featured Image',
-                'ai-full': 'AI-Generated Featured + Section Images',
+                'ai-full': 'AI-Generated Featured + ALL Section Images',
                 'full': 'Featured + Section Images (Stock Photos)'
             };
 
@@ -6599,7 +6599,7 @@
                     const imageTierMap = {
                         'featured': 'Featured Image',
                         'ai-featured': 'AI-Generated Featured Image',
-                        'ai-full': 'AI-Generated Featured + Section Images',
+                        'ai-full': 'AI-Generated Featured + ALL Section Images',
                         'full': 'Featured + 2 Others'
                     };
                     const imageTier = imageTierMap[imageType] || 'Featured Image';
@@ -13108,10 +13108,13 @@ Return ONLY the JSON array, no other text or markdown.`;
                     console.log('🖼️ Image generation requested:', window.pendingImageGeneration);
                     const { imageTier } = window.pendingImageGeneration;
 
-                    // Determine how many images to generate based on tier
+                    // Determine how many images to generate based on tier and article structure
                     let imageCount = 1; // Default: Featured image only
                     if (imageTier === 'AI-Generated Featured + Section Images') {
-                        imageCount = 3; // Featured + 2 section images
+                        // Generate 1 featured + 1 per section
+                        const sectionCount = articleData.content.sections?.length || 0;
+                        imageCount = 1 + sectionCount; // Featured + section images
+                        console.log(`📊 Article has ${sectionCount} sections, generating ${imageCount} images (1 featured + ${sectionCount} section images)`);
                     } else if (imageTier === 'AI-Generated Featured Image') {
                         imageCount = 1; // Featured only
                     }
@@ -14575,12 +14578,21 @@ Make the content engaging, informative, and optimized for search engines. Includ
                     // Multiple images - create varied prompts
                     imagePrompts.push(`Create a professional hero/featured image for an article about "${keyword}". Show the main concept in a modern, clean style. No text or watermarks.`);
 
-                    if (imageCount > 1) {
-                        imagePrompts.push(`Create a supporting image showing a different aspect of "${keyword}". Focus on practical application or real-world example. Modern, professional style. No text or watermarks. MUST BE VISUALLY DIFFERENT from the featured image.`);
-                    }
+                    // Generate varied prompts for section images
+                    const sectionImageVariations = [
+                        `Create a supporting image showing a different aspect of "${keyword}". Focus on practical application or real-world example. Modern, professional style. No text or watermarks. MUST BE VISUALLY DIFFERENT from the featured image.`,
+                        `Create a detailed illustration or diagram related to "${keyword}". Show technical details or step-by-step process. Clean, professional design. No text or watermarks. MUST BE COMPLETELY DIFFERENT from previous images - use different composition, colors, and perspective.`,
+                        `Create an infographic-style image about "${keyword}". Use icons, charts, or visual data representation. Modern, clean design. No text or watermarks. MUST use different visual style from previous images.`,
+                        `Create a realistic photo-style image depicting "${keyword}". Show people or real-world scenarios. Professional photography style. No text or watermarks. MUST be compositionally different from all previous images.`,
+                        `Create an abstract or conceptual image representing "${keyword}". Use shapes, patterns, or symbolic elements. Artistic, modern style. No text or watermarks. MUST have unique color palette and completely different visual approach.`,
+                        `Create a close-up or detailed view related to "${keyword}". Focus on specific elements or details. Professional, high-quality style. No text or watermarks. MUST show different perspective from all previous images.`
+                    ];
 
-                    if (imageCount > 2) {
-                        imagePrompts.push(`Create a detailed illustration or diagram related to "${keyword}". Show technical details or step-by-step process. Clean, professional design. No text or watermarks. MUST BE COMPLETELY DIFFERENT from previous images - use different composition, colors, and perspective.`);
+                    // Add section image prompts based on count needed
+                    for (let i = 1; i < imageCount; i++) {
+                        // Use variations, cycling through if we need more than available
+                        const variationIndex = (i - 1) % sectionImageVariations.length;
+                        imagePrompts.push(sectionImageVariations[variationIndex]);
                     }
                 }
 
@@ -19995,6 +20007,46 @@ Search Phrase:`;
                 window.selectedImages = {};
             }
 
+            // Pre-populate existing AI-generated images if they exist
+            if (article.images && article.images.length > 0) {
+                console.log('📸 Found existing images, pre-populating:', article.images.length);
+
+                // Skip first image (featured image) and assign rest to sections
+                for (let i = 1; i < article.images.length && i - 1 < sections.length; i++) {
+                    const image = article.images[i];
+                    const sectionIndex = i - 1; // First section gets image[1], second gets image[2], etc.
+                    const section = sections[sectionIndex];
+
+                    if (section) {
+                        // Set selected image for this section
+                        window.selectedImages[section.id] = {
+                            url: image.url,
+                            alt: image.alt || section.title,
+                            photographer: image.photographer || 'AI Generated',
+                            photographerUrl: image.photographerUrl || null,
+                            source: image.source || 'openrouter-ai'
+                        };
+
+                        // Display the image in the UI
+                        const selectedDiv = document.getElementById(`selected-${section.id}`);
+                        const preview = document.getElementById(`preview-${section.id}`);
+                        const altInput = document.getElementById(`alt-${section.id}`);
+                        const creditDiv = document.getElementById(`credit-${section.id}`);
+                        const imagesContainer = document.getElementById(`images-${section.id}`);
+
+                        if (selectedDiv && preview && altInput) {
+                            preview.src = image.url;
+                            altInput.value = image.alt || section.title;
+                            creditDiv.textContent = `${image.photographer || 'AI Generated'}`;
+                            selectedDiv.style.display = 'block';
+                            imagesContainer.innerHTML = '<p style="color: #10b981; font-size: 14px;">✓ AI-generated image assigned</p>';
+
+                            console.log(`✓ Pre-populated image for section: ${section.title}`);
+                        }
+                    }
+                }
+            }
+
             console.log('Image modal initialized. Sections:', sections.length, 'Selected images:', Object.keys(window.selectedImages).length);
         }
 
@@ -23485,7 +23537,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                                 <option value="none|0">No Images</option>
                                 <option value="featured|10" selected>Featured Image - Stock Photo (+10 credits)</option>
                                 <option value="ai-featured|15">Featured Image - AI Generated (+15 credits)</option>
-                                <option value="ai-full|45">Featured + Section Images - AI Generated (+45 credits) ✨ NEW</option>
+                                <option value="ai-full|90">Featured + ALL Section Images - AI Generated (+90 credits) ✨ NEW</option>
                                 <option value="full|30">Featured + Section Images - Stock (+30 credits)</option>
                             </select>
                         </div>
