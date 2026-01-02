@@ -12725,10 +12725,11 @@ Return ONLY the section titles, one per line, no numbers or bullets.`;
 CITATION REQUIREMENTS:
 When referencing clinical studies, scientific papers, or research findings:
 - Use in-text citations in parentheses: (Author Year) or (Author et al. Year) for 3+ authors
-- Example: "Research demonstrates neuroprotective effects (Smith et al. 2023)"
-- IMPORTANT: After each in-text citation, include the full citation in Chicago format on the same or next line
+- Example in text: "Research demonstrates neuroprotective effects (Smith et al. 2023)"
+- IMPORTANT: After the section content, add a blank line followed by the full citation in Chicago format
 - Full citation format: Author(s). Year. "Title." Journal Name. Volume(Issue): Pages. DOI or URL
-- Example: Smith, J., et al. 2023. "Neuroprotective Effects of Exercise." Journal of Neuroscience. 43(2): 245-260. https://doi.org/10.1234/example
+- Example full citation: Smith, J., et al. 2023. "Neuroprotective Effects of Exercise." Journal of Neuroscience. 43(2): 245-260. https://doi.org/10.1234/example
+- Place all full citations at the END of your content, separated by blank lines
 - Only cite real, verifiable research from reputable peer-reviewed journals`, // Simplified citation instructions
                         fullContext // Pass context from introduction and previous sections
                     );
@@ -13979,10 +13980,11 @@ ${sectionAffiliateContext}
 CITATION REQUIREMENTS:
 When referencing clinical studies, scientific papers, or research findings:
 - Use in-text citations in parentheses: (Author Year) or (Author et al. Year) for 3+ authors
-- Example: "Studies show hydrogen water benefits (Ohsawa et al. 2007)"
-- IMPORTANT: After each in-text citation, include the full citation in Chicago format on the same or next line
+- Example in text: "Studies show hydrogen water benefits (Ohsawa et al. 2007)"
+- IMPORTANT: After the section content, add a blank line followed by the full citation in Chicago format
 - Full citation format: Author(s). Year. "Title." Journal Name. Volume(Issue): Pages. DOI or URL
-- Example: Ohsawa, I., et al. 2007. "Hydrogen acts as a therapeutic antioxidant." Nature Medicine. 13(6): 688-694. https://doi.org/10.1038/nm1577
+- Example full citation: Ohsawa, I., et al. 2007. "Hydrogen acts as a therapeutic antioxidant." Nature Medicine. 13(6): 688-694. https://doi.org/10.1038/nm1577
+- Place all full citations at the END of your content, separated by blank lines
 - Only cite real, verifiable research from reputable peer-reviewed journals
 
 Write ${wordsPerSection} words of informative, engaging paragraphs. Use double line breaks between paragraphs. Return ONLY the content text, no JSON, no formatting.`;
@@ -14563,43 +14565,71 @@ Make the content engaging, informative, and optimized for search engines. Includ
             console.log('Count:', imageCount);
 
             try {
-                // Create a detailed image prompt based on the article topic
-                const prompt = `Create a professional, high-quality featured image for an article about "${keyword}". The image should be visually appealing, relevant to the topic, and suitable for a blog post. Style: modern, clean, professional. No text or watermarks.`;
+                // Generate unique images by creating different prompts for each
+                const imagePrompts = [];
 
-                console.log('Image prompt:', prompt);
+                if (imageCount === 1) {
+                    // Single featured image
+                    imagePrompts.push(`Create a professional, high-quality featured image for an article about "${keyword}". The image should be visually appealing, relevant to the topic, and suitable for a blog post. Style: modern, clean, professional. No text or watermarks.`);
+                } else {
+                    // Multiple images - create varied prompts
+                    imagePrompts.push(`Create a professional hero/featured image for an article about "${keyword}". Show the main concept in a modern, clean style. No text or watermarks.`);
 
-                const response = await fetch('/api/openrouter-images', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        prompt: prompt,
-                        count: imageCount,
-                        model: 'google/gemini-2.5-flash-image-preview'
-                    })
-                });
+                    if (imageCount > 1) {
+                        imagePrompts.push(`Create a supporting image showing a different aspect of "${keyword}". Focus on practical application or real-world example. Modern, professional style. No text or watermarks. MUST BE VISUALLY DIFFERENT from the featured image.`);
+                    }
 
-                console.log('API response status:', response.status);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('API error response:', errorText);
-                    throw new Error(`AI image API returned ${response.status}: ${errorText}`);
+                    if (imageCount > 2) {
+                        imagePrompts.push(`Create a detailed illustration or diagram related to "${keyword}". Show technical details or step-by-step process. Clean, professional design. No text or watermarks. MUST BE COMPLETELY DIFFERENT from previous images - use different composition, colors, and perspective.`);
+                    }
                 }
 
-                const data = await response.json();
-                console.log('API response data:', data);
+                console.log('Image prompts:', imagePrompts);
 
-                if (!data.success || !data.images || !Array.isArray(data.images)) {
-                    console.error('Invalid response format - no images array');
-                    throw new Error('Invalid API response format');
+                // Generate each image with its unique prompt
+                const allImages = [];
+
+                for (let i = 0; i < imagePrompts.length; i++) {
+                    console.log(`🎨 Generating image ${i + 1}/${imagePrompts.length}...`);
+
+                    const response = await fetch('/api/openrouter-images', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            prompt: imagePrompts[i],
+                            count: 1, // Generate one image at a time with unique prompt
+                            model: 'google/gemini-2.5-flash-image-preview'
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error(`API error for image ${i + 1}:`, errorText);
+                        throw new Error(`AI image API returned ${response.status}: ${errorText}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (!data.success || !data.images || !Array.isArray(data.images)) {
+                        console.error('Invalid response format - no images array');
+                        throw new Error('Invalid API response format');
+                    }
+
+                    allImages.push(...data.images);
+                    console.log(`✓ Image ${i + 1} generated successfully`);
+
+                    // Small delay between requests to avoid rate limiting
+                    if (i < imagePrompts.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
                 }
 
-                console.log(`✓ Successfully generated ${data.images.length} AI images`);
+                console.log(`✓ Successfully generated ${allImages.length} unique AI images`);
 
                 // Return in the expected format
-                return data.images.map((img, index) => ({
+                return allImages.map((img, index) => ({
                     url: img.url, // base64 data URL
                     alt: keyword,
                     type: index === 0 ? 'featured' : 'supporting',
