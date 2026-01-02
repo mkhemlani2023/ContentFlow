@@ -6295,7 +6295,8 @@
                             <select id="imageTypeSelect" onchange="updateImageSelection()" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
                                 <option value="none|0">No Images</option>
                                 <option value="featured|10">Featured Image - Stock Photo (+10 credits)</option>
-                                <option value="ai-featured|15">Featured Image - AI Generated (+15 credits) ✨ NEW</option>
+                                <option value="ai-featured|15">Featured Image - AI Generated (+15 credits) ✨</option>
+                                <option value="ai-full|45">Featured + Section Images - AI Generated (+45 credits) ✨ NEW</option>
                                 <option value="full|30">Featured + Section Images - Stock (+30 credits)</option>
                             </select>
                             <div style="font-size: 12px; color: #64748b; margin-top: 6px; font-style: italic;">
@@ -6420,7 +6421,8 @@
                 let breakdown = `<strong>Article Generation:</strong> ${window.selectedCredits} credits<br>`;
 
                 if (window.selectedImageCredits > 0) {
-                    const imageTypeLabel = window.selectedImageType === 'ai-featured' ? 'AI-Generated Image' :
+                    const imageTypeLabel = window.selectedImageType === 'ai-featured' ? 'AI-Generated Featured Image' :
+                                          window.selectedImageType === 'ai-full' ? 'AI-Generated Featured + Section Images' :
                                           window.selectedImageType === 'featured' ? 'Stock Photo' :
                                           'Stock Photos (Multi)';
                     breakdown += `<strong>Images (${imageTypeLabel}):</strong> ${window.selectedImageCredits} credits<br>`;
@@ -23436,6 +23438,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                                 <option value="none|0">No Images</option>
                                 <option value="featured|10" selected>Featured Image - Stock Photo (+10 credits)</option>
                                 <option value="ai-featured|15">Featured Image - AI Generated (+15 credits)</option>
+                                <option value="ai-full|45">Featured + Section Images - AI Generated (+45 credits) ✨ NEW</option>
                                 <option value="full|30">Featured + Section Images - Stock (+30 credits)</option>
                             </select>
                         </div>
