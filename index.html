@@ -6481,6 +6481,7 @@
                 'none': 'No Images',
                 'featured': 'Featured Image Only (Stock Photos)',
                 'ai-featured': 'AI-Generated Featured Image',
+                'ai-full': 'AI-Generated Featured + Section Images',
                 'full': 'Featured + Section Images (Stock Photos)'
             };
 
@@ -6596,6 +6597,7 @@
                     const imageTierMap = {
                         'featured': 'Featured Image',
                         'ai-featured': 'AI-Generated Featured Image',
+                        'ai-full': 'AI-Generated Featured + Section Images',
                         'full': 'Featured + 2 Others'
                     };
                     const imageTier = imageTierMap[imageType] || 'Featured Image';
@@ -13102,8 +13104,13 @@ Return ONLY the JSON array, no other text or markdown.`;
                     console.log('🖼️ Image generation requested:', window.pendingImageGeneration);
                     const { imageTier } = window.pendingImageGeneration;
 
-                    // Determine how many images to generate
-                    const imageCount = imageTier === 'AI-Generated Featured Image' ? 1 : 3;
+                    // Determine how many images to generate based on tier
+                    let imageCount = 1; // Default: Featured image only
+                    if (imageTier === 'AI-Generated Featured + Section Images') {
+                        imageCount = 3; // Featured + 2 section images
+                    } else if (imageTier === 'AI-Generated Featured Image') {
+                        imageCount = 1; // Featured only
+                    }
 
                     console.log(`Generating ${imageCount} AI image(s) for article...`);
 
@@ -14625,7 +14632,9 @@ Make the content engaging, informative, and optimized for search engines. Includ
             console.log('Input params:', {keyword, imageTier, imageCount});
 
             // Check if using AI image generation
-            if (imageTier === 'AI-Generated Featured Image' || imageTier?.toLowerCase().includes('ai')) {
+            if (imageTier === 'AI-Generated Featured Image' ||
+                imageTier === 'AI-Generated Featured + Section Images' ||
+                imageTier?.toLowerCase().includes('ai')) {
                 console.log('🎨 Using AI image generation via OpenRouter');
                 return await generateAIImages(keyword, imageCount);
             }
