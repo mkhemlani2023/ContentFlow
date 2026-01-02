@@ -8829,6 +8829,27 @@
                     throw new Error(errorMsg);
                 }
 
+                // Helper function to parse minimum payout to number or null
+                const parseMinimumPayout = (value) => {
+                    if (!value || typeof value === 'string' && (
+                        value.toLowerCase().includes('no minimum') ||
+                        value.toLowerCase().includes('not specified') ||
+                        value.toLowerCase().includes('n/a') ||
+                        value.toLowerCase().includes('none')
+                    )) {
+                        return null;
+                    }
+
+                    // Try to extract number from string like "$50" or "50 USD"
+                    const numericMatch = String(value).match(/[\d.]+/);
+                    if (numericMatch) {
+                        const parsed = parseFloat(numericMatch[0]);
+                        return isNaN(parsed) ? null : parsed;
+                    }
+
+                    return null;
+                };
+
                 // Save the affiliate program with AI insights to Supabase
                 const saveResult = await SupabaseService.saveAffiliateProgram({
                     blog_id: blogId,
@@ -8839,7 +8860,7 @@
                     commission_rate: result.commission_rate,
                     commission_type: result.commission_type,
                     cookie_duration: result.cookie_duration,
-                    minimum_payout: result.minimum_payout,
+                    minimum_payout: parseMinimumPayout(result.minimum_payout),
                     payment_frequency: result.payment_frequency,
                     payment_methods: result.payment_methods,
                     terms_summary: result.terms_summary,
