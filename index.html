@@ -16155,10 +16155,57 @@ REWRITTEN VERSION (begin immediately with the content):`;
 
         // Auto-save article silently in background
         async function autoSaveArticleToLibrary() {
-            // Skip auto-save - article will be saved after images are added
-            // This prevents duplicate saves and saves database space
-            console.log('INFO: Skipping auto-save - article will be saved after adding images');
-            return;
+            try {
+                const article = window.currentGeneratedArticle;
+
+                if (!article || !article.content) {
+                    console.log('No article to auto-save');
+                    return;
+                }
+
+                // Check if article has AI-generated images
+                const hasAIImages = article.images && article.images.length > 0 &&
+                    article.images.some(img => img.source === 'openrouter-ai');
+
+                if (!hasAIImages) {
+                    // Skip auto-save for articles without AI images - they'll be saved after manual image selection
+                    console.log('INFO: Skipping auto-save - article will be saved after adding images');
+                    return;
+                }
+
+                console.log('🔄 Auto-saving article with AI-generated images to library...');
+
+                // Create complete save object with all article data
+                const saveData = {
+                    content: article.content,
+                    metadata: article.metadata || {},
+                    tableOfContents: article.tableOfContents || [],
+                    images: article.images || [],
+                    modelTier: article.modelTier || window.selectedModel || 'basic',
+                    modelConfig: article.modelConfig
+                };
+
+                const result = await SupabaseService.saveArticle({
+                    title: article.content?.title || 'Untitled Article',
+                    keyword: article.metadata?.focusKeyword || article.metadata?.keyword || '',
+                    content: JSON.stringify(saveData),
+                    metadata: JSON.stringify(article.metadata || {}),
+                    model_tier: article.modelTier || window.selectedModel || 'basic',
+                    word_count: article.metadata?.actualWordCount || article.metadata?.wordCount || 0,
+                    images: JSON.stringify(article.images || [])
+                });
+
+                if (result.success) {
+                    // Store the article ID for later use
+                    window.currentGeneratedArticle.savedArticleId = result.data.id;
+                    console.log('✅ Article auto-saved with AI images (ID: ' + result.data.id + ')');
+                } else {
+                    console.warn('⚠️ Auto-save failed:', result.error);
+                }
+            } catch (error) {
+                console.error('❌ Auto-save error:', error);
+                // Don't show error to user - silent background operation
+            }
         }
 
         function displayGeneratedArticleWithImages(completeArticle, modelTier, totalCredits) {
