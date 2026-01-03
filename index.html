@@ -19992,6 +19992,51 @@ Search Phrase:`;
                     <p style="color: #64748b; margin-bottom: 25px;">Select images for your article sections. AI will help generate SEO-optimized alt text.</p>
 
                     <div id="imageSectionsList">
+                        <!-- Featured Image Section -->
+                        <div style="border: 2px solid #3b82f6; border-radius: 10px; padding: 20px; margin-bottom: 20px; background: #eff6ff;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                                <div>
+                                    <h3 style="color: #1e40af; margin: 0 0 5px 0; font-size: 16px;">⭐ Featured Image</h3>
+                                    <p style="color: #1e40af; font-size: 12px; margin: 0;">This image will be displayed as the main article image</p>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                                    <input type="text" id="search-featured" placeholder="Describe the featured image you want" style="flex: 1; padding: 10px; border: 1px solid #3b82f6; border-radius: 6px; font-size: 13px;">
+                                    <button onclick="searchImagesForSection('featured')" style="background: #334155; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap;">
+                                        🔍 Stock
+                                    </button>
+                                    <button onclick="generateAIImageForSection('featured')" style="background: linear-gradient(135deg, #10a37f 0%, #16a34a 100%); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; box-shadow: 0 2px 4px rgba(16,163,127,0.3);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                        ✨ Curated
+                                    </button>
+                                    <button onclick="generateOpenRouterImageForSection('featured')" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; box-shadow: 0 2px 4px rgba(139,92,246,0.3);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                        🎨 AI Gen
+                                    </button>
+                                </div>
+                                <div style="font-size: 11px; color: #1e40af; margin-top: 8px;">💡 Stock: free photos | Curated: AI-picked stock | AI Gen: custom AI-generated images</div>
+                            </div>
+
+                            <div id="images-featured" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; min-height: 50px;">
+                                <p style="color: #1e40af; font-size: 14px;">Click "Search Images" to find photos</p>
+                            </div>
+
+                            <div id="selected-featured" style="display: none; margin-top: 15px; padding: 15px; background: white; border-radius: 8px; border: 2px solid #3b82f6;">
+                                <div style="display: flex; gap: 15px; align-items: start;">
+                                    <img id="preview-featured" style="width: 120px; height: 80px; object-fit: cover; border-radius: 6px;">
+                                    <div style="flex: 1;">
+                                        <label style="display: block; color: #334155; font-size: 13px; font-weight: 600; margin-bottom: 5px;">SEO Alt Text</label>
+                                        <input type="text" id="alt-featured" placeholder="Descriptive alt text for SEO..." style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 13px; margin-bottom: 8px;">
+                                        <div style="font-size: 12px; color: #64748b;" id="credit-featured"></div>
+                                    </div>
+                                    <button onclick="removeImageSelection('featured')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Article Sections -->
                         ${sections.map(section => `
                             <div style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px; background: #f8fafc;">
                                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
@@ -20062,7 +20107,36 @@ Search Phrase:`;
             if (article.images && article.images.length > 0) {
                 console.log('📸 Found existing images, pre-populating:', article.images.length);
 
-                // Skip first image (featured image) and assign rest to sections
+                // Pre-populate featured image (first image)
+                if (article.images[0]) {
+                    const featuredImage = article.images[0];
+                    window.selectedImages['featured'] = {
+                        url: featuredImage.url,
+                        alt: featuredImage.alt || content.title || 'Featured image',
+                        photographer: featuredImage.photographer || 'AI Generated',
+                        photographerUrl: featuredImage.photographerUrl || null,
+                        source: featuredImage.source || 'openrouter-ai'
+                    };
+
+                    // Display featured image in UI
+                    const selectedDiv = document.getElementById('selected-featured');
+                    const preview = document.getElementById('preview-featured');
+                    const altInput = document.getElementById('alt-featured');
+                    const creditDiv = document.getElementById('credit-featured');
+                    const imagesContainer = document.getElementById('images-featured');
+
+                    if (selectedDiv && preview && altInput) {
+                        preview.src = featuredImage.url;
+                        altInput.value = featuredImage.alt || content.title || 'Featured image';
+                        creditDiv.textContent = `${featuredImage.photographer || 'AI Generated'}`;
+                        selectedDiv.style.display = 'block';
+                        imagesContainer.innerHTML = '<p style="color: #3b82f6; font-size: 14px;">✓ Featured image assigned</p>';
+
+                        console.log('✓ Pre-populated featured image');
+                    }
+                }
+
+                // Pre-populate section images (skip first image as it's featured)
                 for (let i = 1; i < article.images.length && i - 1 < sections.length; i++) {
                     const image = article.images[i];
                     const sectionIndex = i - 1; // First section gets image[1], second gets image[2], etc.
@@ -20493,7 +20567,7 @@ Search Phrase:`;
 </figure>`;
 
                 // Insert image based on section - PREPEND so it appears BEFORE text
-                if (sectionId === 'title') {
+                if (sectionId === 'title' || sectionId === 'featured') {
                     // Featured image goes before introduction
                     if (!content.featuredImage) {
                         content.featuredImage = imageHTML;
@@ -20516,7 +20590,7 @@ Search Phrase:`;
             article.images = Object.entries(window.selectedImages).map(([sectionId, imageData]) => ({
                 ...imageData,
                 sectionId: sectionId,
-                type: sectionId === 'title' ? 'featured' : 'supporting' // Mark title image as featured
+                type: (sectionId === 'title' || sectionId === 'featured') ? 'featured' : 'supporting' // Mark title or featured image as featured
             }));
             window.currentGeneratedArticle = article;
 
@@ -20540,7 +20614,7 @@ Search Phrase:`;
                         images: Object.entries(window.selectedImages).map(([sectionId, imageData]) => ({
                             ...imageData,
                             sectionId: sectionId,
-                            type: sectionId === 'title' ? 'featured' : 'supporting'
+                            type: (sectionId === 'title' || sectionId === 'featured') ? 'featured' : 'supporting'
                         })),
                         modelTier: article.modelTier,
                         modelConfig: article.modelConfig
