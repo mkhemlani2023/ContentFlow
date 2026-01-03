@@ -22174,9 +22174,18 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             if (img.url.startsWith('data:')) {
                                 console.log(`📸 Converting base64 data URL to blob for image ${i + 1}`);
 
-                                // Convert base64 data URL to blob
-                                const base64Response = await fetch(img.url);
-                                imgBlob = await base64Response.blob();
+                                // Convert base64 data URL to blob (without fetch to avoid CSP issues)
+                                const base64Data = img.url.split(',')[1];
+                                const mimeType = img.url.match(/data:([^;]+);/)[1];
+
+                                // Decode base64 to binary
+                                const binaryString = atob(base64Data);
+                                const bytes = new Uint8Array(binaryString.length);
+                                for (let j = 0; j < binaryString.length; j++) {
+                                    bytes[j] = binaryString.charCodeAt(j);
+                                }
+
+                                imgBlob = new Blob([bytes], { type: mimeType });
 
                                 console.log(`📸 Base64 conversion successful:`, {
                                     size: imgBlob.size,
