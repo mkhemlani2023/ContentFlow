@@ -13346,6 +13346,13 @@ Return ONLY the JSON array, no other text or markdown.`;
                 return await generateArticleWithDataforSEO(keyword, wordCount, difficulty, intent, articleTitle, affiliateProgram);
             }
 
+            // Clean up article generation options modal before starting generation
+            const existingModal = document.getElementById('articleGenerationModal');
+            if (existingModal) {
+                existingModal.remove();
+                console.log('✓ Cleaned up article generation options modal');
+            }
+
             // Show comprehensive progress modal
             const progress = showProgressModal({
                 title: '📝 Step 1: Creating Article Outline',
@@ -15850,6 +15857,20 @@ REWRITTEN VERSION (begin immediately with the content):`;
             console.log('modelTier:', modelTier);
             console.log('creditCost:', creditCost);
 
+            // Hide article ideas expanded view to prevent it from showing during article render
+            const expandedContainer = document.getElementById('expandedKeywordContainer');
+            if (expandedContainer) {
+                expandedContainer.style.display = 'none';
+                console.log('✓ Hidden article ideas expanded view');
+            }
+
+            // Clean up article generation modal if it exists
+            const artGenModal = document.getElementById('articleGenerationModal');
+            if (artGenModal) {
+                artGenModal.remove();
+                console.log('✓ Removed article generation modal');
+            }
+
             try {
                 const { metadata, tableOfContents, content, images } = articleData;
 
@@ -16236,7 +16257,7 @@ REWRITTEN VERSION (begin immediately with the content):`;
                     if (modalContent) {
                         modalContent.scrollTop = 0;
                     }
-                }, 100);
+                }, 500); // Increased from 100ms to allow proper modal rendering
 
                 console.log('Article modal appended to body successfully');
 
