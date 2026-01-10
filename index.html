@@ -9145,6 +9145,8 @@
                 const publishLogResult = await SupabaseService.getPublishLogForArticle(articleId);
                 let wordpressPostId = null;
                 let wordpressBlogId = null;
+                let wordpressCategoryId = null;
+                let wordpressPostUrl = null;
 
                 console.log('🔍 Checking publish history for article:', articleId);
                 console.log('Publish log result:', publishLogResult);
@@ -9154,8 +9156,8 @@
                     const rawPostId = publishLogResult.data.post_id;
                     wordpressPostId = rawPostId ? parseInt(rawPostId, 10) : null;
                     wordpressBlogId = publishLogResult.data.blog_id;
-                    const wordpressCategoryId = publishLogResult.data.category_id;
-                    const wordpressPostUrl = publishLogResult.data.post_url;
+                    wordpressCategoryId = publishLogResult.data.category_id;
+                    wordpressPostUrl = publishLogResult.data.post_url;
 
                     console.log('✅ Article was previously published:', {
                         rawPostId: rawPostId,
