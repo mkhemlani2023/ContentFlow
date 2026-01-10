@@ -9758,7 +9758,6 @@ Return ONLY the JSON array, no other text.`;
                     }) : [];
 
                 // Remove loading modal
-                const loadingModal = document.getElementById('affiliateLoadingModal');
                 if (loadingModal) loadingModal.remove();
 
                 // Show the affiliate program details modal
@@ -9768,8 +9767,8 @@ Return ONLY the JSON array, no other text.`;
                 console.error('Error loading affiliate details:', error);
 
                 // Remove loading modal on error
-                const loadingModal = document.getElementById('affiliateLoadingModal');
-                if (loadingModal) loadingModal.remove();
+                const loadingModalError = document.getElementById('affiliateLoadingModal');
+                if (loadingModalError) loadingModalError.remove();
 
                 showToast('Failed to load affiliate program details: ' + error.message, 'error');
             }
