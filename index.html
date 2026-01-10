@@ -9146,14 +9146,34 @@
                 let wordpressPostId = null;
                 let wordpressBlogId = null;
 
+                console.log('🔍 Checking publish history for article:', articleId);
+                console.log('Publish log result:', publishLogResult);
+
                 if (publishLogResult.success && publishLogResult.data) {
-                    wordpressPostId = publishLogResult.data.post_id;
+                    // Ensure post_id is a number (could be stored as string)
+                    const rawPostId = publishLogResult.data.post_id;
+                    wordpressPostId = rawPostId ? parseInt(rawPostId, 10) : null;
                     wordpressBlogId = publishLogResult.data.blog_id;
-                    console.log('✓ Article was previously published:', {
-                        postId: wordpressPostId,
+
+                    console.log('✅ Article was previously published:', {
+                        rawPostId: rawPostId,
+                        rawPostIdType: typeof rawPostId,
+                        parsedPostId: wordpressPostId,
+                        parsedPostIdType: typeof wordpressPostId,
                         blogId: wordpressBlogId,
                         postUrl: publishLogResult.data.post_url
                     });
+
+                    if (!wordpressPostId || isNaN(wordpressPostId)) {
+                        console.error('❌ WARNING: Publish log found but post_id is invalid!', {
+                            raw: rawPostId,
+                            parsed: wordpressPostId,
+                            fullData: publishLogResult.data
+                        });
+                        wordpressPostId = null; // Reset to null if invalid
+                    }
+                } else {
+                    console.log('ℹ️ No publish history found - this is a new article');
                 }
 
                 // Set as current article for publishing
@@ -9445,7 +9465,7 @@
                 showToast('Asking AI where to insert affiliate links...', 'info');
 
         // Use AI to determine where to insert links
-                const aiPrompt = `You are an affiliate marketing expert. Analyze this article and suggest 2-4 strategic places to insert affiliate links naturally with contextual information about "${program.program_name}".
+                const aiPrompt = `You are an affiliate marketing expert. Analyze this article and suggest 1-2 strategic places ONLY to insert affiliate links naturally with contextual information about "${program.program_name}".
 
 Article Summary:
 ${fullText}
@@ -9453,31 +9473,35 @@ ${fullText}
 Affiliate Program: ${program.program_name}
 Affiliate Link: ${program.affiliate_link_template}
 
-IMPORTANT INSTRUCTIONS:
+CRITICAL RULES - FOLLOW EXACTLY:
 1. First READ and ANALYZE the article content carefully
 2. Check if the article already discusses ${program.program_name} in detail
-3. If the product/service is already mentioned, identify those spots for links
-4. If NOT mentioned, suggest adding brief context BEFORE the link
+3. Suggest MAXIMUM 2 link placements TOTAL (less is better to avoid spam)
+4. NEVER suggest more than ONE link in the same section
+5. Links should be AT LEAST 2 sections apart from each other
+6. If the product/service is already mentioned, identify ONE best spot for a link
+7. If NOT mentioned, suggest adding brief context BEFORE the link in ONE strategic location
 
 Provide your response as a JSON array with this exact structure:
 [
   {
     "location": "introduction" or "section-0" or "section-1" or "conclusion",
-    "position": "beginning" or "middle" or "end",
+    "position": "end",
     "contextText": "1-2 sentences providing context about the product/service (leave empty if article already discusses it there)",
     "anchorText": "natural anchor text for the link",
     "context": "brief explanation of why this placement works"
   }
 ]
 
-Rules:
-- Suggest 2-4 placements maximum
-- If article already discusses ${program.program_name}, use existing context and just add link
-- If article DOESN'T discuss ${program.program_name}, add contextText with brief intro (e.g., "${program.program_name} is a leading solution that helps...")
-- Anchor text examples: "Try ${program.program_name}", "Learn more about ${program.program_name}", "${program.program_name}'s features", "visit ${program.program_name}"
-- Context should explain WHY the link is relevant there
-- Don't over-optimize - make it natural and valuable
-- Focus on positions where a recommendation makes sense
+STRICT REQUIREMENTS:
+- Suggest 1-2 placements MAXIMUM (prefer just 1 if the article is short)
+- NEVER place multiple links in the same location or section
+- Each link must be in a DIFFERENT section (e.g., if one is in "section-1", the other must be in "section-3" or "conclusion")
+- Position should always be "end" to avoid interrupting reading flow
+- If article already discusses ${program.program_name}, DON'T add contextText, just place link at end of that section
+- If article DOESN'T discuss ${program.program_name}, add 1-2 sentence contextText ONLY (e.g., "${program.program_name} offers a solution for...")
+- Anchor text should be natural: "try ${program.program_name}", "learn more", "explore ${program.program_name}"
+- Quality over quantity - ONE well-placed link is better than multiple spammy links
 
 Return ONLY the JSON array, no other text.`;
 
@@ -9537,8 +9561,31 @@ Return ONLY the JSON array, no other text.`;
                     throw new Error('AI did not suggest any link placements');
                 }
 
+                // Deduplicate suggestions - ensure only ONE link per section/location
+                const seenLocations = new Set();
+                const deduplicatedSuggestions = [];
+
+                for (const suggestion of suggestions) {
+                    const location = suggestion.location;
+                    if (!seenLocations.has(location)) {
+                        seenLocations.add(location);
+                        deduplicatedSuggestions.push(suggestion);
+                    } else {
+                        console.warn(`Skipping duplicate suggestion for location: ${location}`);
+                    }
+                }
+
+                // Limit to maximum 2 placements
+                const finalSuggestions = deduplicatedSuggestions.slice(0, 2);
+
+                console.log(`Filtered suggestions: ${suggestions.length} → ${finalSuggestions.length} (removed ${suggestions.length - finalSuggestions.length} duplicates/excess)`);
+
+                if (finalSuggestions.length === 0) {
+                    throw new Error('No valid link placements after deduplication');
+                }
+
                 // Show preview modal with suggestions
-                showLinkInsertionPreview(article, articleContent, program, suggestions, articleId, programId);
+                showLinkInsertionPreview(article, articleContent, program, finalSuggestions, articleId, programId);
 
             } catch (error) {
                 console.error('Error inserting affiliate links:', error);
@@ -11467,8 +11514,12 @@ Return ONLY the JSON array, no other text.`;
                 if (wasPublished) {
                     const publishLogResult = await SupabaseService.getPublishLogForArticle(articleId);
                     if (publishLogResult.success && publishLogResult.data) {
-                        wordpressPostId = publishLogResult.data.post_id;
+                        // Ensure post_id is a number
+                        const rawPostId = publishLogResult.data.post_id;
+                        wordpressPostId = rawPostId ? parseInt(rawPostId, 10) : null;
                         wordpressBlogId = publishLogResult.data.blog_id;
+
+                        console.log('📤 Preparing republish with WordPress post ID:', wordpressPostId);
                     }
                 }
 
@@ -24037,7 +24088,10 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     publishType: publishData.publishType,
                     uploadedImagesCount: uploadedImages.length,
                     firstImageId: uploadedImages.length > 0 ? uploadedImages[0].id : null,
-                    allUploadedImageIds: uploadedImages.map(img => img.id)
+                    allUploadedImageIds: uploadedImages.map(img => img.id),
+                    isUpdate: publishData.isUpdate,
+                    wordpressPostId: publishData.wordpressPostId,
+                    wordpressPostIdType: typeof publishData.wordpressPostId
                 });
 
                 // Critical validation before sending
