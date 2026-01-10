@@ -13691,7 +13691,8 @@ Return ONLY the JSON array, no other text or markdown.`;
                         intent: intent,
                         modelTier: 'dataforseo',
                         generatedAt: new Date().toISOString(),
-                        apiCost: totalCost
+                        apiCost: totalCost,
+                        affiliateProgram: affiliateProgram // Track which affiliate program this article uses
                     },
                     modelTier: 'dataforseo'
                 };
@@ -14840,7 +14841,8 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                         metaDescription: `${cleanIntroduction.substring(0, 150)}...`,
                         focusKeyword: keyword,
                         relatedKeywords: outlineStructure.metadata?.relatedKeywords || [],
-                        wordCount: targetWordCount
+                        wordCount: targetWordCount,
+                        affiliateProgram: affiliateProgram // Track which affiliate program this article uses
                     },
                     content: {
                         title: articleTitle,
