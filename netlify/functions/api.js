@@ -3327,7 +3327,7 @@ Generate a professional, actionable outline that a content writer can follow to 
 
     // WordPress Publish Article endpoint
     if (path === '/api/wordpress-publish' && method === 'POST') {
-      const { url, username, password, article, publishType = 'draft' } = body;
+      const { url, username, password, article, publishType = 'draft', isUpdate = false, wordpressPostId = null } = body;
 
       if (!url || !username || !password || !article) {
         return {
@@ -3343,7 +3343,21 @@ Generate a professional, actionable outline that a content writer can follow to 
       try {
         // Clean URL
         const baseUrl = url.replace(/\/$/, '');
-        const wpRestUrl = `${baseUrl}/wp-json/wp/v2/posts`;
+
+        // Determine if this is an update or new post
+        const isUpdating = isUpdate && wordpressPostId;
+        const wpRestUrl = isUpdating
+          ? `${baseUrl}/wp-json/wp/v2/posts/${wordpressPostId}`
+          : `${baseUrl}/wp-json/wp/v2/posts`;
+
+        const httpMethod = isUpdating ? 'PUT' : 'POST';
+
+        console.log(`${isUpdating ? 'Updating' : 'Creating'} WordPress post:`, {
+          isUpdate: isUpdate,
+          wordpressPostId: wordpressPostId,
+          method: httpMethod,
+          url: wpRestUrl
+        });
 
         // Prepare article content
         const postData = {
@@ -3398,9 +3412,9 @@ Generate a professional, actionable outline that a content writer can follow to 
           contentLength: postData.content?.length
         });
 
-        // Publish to WordPress
+        // Publish/Update WordPress post
         const publishResponse = await fetch(wpRestUrl, {
-          method: 'POST',
+          method: httpMethod,
           headers: {
             'Authorization': 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
             'Content-Type': 'application/json'

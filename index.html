@@ -1575,6 +1575,35 @@
                 }
             },
 
+            // Get publish log for a specific article
+            async getPublishLogForArticle(articleId) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('publish_logs')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .eq('article_id', articleId)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
+
+                    if (error) {
+                        if (error.code === 'PGRST116') {
+                            // No rows returned - article never published
+                            return { success: true, data: null };
+                        }
+                        throw error;
+                    }
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error getting publish log:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
             // Save website tracking data
             async saveWebsiteMetrics(metrics) {
                 try {
@@ -9112,6 +9141,21 @@
                     console.log(`✓ Updated ${(contentString.match(new RegExp(oldLink, 'g')) || []).length} affiliate link(s)`);
                 }
 
+                // Check if article was already published to get WordPress post ID
+                const publishLogResult = await SupabaseService.getPublishLogForArticle(articleId);
+                let wordpressPostId = null;
+                let wordpressBlogId = null;
+
+                if (publishLogResult.success && publishLogResult.data) {
+                    wordpressPostId = publishLogResult.data.post_id;
+                    wordpressBlogId = publishLogResult.data.blog_id;
+                    console.log('✓ Article was previously published:', {
+                        postId: wordpressPostId,
+                        blogId: wordpressBlogId,
+                        postUrl: publishLogResult.data.post_url
+                    });
+                }
+
                 // Set as current article for publishing
                 window.currentGeneratedArticle = {
                     content: articleContent,
@@ -9120,14 +9164,18 @@
                     images: savedData.images || [],
                     modelTier: savedData.modelTier || article.model_tier,
                     modelConfig: savedData.modelConfig,
-                    savedArticleId: articleId
+                    savedArticleId: articleId,
+                    wordpressPostId: wordpressPostId, // Pass existing post ID for update
+                    wordpressBlogId: wordpressBlogId, // Pass blog ID
+                    isRepublish: !!wordpressPostId // Flag to indicate this is an update
                 };
 
                 // Close modal and open publish dialog
                 closeModal();
                 publishToWebsite();
 
-                showToast('Article loaded with updated links. Ready to republish!', 'success');
+                const action = wordpressPostId ? 'update the existing post' : 'publish';
+                showToast(`Article loaded with updated links. Ready to ${action}!`, 'success');
 
             } catch (error) {
                 console.error('Error republishing article:', error);
@@ -22660,13 +22708,23 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
             // Suggest a category based on article content
             const suggestedCategory = suggestCategoryFromArticle(article);
 
+            // Check if this is a republish/update operation
+            const isRepublish = article.isRepublish && article.wordpressPostId;
+            const republishBlogId = article.wordpressBlogId;
+
             // Show publishing options
             const publishModal = document.createElement('div');
             publishModal.id = 'publishModal';
             publishModal.innerHTML = `
                 <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 20000; display: flex; align-items: center; justify-content: center;">
                     <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
-                        <h3 style="margin: 0 0 10px 0; color: #1a202c;">Publish Article</h3>
+                        <h3 style="margin: 0 0 10px 0; color: #1a202c;">${isRepublish ? 'Update Article' : 'Publish Article'}</h3>
+                        ${isRepublish ? `
+                            <div style="background: #fef3c7; padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #f59e0b;">
+                                <div style="font-size: 12px; color: #92400e; font-weight: 600; margin-bottom: 4px;">🔄 UPDATING EXISTING POST</div>
+                                <div style="font-size: 11px; color: #78350f;">This will update the article on WordPress with your changes (WordPress Post ID: ${article.wordpressPostId})</div>
+                            </div>
+                        ` : ''}
                         <div style="background: #f8fafc; padding: 12px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #334155;">
                             <div style="font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Article Title:</div>
                             <div style="font-size: 14px; color: #1a202c; font-weight: 500;">${article.content.title}</div>
@@ -22675,11 +22733,12 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         <div style="margin-bottom: 20px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                 <label style="font-weight: 500; color: #374151;">Select Blog/Website:</label>
-                                <a href="#" onclick="closePublishModal(); showBlogManagement(); return false;" style="color: #334155; text-decoration: none; font-size: 13px;">Manage Blogs</a>
+                                ${!isRepublish ? `<a href="#" onclick="closePublishModal(); showBlogManagement(); return false;" style="color: #334155; text-decoration: none; font-size: 13px;">Manage Blogs</a>` : ''}
                             </div>
-                            <select id="publishBlog" onchange="loadWordPressCategories(this.value)" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
-                                ${blogs.map(blog => `<option value="${blog.id}">${blog.name} (${blog.platform})</option>`).join('')}
+                            <select id="publishBlog" onchange="loadWordPressCategories(this.value)" ${isRepublish ? 'disabled' : ''} style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; ${isRepublish ? 'background: #f3f4f6; cursor: not-allowed;' : ''}">
+                                ${blogs.map(blog => `<option value="${blog.id}" ${isRepublish && blog.id === republishBlogId ? 'selected' : ''}>${blog.name} (${blog.platform})</option>`).join('')}
                             </select>
+                            ${isRepublish ? `<div style="font-size: 11px; color: #64748b; margin-top: 4px;">Blog cannot be changed when updating an existing post</div>` : ''}
                         </div>
 
                         <div style="margin-bottom: 20px;">
@@ -22726,7 +22785,7 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                             <button onclick="confirmPublish()"
                                     style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s;"
                                     onmouseover="this.style.background='#5568d3'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#334155'; this.style.transform='translateY(0)'">
-                                Publish Article
+                                ${isRepublish ? '🔄 Update Article' : 'Publish Article'}
                             </button>
                             <button onclick="closePublishModal()"
                                     style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s;"
@@ -23906,7 +23965,9 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         featured_media: featuredMediaId,
                         categories: selectedCategoryId ? [parseInt(selectedCategoryId)] : []
                     },
-                    publishType: publishType
+                    publishType: publishType,
+                    wordpressPostId: article.wordpressPostId || null, // Pass existing post ID for updates
+                    isUpdate: !!article.wordpressPostId // Flag to indicate this is an update
                 };
 
                 console.log('📤 Publishing data:', {
