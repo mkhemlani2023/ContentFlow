@@ -8930,14 +8930,578 @@
             }
         }
 
+        // Helper functions for affiliate link management
+
+        // Test affiliate link
+        function testAffiliateLink() {
+            const link = document.getElementById('affiliateActualLink').value;
+            if (!link) {
+                showToast('Please enter an affiliate link first', 'error');
+                return;
+            }
+            window.open(link, '_blank');
+            showToast('Opening link in new tab...', 'info');
+        }
+
+        // Add banner field
+        function addBannerField() {
+            const bannersList = document.getElementById('bannersList');
+            const currentCount = bannersList.querySelectorAll('.banner-url').length;
+
+            const newBanner = document.createElement('div');
+            newBanner.style.display = 'flex';
+            newBanner.style.gap = '10px';
+            newBanner.style.marginBottom = '10px';
+            newBanner.style.alignItems = 'start';
+            newBanner.innerHTML = `
+                <input type="url"
+                       class="banner-url"
+                       data-index="${currentCount}"
+                       placeholder="https://cdn.example.com/banner-728x90.jpg"
+                       style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                <input type="text"
+                       class="banner-size"
+                       data-index="${currentCount}"
+                       placeholder="728x90"
+                       style="width: 100px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                <button onclick="this.parentElement.remove()" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 6px; cursor: pointer;">
+                    🗑
+                </button>
+            `;
+            bannersList.appendChild(newBanner);
+        }
+
+        // Remove banner field
+        function removeBannerField(index) {
+            const banners = document.querySelectorAll('.banner-url');
+            if (banners.length <= 1) {
+                showToast('At least one banner field is required', 'info');
+                return;
+            }
+            banners[index].parentElement.remove();
+        }
+
+        // Save affiliate link assets
+        async function saveAffiliateLinkAssets() {
+            if (!window.currentAffiliateProgram) {
+                showToast('Error: Program data not found', 'error');
+                return;
+            }
+
+            try {
+                // Get form values
+                const affiliateLink = document.getElementById('affiliateActualLink').value.trim();
+                const affiliateId = document.getElementById('affiliateActualId').value.trim();
+                const promoText = document.getElementById('affiliatePromoText').value.trim();
+                const disclosure = document.getElementById('affiliateDisclosure').value.trim();
+
+                // Get all banners
+                const bannerUrls = document.querySelectorAll('.banner-url');
+                const bannerSizes = document.querySelectorAll('.banner-size');
+                const banners = [];
+                bannerUrls.forEach((urlInput, index) => {
+                    const url = urlInput.value.trim();
+                    const size = bannerSizes[index].value.trim();
+                    if (url) {
+                        banners.push({ url, size });
+                    }
+                });
+
+                // Prepare update data
+                const updateData = {
+                    affiliate_link_template: affiliateLink,
+                    affiliate_id: affiliateId,
+                    promotional_text: promoText,
+                    disclosure_text: disclosure,
+                    banner_images: JSON.stringify(banners)
+                };
+
+                // Update via Supabase
+                const result = await SupabaseService.updateAffiliateProgram(
+                    window.currentAffiliateProgram.id,
+                    updateData
+                );
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to update affiliate program');
+                }
+
+                showToast('✓ Affiliate links and assets saved successfully!', 'success');
+
+                // Reload the affiliate program details to show updated data
+                setTimeout(() => {
+                    viewAffiliateDetails(window.currentAffiliateProgram.id);
+                }, 1000);
+
+            } catch (error) {
+                console.error('Error saving affiliate assets:', error);
+                showToast('Failed to save: ' + error.message, 'error');
+            }
+        }
+
+        // Republish article with updated links
+        async function republishArticleWithUpdatedLinks(articleId, programId) {
+            if (!confirm('This will republish the article to WordPress with updated affiliate links. Continue?')) {
+                return;
+            }
+
+            try {
+                showToast('Loading article and updated affiliate links...', 'info');
+
+                // Load the article
+                const articleResult = await SupabaseService.loadArticle(articleId);
+                if (!articleResult.success) {
+                    throw new Error('Failed to load article');
+                }
+
+                const article = articleResult.data;
+                const savedData = JSON.parse(article.content);
+
+                // Load updated affiliate program data
+                let updatedProgram = null;
+                const blogsResult = await SupabaseService.loadBlogs();
+                if (blogsResult.success) {
+                    for (const blog of blogsResult.data) {
+                        const programsResult = await SupabaseService.loadAffiliatePrograms(blog.id);
+                        if (programsResult.success) {
+                            const found = programsResult.data.find(p => p.id === programId);
+                            if (found) {
+                                updatedProgram = found;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!updatedProgram) {
+                    throw new Error('Affiliate program not found');
+                }
+
+                // Update article content with new affiliate links
+                let articleContent = savedData.content || savedData;
+                const oldLink = window.currentAffiliateProgram?.data?.affiliate_link_template || '';
+                const newLink = updatedProgram.affiliate_link_template || '';
+
+                if (oldLink && newLink && oldLink !== newLink) {
+                    // Replace old affiliate links with new ones in the content
+                    const contentString = JSON.stringify(articleContent);
+                    const updatedContentString = contentString.replace(new RegExp(oldLink, 'g'), newLink);
+                    articleContent = JSON.parse(updatedContentString);
+
+                    console.log(`✓ Updated ${(contentString.match(new RegExp(oldLink, 'g')) || []).length} affiliate link(s)`);
+                }
+
+                // Set as current article for publishing
+                window.currentGeneratedArticle = {
+                    content: articleContent,
+                    metadata: savedData.metadata || {},
+                    tableOfContents: savedData.tableOfContents || [],
+                    images: savedData.images || [],
+                    modelTier: savedData.modelTier || article.model_tier,
+                    modelConfig: savedData.modelConfig,
+                    savedArticleId: articleId
+                };
+
+                // Close modal and open publish dialog
+                closeModal();
+                publishToWebsite();
+
+                showToast('Article loaded with updated links. Ready to republish!', 'success');
+
+            } catch (error) {
+                console.error('Error republishing article:', error);
+                showToast('Failed to prepare article for republishing: ' + error.message, 'error');
+            }
+        }
+
         // View affiliate program details (placeholder for now)
-        function viewAffiliateDetails(programId) {
-            showToast('Detailed view coming soon! For now, use the Generate Content button to create affiliate articles.', 'info');
+        async function viewAffiliateDetails(programId) {
+            try {
+                // Load all blogs to find which blog this program belongs to
+                const blogsResult = await SupabaseService.loadBlogs();
+                if (!blogsResult.success) {
+                    throw new Error('Failed to load blogs');
+                }
+
+                // Load affiliate program details from all blogs
+                let program = null;
+                let programBlog = null;
+
+                for (const blog of blogsResult.data) {
+                    const programsResult = await SupabaseService.loadAffiliatePrograms(blog.id);
+                    if (programsResult.success) {
+                        const found = programsResult.data.find(p => p.id === programId);
+                        if (found) {
+                            program = found;
+                            programBlog = blog;
+                            break;
+                        }
+                    }
+                }
+
+                if (!program) {
+                    throw new Error('Affiliate program not found');
+                }
+
+                // Parse AI summary for display
+                let aiSummary = null;
+                if (program.ai_summary) {
+                    try {
+                        aiSummary = typeof program.ai_summary === 'string'
+                            ? JSON.parse(program.ai_summary)
+                            : program.ai_summary;
+                    } catch (e) {
+                        console.error('Failed to parse AI summary:', e);
+                    }
+                }
+
+                // Load articles that use this affiliate program (from saved articles)
+                const articlesResult = await SupabaseService.loadArticles();
+                const programArticles = articlesResult.success ?
+                    articlesResult.data.filter(article => {
+                        try {
+                            const content = JSON.parse(article.content);
+                            return content.affiliateProgram?.id === programId || content.metadata?.affiliateProgram?.id === programId;
+                        } catch (e) {
+                            return false;
+                        }
+                    }) : [];
+
+                // Show the affiliate program details modal
+                showAffiliateProgramDetailsModal(program, programBlog, aiSummary, programArticles);
+
+            } catch (error) {
+                console.error('Error loading affiliate details:', error);
+                showToast('Failed to load affiliate program details: ' + error.message, 'error');
+            }
+        }
+
+        // Show comprehensive affiliate program details modal
+        function showAffiliateProgramDetailsModal(program, blog, aiSummary, articles) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+
+            const statusBadge = program.signup_status === 'approved' || program.signup_status === 'active'
+                ? `<span style="background: #10b981; color: white; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;">✓ Active</span>`
+                : program.signup_status === 'pending'
+                ? `<span style="background: #f59e0b; color: white; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;">⏱ Pending Approval</span>`
+                : `<span style="background: #64748b; color: white; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;">${program.signup_status || 'Unknown'}</span>`;
+
+            modalContent.innerHTML = `
+                <div style="padding: 30px; max-height: 85vh; overflow-y: auto;">
+                    <!-- Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 25px;">
+                        <div style="flex: 1;">
+                            <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 24px;">${program.program_name}</h2>
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                ${statusBadge}
+                                ${program.network ? `<span style="background: #f1f5f9; color: #64748b; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;">Network: ${program.network}</span>` : ''}
+                                ${blog ? `<span style="background: #eff6ff; color: #1e40af; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;">📝 ${blog.name}</span>` : ''}
+                            </div>
+                        </div>
+                        <button onclick="closeModal()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #64748b; line-height: 1;" onmouseover="this.style.color='#1e293b'" onmouseout="this.style.color='#64748b'">×</button>
+                    </div>
+
+                    <!-- Tab Navigation -->
+                    <div style="border-bottom: 2px solid #e2e8f0; margin-bottom: 25px;">
+                        <div style="display: flex; gap: 5px;">
+                            <button id="detailsTab" onclick="switchAffiliateProgramTab('details')" style="background: none; border: none; border-bottom: 3px solid #10a37f; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #10a37f; font-size: 14px;">
+                                ℹ️ Details
+                            </button>
+                            <button id="linksTab" onclick="switchAffiliateProgramTab('links')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #64748b; font-size: 14px;">
+                                🔗 Links & Assets
+                            </button>
+                            <button id="articlesTab" onclick="switchAffiliateProgramTab('articles')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #64748b; font-size: 14px;">
+                                📄 Articles (${articles.length})
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Details Tab -->
+                    <div id="detailsTabContent">
+                        ${generateDetailsTabContent(program, aiSummary)}
+                    </div>
+
+                    <!-- Links & Assets Tab -->
+                    <div id="linksTabContent" style="display: none;">
+                        ${generateLinksTabContent(program)}
+                    </div>
+
+                    <!-- Articles Tab -->
+                    <div id="articlesTabContent" style="display: none;">
+                        ${generateArticlesTabContent(articles, program)}
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+
+            // Store program data globally for updates
+            window.currentAffiliateProgram = {
+                id: program.id,
+                blogId: blog.id,
+                data: program
+            };
+        }
+
+        // Switch between tabs in affiliate program modal
+        function switchAffiliateProgramTab(tab) {
+            const detailsTab = document.getElementById('detailsTab');
+            const linksTab = document.getElementById('linksTab');
+            const articlesTab = document.getElementById('articlesTab');
+            const detailsContent = document.getElementById('detailsTabContent');
+            const linksContent = document.getElementById('linksTabContent');
+            const articlesContent = document.getElementById('articlesTabContent');
+
+            // Reset all tabs
+            [detailsTab, linksTab, articlesTab].forEach(t => {
+                t.style.borderBottom = '3px solid transparent';
+                t.style.color = '#64748b';
+            });
+            [detailsContent, linksContent, articlesContent].forEach(c => c.style.display = 'none');
+
+            // Activate selected tab
+            if (tab === 'details') {
+                detailsTab.style.borderBottom = '3px solid #10a37f';
+                detailsTab.style.color = '#10a37f';
+                detailsContent.style.display = 'block';
+            } else if (tab === 'links') {
+                linksTab.style.borderBottom = '3px solid #10a37f';
+                linksTab.style.color = '#10a37f';
+                linksContent.style.display = 'block';
+            } else if (tab === 'articles') {
+                articlesTab.style.borderBottom = '3px solid #10a37f';
+                articlesTab.style.color = '#10a37f';
+                articlesContent.style.display = 'block';
+            }
+        }
+
+        // Generate Details Tab Content
+        function generateDetailsTabContent(program, aiSummary) {
+            return `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                    ${program.commission_rate ? `
+                        <div style="background: #f0fdf4; padding: 16px; border-radius: 8px; border: 1px solid #86efac;">
+                            <div style="color: #166534; font-size: 12px; font-weight: 600; margin-bottom: 6px;">💰 Commission Rate</div>
+                            <div style="color: #15803d; font-size: 18px; font-weight: 700;">${program.commission_rate}</div>
+                        </div>
+                    ` : ''}
+                    ${program.cookie_duration ? `
+                        <div style="background: #eff6ff; padding: 16px; border-radius: 8px; border: 1px solid #bfdbfe;">
+                            <div style="color: #1e40af; font-size: 12px; font-weight: 600; margin-bottom: 6px;">🍪 Cookie Duration</div>
+                            <div style="color: #1e3a8a; font-size: 18px; font-weight: 700;">${program.cookie_duration}</div>
+                        </div>
+                    ` : ''}
+                    ${program.minimum_payout ? `
+                        <div style="background: #fefce8; padding: 16px; border-radius: 8px; border: 1px solid #fde047;">
+                            <div style="color: #854d0e; font-size: 12px; font-weight: 600; margin-bottom: 6px;">💵 Minimum Payout</div>
+                            <div style="color: #713f12; font-size: 18px; font-weight: 700;">$${program.minimum_payout}</div>
+                        </div>
+                    ` : ''}
+                </div>
+
+                ${aiSummary && aiSummary.overview ? `
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                        <h4 style="color: #1e293b; margin: 0 0 10px 0; font-size: 16px;">📋 Program Overview</h4>
+                        <p style="color: #475569; font-size: 14px; line-height: 1.6; margin: 0;">${aiSummary.overview}</p>
+                    </div>
+                ` : ''}
+
+                ${aiSummary && aiSummary.products && aiSummary.products.length > 0 ? `
+                    <div style="background: white; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                        <h4 style="color: #1e293b; margin: 0 0 15px 0; font-size: 16px;">🛍️ Products/Services</h4>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            ${aiSummary.products.map(product => `
+                                <div style="background: #f8fafc; padding: 12px; border-radius: 6px;">
+                                    <div style="color: #1e293b; font-size: 14px; font-weight: 600;">${product.name || product}</div>
+                                    ${product.price ? `<div style="color: #64748b; font-size: 12px; margin-top: 4px;">Price: ${product.price}</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${program.target_audience ? `
+                    <div style="background: #fef3c7; padding: 20px; border-radius: 10px; border: 1px solid #fde047; margin-bottom: 20px;">
+                        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 16px;">🎯 Target Audience</h4>
+                        <p style="color: #78350f; font-size: 14px; line-height: 1.6; margin: 0;">${program.target_audience}</p>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // Generate Links & Assets Tab Content
+        function generateLinksTabContent(program) {
+            return `
+                <div style="background: #eff6ff; padding: 20px; border-radius: 10px; border: 1px solid #bfdbfe; margin-bottom: 25px;">
+                    <h4 style="color: #1e40af; margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">💡 How This Works</h4>
+                    <p style="color: #1e3a8a; font-size: 13px; line-height: 1.5; margin: 0;">
+                        Add your actual affiliate links and promotional assets here. When you republish articles using this program,
+                        the system will automatically update them with your real links.
+                    </p>
+                </div>
+
+                <!-- Affiliate Link -->
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #1e293b; font-size: 15px;">🔗 Your Affiliate Link</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                        <input type="url" id="affiliateActualLink"
+                               value="${program.affiliate_link_template || ''}"
+                               placeholder="https://yourprogram.com/ref/YOURCODE?utm_source=blog"
+                               style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                        <button onclick="testAffiliateLink()" style="background: #64748b; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                            Test Link
+                        </button>
+                    </div>
+                    <div style="font-size: 12px; color: #64748b;">Your unique affiliate tracking URL with UTM parameters</div>
+                </div>
+
+                <!-- Affiliate ID -->
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #1e293b; font-size: 15px;">🆔 Affiliate ID / Username</label>
+                    <input type="text" id="affiliateActualId"
+                           value="${program.affiliate_id || ''}"
+                           placeholder="your-affiliate-id-123"
+                           style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; margin-bottom: 8px;">
+                    <div style="font-size: 12px; color: #64748b;">Your affiliate ID or username from the program</div>
+                </div>
+
+                <!-- Banner Images -->
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #1e293b; font-size: 15px;">🎨 Banner Images (Optional)</label>
+                    <div id="bannersList" style="margin-bottom: 15px;">
+                        ${generateBannersList(program)}
+                    </div>
+                    <button onclick="addBannerField()" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                        + Add Banner
+                    </button>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 8px;">Add banner image URLs provided by the affiliate program</div>
+                </div>
+
+                <!-- Promotional Text -->
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #1e293b; font-size: 15px;">📝 Promotional Text / CTA (Optional)</label>
+                    <textarea id="affiliatePromoText" rows="4"
+                              placeholder="Try [Program Name] today and get 20% off your first order! Limited time offer."
+                              style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; resize: vertical;">${program.promotional_text || ''}</textarea>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 8px;">Special offers, discount codes, or call-to-action text</div>
+                </div>
+
+                <!-- Disclosure Text -->
+                <div style="margin-bottom: 30px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #1e293b; font-size: 15px;">⚖️ Affiliate Disclosure</label>
+                    <textarea id="affiliateDisclosure" rows="3"
+                              style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical;">${program.disclosure_text || 'This article contains affiliate links. If you make a purchase through these links, we may earn a commission at no additional cost to you.'}</textarea>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 8px;">FTC-compliant affiliate disclosure (required)</div>
+                </div>
+
+                <!-- Save Button -->
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button onclick="saveAffiliateLinkAssets()" style="background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 14px 32px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
+                        💾 Save Links & Assets
+                    </button>
+                </div>
+            `;
+        }
+
+        // Generate banners list
+        function generateBannersList(program) {
+            let banners = [];
+            try {
+                if (program.banner_images) {
+                    banners = typeof program.banner_images === 'string'
+                        ? JSON.parse(program.banner_images)
+                        : program.banner_images;
+                }
+            } catch (e) {
+                console.error('Error parsing banners:', e);
+            }
+
+            if (!Array.isArray(banners)) banners = [];
+            if (banners.length === 0) banners.push({ url: '', size: '' });
+
+            return banners.map((banner, index) => `
+                <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: start;">
+                    <input type="url"
+                           class="banner-url"
+                           data-index="${index}"
+                           value="${banner.url || ''}"
+                           placeholder="https://cdn.example.com/banner-728x90.jpg"
+                           style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                    <input type="text"
+                           class="banner-size"
+                           data-index="${index}"
+                           value="${banner.size || ''}"
+                           placeholder="728x90"
+                           style="width: 100px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                    <button onclick="removeBannerField(${index})" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 6px; cursor: pointer;">
+                        🗑
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Generate Articles Tab Content
+        function generateArticlesTabContent(articles, program) {
+            if (articles.length === 0) {
+                return `
+                    <div style="text-align: center; padding: 60px 20px; background: #f8fafc; border-radius: 12px; border: 2px dashed #e2e8f0;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">📝</div>
+                        <h3 style="color: #1e293b; margin-bottom: 10px;">No Articles Yet</h3>
+                        <p style="color: #64748b; margin-bottom: 20px;">Generate articles using this affiliate program to see them here.</p>
+                        <button onclick="closeModal(); showKeywordResearch();" style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Start Keyword Research
+                        </button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div style="background: #fef3c7; padding: 15px; border-radius: 8px; border: 1px solid #fde047; margin-bottom: 20px;">
+                    <div style="color: #92400e; font-size: 13px; font-weight: 600; margin-bottom: 6px;">💡 Tip</div>
+                    <div style="color: #78350f; font-size: 12px;">
+                        After updating your affiliate links above, click "Republish" on any article to update it with your new links.
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    ${articles.map(article => {
+                        const content = JSON.parse(article.content);
+                        const title = content.content?.title || content.title || 'Untitled Article';
+                        const publishedDate = article.created_at ? new Date(article.created_at).toLocaleDateString() : 'Unknown';
+
+                        return `
+                            <div style="background: white; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; transition: all 0.2s;"
+                                 onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'"
+                                 onmouseout="this.style.boxShadow='none'">
+                                <div style="display: flex; justify-content: space-between; align-items: start; gap: 15px;">
+                                    <div style="flex: 1;">
+                                        <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 16px; font-weight: 600;">${title}</h4>
+                                        <div style="display: flex; gap: 15px; font-size: 12px; color: #64748b;">
+                                            <span>📅 ${publishedDate}</span>
+                                            ${article.word_count ? `<span>📝 ${article.word_count} words</span>` : ''}
+                                            ${article.keyword ? `<span>🎯 ${article.keyword}</span>` : ''}
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button onclick="viewSavedArticle('${article.id}')" style="background: #f1f5f9; color: #334155; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                            👁️ View
+                                        </button>
+                                        <button onclick="republishArticleWithUpdatedLinks('${article.id}', '${program.id}')" style="background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 6px rgba(16, 163, 127, 0.3);">
+                                            🔄 Republish
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
         }
 
         // Generate affiliate content
         async function generateAffiliateContent(programId, blogId) {
-            try {
+            try{
                 // Load affiliate program details
                 const programsResult = await SupabaseService.loadAffiliatePrograms(blogId);
                 if (!programsResult.success) {
