@@ -9424,22 +9424,34 @@ Return ONLY the JSON array, no other text.`;
                 });
 
                 if (!response.ok) {
-                    throw new Error('AI analysis failed');
+                    const errorText = await response.text();
+                    console.error('AI API error:', response.status, errorText);
+                    throw new Error(`AI analysis failed: ${response.status} ${response.statusText}`);
                 }
 
                 const aiResult = await response.json();
+                console.log('AI Result:', aiResult);
+
+                if (!aiResult || !aiResult.text) {
+                    console.error('Invalid AI response structure:', aiResult);
+                    throw new Error('AI returned an empty or invalid response');
+                }
+
                 let suggestions = [];
 
                 try {
                     const jsonMatch = aiResult.text.match(/\[[\s\S]*\]/);
                     if (jsonMatch) {
                         suggestions = JSON.parse(jsonMatch[0]);
+                        console.log('Parsed suggestions from match:', suggestions);
                     } else {
                         suggestions = JSON.parse(aiResult.text);
+                        console.log('Parsed suggestions directly:', suggestions);
                     }
                 } catch (e) {
                     console.error('Failed to parse AI response:', e);
-                    throw new Error('AI response was invalid');
+                    console.error('AI text was:', aiResult.text);
+                    throw new Error('AI response was invalid. Please try again.');
                 }
 
                 if (!Array.isArray(suggestions) || suggestions.length === 0) {
