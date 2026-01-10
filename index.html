@@ -1804,6 +1804,27 @@
                 }
             },
 
+            // Load single affiliate program by ID
+            async loadAffiliateProgramById(programId) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_programs')
+                        .select('*')
+                        .eq('id', programId)
+                        .eq('user_id', currentUser.id)
+                        .single();
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading affiliate program:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
             // Update affiliate program
             async updateAffiliateProgram(id, updates) {
                 if (!currentUser) {
@@ -9479,6 +9500,16 @@ Return ONLY the JSON array, no other text.`;
 
         // Show preview of affiliate link insertions
         function showLinkInsertionPreview(article, articleContent, program, suggestions, articleId, programId) {
+            // Store data globally to avoid JSON escaping issues in onclick
+            window.affiliateLinkInsertionData = {
+                articleId: articleId,
+                programId: programId,
+                affiliateLink: program.affiliate_link_template,
+                suggestions: suggestions,
+                articleContent: articleContent,
+                dbArticleId: article.id
+            };
+
             const modal = document.getElementById('modal');
             const modalContent = document.getElementById('modal-content');
 
@@ -9559,7 +9590,7 @@ Return ONLY the JSON array, no other text.`;
                         <button onclick="closeModal()" style="background: #f1f5f9; color: #334155; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600;">
                             Cancel
                         </button>
-                        <button onclick="confirmInsertAffiliateLinks('${articleId}', '${programId}', '${program.affiliate_link_template.replace(/'/g, "\\'")}', '${JSON.stringify(suggestions).replace(/'/g, "\\'")}', '${JSON.stringify(articleContent).replace(/'/g, "\\'")}', '${article.id}')" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; padding: 12px 32px; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
+                        <button onclick="confirmInsertAffiliateLinks()" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; padding: 12px 32px; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
                             🔗 Insert Selected Links
                         </button>
                     </div>
@@ -9579,8 +9610,17 @@ Return ONLY the JSON array, no other text.`;
         }
 
         // Confirm and insert affiliate links
-        async function confirmInsertAffiliateLinks(articleId, programId, affiliateLink, suggestionsJson, articleContentJson, dbArticleId) {
+        async function confirmInsertAffiliateLinks() {
             try {
+                // Retrieve data from global storage
+                const data = window.affiliateLinkInsertionData;
+                if (!data) {
+                    showToast('Failed to retrieve insertion data. Please try again.', 'error');
+                    return;
+                }
+
+                const { articleId, programId, affiliateLink, suggestions, articleContent, dbArticleId } = data;
+
                 // Get selected placements
                 const checkboxes = document.querySelectorAll('.placement-checkbox:checked');
                 if (checkboxes.length === 0) {
@@ -9589,8 +9629,6 @@ Return ONLY the JSON array, no other text.`;
                 }
 
                 const selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
-                const suggestions = JSON.parse(suggestionsJson);
-                const articleContent = JSON.parse(articleContentJson);
                 const selectedSuggestions = selectedIndices.map(i => suggestions[i]);
 
                 showToast(`Inserting ${selectedSuggestions.length} affiliate link(s)...`, 'info');
@@ -9659,6 +9697,22 @@ Return ONLY the JSON array, no other text.`;
 
                 if (!updateResult.success) {
                     throw new Error('Failed to save article');
+                }
+
+                // Update affiliate program status to "active" if it was pending
+                try {
+                    const programResult = await SupabaseService.loadAffiliateProgramById(programId);
+                    if (programResult.success && programResult.data) {
+                        const program = programResult.data;
+                        if (program.signup_status === 'pending' || program.signup_status === 'applied') {
+                            await SupabaseService.updateAffiliateProgram(programId, {
+                                signup_status: 'active'
+                            });
+                        }
+                    }
+                } catch (statusError) {
+                    console.error('Failed to update program status:', statusError);
+                    // Don't fail the whole operation if status update fails
                 }
 
                 showToast(`✓ Successfully inserted ${selectedSuggestions.length} affiliate link(s)!`, 'success');
@@ -9743,7 +9797,7 @@ Return ONLY the JSON array, no other text.`;
                 }
 
                 // Update loading message
-                updateLoadingMessage('Loading related articles...');
+                updateLoadingMessage('Gathering program data...');
 
                 // Load articles that use this affiliate program (from saved articles)
                 const articlesResult = await SupabaseService.loadArticles();
