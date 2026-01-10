@@ -9763,13 +9763,10 @@ Return ONLY the JSON array, no other text.`;
                     // Don't fail the whole operation if status update fails
                 }
 
-                showToast(`✓ Successfully inserted ${selectedSuggestions.length} affiliate link(s)!`, 'success');
+                showToast(`✓ Successfully inserted ${selectedSuggestions.length} affiliate link(s)! Click "View" to preview the article.`, 'success');
                 closeModal();
 
-                // Reload the affiliate program details
-                setTimeout(() => {
-                    viewAffiliateDetails(programId);
-                }, 1000);
+                // Don't reload the affiliate program view - user can click View to see the article
 
             } catch (error) {
                 console.error('Error confirming link insertion:', error);
@@ -11450,6 +11447,58 @@ Return ONLY the JSON array, no other text.`;
             document.getElementById('savedArticlesLibrary').style.display = 'none';
         }
 
+        // Prepare article for publishing or republishing
+        async function prepareArticleForPublishing(articleId, wasPublished) {
+            try {
+                // Load the article
+                const result = await SupabaseService.loadArticle(articleId);
+                if (!result.success || !result.data) {
+                    throw new Error('Failed to load article');
+                }
+
+                const article = result.data;
+                const savedData = JSON.parse(article.content);
+                const content = savedData.content || savedData;
+
+                // If article was published, get WordPress post ID
+                let wordpressPostId = null;
+                let wordpressBlogId = null;
+
+                if (wasPublished) {
+                    const publishLogResult = await SupabaseService.getPublishLogForArticle(articleId);
+                    if (publishLogResult.success && publishLogResult.data) {
+                        wordpressPostId = publishLogResult.data.post_id;
+                        wordpressBlogId = publishLogResult.data.blog_id;
+                    }
+                }
+
+                // Set up the article for publishing
+                window.currentGeneratedArticle = {
+                    content: content,
+                    metadata: savedData.metadata || {},
+                    tableOfContents: savedData.tableOfContents || [],
+                    images: savedData.images || [],
+                    modelTier: savedData.modelTier || article.model_tier,
+                    modelConfig: savedData.modelConfig,
+                    savedArticleId: articleId,
+                    wordpressPostId: wordpressPostId,
+                    wordpressBlogId: wordpressBlogId,
+                    isRepublish: !!wordpressPostId
+                };
+
+                // Close the article view modal
+                const modal = document.querySelector('[style*="position: fixed"][style*="z-index: 10001"]');
+                if (modal) modal.remove();
+
+                // Open publish dialog
+                publishToWebsite();
+
+            } catch (error) {
+                console.error('Error preparing article for publishing:', error);
+                showToast('Failed to prepare article: ' + error.message, 'error');
+            }
+        }
+
         async function viewSavedArticle(articleId) {
             try {
                 const result = await SupabaseService.loadArticle(articleId);
@@ -11462,6 +11511,14 @@ Return ONLY the JSON array, no other text.`;
                     const content = savedData.content || savedData;
                     const metadata = savedData.metadata || (article.metadata ? JSON.parse(article.metadata) : {});
                     const tableOfContents = savedData.tableOfContents || [];
+
+                    // Check if article was already published
+                    const publishLogResult = await SupabaseService.getPublishLogForArticle(articleId);
+                    const wasPublished = publishLogResult.success && publishLogResult.data;
+                    const publishButtonText = wasPublished ? '🔄 Republish' : '🚀 Publish';
+                    const publishButtonTitle = wasPublished
+                        ? `Update existing WordPress post (ID: ${publishLogResult.data.post_id})`
+                        : 'Publish to WordPress';
 
                     // Build article body from sections
                     let articleBody = '';
@@ -11586,10 +11643,11 @@ Return ONLY the JSON array, no other text.`;
                                                 onmouseover="this.style.background='#334155'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#475569'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'">
                                             ✏️ Edit
                                         </button>
-                                        <button onclick="publishToWebsite()"
+                                        <button onclick="prepareArticleForPublishing('${articleId}', ${wasPublished})"
                                                 style="background: #1E293B; color: white; border: none; padding: 14px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-family: 'Inter', sans-serif;"
-                                                onmouseover="this.style.background='#0F172A'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#1E293B'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'">
-                                            🚀 Publish
+                                                onmouseover="this.style.background='#0F172A'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.15)'" onmouseout="this.style.background='#1E293B'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'"
+                                                title="${publishButtonTitle}">
+                                            ${publishButtonText}
                                         </button>
                                     </div>
 
