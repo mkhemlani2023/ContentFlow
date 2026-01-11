@@ -9178,8 +9178,7 @@
 
         // Banner Rotation Algorithm
         /**
-         * Selects the optimal banner(s) for an article using round-robin rotation
-         * with context-aware placement.
+         * Selects random banner(s) for an article with context-aware placement.
          *
          * @param {Object} affiliateProgram - The affiliate program with banners
          * @param {string} articleTopic - The article topic for context-aware selection
@@ -9187,7 +9186,7 @@
          * @returns {Object} - { banners: Array, nextRotationIndex: number }
          */
         function selectBannersForArticle(affiliateProgram, articleTopic = '', placements = ['any']) {
-            console.log('🎯 Banner Rotation - Starting selection');
+            console.log('🎯 Banner Selection - Starting random selection');
             console.log('📊 Input:', {
                 programId: affiliateProgram.id,
                 programName: affiliateProgram.program_name,
@@ -9215,19 +9214,10 @@
                 return { banners: [], nextRotationIndex: 0 };
             }
 
-            // Get current rotation index
-            let rotationIndex = affiliateProgram.banner_rotation_index || 0;
-            console.log(`🔄 Current rotation index: ${rotationIndex}`);
-
-            // Ensure rotation index is valid
-            if (rotationIndex >= activeBanners.length) {
-                rotationIndex = 0;
-                console.log(`♻️ Reset rotation index to 0 (was out of bounds)`);
-            }
-
             const selectedBanners = [];
+            const usedIndices = new Set(); // Track which banners we've already selected
 
-            // For each placement needed, select a banner
+            // For each placement needed, randomly select a banner
             for (let i = 0; i < placements.length && activeBanners.length > 0; i++) {
                 const requestedPlacement = placements[i];
 
@@ -9244,29 +9234,43 @@
                     console.log(`⚡ No banners for "${requestedPlacement}", using all active banners`);
                 }
 
-                // Select banner using round-robin
-                const selectedBanner = eligibleBanners[rotationIndex % eligibleBanners.length];
+                // Filter out already-used banners if we have enough options
+                const unusedEligible = eligibleBanners.filter((banner, idx) => {
+                    const bannerIndex = activeBanners.indexOf(banner);
+                    return !usedIndices.has(bannerIndex);
+                });
 
-                console.log(`✓ Selected banner ${rotationIndex % eligibleBanners.length + 1} for "${requestedPlacement}":`, {
+                // Use unused banners if available, otherwise allow repeats
+                const poolToUse = unusedEligible.length > 0 ? unusedEligible : eligibleBanners;
+
+                // Random selection from eligible pool
+                const randomIndex = Math.floor(Math.random() * poolToUse.length);
+                const selectedBanner = poolToUse[randomIndex];
+
+                // Track that we used this banner
+                const actualIndex = activeBanners.indexOf(selectedBanner);
+                usedIndices.add(actualIndex);
+
+                console.log(`✓ Randomly selected banner for "${requestedPlacement}":`, {
                     url: selectedBanner.url,
                     size: selectedBanner.size,
-                    placement: selectedBanner.placement_preference
+                    placement: selectedBanner.placement_preference,
+                    randomIndex: randomIndex,
+                    poolSize: poolToUse.length
                 });
 
                 selectedBanners.push({
                     ...selectedBanner,
                     assigned_placement: requestedPlacement // Track where we're placing it
                 });
-
-                // Advance rotation index
-                rotationIndex = (rotationIndex + 1) % activeBanners.length;
             }
 
-            console.log(`🎉 Selected ${selectedBanners.length} banners, next rotation index: ${rotationIndex}`);
+            console.log(`🎉 Randomly selected ${selectedBanners.length} banner(s) from ${activeBanners.length} active banners`);
 
+            // Still return a rotation index for tracking purposes (even though we're using random selection)
             return {
                 banners: selectedBanners,
-                nextRotationIndex: rotationIndex
+                nextRotationIndex: 0 // Not used in random mode, but kept for compatibility
             };
         }
 
