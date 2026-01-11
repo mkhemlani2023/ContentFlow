@@ -461,62 +461,77 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
 
   console.log('DataforSEO request body:', JSON.stringify(requestBody, null, 2));
 
-  const response = await fetch('https://api.dataforseo.com/v3/content_generation/generate_text/live', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${authString}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(requestBody)
-  });
+  // Add timeout to prevent Netlify 26-second limit from being exceeded
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
 
-  console.log('DataforSEO response status:', response.status, response.statusText);
+  try {
+    const response = await fetch('https://api.dataforseo.com/v3/content_generation/generate_text/live', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${authString}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('DataforSEO error response:', errorText);
-    throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-  }
+    clearTimeout(timeoutId);
+    console.log('DataforSEO response status:', response.status, response.statusText);
 
-  const data = await response.json();
-  console.log('DataforSEO response:', JSON.stringify(data, null, 2).substring(0, 500));
-
-  if (data.tasks && data.tasks[0]) {
-    // Check for API errors
-    if (data.tasks[0].status_code !== 20000) {
-      throw new Error(`DataForSEO API error: ${data.tasks[0].status_message || 'Unknown error'} (code: ${data.tasks[0].status_code})`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('DataforSEO error response:', errorText);
+      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
     }
 
-    if (data.tasks[0].result && data.tasks[0].result.length > 0) {
-      const result = data.tasks[0].result[0];
-      // Log the full result to see all available fields
-      console.log('DataforSEO result fields:', Object.keys(result));
-      console.log('DataforSEO result:', JSON.stringify(result, null, 2).substring(0, 1000));
+    const data = await response.json();
+    console.log('DataforSEO response:', JSON.stringify(data, null, 2).substring(0, 500));
 
-      // DataforSEO uses 'generated_text' not 'text'
-      const content = result.generated_text || result.text || '';
-      console.log(`Generated content preview: "${content.substring(0, 200)}..."`);
-      console.log(`Generated content length: ${content.length} chars, ${content.split(/\s+/).length} words`);
-
-      // Check for empty or very short content
-      if (!content || content.trim().length < 10) {
-        console.error('Warning: Generated content is too short or empty');
-        console.error('Full result:', JSON.stringify(result, null, 2));
-        throw new Error(`DataforSEO returned insufficient content (${content.length} chars). Check API response.`);
+    if (data.tasks && data.tasks[0]) {
+      // Check for API errors
+      if (data.tasks[0].status_code !== 20000) {
+        throw new Error(`DataForSEO API error: ${data.tasks[0].status_message || 'Unknown error'} (code: ${data.tasks[0].status_code})`);
       }
 
-      return {
-        content: content,
-        cost: data.cost || 0,
-        supplementToken: result.supplement_token,
-        inputTokens: result.input_token_count,
-        outputTokens: result.output_token_count
-      };
-    }
-  }
+      if (data.tasks[0].result && data.tasks[0].result.length > 0) {
+        const result = data.tasks[0].result[0];
+        // Log the full result to see all available fields
+        console.log('DataforSEO result fields:', Object.keys(result));
+        console.log('DataforSEO result:', JSON.stringify(result, null, 2).substring(0, 1000));
 
-  console.error('DataForSEO response:', JSON.stringify(data, null, 2));
-  throw new Error('No content generated from DataForSEO - check API response');
+        // DataforSEO uses 'generated_text' not 'text'
+        const content = result.generated_text || result.text || '';
+        console.log(`Generated content preview: "${content.substring(0, 200)}..."`);
+        console.log(`Generated content length: ${content.length} chars, ${content.split(/\s+/).length} words`);
+
+        // Check for empty or very short content
+        if (!content || content.trim().length < 10) {
+          console.error('Warning: Generated content is too short or empty');
+          console.error('Full result:', JSON.stringify(result, null, 2));
+          throw new Error(`DataforSEO returned insufficient content (${content.length} chars). Check API response.`);
+        }
+
+        return {
+          content: content,
+          cost: data.cost || 0,
+          supplementToken: result.supplement_token,
+          inputTokens: result.input_token_count,
+          outputTokens: result.output_token_count
+        };
+      }
+    }
+
+    console.error('DataForSEO response:', JSON.stringify(data, null, 2));
+    throw new Error('No content generated from DataForSEO - check API response');
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      console.error('DataforSEO request timed out after 20 seconds');
+      throw new Error('DataforSEO API request timed out. Try using a smaller word count or different generation method.');
+    }
+    throw error;
+  }
 };
 
 // Hybrid processing: Combine Serper Autocomplete + DataForSEO metrics
