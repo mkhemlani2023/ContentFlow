@@ -4639,6 +4639,9 @@
                 if (program) {
                     window.keywordAffiliatePrograms[cleanId] = program;
                     console.log('✅ Affiliate program selected:', cleanId, '→', program.program_name);
+                    console.log('🔍 DEBUG - Stored program object:', program);
+                    console.log('🔍 DEBUG - program.affiliate_link_template:', program.affiliate_link_template);
+                    console.log('🔍 DEBUG - program.program_url:', program.program_url);
 
                     // Update status indicator to show success
                     if (statusElement) {
@@ -6617,7 +6620,14 @@
 
             // Get affiliate program if one was selected for this keyword
             const cleanKeyword = keyword.replace(/[^a-zA-Z0-9]/g, '');
+            console.log('🔍 DEBUG - Looking up affiliate program for cleanKeyword:', cleanKeyword);
+            console.log('🔍 DEBUG - window.keywordAffiliatePrograms:', window.keywordAffiliatePrograms);
             const affiliateProgram = window.keywordAffiliatePrograms?.[cleanKeyword] || null;
+            console.log('🔍 DEBUG - Found affiliateProgram:', affiliateProgram);
+            if (affiliateProgram) {
+                console.log('🔍 DEBUG - affiliateProgram.affiliate_link:', affiliateProgram.affiliate_link);
+                console.log('🔍 DEBUG - affiliateProgram.program_url:', affiliateProgram.program_url);
+            }
 
             console.log('=== CONFIRM ARTICLE GENERATION ===');
             console.log('Article Title:', title);
@@ -13985,6 +13995,8 @@ Return ONLY the JSON array, no other text.`;
             const title = articleTitle || keyword;
 
             console.log('🔗 DataforSEO Generation - Affiliate Program:', affiliateProgram ? affiliateProgram.program_name : 'None');
+            console.log('🔍 DEBUG - DataforSEO affiliateProgram object:', affiliateProgram);
+            console.log('🔍 DEBUG - DataforSEO affiliate_link:', affiliateProgram ? affiliateProgram.affiliate_link : 'NULL');
 
             // Calculate section distribution based on article length
             let numSections, introWords, conclusionWords;
@@ -15932,6 +15944,8 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
             console.log('Image Tier:', imageTier);
             console.log('Total Credits:', totalCredits);
             console.log('Affiliate Program:', affiliateProgram ? affiliateProgram.program_name : 'None');
+            console.log('🔍 DEBUG - generateArticleWithImages affiliateProgram:', affiliateProgram);
+            console.log('🔍 DEBUG - affiliate_link value:', affiliateProgram ? affiliateProgram.affiliate_link : 'NULL');
 
             // Check credit requirement using consistent system
             if (!checkCreditRequirement(`${modelTier} Article + Images`, totalCredits)) {
