@@ -438,19 +438,26 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
 
   // Add optional parameters if provided
   if (options.subTopics && options.subTopics.length > 0) {
-    requestBody[0].sub_topics = options.subTopics.slice(0, 10);
+    requestBody[0].sub_topics = options.subTopics.slice(0, 5); // Reduced from 10 to 5 for faster generation
   }
   if (options.metaKeywords && options.metaKeywords.length > 0) {
-    requestBody[0].meta_keywords = options.metaKeywords.slice(0, 10);
+    requestBody[0].meta_keywords = options.metaKeywords.slice(0, 5); // Reduced from 10 to 5
   }
   if (options.description || options.previousContext) {
     // Combine description with context about previously written content
     let fullDescription = options.description || '';
 
+    // OPTIMIZATION: Limit previousContext to prevent timeouts
     if (options.previousContext) {
-      // Add context instruction to prevent repetition
-      const contextNote = `\n\nIMPORTANT: This section continues an article. Previous content: ${options.previousContext}\n\nDo NOT repeat information already covered. Build upon and extend what was previously discussed with new insights and details.`;
+      // Only send a short summary of previous context, not the full text
+      const contextSummary = options.previousContext.substring(0, 200); // Limit to 200 chars
+      const contextNote = `\n\nContinues previous section. Brief context: ${contextSummary}... Build upon this with new information.`;
       fullDescription = fullDescription + contextNote;
+    }
+
+    // Limit total description length to prevent timeouts
+    if (fullDescription.length > 500) {
+      fullDescription = fullDescription.substring(0, 500) + '...';
     }
 
     requestBody[0].description = fullDescription;
@@ -462,8 +469,9 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
   console.log('DataforSEO request body:', JSON.stringify(requestBody, null, 2));
 
   // Add timeout to prevent Netlify 26-second limit from being exceeded
+  // Using 22 seconds to leave margin for function overhead
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 22000); // 22 second timeout
 
   try {
     const response = await fetch('https://api.dataforseo.com/v3/content_generation/generate_text/live', {
@@ -527,8 +535,10 @@ const generateSingleDataForSEOContent = async (topic, wordCount, options) => {
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      console.error('DataforSEO request timed out after 20 seconds');
-      throw new Error('DataforSEO API request timed out. Try using a smaller word count or different generation method.');
+      console.error('DataforSEO request timed out after 22 seconds');
+      console.error('Word count requested:', wordCount);
+      console.error('Topic length:', topic.length);
+      throw new Error(`DataforSEO API timeout (22s). Requested ${wordCount} words. The API is slow - this has been optimized but may still occur on complex requests.`);
     }
     throw error;
   }
@@ -4591,12 +4601,12 @@ Generate a professional, actionable outline that a content writer can follow to 
 
         const result = await generateSingleDataForSEOContent(
           topic,
-          Math.min(wordCount, 1000), // Cap at 1000 words per request
+          Math.min(wordCount, 500), // Cap at 500 words per request for faster generation
           {
-            creativityIndex: 0.8,
+            creativityIndex: 0.7, // Slightly reduced for faster generation
             includeConclusion: sectionType === 'conclusion',
             supplementToken: supplementToken,
-            subTopics: subTopics.slice(0, 10), // DataforSEO limit: 10
+            subTopics: subTopics.slice(0, 5), // Reduced from 10 to 5 for faster generation
             description: description,
             previousContext: previousContext // Pass context to generation function
           }
