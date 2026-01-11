@@ -9179,35 +9179,151 @@
         // Banner Rotation Algorithm
         /**
          * Selects random banner(s) for an article with context-aware placement.
+         * Selection based on: Blog → All affiliate programs for that blog → Random banners
          *
-         * @param {Object} affiliateProgram - The affiliate program with banners
+         * @param {Object|null} affiliateProgram - Specific affiliate program (legacy mode, optional)
          * @param {string} articleTopic - The article topic for context-aware selection
          * @param {Array} placements - Array of placement positions needed (e.g., ['after-intro', 'mid-article'])
-         * @returns {Object} - { banners: Array, nextRotationIndex: number }
+         * @param {string|null} blogId - Blog ID to filter affiliate programs (preferred method)
+         * @returns {Promise<Object>} - { banners: Array, nextRotationIndex: number }
          */
-        function selectBannersForArticle(affiliateProgram, articleTopic = '', placements = ['any']) {
+        async function selectBannersForArticle(affiliateProgram, articleTopic = '', placements = ['any'], blogId = null) {
             console.log('🎯 Banner Selection - Starting random selection');
             console.log('📊 Input:', {
-                programId: affiliateProgram.id,
-                programName: affiliateProgram.program_name,
+                blogId: blogId || 'Not specified',
+                programId: affiliateProgram ? affiliateProgram.id : 'All programs for blog',
+                programName: affiliateProgram ? affiliateProgram.program_name : 'Cross-Program Selection',
                 articleTopic,
                 placements
             });
 
-            // Parse banners from JSON if needed
-            let allBanners = [];
-            try {
-                allBanners = typeof affiliateProgram.banner_images === 'string'
-                    ? JSON.parse(affiliateProgram.banner_images)
-                    : (affiliateProgram.banner_images || []);
-            } catch (e) {
-                console.error('❌ Failed to parse banner_images:', e);
-                return { banners: [], nextRotationIndex: 0 };
-            }
+            let activeBanners = [];
+            let allPrograms = [];
 
-            // Filter to active banners only
-            const activeBanners = allBanners.filter(banner => banner.is_active !== false);
-            console.log(`✅ Active banners: ${activeBanners.length} of ${allBanners.length} total`);
+            // PREFERRED MODE: Blog-based banner selection
+            // Randomly select from ALL affiliate programs linked to the specified blog
+            if (blogId) {
+                console.log(`🌐 Blog-based selection: Fetching all affiliate programs for blog ID: ${blogId}`);
+
+                try {
+                    const result = await SupabaseService.loadBlogs();
+                    if (result.success && result.data) {
+                        // Find the specific blog
+                        const targetBlog = result.data.find(blog => blog.id === blogId);
+
+                        if (targetBlog && targetBlog.affiliate_programs && Array.isArray(targetBlog.affiliate_programs)) {
+                            allPrograms = targetBlog.affiliate_programs;
+                            console.log(`📚 Found ${allPrograms.length} affiliate programs for blog "${targetBlog.blog_name || 'Unnamed'}"`);
+
+                            // Gather all active banners from all programs in this blog
+                            allPrograms.forEach(program => {
+                                try {
+                                    const programBanners = typeof program.banner_images === 'string'
+                                        ? JSON.parse(program.banner_images)
+                                        : (program.banner_images || []);
+
+                                    // Add each active banner with program info
+                                    programBanners.forEach(banner => {
+                                        if (banner.is_active !== false) {
+                                            activeBanners.push({
+                                                ...banner,
+                                                _program: {
+                                                    id: program.id,
+                                                    name: program.program_name,
+                                                    affiliate_link: program.affiliate_link || program.affiliate_link_template
+                                                }
+                                            });
+                                        }
+                                    });
+                                } catch (e) {
+                                    console.warn(`⚠️ Failed to parse banners for program ${program.program_name}:`, e);
+                                }
+                            });
+
+                            console.log(`✅ Gathered ${activeBanners.length} active banners from ${allPrograms.length} programs in blog "${targetBlog.blog_name || 'Unnamed'}"`);
+                        } else {
+                            console.warn(`⚠️ Blog not found or has no affiliate programs: ${blogId}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to load blog affiliate programs:', error);
+                    return { banners: [], nextRotationIndex: 0 };
+                }
+            }
+            // LEGACY MODE: Single affiliate program (backward compatibility)
+            else if (affiliateProgram) {
+                console.log('🔖 Legacy mode: Using single affiliate program');
+                try {
+                    const allBanners = typeof affiliateProgram.banner_images === 'string'
+                        ? JSON.parse(affiliateProgram.banner_images)
+                        : (affiliateProgram.banner_images || []);
+
+                    // Add program info to each banner
+                    activeBanners = allBanners
+                        .filter(banner => banner.is_active !== false)
+                        .map(banner => ({
+                            ...banner,
+                            _program: {
+                                id: affiliateProgram.id,
+                                name: affiliateProgram.program_name,
+                                affiliate_link: affiliateProgram.affiliate_link || affiliateProgram.affiliate_link_template
+                            }
+                        }));
+
+                    console.log(`✅ Active banners: ${activeBanners.length} of ${allBanners.length} total from ${affiliateProgram.program_name}`);
+                } catch (e) {
+                    console.error('❌ Failed to parse banner_images:', e);
+                    return { banners: [], nextRotationIndex: 0 };
+                }
+            }
+            // FALLBACK MODE: All blogs (if neither blogId nor affiliateProgram provided)
+            else {
+                console.log('🌍 Fallback mode: Fetching banners from ALL blogs');
+
+                try {
+                    const result = await SupabaseService.loadBlogs();
+                    if (result.success && result.data) {
+                        // Extract all affiliate programs from all blogs
+                        result.data.forEach(blog => {
+                            if (blog.affiliate_programs && Array.isArray(blog.affiliate_programs)) {
+                                allPrograms.push(...blog.affiliate_programs);
+                            }
+                        });
+
+                        console.log(`📚 Found ${allPrograms.length} total affiliate programs across ALL blogs`);
+
+                        // Gather all active banners from all programs
+                        allPrograms.forEach(program => {
+                            try {
+                                const programBanners = typeof program.banner_images === 'string'
+                                    ? JSON.parse(program.banner_images)
+                                    : (program.banner_images || []);
+
+                                // Add each active banner with program info
+                                programBanners.forEach(banner => {
+                                    if (banner.is_active !== false) {
+                                        activeBanners.push({
+                                            ...banner,
+                                            _program: {
+                                                id: program.id,
+                                                name: program.program_name,
+                                                affiliate_link: program.affiliate_link || program.affiliate_link_template
+                                            }
+                                        });
+                                    }
+                                });
+                            } catch (e) {
+                                console.warn(`⚠️ Failed to parse banners for program ${program.program_name}:`, e);
+                            }
+                        });
+
+                        console.log(`✅ Gathered ${activeBanners.length} active banners from ${allPrograms.length} programs across ALL blogs`);
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to load affiliate programs:', error);
+                    return { banners: [], nextRotationIndex: 0 };
+                }
+            }
 
             if (activeBanners.length === 0) {
                 console.log('⚠️ No active banners available');
@@ -9255,6 +9371,7 @@
                     url: selectedBanner.url,
                     size: selectedBanner.size,
                     placement: selectedBanner.placement_preference,
+                    program: selectedBanner._program.name,
                     randomIndex: randomIndex,
                     poolSize: poolToUse.length
                 });
@@ -9265,7 +9382,7 @@
                 });
             }
 
-            console.log(`🎉 Randomly selected ${selectedBanners.length} banner(s) from ${activeBanners.length} active banners`);
+            console.log(`🎉 Randomly selected ${selectedBanners.length} banner(s) from ${activeBanners.length} active banners ${!affiliateProgram ? 'across ALL programs' : ''}`);
 
             // Still return a rotation index for tracking purposes (even though we're using random selection)
             return {
@@ -14767,35 +14884,40 @@ Return ONLY the JSON array, no other text or markdown.`;
                 }
 
                 // Step 6.75: Banner Selection and Insertion
-                let selectedBannersData = null;
+                // ALWAYS select banners (even if no affiliate program specified)
+                console.log('🎯 === PHASE 6.75: BANNER SELECTION (DataforSEO) ===');
                 if (affiliateProgram) {
-                    console.log('🎯 === PHASE 6.75: BANNER SELECTION (DataforSEO) ===');
                     console.log('Affiliate Program:', affiliateProgram.program_name);
+                } else {
+                    console.log('No specific affiliate program - will use ALL programs from ALL blogs');
+                }
 
-                    progress.updateMessage('🎨 Selecting banners for article...');
+                progress.updateMessage('🎨 Selecting banners for article...');
 
-                    // Determine optimal banner placements based on article length
-                    let placements = [];
-                    if (sections.length >= 3) {
-                        // Long article: after-intro, mid-article
-                        placements = ['after-intro', 'mid-article'];
-                    } else if (sections.length >= 2) {
-                        // Medium article: after-intro only
-                        placements = ['after-intro'];
-                    } else {
-                        // Short article: any placement
-                        placements = ['any'];
-                    }
+                // Determine optimal banner placements based on article length
+                let placements = [];
+                if (sections.length >= 3) {
+                    // Long article: after-intro, mid-article
+                    placements = ['after-intro', 'mid-article'];
+                } else if (sections.length >= 2) {
+                    // Medium article: after-intro only
+                    placements = ['after-intro'];
+                } else {
+                    // Short article: any placement
+                    placements = ['any'];
+                }
 
-                    console.log(`📍 Article has ${sections.length} sections, using placements:`, placements);
+                console.log(`📍 Article has ${sections.length} sections, using placements:`, placements);
 
-                    // Select banners using rotation algorithm
-                    selectedBannersData = selectBannersForArticle(affiliateProgram, title, placements);
+                // Select banners (randomly from all programs if no specific program)
+                // TODO: Pass blogId here when blog selection is added to UI
+                const selectedBannersData = await selectBannersForArticle(affiliateProgram, title, placements, null);
 
-                    if (selectedBannersData && selectedBannersData.banners.length > 0) {
-                        console.log(`✅ Selected ${selectedBannersData.banners.length} banner(s) for article`);
+                if (selectedBannersData && selectedBannersData.banners.length > 0) {
+                    console.log(`✅ Selected ${selectedBannersData.banners.length} banner(s) for article`);
 
-                        // Update rotation index in database (async, non-blocking)
+                    // Update rotation index in database if specific program was used (async, non-blocking)
+                    if (affiliateProgram) {
                         updateBannerRotationIndex(affiliateProgram.id, selectedBannersData.nextRotationIndex)
                             .then(result => {
                                 if (result.success) {
@@ -14805,14 +14927,14 @@ Return ONLY the JSON array, no other text or markdown.`;
                                 }
                             })
                             .catch(err => console.error('❌ Error updating rotation index:', err));
-
-                        console.log(`🎯 PHASE 6.75 COMPLETE: ${selectedBannersData.banners.length} banner(s) selected`);
-                    } else {
-                        console.log('⚠️ No active banners available for this program');
                     }
 
-                    console.log('=== END BANNER SELECTION ===');
+                    console.log(`🎯 PHASE 6.75 COMPLETE: ${selectedBannersData.banners.length} banner(s) selected`);
+                } else {
+                    console.log('⚠️ No active banners available');
                 }
+
+                console.log('=== END BANNER SELECTION ===');
 
                 // Step 7: Format final article
                 progress.updateMessage('🔧 Finalizing article structure...');
@@ -16188,38 +16310,43 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                 }
 
                 // Phase 6.75: Banner Selection
-                let selectedBannersData = null;
+                // ALWAYS select banners (even if no affiliate program specified)
+                console.log('🎯 === PHASE 6.75: BANNER SELECTION (Standard Model) ===');
                 if (affiliateProgram) {
-                    console.log('🎯 === PHASE 6.75: BANNER SELECTION (Standard Model) ===');
                     console.log('Affiliate Program:', affiliateProgram.program_name);
+                } else {
+                    console.log('No specific affiliate program - will use ALL programs from ALL blogs');
+                }
 
-                    progress.updateMessage('🎨 Selecting banners for article...');
+                progress.updateMessage('🎨 Selecting banners for article...');
 
-                    // Determine optimal banner placements based on article length
-                    let placements = [];
-                    if (generatedSections.length >= 3) {
-                        // Long article: after-intro, mid-article
-                        placements = ['after-intro', 'mid-article'];
-                    } else if (generatedSections.length >= 2) {
-                        // Medium article: after-intro only
-                        placements = ['after-intro'];
-                    } else {
-                        // Short article: any placement
-                        placements = ['any'];
-                    }
+                // Determine optimal banner placements based on article length
+                let placements = [];
+                if (generatedSections.length >= 3) {
+                    // Long article: after-intro, mid-article
+                    placements = ['after-intro', 'mid-article'];
+                } else if (generatedSections.length >= 2) {
+                    // Medium article: after-intro only
+                    placements = ['after-intro'];
+                } else {
+                    // Short article: any placement
+                    placements = ['any'];
+                }
 
-                    console.log(`📍 Article has ${generatedSections.length} sections, using placements:`, placements);
+                console.log(`📍 Article has ${generatedSections.length} sections, using placements:`, placements);
 
-                    // Select banners using rotation algorithm
-                    selectedBannersData = selectBannersForArticle(affiliateProgram, articleTitle, placements);
+                // Select banners (randomly from all programs if no specific program)
+                // TODO: Pass blogId here when blog selection is added to UI
+                const selectedBannersData = await selectBannersForArticle(affiliateProgram, articleTitle, placements, null);
 
-                    if (selectedBannersData && selectedBannersData.banners.length > 0) {
-                        console.log(`✅ Selected ${selectedBannersData.banners.length} banner(s) for article`);
+                if (selectedBannersData && selectedBannersData.banners.length > 0) {
+                    console.log(`✅ Selected ${selectedBannersData.banners.length} banner(s) for article`);
 
-                        // Add banners to article metadata
-                        finalArticle.metadata.banners = selectedBannersData.banners;
+                    // Add banners to article metadata
+                    finalArticle.metadata.banners = selectedBannersData.banners;
 
-                        // Update rotation index in database (async, non-blocking)
+                    // Update rotation index in database if specific program was used (async, non-blocking)
+                    if (affiliateProgram) {
                         updateBannerRotationIndex(affiliateProgram.id, selectedBannersData.nextRotationIndex)
                             .then(result => {
                                 if (result.success) {
@@ -16229,14 +16356,14 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                                 }
                             })
                             .catch(err => console.error('❌ Error updating rotation index:', err));
-
-                        console.log(`🎯 PHASE 6.75 COMPLETE: ${selectedBannersData.banners.length} banner(s) selected`);
-                    } else {
-                        console.log('⚠️ No active banners available for this program');
                     }
 
-                    console.log('=== END BANNER SELECTION ===');
+                    console.log(`🎯 PHASE 6.75 COMPLETE: ${selectedBannersData.banners.length} banner(s) selected`);
+                } else {
+                    console.log('⚠️ No active banners available');
                 }
+
+                console.log('=== END BANNER SELECTION ===');
 
                 progress.updateMessage('✅ Article ready!');
                 console.log('=== MULTI-PHASE ARTICLE COMPLETE ===');
