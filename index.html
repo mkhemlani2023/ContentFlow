@@ -10551,8 +10551,22 @@ Return ONLY the JSON array, no other text.`;
             closeModal();
 
             try {
+                // Retrieve affiliate context from window
+                const affiliateContext = window.affiliateContext;
+
+                // Build affiliate program object from stored context
+                const affiliateProgram = affiliateContext ? {
+                    program_id: affiliateContext.programId,
+                    program_name: affiliateContext.programName,
+                    affiliate_link: affiliateContext.affiliateLink,
+                    focus_keywords: affiliateContext.targetKeyword,
+                    commission_rate: affiliateContext.commission
+                } : null;
+
+                console.log('🔗 Passing affiliate program to generation:', affiliateProgram);
+
                 // Generate article with affiliate context
-                await generateArticleWithOutline(title, wordCount, difficulty, intent, modelTier, creditCost);
+                await generateArticleWithOutline(title, wordCount, difficulty, intent, modelTier, creditCost, affiliateProgram);
             } catch (error) {
                 console.error('Affiliate article generation error:', error);
                 showToast('Failed to generate article: ' + error.message, 'error');
@@ -14434,8 +14448,8 @@ Return ONLY the JSON array, no other text or markdown.`;
                             const paragraphs = section.content.split('\n\n').filter(p => p.trim());
 
                             if (paragraphs.length > 1) {
-                                // Insert subtle reference before last paragraph
-                                const linkRecommendation = `For those interested in exploring hydrogen water options, [${affiliateProgram.program_name}](${linkText}) offers quality solutions.`;
+                                // Insert subtle reference before last paragraph - GENERIC, no hardcoded product
+                                const linkRecommendation = `For more information, [${affiliateProgram.program_name}](${linkText}) provides additional resources.`;
                                 paragraphs.splice(paragraphs.length - 1, 0, linkRecommendation);
                                 section.content = paragraphs.join('\n\n');
                             } else {
@@ -15244,6 +15258,14 @@ CRITICAL: Select sections where the product recommendation genuinely helps the r
                 affiliateProgram.displayLink = affiliateLink;
                 console.log('🔗 Affiliate link to use:', affiliateProgram.displayLink);
 
+                // Detect if article topic is ABOUT the affiliate program (e.g., "Viome" article with Viome affiliate link)
+                const articleTitle = outlineStructure.outline.title.toLowerCase();
+                const programName = affiliateProgram.program_name.toLowerCase();
+                const isDirectProductArticle = articleTitle.includes(programName) ||
+                                              keyword.toLowerCase().includes(programName);
+
+                console.log('🎯 Direct product article:', isDirectProductArticle);
+
                 // Determine optimal placement sections for affiliate links
                 console.log('🔍 Analyzing optimal affiliate link placements...');
                 affiliatePlacementStrategy = await determineAffiliateLinkPlacement(
@@ -15257,7 +15279,34 @@ CRITICAL: Select sections where the product recommendation genuinely helps the r
                     console.log(`   ${i + 1}. ${p.section} - ${p.strategy}`);
                 });
 
-                affiliateContext = `
+                // Different instructions based on whether it's a direct product article or contextual placement
+                if (isDirectProductArticle) {
+                    affiliateContext = `
+DIRECT PRODUCT ARTICLE - ELEGANT CALL-TO-ACTION PLACEMENT:
+Product: ${affiliateProgram.program_name}
+Link: ${affiliateProgram.displayLink}
+Focus: ${affiliateProgram.focus_keywords || affiliateProgram.program_name}
+
+This article IS ABOUT ${affiliateProgram.program_name}, so links should be presented as direct CTAs with value.
+
+PLACEMENT STRATEGY (High-Conversion CTAs):
+${affiliatePlacementStrategy.placements.map((p, i) => `
+${i + 1}. ${p.section}: ${p.strategy}
+   Context: ${p.context}
+   Link format: [${p.anchorText}](${affiliateProgram.displayLink})
+`).join('')}
+
+CRITICAL RULES FOR DIRECT PRODUCT ARTICLES:
+- Include ${affiliatePlacementStrategy.placements.length} affiliate links in the exact sections specified above
+- Present links as elegant, direct calls-to-action (e.g., "visit ${affiliateProgram.program_name}", "try ${affiliateProgram.program_name}", "get started with ${affiliateProgram.program_name}")
+- Mention value-adds when possible: discounts, free shipping, money-back guarantees, trial periods
+- Use natural transitions: "For additional information, visit...", "To get started, ...", "Learn more at..."
+- Links should feel like the natural next step for readers, not third-party recommendations
+- Be direct and confident - this is YOUR product recommendation
+- Use the specific anchor text and context provided for each placement
+`;
+                } else {
+                    affiliateContext = `
 AFFILIATE PRODUCT INTEGRATION - STRATEGIC PLACEMENT:
 Product: ${affiliateProgram.program_name}
 Link: ${affiliateProgram.displayLink}
@@ -15277,6 +15326,7 @@ CRITICAL RULES:
 - Place links where readers are seeking solutions (after explaining problems/needs)
 - Use the specific anchor text and context provided for each placement
 `;
+                }
             }
 
             const progress = showProgressModal({
@@ -15366,9 +15416,9 @@ Purpose: ${introData.purpose}
 Key points: ${introData.keyPoints.join(', ')}
 ${introAffiliateContext}
 CITATION REQUIREMENTS:
-- Use ONLY in-text citations: (Author Year) or (Author et al. Year)
-- DO NOT include full citations (title, journal, DOI) in the content
-- Example: "Studies show benefits (Ohsawa et al. 2007)"
+- Use ONLY in-text citations: (Author Year) or (Author et al. Year) for 3+ authors
+- DO NOT include full citations in the content
+- Only cite real, verifiable research from reputable peer-reviewed journals
 
 Write ${introWords} words of engaging, informative content. Use double line breaks between paragraphs. Return ONLY the introduction text, no JSON, no markdown.`;
 
@@ -15431,12 +15481,9 @@ ${subsectionList ? `Subsections to cover:\n${subsectionList}` : ''}
 ${sectionAffiliateContext}
 CITATION REQUIREMENTS:
 When referencing clinical studies, scientific papers, or research findings:
-- Use in-text citations in parentheses: (Author Year) or (Author et al. Year) for 3+ authors
-- Example in text: "Studies show hydrogen water benefits (Ohsawa et al. 2007)"
-- IMPORTANT: After the section content, add a blank line followed by the full citation in Chicago format
-- Full citation format: Author(s). Year. "Title." Journal Name. Volume(Issue): Pages. DOI or URL
-- Example full citation: Ohsawa, I., et al. 2007. "Hydrogen acts as a therapeutic antioxidant." Nature Medicine. 13(6): 688-694. https://doi.org/10.1038/nm1577
-- Place all full citations at the END of your content, separated by blank lines
+- Use ONLY in-text citations: (Author Year) or (Author et al. Year) for 3+ authors
+- DO NOT include full citations in the section content
+- Full citations will be compiled into a References section at the end of the article
 - Only cite real, verifiable research from reputable peer-reviewed journals
 
 Write ${wordsPerSection} words of informative, engaging paragraphs. Use double line breaks between paragraphs. Return ONLY the content text, no JSON, no formatting.`;
@@ -15764,8 +15811,8 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                             const paragraphs = section.content.split('\n\n').filter(p => p.trim());
 
                             if (paragraphs.length > 1) {
-                                // Insert subtle reference before last paragraph
-                                const linkRecommendation = `For those interested in exploring hydrogen water options, [${affiliateProgram.program_name}](${linkText}) offers quality solutions.`;
+                                // Insert subtle reference before last paragraph - GENERIC, no hardcoded product
+                                const linkRecommendation = `For more information, [${affiliateProgram.program_name}](${linkText}) provides additional resources.`;
                                 paragraphs.splice(paragraphs.length - 1, 0, linkRecommendation);
                                 section.content = paragraphs.join('\n\n');
                             } else {
