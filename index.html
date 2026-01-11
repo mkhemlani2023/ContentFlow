@@ -14446,9 +14446,12 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                     // Generate displayLink if not already set
                     if (!affiliateProgram.displayLink) {
+                        // Check both affiliate_link and affiliate_link_template (database field name)
                         const affiliateLink = affiliateProgram.affiliate_link ||
+                            affiliateProgram.affiliate_link_template ||
                             `https://www.${affiliateProgram.program_name.toLowerCase().replace(/\s+/g, '')}.com`;
                         affiliateProgram.displayLink = affiliateLink;
+                        console.log('🔗 DEBUG - displayLink set to:', affiliateLink);
                     }
 
                     console.log('Affiliate Link:', affiliateProgram.displayLink);
@@ -15283,15 +15286,17 @@ CRITICAL: Select sections where the product recommendation genuinely helps the r
             if (affiliateProgram) {
                 console.log('🔗 AFFILIATE PROGRAM DETECTED:', affiliateProgram.program_name);
                 console.log('🔗 DEBUG - affiliateProgram.affiliate_link:', affiliateProgram.affiliate_link);
+                console.log('🔗 DEBUG - affiliateProgram.affiliate_link_template:', affiliateProgram.affiliate_link_template);
 
-                // Use placeholder link if no actual affiliate link provided yet
+                // Check both affiliate_link and affiliate_link_template (database field name)
                 const affiliateLink = affiliateProgram.affiliate_link ||
+                    affiliateProgram.affiliate_link_template ||
                     `https://www.${affiliateProgram.program_name.toLowerCase().replace(/\s+/g, '')}.com`;
 
                 // Store the link for use in prompts
                 affiliateProgram.displayLink = affiliateLink;
                 console.log('🔗 DEBUG - Final displayLink being used in article:', affiliateProgram.displayLink);
-                console.log('🔗 DEBUG - Is this a fallback link?', !affiliateProgram.affiliate_link);
+                console.log('🔗 DEBUG - Is this a fallback link?', !affiliateProgram.affiliate_link && !affiliateProgram.affiliate_link_template);
 
                 // Detect if article topic is ABOUT the affiliate program (e.g., "Viome" article with Viome affiliate link)
                 const articleTitle = outlineStructure.outline.title.toLowerCase();
