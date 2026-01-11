@@ -10277,6 +10277,10 @@ Return ONLY the JSON array, no other text.`;
                     throw new Error('Affiliate program not found');
                 }
 
+                console.log('🔍 DEBUG - Loaded program from database:', program);
+                console.log('🔍 DEBUG - Program has affiliate_link_template:', program.affiliate_link_template);
+                console.log('🔍 DEBUG - Program has program_url:', program.program_url);
+
                 // Parse content opportunities
                 let contentOpportunities;
                 try {
@@ -10441,6 +10445,10 @@ Return ONLY the JSON array, no other text.`;
             const keyword = article.target_keyword || article.title;
 
             // Store affiliate context for article generation
+            console.log('🔍 DEBUG - Program object:', program);
+            console.log('🔍 DEBUG - affiliate_link_template:', program.affiliate_link_template);
+            console.log('🔍 DEBUG - program_url:', program.program_url);
+
             window.affiliateContext = {
                 programId: programId,
                 programName: program.program_name,
@@ -10452,6 +10460,8 @@ Return ONLY the JSON array, no other text.`;
                 monthlySearches: article.monthly_searches,
                 rankingPotential: article.ranking_potential
             };
+
+            console.log('🔍 DEBUG - Final affiliateLink being used:', window.affiliateContext.affiliateLink);
 
             // Show article generation modal
             showAffiliateArticleGenerationModal(article, program);
@@ -10563,7 +10573,9 @@ Return ONLY the JSON array, no other text.`;
                     commission_rate: affiliateContext.commission
                 } : null;
 
-                console.log('🔗 Passing affiliate program to generation:', affiliateProgram);
+                console.log('🔗 DEBUG - Affiliate program object being passed:', affiliateProgram);
+                console.log('🔗 DEBUG - affiliate_link value:', affiliateProgram ? affiliateProgram.affiliate_link : 'NULL');
+                console.log('🔗 DEBUG - program_name value:', affiliateProgram ? affiliateProgram.program_name : 'NULL');
 
                 // Generate article with affiliate context
                 await generateArticleWithOutline(title, wordCount, difficulty, intent, modelTier, creditCost, affiliateProgram);
@@ -15250,13 +15262,16 @@ CRITICAL: Select sections where the product recommendation genuinely helps the r
 
             if (affiliateProgram) {
                 console.log('🔗 AFFILIATE PROGRAM DETECTED:', affiliateProgram.program_name);
+                console.log('🔗 DEBUG - affiliateProgram.affiliate_link:', affiliateProgram.affiliate_link);
+
                 // Use placeholder link if no actual affiliate link provided yet
                 const affiliateLink = affiliateProgram.affiliate_link ||
                     `https://www.${affiliateProgram.program_name.toLowerCase().replace(/\s+/g, '')}.com`;
 
                 // Store the link for use in prompts
                 affiliateProgram.displayLink = affiliateLink;
-                console.log('🔗 Affiliate link to use:', affiliateProgram.displayLink);
+                console.log('🔗 DEBUG - Final displayLink being used in article:', affiliateProgram.displayLink);
+                console.log('🔗 DEBUG - Is this a fallback link?', !affiliateProgram.affiliate_link);
 
                 // Detect if article topic is ABOUT the affiliate program (e.g., "Viome" article with Viome affiliate link)
                 const articleTitle = outlineStructure.outline.title.toLowerCase();
