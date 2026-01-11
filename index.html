@@ -9021,39 +9021,83 @@
         // Add banner field
         function addBannerField() {
             const bannersList = document.getElementById('bannersList');
-            const currentCount = bannersList.querySelectorAll('.banner-url').length;
+            const currentCount = bannersList.querySelectorAll('.banner-item').length;
 
             const newBanner = document.createElement('div');
-            newBanner.style.display = 'flex';
-            newBanner.style.gap = '10px';
-            newBanner.style.marginBottom = '10px';
-            newBanner.style.alignItems = 'start';
+            newBanner.className = 'banner-item';
+            newBanner.setAttribute('data-index', currentCount);
+            newBanner.style.cssText = 'background: white; border: 2px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 15px;';
             newBanner.innerHTML = `
-                <input type="url"
-                       class="banner-url"
-                       data-index="${currentCount}"
-                       placeholder="https://cdn.example.com/banner-728x90.jpg"
-                       style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
-                <input type="text"
-                       class="banner-size"
-                       data-index="${currentCount}"
-                       placeholder="728x90"
-                       style="width: 100px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
-                <button onclick="this.parentElement.remove()" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 6px; cursor: pointer;">
-                    🗑
-                </button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h5 style="margin: 0; color: #1e293b; font-size: 14px; font-weight: 600;">Banner ${currentCount + 1}</h5>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #64748b; cursor: pointer;">
+                            <input type="checkbox" class="banner-active" data-index="${currentCount}" checked style="cursor: pointer;">
+                            Active
+                        </label>
+                        <button onclick="removeBannerField(${currentCount})" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            🗑 Remove
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display: grid; gap: 12px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Banner Image URL *</label>
+                        <input type="url" class="banner-url" data-index="${currentCount}" placeholder="https://cdn.example.com/banner-728x90.jpg" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Banner Size *</label>
+                            <select class="banner-size" data-index="${currentCount}" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; background: white;">
+                                <option value="728x90">728×90 (Leaderboard)</option>
+                                <option value="300x250" selected>300×250 (Medium Rectangle)</option>
+                                <option value="336x280">336×280 (Large Rectangle)</option>
+                                <option value="320x50">320×50 (Mobile Banner)</option>
+                                <option value="320x100">320×100 (Large Mobile)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Placement Preference</label>
+                            <select class="banner-placement" data-index="${currentCount}" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; background: white;">
+                                <option value="any" selected>Any (Best Position)</option>
+                                <option value="after-intro">After Introduction</option>
+                                <option value="mid-article">Mid-Article</option>
+                                <option value="before-conclusion">Before Conclusion</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Alt Text (for accessibility)</label>
+                        <input type="text" class="banner-alt" data-index="${currentCount}" placeholder="Descriptive text for screen readers" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                    </div>
+
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Banner-Specific Link (optional)</label>
+                        <input type="url" class="banner-affiliate-link" data-index="${currentCount}" placeholder="Override default affiliate link for this banner" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                        <div style="margin-top: 4px; font-size: 11px; color: #94a3b8;">
+                            💡 Leave empty to use program's default link
+                        </div>
+                    </div>
+                </div>
             `;
             bannersList.appendChild(newBanner);
         }
 
         // Remove banner field
         function removeBannerField(index) {
-            const banners = document.querySelectorAll('.banner-url');
-            if (banners.length <= 1) {
+            const bannerItems = document.querySelectorAll('.banner-item');
+            if (bannerItems.length <= 1) {
                 showToast('At least one banner field is required', 'info');
                 return;
             }
-            banners[index].parentElement.remove();
+            // Find the banner item with matching index
+            const bannerToRemove = document.querySelector(`.banner-item[data-index="${index}"]`);
+            if (bannerToRemove) {
+                bannerToRemove.remove();
+            }
         }
 
         // Save affiliate link assets
@@ -9070,15 +9114,33 @@
                 const promoText = document.getElementById('affiliatePromoText').value.trim();
                 const disclosure = document.getElementById('affiliateDisclosure').value.trim();
 
-                // Get all banners
-                const bannerUrls = document.querySelectorAll('.banner-url');
-                const bannerSizes = document.querySelectorAll('.banner-size');
+                // Get all banners with enhanced metadata
+                const bannerItems = document.querySelectorAll('.banner-item');
                 const banners = [];
-                bannerUrls.forEach((urlInput, index) => {
-                    const url = urlInput.value.trim();
-                    const size = bannerSizes[index].value.trim();
+
+                bannerItems.forEach((item, index) => {
+                    const url = item.querySelector('.banner-url').value.trim();
+                    const size = item.querySelector('.banner-size').value;
+                    const placement = item.querySelector('.banner-placement').value;
+                    const altText = item.querySelector('.banner-alt').value.trim();
+                    const bannerLink = item.querySelector('.banner-affiliate-link').value.trim();
+                    const isActive = item.querySelector('.banner-active').checked;
+
                     if (url) {
-                        banners.push({ url, size });
+                        // Parse width and height from size (e.g., "728x90" → 728, 90)
+                        const [width, height] = size.split('x').map(Number);
+
+                        banners.push({
+                            url: url,
+                            size: size,
+                            width: width,
+                            height: height,
+                            alt_text: altText || `${window.currentAffiliateProgram.program_name} Banner`,
+                            affiliate_link: bannerLink || affiliateLink, // Use banner-specific or default
+                            placement_preference: placement,
+                            is_active: isActive,
+                            created_at: new Date().toISOString()
+                        });
                     }
                 });
 
@@ -9111,6 +9173,123 @@
             } catch (error) {
                 console.error('Error saving affiliate assets:', error);
                 showToast('Failed to save: ' + error.message, 'error');
+            }
+        }
+
+        // Banner Rotation Algorithm
+        /**
+         * Selects the optimal banner(s) for an article using round-robin rotation
+         * with context-aware placement.
+         *
+         * @param {Object} affiliateProgram - The affiliate program with banners
+         * @param {string} articleTopic - The article topic for context-aware selection
+         * @param {Array} placements - Array of placement positions needed (e.g., ['after-intro', 'mid-article'])
+         * @returns {Object} - { banners: Array, nextRotationIndex: number }
+         */
+        function selectBannersForArticle(affiliateProgram, articleTopic = '', placements = ['any']) {
+            console.log('🎯 Banner Rotation - Starting selection');
+            console.log('📊 Input:', {
+                programId: affiliateProgram.id,
+                programName: affiliateProgram.program_name,
+                articleTopic,
+                placements
+            });
+
+            // Parse banners from JSON if needed
+            let allBanners = [];
+            try {
+                allBanners = typeof affiliateProgram.banner_images === 'string'
+                    ? JSON.parse(affiliateProgram.banner_images)
+                    : (affiliateProgram.banner_images || []);
+            } catch (e) {
+                console.error('❌ Failed to parse banner_images:', e);
+                return { banners: [], nextRotationIndex: 0 };
+            }
+
+            // Filter to active banners only
+            const activeBanners = allBanners.filter(banner => banner.is_active !== false);
+            console.log(`✅ Active banners: ${activeBanners.length} of ${allBanners.length} total`);
+
+            if (activeBanners.length === 0) {
+                console.log('⚠️ No active banners available');
+                return { banners: [], nextRotationIndex: 0 };
+            }
+
+            // Get current rotation index
+            let rotationIndex = affiliateProgram.banner_rotation_index || 0;
+            console.log(`🔄 Current rotation index: ${rotationIndex}`);
+
+            // Ensure rotation index is valid
+            if (rotationIndex >= activeBanners.length) {
+                rotationIndex = 0;
+                console.log(`♻️ Reset rotation index to 0 (was out of bounds)`);
+            }
+
+            const selectedBanners = [];
+
+            // For each placement needed, select a banner
+            for (let i = 0; i < placements.length && activeBanners.length > 0; i++) {
+                const requestedPlacement = placements[i];
+
+                // Find banners that match the requested placement or accept "any"
+                let eligibleBanners = activeBanners.filter(banner =>
+                    banner.placement_preference === requestedPlacement ||
+                    banner.placement_preference === 'any' ||
+                    requestedPlacement === 'any'
+                );
+
+                // If no exact matches, fall back to all active banners
+                if (eligibleBanners.length === 0) {
+                    eligibleBanners = activeBanners;
+                    console.log(`⚡ No banners for "${requestedPlacement}", using all active banners`);
+                }
+
+                // Select banner using round-robin
+                const selectedBanner = eligibleBanners[rotationIndex % eligibleBanners.length];
+
+                console.log(`✓ Selected banner ${rotationIndex % eligibleBanners.length + 1} for "${requestedPlacement}":`, {
+                    url: selectedBanner.url,
+                    size: selectedBanner.size,
+                    placement: selectedBanner.placement_preference
+                });
+
+                selectedBanners.push({
+                    ...selectedBanner,
+                    assigned_placement: requestedPlacement // Track where we're placing it
+                });
+
+                // Advance rotation index
+                rotationIndex = (rotationIndex + 1) % activeBanners.length;
+            }
+
+            console.log(`🎉 Selected ${selectedBanners.length} banners, next rotation index: ${rotationIndex}`);
+
+            return {
+                banners: selectedBanners,
+                nextRotationIndex: rotationIndex
+            };
+        }
+
+        /**
+         * Updates the banner rotation index in the database
+         * Call this after inserting banners in an article
+         */
+        async function updateBannerRotationIndex(programId, nextRotationIndex) {
+            try {
+                const result = await SupabaseService.updateAffiliateProgram(programId, {
+                    banner_rotation_index: nextRotationIndex
+                });
+
+                if (result.success) {
+                    console.log(`✓ Updated banner rotation index to ${nextRotationIndex}`);
+                } else {
+                    console.error('❌ Failed to update rotation index:', result.error);
+                }
+
+                return result;
+            } catch (error) {
+                console.error('❌ Error updating rotation index:', error);
+                return { success: false, error: error.message };
             }
         }
 
@@ -10194,25 +10373,81 @@ Return ONLY the JSON array, no other text.`;
             }
 
             if (!Array.isArray(banners)) banners = [];
-            if (banners.length === 0) banners.push({ url: '', size: '' });
+            if (banners.length === 0) banners.push({ url: '', size: '', alt_text: '', affiliate_link: '', placement_preference: 'any', is_active: true });
 
             return banners.map((banner, index) => `
-                <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: start;">
-                    <input type="url"
-                           class="banner-url"
-                           data-index="${index}"
-                           value="${banner.url || ''}"
-                           placeholder="https://cdn.example.com/banner-728x90.jpg"
-                           style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
-                    <input type="text"
-                           class="banner-size"
-                           data-index="${index}"
-                           value="${banner.size || ''}"
-                           placeholder="728x90"
-                           style="width: 100px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
-                    <button onclick="removeBannerField(${index})" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 6px; cursor: pointer;">
-                        🗑
-                    </button>
+                <div class="banner-item" data-index="${index}" style="background: white; border: 2px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 12px;">
+                        <h5 style="margin: 0; color: #1e293b; font-size: 14px; font-weight: 600;">Banner ${index + 1}</h5>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #64748b; cursor: pointer;">
+                                <input type="checkbox" class="banner-active" data-index="${index}" ${banner.is_active !== false ? 'checked' : ''} style="cursor: pointer;">
+                                Active
+                            </label>
+                            <button onclick="removeBannerField(${index})" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                🗑 Remove
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Banner URL -->
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #64748b; font-weight: 600;">Banner Image URL</label>
+                        <input type="url"
+                               class="banner-url"
+                               data-index="${index}"
+                               value="${banner.url || ''}"
+                               placeholder="https://cdn.example.com/viome-banner-728x90.jpg"
+                               style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <!-- Banner Size -->
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #64748b; font-weight: 600;">Size</label>
+                            <select class="banner-size" data-index="${index}" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                                <option value="728x90" ${banner.size === '728x90' ? 'selected' : ''}>728x90 (Leaderboard)</option>
+                                <option value="300x250" ${banner.size === '300x250' ? 'selected' : ''}>300x250 (Medium Rectangle)</option>
+                                <option value="336x280" ${banner.size === '336x280' ? 'selected' : ''}>336x280 (Large Rectangle)</option>
+                                <option value="320x50" ${banner.size === '320x50' ? 'selected' : ''}>320x50 (Mobile Banner)</option>
+                                <option value="320x100" ${banner.size === '320x100' ? 'selected' : ''}>320x100 (Mobile Large)</option>
+                                <option value="custom" ${banner.size && !['728x90', '300x250', '336x280', '320x50', '320x100'].includes(banner.size) ? 'selected' : ''}>Custom: ${banner.size || ''}</option>
+                            </select>
+                        </div>
+
+                        <!-- Placement Preference -->
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #64748b; font-weight: 600;">Placement</label>
+                            <select class="banner-placement" data-index="${index}" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                                <option value="any" ${banner.placement_preference === 'any' ? 'selected' : ''}>Any (Auto)</option>
+                                <option value="after-intro" ${banner.placement_preference === 'after-intro' ? 'selected' : ''}>After Introduction</option>
+                                <option value="mid-article" ${banner.placement_preference === 'mid-article' ? 'selected' : ''}>Mid-Article</option>
+                                <option value="before-conclusion" ${banner.placement_preference === 'before-conclusion' ? 'selected' : ''}>Before Conclusion</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Alt Text -->
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #64748b; font-weight: 600;">Alt Text (for accessibility)</label>
+                        <input type="text"
+                               class="banner-alt"
+                               data-index="${index}"
+                               value="${banner.alt_text || ''}"
+                               placeholder="Viome Gut Health Test - Personalized Nutrition"
+                               style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                    </div>
+
+                    <!-- Banner-specific Affiliate Link -->
+                    <div>
+                        <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #64748b; font-weight: 600;">Banner Affiliate Link (optional - uses main link if empty)</label>
+                        <input type="url"
+                               class="banner-affiliate-link"
+                               data-index="${index}"
+                               value="${banner.affiliate_link || ''}"
+                               placeholder="Leave empty to use main affiliate link"
+                               style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                    </div>
                 </div>
             `).join('');
         }
@@ -14527,6 +14762,54 @@ Return ONLY the JSON array, no other text or markdown.`;
                     console.log('No affiliate program selected - skipping link insertion');
                 }
 
+                // Step 6.75: Banner Selection and Insertion
+                let selectedBannersData = null;
+                if (affiliateProgram) {
+                    console.log('🎯 === PHASE 6.75: BANNER SELECTION (DataforSEO) ===');
+                    console.log('Affiliate Program:', affiliateProgram.program_name);
+
+                    progress.updateMessage('🎨 Selecting banners for article...');
+
+                    // Determine optimal banner placements based on article length
+                    let placements = [];
+                    if (sections.length >= 3) {
+                        // Long article: after-intro, mid-article
+                        placements = ['after-intro', 'mid-article'];
+                    } else if (sections.length >= 2) {
+                        // Medium article: after-intro only
+                        placements = ['after-intro'];
+                    } else {
+                        // Short article: any placement
+                        placements = ['any'];
+                    }
+
+                    console.log(`📍 Article has ${sections.length} sections, using placements:`, placements);
+
+                    // Select banners using rotation algorithm
+                    selectedBannersData = selectBannersForArticle(affiliateProgram, title, placements);
+
+                    if (selectedBannersData && selectedBannersData.banners.length > 0) {
+                        console.log(`✅ Selected ${selectedBannersData.banners.length} banner(s) for article`);
+
+                        // Update rotation index in database (async, non-blocking)
+                        updateBannerRotationIndex(affiliateProgram.id, selectedBannersData.nextRotationIndex)
+                            .then(result => {
+                                if (result.success) {
+                                    console.log('✓ Banner rotation index updated');
+                                } else {
+                                    console.warn('⚠️ Failed to update rotation index:', result.error);
+                                }
+                            })
+                            .catch(err => console.error('❌ Error updating rotation index:', err));
+
+                        console.log(`🎯 PHASE 6.75 COMPLETE: ${selectedBannersData.banners.length} banner(s) selected`);
+                    } else {
+                        console.log('⚠️ No active banners available for this program');
+                    }
+
+                    console.log('=== END BANNER SELECTION ===');
+                }
+
                 // Step 7: Format final article
                 progress.updateMessage('🔧 Finalizing article structure...');
                 await new Promise(resolve => setTimeout(resolve, 300));
@@ -14589,7 +14872,8 @@ Return ONLY the JSON array, no other text or markdown.`;
                         modelTier: 'dataforseo',
                         generatedAt: new Date().toISOString(),
                         apiCost: totalCost,
-                        affiliateProgram: affiliateProgram // Track which affiliate program this article uses
+                        affiliateProgram: affiliateProgram, // Track which affiliate program this article uses
+                        banners: selectedBannersData ? selectedBannersData.banners : [] // Store selected banners
                     },
                     modelTier: 'dataforseo'
                 };
@@ -15897,6 +16181,57 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                 } else {
                     updateProgressStage(6, '✓ Complete');
                     console.log('No affiliate program selected - skipping link insertion');
+                }
+
+                // Phase 6.75: Banner Selection
+                let selectedBannersData = null;
+                if (affiliateProgram) {
+                    console.log('🎯 === PHASE 6.75: BANNER SELECTION (Standard Model) ===');
+                    console.log('Affiliate Program:', affiliateProgram.program_name);
+
+                    progress.updateMessage('🎨 Selecting banners for article...');
+
+                    // Determine optimal banner placements based on article length
+                    let placements = [];
+                    if (generatedSections.length >= 3) {
+                        // Long article: after-intro, mid-article
+                        placements = ['after-intro', 'mid-article'];
+                    } else if (generatedSections.length >= 2) {
+                        // Medium article: after-intro only
+                        placements = ['after-intro'];
+                    } else {
+                        // Short article: any placement
+                        placements = ['any'];
+                    }
+
+                    console.log(`📍 Article has ${generatedSections.length} sections, using placements:`, placements);
+
+                    // Select banners using rotation algorithm
+                    selectedBannersData = selectBannersForArticle(affiliateProgram, articleTitle, placements);
+
+                    if (selectedBannersData && selectedBannersData.banners.length > 0) {
+                        console.log(`✅ Selected ${selectedBannersData.banners.length} banner(s) for article`);
+
+                        // Add banners to article metadata
+                        finalArticle.metadata.banners = selectedBannersData.banners;
+
+                        // Update rotation index in database (async, non-blocking)
+                        updateBannerRotationIndex(affiliateProgram.id, selectedBannersData.nextRotationIndex)
+                            .then(result => {
+                                if (result.success) {
+                                    console.log('✓ Banner rotation index updated');
+                                } else {
+                                    console.warn('⚠️ Failed to update rotation index:', result.error);
+                                }
+                            })
+                            .catch(err => console.error('❌ Error updating rotation index:', err));
+
+                        console.log(`🎯 PHASE 6.75 COMPLETE: ${selectedBannersData.banners.length} banner(s) selected`);
+                    } else {
+                        console.log('⚠️ No active banners available for this program');
+                    }
+
+                    console.log('=== END BANNER SELECTION ===');
                 }
 
                 progress.updateMessage('✅ Article ready!');
