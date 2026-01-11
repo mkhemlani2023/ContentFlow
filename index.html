@@ -4637,10 +4637,17 @@
                 const program = window.affiliateProgramsById?.[selectedValue];
 
                 if (program) {
+                    // CRITICAL FIX: Normalize affiliate_link_template to affiliate_link at source
+                    if (program.affiliate_link_template && !program.affiliate_link) {
+                        program.affiliate_link = program.affiliate_link_template;
+                        console.log('🔧 NORMALIZED affiliate_link_template → affiliate_link:', program.affiliate_link);
+                    }
+
                     window.keywordAffiliatePrograms[cleanId] = program;
                     console.log('✅ Affiliate program selected:', cleanId, '→', program.program_name);
                     console.log('🔍 DEBUG - Stored program object:', program);
                     console.log('🔍 DEBUG - program.affiliate_link_template:', program.affiliate_link_template);
+                    console.log('🔍 DEBUG - program.affiliate_link:', program.affiliate_link);
                     console.log('🔍 DEBUG - program.program_url:', program.program_url);
 
                     // Update status indicator to show success
