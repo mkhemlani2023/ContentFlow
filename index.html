@@ -6622,10 +6622,18 @@
             const cleanKeyword = keyword.replace(/[^a-zA-Z0-9]/g, '');
             console.log('🔍 DEBUG - Looking up affiliate program for cleanKeyword:', cleanKeyword);
             console.log('🔍 DEBUG - window.keywordAffiliatePrograms:', window.keywordAffiliatePrograms);
-            const affiliateProgram = window.keywordAffiliatePrograms?.[cleanKeyword] || null;
+            let affiliateProgram = window.keywordAffiliatePrograms?.[cleanKeyword] || null;
+
+            // FIX: Normalize property names - database uses affiliate_link_template but code expects affiliate_link
+            if (affiliateProgram && affiliateProgram.affiliate_link_template && !affiliateProgram.affiliate_link) {
+                affiliateProgram.affiliate_link = affiliateProgram.affiliate_link_template;
+                console.log('🔧 DEBUG - Normalized affiliate_link_template to affiliate_link:', affiliateProgram.affiliate_link);
+            }
+
             console.log('🔍 DEBUG - Found affiliateProgram:', affiliateProgram);
             if (affiliateProgram) {
                 console.log('🔍 DEBUG - affiliateProgram.affiliate_link:', affiliateProgram.affiliate_link);
+                console.log('🔍 DEBUG - affiliateProgram.affiliate_link_template:', affiliateProgram.affiliate_link_template);
                 console.log('🔍 DEBUG - affiliateProgram.program_url:', affiliateProgram.program_url);
             }
 
