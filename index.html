@@ -24491,19 +24491,36 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         });
 
                         try {
-                            // Check if banner.url is an affiliate redirect link (not an actual image)
-                            // Affiliate links typically don't end with image extensions
-                            const isImageUrl = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(banner.url);
+                            // Normalize URL - handle protocol-relative URLs (//domain.com/image.jpg)
+                            let bannerUrl = banner.url;
+                            if (bannerUrl.startsWith('//')) {
+                                bannerUrl = 'https:' + bannerUrl;
+                                console.log(`🔧 Normalized protocol-relative URL: ${bannerUrl}`);
+                            }
 
-                            if (!isImageUrl) {
-                                console.warn(`⚠️ Skipping banner ${i + 1}: URL appears to be an affiliate link, not a direct image URL:`, banner.url);
-                                console.warn(`   Please upload actual banner image URLs (ending in .jpg, .png, etc.) to the banner_images.url field`);
-                                console.warn(`   The affiliate link should be in banner_images.affiliate_link field`);
+                            // Check if banner URL is likely an image
+                            // Accept: direct image URLs (.jpg, .png, etc.) OR ad server URLs
+                            const isDirectImageUrl = /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(bannerUrl);
+                            const isAdServerUrl = /display-ad|impactradius|ad\.doubleclick|ads\.|banner\./i.test(bannerUrl);
+                            const isValidImageUrl = isDirectImageUrl || isAdServerUrl;
+
+                            // Skip only pure affiliate tracking links (viomehq.sjv.io, etc.)
+                            const isAffiliateTrackingLink = /sjv\.io|go\.[a-z]+\.com\/[a-z]\/\d+/i.test(bannerUrl) && !isAdServerUrl;
+
+                            if (isAffiliateTrackingLink && !isValidImageUrl) {
+                                console.warn(`⚠️ Skipping banner ${i + 1}: URL is an affiliate tracking link (not an image):`, bannerUrl);
+                                console.warn(`   Supported formats:`);
+                                console.warn(`   - Direct image URL: https://example.com/banner.jpg`);
+                                console.warn(`   - Ad server URL: //a.impactradius-go.com/display-ad/13051-3401717`);
+                                console.warn(`   - PNG file from Viome asset downloads`);
+                                console.warn(`   The affiliate tracking link should be in banner_images.affiliate_link field`);
                                 continue;
                             }
 
+                            console.log(`📥 Downloading banner from: ${bannerUrl}`);
+
                             // Download banner image
-                            const bannerResponse = await fetch(banner.url);
+                            const bannerResponse = await fetch(bannerUrl);
                             if (!bannerResponse.ok) {
                                 console.warn(`WARNING: Failed to fetch banner ${i + 1}:`, banner.url);
                                 continue;
