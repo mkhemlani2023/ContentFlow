@@ -14761,24 +14761,64 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                 console.log(`Found ${fullCitations.length} full citations in content`);
 
-                // Generate References section with proper Chicago style formatting (no emojis)
+                // Generate References section
                 let references = '';
-                if (fullCitations.length > 0) {
-                    references = 'References\n\n';
 
-                    // Remove duplicates and sort
+                // If no full citations found, try to extract in-text citations and generate references
+                if (fullCitations.length === 0) {
+                    console.log('No full citations found - checking for in-text citations...');
+
+                    // Extract in-text citations like (Author 2023) or (Author et al. 2023)
+                    const inTextPattern = /\(([A-Z][a-z]+(?:\s+(?:et\s+al\.?|&|and)\s+[A-Z][a-z]+)?)\s+(\d{4}[a-z]?)\)/g;
+                    const inTextCitations = new Set();
+
+                    [cleanIntroduction, ...sections.map(s => s.content), cleanConclusion].forEach(text => {
+                        if (text) {
+                            const matches = text.matchAll(inTextPattern);
+                            for (const match of matches) {
+                                inTextCitations.add(match[0]); // Store the full citation like "(Author 2023)"
+                            }
+                        }
+                    });
+
+                    if (inTextCitations.size > 0) {
+                        console.log(`Found ${inTextCitations.size} in-text citations - generating References section via AI...`);
+
+                        try {
+                            // Ask AI to generate full references for the in-text citations
+                            const citationsList = Array.from(inTextCitations).join(', ');
+
+                            const referencesResult = await generateSingleDataForSEOContent(
+                                `Generate References section for: ${citationsList}`,
+                                500,
+                                {
+                                    creativityIndex: 0.3, // Lower creativity for factual references
+                                    supplementalContext: `Provide REAL, verifiable full references in Chicago style format for these in-text citations: ${citationsList}. Format: Author Last, First. Year. "Title." *Journal* Vol(Issue): Pages. DOI. Number each reference.`
+                                }
+                            );
+
+                            if (referencesResult && referencesResult.text) {
+                                references = 'References\n\n' + referencesResult.text.trim() + '\n\nNote: Readers are encouraged to consult the original sources for detailed information and to verify current research findings.';
+                                console.log(`✅ Generated References section with ${inTextCitations.size} citations`);
+                            }
+                        } catch (error) {
+                            console.error('Failed to generate References section:', error);
+                        }
+                    } else {
+                        console.log('No in-text citations found either - skipping References section');
+                    }
+                } else {
+                    // Use extracted full citations
+                    references = 'References\n\n';
                     const uniqueCitations = [...new Set(fullCitations)].sort();
                     uniqueCitations.forEach((citation, index) => {
                         references += `${index + 1}. ${citation}\n\n`;
                     });
-
                     references += 'Note: Readers are encouraged to consult the original sources for detailed information and to verify current research findings.';
-                } else {
-                    console.log('No citations found - skipping References section');
                 }
 
                 updateProgressStage(stageIndex++, '✓ References extracted');
-                console.log(`References section: ${references ? 'Generated with ' + fullCitations.length + ' citations' : 'Skipped (no citations)'}`);
+                console.log(`References section: ${references ? 'Generated with citations' : 'Skipped (no citations)'}`);
 
                 // Step 6.5: Affiliate Link Insertion (GUARANTEED if program selected)
                 if (affiliateProgram) {
@@ -16137,21 +16177,70 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
 
                 console.log(`Found ${fullCitations.length} full citations in content`);
 
-                // Generate References section with proper Chicago style formatting (no emojis)
+                // Generate References section
                 let references = '';
-                if (fullCitations.length > 0) {
-                    references = 'References\n\n';
 
-                    // Remove duplicates and sort
+                // If no full citations found, try to extract in-text citations and generate references
+                if (fullCitations.length === 0) {
+                    console.log('No full citations found - checking for in-text citations...');
+
+                    // Extract in-text citations like (Author 2023) or (Author et al. 2023)
+                    const inTextPattern = /\(([A-Z][a-z]+(?:\s+(?:et\s+al\.?|&|and)\s+[A-Z][a-z]+)?)\s+(\d{4}[a-z]?)\)/g;
+                    const inTextCitations = new Set();
+
+                    [cleanIntroduction, ...generatedSections.map(s => s.content), cleanConclusion].forEach(text => {
+                        if (text) {
+                            const matches = text.matchAll(inTextPattern);
+                            for (const match of matches) {
+                                inTextCitations.add(match[0]); // Store the full citation like "(Author 2023)"
+                            }
+                        }
+                    });
+
+                    if (inTextCitations.size > 0) {
+                        console.log(`Found ${inTextCitations.size} in-text citations - generating References section via AI...`);
+
+                        try {
+                            // Ask AI to generate full references for the in-text citations
+                            const citationsList = Array.from(inTextCitations).join(', ');
+                            const referencesPrompt = `Generate a "References" section for an article about "${keyword}". The article contains these in-text citations: ${citationsList}
+
+For each citation, provide a REAL, verifiable full reference in Chicago style format:
+Author Last Name, First Initial(s). Year. "Article Title." *Journal Name* Volume(Issue): Page numbers. https://doi.org/...
+
+IMPORTANT:
+- Only include REAL, peer-reviewed published research
+- Use actual journal articles that exist
+- Include proper DOI links where available
+- Format in Chicago style
+- One reference per line
+- Number each reference (1., 2., etc.)
+
+Return ONLY the formatted references list, no intro text, no explanation.`;
+
+                            const referencesContent = await generatePhase(referencesPrompt, 800);
+
+                            if (referencesContent && referencesContent.trim()) {
+                                references = 'References\n\n' + referencesContent.trim() + '\n\nNote: Readers are encouraged to consult the original sources for detailed information and to verify current research findings.';
+                                console.log(`✅ Generated References section with ${inTextCitations.size} citations`);
+                            }
+                        } catch (error) {
+                            console.error('Failed to generate References section:', error);
+                        }
+                    } else {
+                        console.log('No in-text citations found either - skipping References section');
+                    }
+                } else {
+                    // Use extracted full citations
+                    references = 'References\n\n';
                     const uniqueCitations = [...new Set(fullCitations)].sort();
                     uniqueCitations.forEach((citation, index) => {
                         references += `${index + 1}. ${citation}\n\n`;
                     });
-
                     references += 'Note: Readers are encouraged to consult the original sources for detailed information and to verify current research findings.';
                 }
 
-                console.log(`References section: ${references ? 'Generated with ' + fullCitations.length + ' citations' : 'Skipped (no citations)'}`);
+                console.log(`References section: ${references ? 'Generated with citations' : 'Skipped (no citations)'}`);
 
                 // Phase 5: Assembly
                 updateProgressStage(5, 'Assembling article...');
