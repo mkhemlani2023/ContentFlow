@@ -24811,7 +24811,15 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 }
 
                 // Add References if exists
+                console.log('📚 === REFERENCES DEBUG (WordPress Publishing) ===');
+                console.log('Article has references?', !!article.content?.references);
                 if (article.content?.references) {
+                    console.log('References content (first 200 chars):', article.content.references.substring(0, 200));
+                }
+                console.log('=== END REFERENCES DEBUG ===');
+
+                if (article.content?.references) {
+                    console.log('✅ Adding References section to WordPress content');
                     htmlContent += `<!-- wp:heading {"level":2} -->\n`;
                     htmlContent += `<h2 id="references">References</h2>\n`;
                     htmlContent += `<!-- /wp:heading -->\n\n`;
