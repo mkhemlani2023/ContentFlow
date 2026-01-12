@@ -24454,6 +24454,21 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                     });
                 }
 
+                // Insert banner after introduction if one is assigned for "after-intro" placement
+                const afterIntroBanner = article.metadata?.banners?.find(b =>
+                    b.assigned_placement === 'after-intro'
+                );
+                if (afterIntroBanner) {
+                    console.log('🎨 Inserting after-intro banner:', afterIntroBanner);
+                    htmlContent += `<!-- wp:html -->\n`;
+                    htmlContent += `<div style="text-align: center; margin: 30px 0;">\n`;
+                    htmlContent += `  <a href="${afterIntroBanner.affiliate_link || afterIntroBanner._program?.affiliate_link}" target="_blank" rel="noopener noreferrer nofollow sponsored">\n`;
+                    htmlContent += `    <img src="${afterIntroBanner.url}" alt="${afterIntroBanner.alt_text || afterIntroBanner._program?.name + ' Banner'}" width="${afterIntroBanner.width}" height="${afterIntroBanner.height}" style="max-width: 100%; height: auto;" />\n`;
+                    htmlContent += `  </a>\n`;
+                    htmlContent += `</div>\n`;
+                    htmlContent += `<!-- /wp:html -->\n\n`;
+                }
+
                 // Add Table of Contents if exists
                 if (article.tableOfContents && article.tableOfContents.length > 0) {
                     htmlContent += `<!-- wp:group {"style":{"spacing":{"padding":{"top":"20px","right":"20px","bottom":"20px","left":"20px"}},"border":{"radius":"8px"}},"backgroundColor":"light-gray"} -->\n`;
@@ -24476,6 +24491,12 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
 
                 // Add sections with images assigned to each section
                 if (article.content?.sections && Array.isArray(article.content.sections)) {
+                    // Calculate mid-article position for banner placement
+                    const midArticleIndex = Math.floor(article.content.sections.length / 2);
+                    const midArticleBanner = article.metadata?.banners?.find(b =>
+                        b.assigned_placement === 'mid-article'
+                    );
+
                     article.content.sections.forEach((section, index) => {
                         if (section.title) {
                             // Use existing anchor or create one from title for TOC linking
@@ -24530,7 +24551,34 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                                 htmlContent += `<!-- /wp:paragraph -->\n\n`;
                             });
                         }
+
+                        // Insert mid-article banner after the middle section
+                        if (midArticleBanner && index === midArticleIndex) {
+                            console.log('🎨 Inserting mid-article banner after section', index);
+                            htmlContent += `<!-- wp:html -->\n`;
+                            htmlContent += `<div style="text-align: center; margin: 30px 0;">\n`;
+                            htmlContent += `  <a href="${midArticleBanner.affiliate_link || midArticleBanner._program?.affiliate_link}" target="_blank" rel="noopener noreferrer nofollow sponsored">\n`;
+                            htmlContent += `    <img src="${midArticleBanner.url}" alt="${midArticleBanner.alt_text || midArticleBanner._program?.name + ' Banner'}" width="${midArticleBanner.width}" height="${midArticleBanner.height}" style="max-width: 100%; height: auto;" />\n`;
+                            htmlContent += `  </a>\n`;
+                            htmlContent += `</div>\n`;
+                            htmlContent += `<!-- /wp:html -->\n\n`;
+                        }
                     });
+                }
+
+                // Insert banner before conclusion if one is assigned for "before-conclusion" placement
+                const beforeConclusionBanner = article.metadata?.banners?.find(b =>
+                    b.assigned_placement === 'before-conclusion'
+                );
+                if (beforeConclusionBanner) {
+                    console.log('🎨 Inserting before-conclusion banner');
+                    htmlContent += `<!-- wp:html -->\n`;
+                    htmlContent += `<div style="text-align: center; margin: 30px 0;">\n`;
+                    htmlContent += `  <a href="${beforeConclusionBanner.affiliate_link || beforeConclusionBanner._program?.affiliate_link}" target="_blank" rel="noopener noreferrer nofollow sponsored">\n`;
+                    htmlContent += `    <img src="${beforeConclusionBanner.url}" alt="${beforeConclusionBanner.alt_text || beforeConclusionBanner._program?.name + ' Banner'}" width="${beforeConclusionBanner.width}" height="${beforeConclusionBanner.height}" style="max-width: 100%; height: auto;" />\n`;
+                    htmlContent += `  </a>\n`;
+                    htmlContent += `</div>\n`;
+                    htmlContent += `<!-- /wp:html -->\n\n`;
                 }
 
                 // Add conclusion if exists
