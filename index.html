@@ -1345,20 +1345,25 @@
                 }
             },
 
-            // Load all articles
+            // Load all articles (optimized - only fetches fields needed for list view)
             async loadArticles(limit = 50) {
                 if (!currentUser) {
                     return { success: false, error: 'User not logged in' };
                 }
                 try {
+                    // PERFORMANCE OPTIMIZATION: Only select columns needed for list view
+                    // This prevents timeout by not loading large 'content' field (can be 10KB+ per article)
                     const { data, error } = await supabaseClient
                         .from('generated_articles')
-                        .select('*')
+                        .select('id, title, keyword, word_count, model_tier, created_at, updated_at, metadata, images')
                         .eq('user_id', currentUser.id)
                         .order('created_at', { ascending: false })
                         .limit(limit);
 
                     if (error) throw error;
+
+                    // For backwards compatibility, we need to add content property when articles are viewed
+                    // The full content will be loaded on-demand when user clicks to view an article
                     return { success: true, data };
                 } catch (error) {
                     console.error('Error loading articles:', error);
@@ -11766,36 +11771,9 @@ Return ONLY the JSON array, no other text.`;
 
             const articlesHtml = articles.map(article => {
                 try {
-                    // Defensive JSON parsing with error handling
-                    let content;
+                    // PERFORMANCE OPTIMIZATION: Content field is no longer loaded in list view
+                    // It will be loaded on-demand when user clicks to view/edit/publish
                     let metadata = {};
-
-                    // Parse article content
-                    try {
-                        if (typeof article.content === 'string') {
-                            const parsed = JSON.parse(article.content);
-                            // Handle both old and new save formats
-                            content = parsed.content || parsed;
-                        } else if (typeof article.content === 'object') {
-                            content = article.content.content || article.content;
-                        } else {
-                            throw new Error('Invalid content format');
-                        }
-                    } catch (parseError) {
-                        console.error('Error parsing article content:', parseError, 'Article ID:', article.id);
-                        return `
-                            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin-bottom: 15px;">
-                                <div style="color: #991b1b;">
-                                    <h3 style="margin: 0 0 10px 0;">⚠️ Corrupted Article Data</h3>
-                                    <p style="margin: 0; font-size: 14px;">Article ID: ${article.id}</p>
-                                    <p style="margin: 5px 0 15px 0; font-size: 13px;">This article's data is corrupted and cannot be displayed.</p>
-                                    <button onclick="deleteSavedArticle('${article.id}')" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">
-                                        🗑️ Delete Corrupted Article
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    }
 
                     // Parse metadata
                     try {
@@ -11807,8 +11785,8 @@ Return ONLY the JSON array, no other text.`;
                         metadata = {};
                     }
 
-                    // Extract title safely
-                    const title = content?.title || article.title || 'Untitled Article';
+                    // Extract title safely (now directly from article.title field)
+                    const title = article.title || 'Untitled Article';
                     const createdDate = new Date(article.created_at).toLocaleDateString();
 
                     // Escape single quotes in title for onclick handlers
