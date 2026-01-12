@@ -9060,6 +9060,80 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
             showToast('Opening link in new tab...', 'info');
         }
 
+        // Extract banner data from HTML snippet
+        function extractBannerData(index) {
+            const assetCodeField = document.querySelector(`.banner-asset-code[data-index="${index}"]`);
+            const urlField = document.querySelector(`.banner-url[data-index="${index}"]`);
+            const widthField = document.querySelector(`.banner-width[data-index="${index}"]`);
+            const heightField = document.querySelector(`.banner-height[data-index="${index}"]`);
+            const statusDiv = document.getElementById(`banner-extraction-status-${index}`);
+            const infoSpan = document.getElementById(`banner-detected-info-${index}`);
+
+            if (!assetCodeField || !assetCodeField.value.trim()) {
+                statusDiv.style.display = 'none';
+                return;
+            }
+
+            const htmlSnippet = assetCodeField.value.trim();
+
+            try {
+                // Extract image src
+                const srcMatch = htmlSnippet.match(/src=["']([^"']+)["']/i);
+                const imageUrl = srcMatch ? srcMatch[1] : null;
+
+                // Extract width
+                const widthMatch = htmlSnippet.match(/width=["']?(\d+)["']?/i);
+                const width = widthMatch ? parseInt(widthMatch[1]) : null;
+
+                // Extract height
+                const heightMatch = htmlSnippet.match(/height=["']?(\d+)["']?/i);
+                const height = heightMatch ? parseInt(heightMatch[1]) : null;
+
+                let extractedInfo = [];
+
+                // Auto-fill image URL
+                if (imageUrl) {
+                    urlField.value = imageUrl;
+                    extractedInfo.push(`📸 Image URL: ${imageUrl.substring(0, 50)}${imageUrl.length > 50 ? '...' : ''}`);
+                }
+
+                // Auto-fill width
+                if (width) {
+                    widthField.value = width;
+                    extractedInfo.push(`↔️ Width: ${width}px`);
+                }
+
+                // Auto-fill height
+                if (height) {
+                    heightField.value = height;
+                    extractedInfo.push(`↕️ Height: ${height}px`);
+                }
+
+                // Show extraction status
+                if (extractedInfo.length > 0) {
+                    infoSpan.innerHTML = extractedInfo.join('<br>');
+                    statusDiv.style.display = 'block';
+                    statusDiv.style.background = '#f0fdf4';
+                    statusDiv.style.border = '1px solid #86efac';
+                    statusDiv.style.color = '#166534';
+                } else {
+                    statusDiv.style.display = 'block';
+                    statusDiv.style.background = '#fef3c7';
+                    statusDiv.style.border = '1px solid #fde047';
+                    statusDiv.style.color = '#78350f';
+                    infoSpan.innerHTML = '⚠️ Could not extract banner data from HTML. Please paste the full <img> tag.';
+                }
+
+            } catch (error) {
+                console.error('Error extracting banner data:', error);
+                statusDiv.style.display = 'block';
+                statusDiv.style.background = '#fee2e2';
+                statusDiv.style.border = '1px solid #fca5a5';
+                statusDiv.style.color = '#dc2626';
+                infoSpan.innerHTML = '❌ Error parsing HTML snippet';
+            }
+        }
+
         // Add banner field
         function addBannerField() {
             const bannersList = document.getElementById('bannersList');
@@ -9085,28 +9159,43 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
                 <div style="display: grid; gap: 12px;">
                     <div>
-                        <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Banner Image URL *</label>
-                        <input type="url" class="banner-url" data-index="${currentCount}" placeholder="https://cdn.example.com/banner-728x90.jpg" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                        <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Asset Code (HTML Snippet from Viome) *</label>
+                        <textarea class="banner-asset-code" data-index="${currentCount}" placeholder="Paste the full HTML snippet from Viome or other affiliate network&#10;Example: <a href=&quot;...&quot;><img src=&quot;//a.impactradius-go.com/display-ad/13051-3401717&quot; width=&quot;120&quot; height=&quot;600&quot;/></a>" style="width: 100%; min-height: 100px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; font-family: 'Courier New', monospace; resize: vertical; background: #fafafa;" onchange="extractBannerData(${currentCount})" onblur="extractBannerData(${currentCount})"></textarea>
+                        <div id="banner-extraction-status-${currentCount}" style="margin-top: 6px; font-size: 11px; padding: 8px; border-radius: 4px; display: none;">
+                            <div style="font-weight: 600; margin-bottom: 4px;">✓ Auto-Extracted:</div>
+                            <div id="banner-detected-info-${currentCount}" style="line-height: 1.6;"></div>
+                        </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Tracking Link (Affiliate Redirect URL) *</label>
+                        <input type="url" class="banner-tracking-link" data-index="${currentCount}" placeholder="https://viomehq.sjv.io/c/6817009/3401717/13051" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                        <div style="margin-top: 4px; font-size: 11px; color: #94a3b8;">
+                            💡 This is your affiliate tracking link that earns commissions
+                        </div>
+                    </div>
+
+                    <div style="display: none;">
+                        <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Image URL (Auto-extracted)</label>
+                        <input type="url" class="banner-url" data-index="${currentCount}" placeholder="Auto-filled from asset code" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; background: #f8fafc;" readonly>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
                         <div>
-                            <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Banner Size *</label>
-                            <select class="banner-size" data-index="${currentCount}" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; background: white;">
-                                <option value="728x90">728×90 (Leaderboard)</option>
-                                <option value="300x250" selected>300×250 (Medium Rectangle)</option>
-                                <option value="336x280">336×280 (Large Rectangle)</option>
-                                <option value="320x50">320×50 (Mobile Banner)</option>
-                                <option value="320x100">320×100 (Large Mobile)</option>
-                            </select>
+                            <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Width (px) *</label>
+                            <input type="number" class="banner-width" data-index="${currentCount}" placeholder="300" min="1" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;" value="300">
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Placement Preference</label>
+                            <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Height (px) *</label>
+                            <input type="number" class="banner-height" data-index="${currentCount}" placeholder="250" min="1" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;" value="250">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 6px; color: #64748b; font-size: 12px; font-weight: 600;">Placement</label>
                             <select class="banner-placement" data-index="${currentCount}" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; background: white;">
-                                <option value="any" selected>Any (Best Position)</option>
-                                <option value="after-intro">After Introduction</option>
+                                <option value="any" selected>Any</option>
+                                <option value="after-intro">After Intro</option>
                                 <option value="mid-article">Mid-Article</option>
-                                <option value="before-conclusion">Before Conclusion</option>
+                                <option value="before-conclusion">Before End</option>
                             </select>
                         </div>
                     </div>
@@ -9162,15 +9251,15 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
                 bannerItems.forEach((item, index) => {
                     const url = item.querySelector('.banner-url').value.trim();
-                    const size = item.querySelector('.banner-size').value;
+                    const width = parseInt(item.querySelector('.banner-width').value) || 300;
+                    const height = parseInt(item.querySelector('.banner-height').value) || 250;
                     const placement = item.querySelector('.banner-placement').value;
                     const altText = item.querySelector('.banner-alt').value.trim();
-                    const bannerLink = item.querySelector('.banner-affiliate-link').value.trim();
+                    const trackingLink = item.querySelector('.banner-tracking-link').value.trim();
                     const isActive = item.querySelector('.banner-active').checked;
 
                     if (url) {
-                        // Parse width and height from size (e.g., "728x90" → 728, 90)
-                        const [width, height] = size.split('x').map(Number);
+                        const size = `${width}x${height}`;
 
                         banners.push({
                             url: url,
@@ -9178,7 +9267,7 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                             width: width,
                             height: height,
                             alt_text: altText || `${window.currentAffiliateProgram.program_name} Banner`,
-                            affiliate_link: bannerLink || affiliateLink, // Use banner-specific or default
+                            affiliate_link: trackingLink || affiliateLink, // Use banner-specific tracking link or default
                             placement_preference: placement,
                             is_active: isActive,
                             created_at: new Date().toISOString()
