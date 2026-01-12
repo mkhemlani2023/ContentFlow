@@ -8168,6 +8168,43 @@
                                 </div>
                             </div>
 
+                            <!-- Site Verification Section -->
+                            <div id="verificationSection" style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px; margin-bottom: 15px;">
+                                <h4 style="color: #1e293b; margin: 0 0 10px 0; font-size: 14px; font-weight: 600;">🔐 Site Verification (Optional)</h4>
+                                <div style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
+                                    Add verification meta tags or code snippets for affiliate networks and analytics platforms.
+                                </div>
+
+                                <div style="margin-bottom: 12px;">
+                                    <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #64748b; text-transform: uppercase;">
+                                        Verification Code/Meta Tag
+                                    </label>
+                                    <textarea
+                                        id="verificationCode"
+                                        placeholder="Paste verification code here (e.g., Impact Marketplace meta tag, Google Search Console, etc.)
+Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2618a524e2a'>"
+                                        style="width: 100%; min-height: 100px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 12px; color: #334155; resize: vertical;"
+                                    ></textarea>
+                                </div>
+
+                                <div style="background: #f0f9ff; border: 1px solid #bae6fd; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+                                    <div style="font-size: 11px; color: #0c4a6e; line-height: 1.6;">
+                                        <strong>💡 Supported Verification Types:</strong><br>
+                                        • Impact Marketplace meta tags<br>
+                                        • Google Search Console verification<br>
+                                        • Bing Webmaster Tools<br>
+                                        • Pinterest site verification<br>
+                                        • Any HTML meta tag or script snippet
+                                    </div>
+                                </div>
+
+                                <div style="background: #fef3c7; border: 1px solid #fde047; padding: 10px; border-radius: 6px;">
+                                    <div style="font-size: 11px; color: #78350f; line-height: 1.6;">
+                                        <strong>⚠️ Note:</strong> This code will be automatically inserted into your WordPress site's &lt;head&gt; section when you publish articles. Make sure your WordPress theme supports custom head injection or use a plugin like "Insert Headers and Footers".
+                                    </div>
+                                </div>
+                            </div>
+
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <button onclick="testNewBlogConnection()" style="background: #1E293B; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#1E293B'">
                                     Test Connection
@@ -12953,6 +12990,10 @@ Return ONLY the JSON array, no other text.`;
             const username = elements.blogUsername.value.trim();
             const password = elements.blogPassword.value.trim();
 
+            // Get verification code (optional)
+            const verificationCodeElement = document.getElementById('verificationCode');
+            const verificationCode = verificationCodeElement ? verificationCodeElement.value.trim() : '';
+
             if (!name || !url || !signinUrl || !username || !password) {
                 alert('Please fill in all required fields (Blog Name, Website URL, Sign in URL, Username, and Application Password)');
                 return;
@@ -12973,7 +13014,8 @@ Return ONLY the JSON array, no other text.`;
                 username: btoa(username), // Basic encoding
                 password: btoa(password), // Basic encoding
                 status: 'active',
-                user_id: currentUser.id
+                user_id: currentUser.id,
+                verification_code: verificationCode || null // Add verification code
             };
 
             // Add OAuth tokens if user connected Google Analytics
@@ -13369,6 +13411,23 @@ Return ONLY the JSON array, no other text.`;
                                     </select>
                                 </div>
                             </div>
+
+                            <!-- Site Verification Section -->
+                            <div id="editVerificationSection" style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
+                                <h4 style="color: #475569; margin: 0 0 10px 0; font-size: 14px; font-weight: 600;">🔐 Site Verification (Optional)</h4>
+                                <div style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
+                                    Add verification meta tags or code snippets for affiliate networks and analytics platforms.
+                                </div>
+
+                                <div>
+                                    <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 500;">Verification Code/Meta Tag</label>
+                                    <textarea
+                                        id="editVerificationCode"
+                                        placeholder="Paste verification code here (e.g., Impact Marketplace meta tag)"
+                                        style="width: 100%; min-height: 80px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 12px; color: #334155; resize: vertical;"
+                                    >${blog.verification_code || ''}</textarea>
+                                </div>
+                            </div>
                         </div>
 
                         <div style="display: flex; gap: 12px; margin-top: 30px;">
@@ -13406,6 +13465,10 @@ Return ONLY the JSON array, no other text.`;
             const password = document.getElementById('editBlogPassword').value.trim();
             const apiKey = document.getElementById('editBlogApiKey').value.trim();
 
+            // Get verification code (optional)
+            const verificationCodeElement = document.getElementById('editVerificationCode');
+            const verificationCode = verificationCodeElement ? verificationCodeElement.value.trim() : '';
+
             if (!name || !url || !signinUrl || !username || !password) {
                 alert('Please fill in all required fields');
                 return;
@@ -13419,6 +13482,7 @@ Return ONLY the JSON array, no other text.`;
                 username: btoa(username),
                 password: btoa(password),
                 api_key: apiKey ? btoa(apiKey) : '',
+                verification_code: verificationCode || null,
                 updated_at: new Date().toISOString()
             };
 
