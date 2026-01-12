@@ -9250,13 +9250,52 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                 const banners = [];
 
                 bannerItems.forEach((item, index) => {
-                    const url = item.querySelector('.banner-url').value.trim();
-                    const width = parseInt(item.querySelector('.banner-width').value) || 300;
-                    const height = parseInt(item.querySelector('.banner-height').value) || 250;
-                    const placement = item.querySelector('.banner-placement').value;
-                    const altText = item.querySelector('.banner-alt').value.trim();
-                    const trackingLink = item.querySelector('.banner-tracking-link').value.trim();
-                    const isActive = item.querySelector('.banner-active').checked;
+                    // Get URL field (works for both old textarea and old input)
+                    const urlField = item.querySelector('.banner-url');
+                    const url = urlField ? urlField.value.trim() : '';
+
+                    // NEW FORM: Get width and height from separate fields
+                    const widthField = item.querySelector('.banner-width');
+                    const heightField = item.querySelector('.banner-height');
+
+                    let width, height;
+
+                    if (widthField && heightField) {
+                        // New form structure with separate width/height fields
+                        width = parseInt(widthField.value) || 300;
+                        height = parseInt(heightField.value) || 250;
+                    } else {
+                        // OLD FORM: Parse from size dropdown (backward compatibility)
+                        const sizeField = item.querySelector('.banner-size');
+                        if (sizeField) {
+                            const [w, h] = sizeField.value.split('x').map(Number);
+                            width = w || 300;
+                            height = h || 250;
+                        } else {
+                            // Fallback defaults
+                            width = 300;
+                            height = 250;
+                        }
+                    }
+
+                    const placementField = item.querySelector('.banner-placement');
+                    const placement = placementField ? placementField.value : 'any';
+
+                    const altTextField = item.querySelector('.banner-alt');
+                    const altText = altTextField ? altTextField.value.trim() : '';
+
+                    // NEW FORM: tracking link field
+                    const trackingLinkField = item.querySelector('.banner-tracking-link');
+                    let trackingLink = trackingLinkField ? trackingLinkField.value.trim() : '';
+
+                    // OLD FORM: banner-specific affiliate link field (fallback)
+                    if (!trackingLink) {
+                        const oldLinkField = item.querySelector('.banner-affiliate-link');
+                        trackingLink = oldLinkField ? oldLinkField.value.trim() : '';
+                    }
+
+                    const activeField = item.querySelector('.banner-active');
+                    const isActive = activeField ? activeField.checked : true;
 
                     if (url) {
                         const size = `${width}x${height}`;
