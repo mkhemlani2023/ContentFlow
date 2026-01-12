@@ -14779,17 +14779,18 @@ Return ONLY the JSON array, no other text or markdown.`;
                             // Ask AI to generate full references for the in-text citations
                             const citationsList = Array.from(inTextCitations).join(', ');
 
-                            const referencesResult = await generateSingleDataForSEOContent(
-                                `Generate References section for: ${citationsList}`,
+                            // Use the generateSection function that's available in DataforSEO context
+                            const referencesContent = await generateSection(
+                                title,
                                 500,
-                                {
-                                    creativityIndex: 0.3, // Lower creativity for factual references
-                                    supplementalContext: `Provide REAL, verifiable full references in Chicago style format for these in-text citations: ${citationsList}. Format: Author Last, First. Year. "Title." *Journal* Vol(Issue): Pages. DOI. Number each reference.`
-                                }
+                                'references',
+                                [],
+                                `Generate a "References" section with REAL, verifiable full references in Chicago style format for these in-text citations: ${citationsList}. Format each as: Author Last, First. Year. "Title." *Journal* Vol(Issue): Pages. DOI/URL. Number each reference (1., 2., etc.). Return ONLY the formatted references list, no intro text.`,
+                                ''
                             );
 
-                            if (referencesResult && referencesResult.text) {
-                                references = 'References\n\n' + referencesResult.text.trim() + '\n\nNote: Readers are encouraged to consult the original sources for detailed information and to verify current research findings.';
+                            if (referencesContent && referencesContent.trim()) {
+                                references = 'References\n\n' + referencesContent.trim() + '\n\nNote: Readers are encouraged to consult the original sources for detailed information and to verify current research findings.';
                                 console.log(`✅ Generated References section with ${inTextCitations.size} citations`);
                             }
                         } catch (error) {
@@ -24490,6 +24491,17 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         });
 
                         try {
+                            // Check if banner.url is an affiliate redirect link (not an actual image)
+                            // Affiliate links typically don't end with image extensions
+                            const isImageUrl = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(banner.url);
+
+                            if (!isImageUrl) {
+                                console.warn(`⚠️ Skipping banner ${i + 1}: URL appears to be an affiliate link, not a direct image URL:`, banner.url);
+                                console.warn(`   Please upload actual banner image URLs (ending in .jpg, .png, etc.) to the banner_images.url field`);
+                                console.warn(`   The affiliate link should be in banner_images.affiliate_link field`);
+                                continue;
+                            }
+
                             // Download banner image
                             const bannerResponse = await fetch(banner.url);
                             if (!bannerResponse.ok) {
@@ -24643,15 +24655,26 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 const afterIntroBanner = uploadedBanners.find(b =>
                     b.assigned_placement === 'after-intro'
                 );
-                if (afterIntroBanner) {
+
+                // Fallback: If no uploaded banners, check original metadata
+                const afterIntroBannerFallback = !afterIntroBanner && article.metadata?.banners?.find(b =>
+                    b.assigned_placement === 'after-intro'
+                );
+
+                const bannerToInsert = afterIntroBanner || afterIntroBannerFallback;
+
+                if (bannerToInsert) {
+                    const imageUrl = bannerToInsert.wordpress_url || bannerToInsert.url;
                     console.log('🎨 Inserting after-intro banner:', {
-                        wordpress_url: afterIntroBanner.wordpress_url,
-                        program: afterIntroBanner._program?.name
+                        wordpress_url: bannerToInsert.wordpress_url,
+                        fallback_url: bannerToInsert.url,
+                        using: imageUrl,
+                        program: bannerToInsert._program?.name
                     });
                     htmlContent += `<!-- wp:html -->\n`;
                     htmlContent += `<div style="text-align: center; margin: 30px 0;">\n`;
-                    htmlContent += `  <a href="${afterIntroBanner.affiliate_link || afterIntroBanner._program?.affiliate_link}" target="_blank" rel="noopener noreferrer nofollow sponsored">\n`;
-                    htmlContent += `    <img src="${afterIntroBanner.wordpress_url}" alt="${afterIntroBanner.alt_text || afterIntroBanner._program?.name + ' Banner'}" width="${afterIntroBanner.width}" height="${afterIntroBanner.height}" style="max-width: 100%; height: auto;" />\n`;
+                    htmlContent += `  <a href="${bannerToInsert.affiliate_link || bannerToInsert._program?.affiliate_link}" target="_blank" rel="noopener noreferrer nofollow sponsored">\n`;
+                    htmlContent += `    <img src="${imageUrl}" alt="${bannerToInsert.alt_text || bannerToInsert._program?.name + ' Banner'}" width="${bannerToInsert.width}" height="${bannerToInsert.height}" style="max-width: 100%; height: auto;" />\n`;
                     htmlContent += `  </a>\n`;
                     htmlContent += `</div>\n`;
                     htmlContent += `<!-- /wp:html -->\n\n`;
@@ -24741,15 +24764,23 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         }
 
                         // Insert mid-article banner after the middle section
-                        if (midArticleBanner && index === midArticleIndex) {
+                        const midBannerFallback = !midArticleBanner && article.metadata?.banners?.find(b =>
+                            b.assigned_placement === 'mid-article'
+                        );
+                        const midBannerToInsert = midArticleBanner || midBannerFallback;
+
+                        if (midBannerToInsert && index === midArticleIndex) {
+                            const imageUrl = midBannerToInsert.wordpress_url || midBannerToInsert.url;
                             console.log('🎨 Inserting mid-article banner after section', index, {
-                                wordpress_url: midArticleBanner.wordpress_url,
-                                program: midArticleBanner._program?.name
+                                wordpress_url: midBannerToInsert.wordpress_url,
+                                fallback_url: midBannerToInsert.url,
+                                using: imageUrl,
+                                program: midBannerToInsert._program?.name
                             });
                             htmlContent += `<!-- wp:html -->\n`;
                             htmlContent += `<div style="text-align: center; margin: 30px 0;">\n`;
-                            htmlContent += `  <a href="${midArticleBanner.affiliate_link || midArticleBanner._program?.affiliate_link}" target="_blank" rel="noopener noreferrer nofollow sponsored">\n`;
-                            htmlContent += `    <img src="${midArticleBanner.wordpress_url}" alt="${midArticleBanner.alt_text || midArticleBanner._program?.name + ' Banner'}" width="${midArticleBanner.width}" height="${midArticleBanner.height}" style="max-width: 100%; height: auto;" />\n`;
+                            htmlContent += `  <a href="${midBannerToInsert.affiliate_link || midBannerToInsert._program?.affiliate_link}" target="_blank" rel="noopener noreferrer nofollow sponsored">\n`;
+                            htmlContent += `    <img src="${imageUrl}" alt="${midBannerToInsert.alt_text || midBannerToInsert._program?.name + ' Banner'}" width="${midBannerToInsert.width}" height="${midBannerToInsert.height}" style="max-width: 100%; height: auto;" />\n`;
                             htmlContent += `  </a>\n`;
                             htmlContent += `</div>\n`;
                             htmlContent += `<!-- /wp:html -->\n\n`;
@@ -24761,15 +24792,26 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 const beforeConclusionBanner = uploadedBanners.find(b =>
                     b.assigned_placement === 'before-conclusion'
                 );
-                if (beforeConclusionBanner) {
+
+                // Fallback: If no uploaded banners, check original metadata
+                const beforeConclusionBannerFallback = !beforeConclusionBanner && article.metadata?.banners?.find(b =>
+                    b.assigned_placement === 'before-conclusion'
+                );
+
+                const conclusionBannerToInsert = beforeConclusionBanner || beforeConclusionBannerFallback;
+
+                if (conclusionBannerToInsert) {
+                    const imageUrl = conclusionBannerToInsert.wordpress_url || conclusionBannerToInsert.url;
                     console.log('🎨 Inserting before-conclusion banner:', {
-                        wordpress_url: beforeConclusionBanner.wordpress_url,
-                        program: beforeConclusionBanner._program?.name
+                        wordpress_url: conclusionBannerToInsert.wordpress_url,
+                        fallback_url: conclusionBannerToInsert.url,
+                        using: imageUrl,
+                        program: conclusionBannerToInsert._program?.name
                     });
                     htmlContent += `<!-- wp:html -->\n`;
                     htmlContent += `<div style="text-align: center; margin: 30px 0;">\n`;
-                    htmlContent += `  <a href="${beforeConclusionBanner.affiliate_link || beforeConclusionBanner._program?.affiliate_link}" target="_blank" rel="noopener noreferrer nofollow sponsored">\n`;
-                    htmlContent += `    <img src="${beforeConclusionBanner.wordpress_url}" alt="${beforeConclusionBanner.alt_text || beforeConclusionBanner._program?.name + ' Banner'}" width="${beforeConclusionBanner.width}" height="${beforeConclusionBanner.height}" style="max-width: 100%; height: auto;" />\n`;
+                    htmlContent += `  <a href="${conclusionBannerToInsert.affiliate_link || conclusionBannerToInsert._program?.affiliate_link}" target="_blank" rel="noopener noreferrer nofollow sponsored">\n`;
+                    htmlContent += `    <img src="${imageUrl}" alt="${conclusionBannerToInsert.alt_text || conclusionBannerToInsert._program?.name + ' Banner'}" width="${conclusionBannerToInsert.width}" height="${conclusionBannerToInsert.height}" style="max-width: 100%; height: auto;" />\n`;
                     htmlContent += `  </a>\n`;
                     htmlContent += `</div>\n`;
                     htmlContent += `<!-- /wp:html -->\n\n`;
