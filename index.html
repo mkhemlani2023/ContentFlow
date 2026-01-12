@@ -24491,8 +24491,24 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                         });
 
                         try {
-                            // Normalize URL - handle protocol-relative URLs (//domain.com/image.jpg)
                             let bannerUrl = banner.url;
+
+                            // SMART EXTRACTION: If user pasted entire HTML snippet, extract the image URL
+                            if (bannerUrl.includes('<img') || bannerUrl.includes('src=')) {
+                                console.log(`🔍 Detected HTML snippet - extracting image URL...`);
+
+                                // Extract src from <img src="..." />
+                                const srcMatch = bannerUrl.match(/src=["']([^"']+)["']/i);
+                                if (srcMatch && srcMatch[1]) {
+                                    bannerUrl = srcMatch[1];
+                                    console.log(`✅ Extracted image URL from snippet: ${bannerUrl}`);
+                                } else {
+                                    console.error(`❌ Could not extract image URL from HTML snippet`);
+                                    continue;
+                                }
+                            }
+
+                            // Normalize URL - handle protocol-relative URLs (//domain.com/image.jpg)
                             if (bannerUrl.startsWith('//')) {
                                 bannerUrl = 'https:' + bannerUrl;
                                 console.log(`🔧 Normalized protocol-relative URL: ${bannerUrl}`);
