@@ -24400,6 +24400,26 @@ HUMANIZED VERSION (complete, natural, ${humanizeTone}):`;
                 // Step 2: Build HTML content from article using WordPress blocks
                 let htmlContent = '';
 
+                // DEBUG: Check if article has banners
+                console.log('🎨 === BANNER DEBUG (WordPress Publishing) ===');
+                console.log('Article metadata:', article.metadata);
+                console.log('Banners array:', article.metadata?.banners);
+                console.log('Banner count:', article.metadata?.banners?.length || 0);
+                if (article.metadata?.banners && article.metadata.banners.length > 0) {
+                    console.log('✅ Article HAS banners to insert');
+                    article.metadata.banners.forEach((banner, idx) => {
+                        console.log(`  Banner ${idx + 1}:`, {
+                            placement: banner.assigned_placement,
+                            url: banner.url,
+                            program: banner._program?.name,
+                            size: banner.size
+                        });
+                    });
+                } else {
+                    console.warn('⚠️ Article has NO banners - was this article generated before banner system was implemented?');
+                }
+                console.log('=== END BANNER DEBUG ===');
+
                 // Helper function to strip out any existing image HTML from content
                 // This prevents duplication - WordPress publishing will add images based on sectionId
                 function stripImageHTML(text) {
