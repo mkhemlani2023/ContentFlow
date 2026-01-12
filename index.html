@@ -9211,44 +9211,40 @@
                 console.log(`🌐 Blog-based selection: Fetching all affiliate programs for blog ID: ${blogId}`);
 
                 try {
-                    const result = await SupabaseService.loadBlogs();
+                    // Load affiliate programs from the separate affiliate_programs table
+                    const result = await SupabaseService.loadAffiliatePrograms(blogId);
                     if (result.success && result.data) {
-                        // Find the specific blog
-                        const targetBlog = result.data.find(blog => blog.id === blogId);
+                        allPrograms = result.data;
+                        console.log(`📚 Found ${allPrograms.length} affiliate programs for blog ID: ${blogId}`);
 
-                        if (targetBlog && targetBlog.affiliate_programs && Array.isArray(targetBlog.affiliate_programs)) {
-                            allPrograms = targetBlog.affiliate_programs;
-                            console.log(`📚 Found ${allPrograms.length} affiliate programs for blog "${targetBlog.blog_name || 'Unnamed'}"`);
+                        // Gather all active banners from all programs in this blog
+                        allPrograms.forEach(program => {
+                            try {
+                                const programBanners = typeof program.banner_images === 'string'
+                                    ? JSON.parse(program.banner_images)
+                                    : (program.banner_images || []);
 
-                            // Gather all active banners from all programs in this blog
-                            allPrograms.forEach(program => {
-                                try {
-                                    const programBanners = typeof program.banner_images === 'string'
-                                        ? JSON.parse(program.banner_images)
-                                        : (program.banner_images || []);
+                                // Add each active banner with program info
+                                programBanners.forEach(banner => {
+                                    if (banner.is_active !== false) {
+                                        activeBanners.push({
+                                            ...banner,
+                                            _program: {
+                                                id: program.id,
+                                                name: program.program_name,
+                                                affiliate_link: program.affiliate_link || program.affiliate_link_template
+                                            }
+                                        });
+                                    }
+                                });
+                            } catch (e) {
+                                console.warn(`⚠️ Failed to parse banners for program ${program.program_name}:`, e);
+                            }
+                        });
 
-                                    // Add each active banner with program info
-                                    programBanners.forEach(banner => {
-                                        if (banner.is_active !== false) {
-                                            activeBanners.push({
-                                                ...banner,
-                                                _program: {
-                                                    id: program.id,
-                                                    name: program.program_name,
-                                                    affiliate_link: program.affiliate_link || program.affiliate_link_template
-                                                }
-                                            });
-                                        }
-                                    });
-                                } catch (e) {
-                                    console.warn(`⚠️ Failed to parse banners for program ${program.program_name}:`, e);
-                                }
-                            });
-
-                            console.log(`✅ Gathered ${activeBanners.length} active banners from ${allPrograms.length} programs in blog "${targetBlog.blog_name || 'Unnamed'}"`);
-                        } else {
-                            console.warn(`⚠️ Blog not found or has no affiliate programs: ${blogId}`);
-                        }
+                        console.log(`✅ Gathered ${activeBanners.length} active banners from ${allPrograms.length} programs for blog ID: ${blogId}`);
+                    } else {
+                        console.warn(`⚠️ No affiliate programs found for blog ID: ${blogId}`);
                     }
                 } catch (error) {
                     console.error('❌ Failed to load blog affiliate programs:', error);
@@ -9283,18 +9279,13 @@
             }
             // FALLBACK MODE: All blogs (if neither blogId nor affiliateProgram provided)
             else {
-                console.log('🌍 Fallback mode: Fetching banners from ALL blogs');
+                console.log('🌍 Fallback mode: Fetching banners from ALL affiliate programs across all blogs');
 
                 try {
-                    const result = await SupabaseService.loadBlogs();
+                    // Load ALL affiliate programs (no blogId filter)
+                    const result = await SupabaseService.loadAffiliatePrograms(null);
                     if (result.success && result.data) {
-                        // Extract all affiliate programs from all blogs
-                        result.data.forEach(blog => {
-                            if (blog.affiliate_programs && Array.isArray(blog.affiliate_programs)) {
-                                allPrograms.push(...blog.affiliate_programs);
-                            }
-                        });
-
+                        allPrograms = result.data;
                         console.log(`📚 Found ${allPrograms.length} total affiliate programs across ALL blogs`);
 
                         // Gather all active banners from all programs
