@@ -5396,6 +5396,211 @@ Keywords:`;
       }
     }
 
+    // MODULAR NICHE VALIDATION - STEP 3A: Generate Core Analysis (Fast)
+    if (path === '/api/validate-niche-step3a' && method === 'POST') {
+      const { niche_keyword, serp_results, competitor_domains } = body;
+
+      if (!niche_keyword || !serp_results || !competitor_domains) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Niche keyword, serp_results, and competitor_domains are required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[STEP 3A] Generating core analysis for: ${niche_keyword}`);
+        const startTime = Date.now();
+
+        if (!Array.isArray(serp_results) || serp_results.length === 0) {
+          throw new Error('No SERP data available');
+        }
+
+        // Simplified SERP data for faster processing
+        const topSerpResults = serp_results.slice(0, 5).map(result => ({
+          keyword: result.keyword,
+          top_domains: result.top_10_domains ? result.top_10_domains.slice(0, 5) : []
+        }));
+
+        const corePrompt = `Analyze niche "${niche_keyword}".
+
+SERP DATA: ${JSON.stringify(topSerpResults)}
+COMPETITORS: ${competitor_domains.length} domains (${competitor_domains.slice(0, 8).join(', ')})
+
+Return ONLY valid JSON:
+{
+  "score": <0-100>,
+  "recommendation": "<One sentence>",
+  "priority": "<high/medium/low/very-low>",
+  "estimated_monthly_traffic": <number>,
+  "avg_competition_da": <0-100>,
+  "breakdown": {
+    "search_volume": {"score": <0-30>, "rating": "<excellent/good/moderate/low>", "details": "<Brief>"},
+    "competition": {"score": <0-25>, "rating": "<low/medium/high>", "details": "<Brief>"},
+    "keyword_opportunities": {"score": <0-20>, "rating": "<excellent/good/moderate/poor>", "details": "<Brief>"},
+    "content_diversity": {"score": <0-15>, "rating": "<excellent/good/moderate/poor>", "details": "<Brief>"},
+    "commercial_intent": {"score": <0-10>, "rating": "<excellent/good/moderate/poor>", "details": "<Brief>"}
+  },
+  "competition_analysis": {
+    "total_competitors": <number>,
+    "da_distribution": {"high_da_80_plus": <count>, "medium_da_50_79": <count>, "low_da_below_50": <count>},
+    "market_saturation": "<low/medium/high> - <Brief explanation>"
+  },
+  "keyword_opportunities": [
+    {"keyword": "<keyword>", "estimated_monthly_searches": <number>, "difficulty": "<easy/medium/hard>", "buyer_intent": "<high/medium/low>"}
+  ]
+}`;
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.getseowizard.com',
+            'X-Title': 'SEO Wizard'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{ role: 'user', content: corePrompt }],
+            temperature: 0.3,
+            max_tokens: 1000
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`AI failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices[0].message.content.trim();
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        const analysis = JSON.parse(jsonMatch[0]);
+
+        const duration = Date.now() - startTime;
+        console.log(`[STEP 3A COMPLETE] ${duration}ms`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            step: '3a',
+            niche_keyword,
+            core_analysis: analysis,
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[STEP 3A ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // MODULAR NICHE VALIDATION - STEP 3B: Generate Detailed Sections (Content & Revenue)
+    if (path === '/api/validate-niche-step3b' && method === 'POST') {
+      const { niche_keyword, core_analysis } = body;
+
+      if (!niche_keyword || !core_analysis) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Niche keyword and core_analysis are required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[STEP 3B] Generating detailed sections for: ${niche_keyword}`);
+        const startTime = Date.now();
+
+        const detailPrompt = `Generate content strategy and revenue projections for niche "${niche_keyword}".
+
+NICHE SCORE: ${core_analysis.score}/100
+PRIORITY: ${core_analysis.priority}
+
+Return ONLY valid JSON:
+{
+  "content_strategy": {
+    "first_20_articles": [
+      {"title": "<Title>", "type": "<review/comparison/guide/listicle>", "priority": "<high/medium/low>"}
+    ],
+    "content_pillars": ["<Pillar 1>", "<Pillar 2>", "<Pillar 3>"],
+    "subject_diversity_score": <1-10>
+  },
+  "affiliate_programs": {
+    "recommended_programs": [
+      {"program_name": "<Name>", "commission_structure": "<Structure>", "average_commission_per_sale": <amount>}
+    ],
+    "monetization_difficulty": "<easy/medium/hard>"
+  },
+  "revenue_projection": {
+    "month_6": {"estimated_traffic": <number>, "estimated_revenue": <dollar amount>},
+    "month_12": {"estimated_traffic": <number>, "estimated_revenue": <dollar amount>}
+  },
+  "strategic_insights": "<2-3 sentences>",
+  "success_probability": "<high/medium/low> - <Why>"
+}`;
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.getseowizard.com',
+            'X-Title': 'SEO Wizard'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{ role: 'user', content: detailPrompt }],
+            temperature: 0.5,
+            max_tokens: 1200
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`AI failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices[0].message.content.trim();
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        const details = JSON.parse(jsonMatch[0]);
+
+        const duration = Date.now() - startTime;
+        console.log(`[STEP 3B COMPLETE] ${duration}ms`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            step: '3b',
+            niche_keyword,
+            detailed_sections: details,
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[STEP 3B ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
     // MODULAR NICHE VALIDATION - STEP 3: Generate Comprehensive Analysis
     if (path === '/api/validate-niche-step3' && method === 'POST') {
       const { niche_keyword, serp_results, competitor_domains } = body;

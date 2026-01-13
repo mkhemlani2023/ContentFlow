@@ -8253,6 +8253,7 @@
                 const step1Status = step >= 1 ? (status === 'loading' && step === 1 ? 'loading' : 'complete') : 'pending';
                 const step2Status = step >= 2 ? (status === 'loading' && step === 2 ? 'loading' : step > 2 ? 'complete' : 'pending') : 'pending';
                 const step3Status = step >= 3 ? (status === 'loading' && step === 3 ? 'loading' : step > 3 ? 'complete' : 'pending') : 'pending';
+                const step4Status = step >= 4 ? (status === 'loading' && step === 4 ? 'loading' : step > 4 ? 'complete' : 'pending') : 'pending';
 
                 const statusIcon = (s) => s === 'complete' ? '✓' : s === 'loading' ? '⏳' : '○';
                 const statusColor = (s) => s === 'complete' ? '#10b981' : s === 'loading' ? '#3b82f6' : '#cbd5e1';
@@ -8265,32 +8266,41 @@
                             <p style="color: #64748b; font-size: 14px; margin: 10px 0;">${message}</p>
                         </div>
                         <div style="max-width: 500px; margin: 0 auto;">
-                            <div style="display: flex; flex-direction: column; gap: 20px;">
-                                <div style="display: flex; align-items: center; gap: 15px;">
-                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${statusColor(step1Status)}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px;">
+                            <div style="display: flex; flex-direction: column; gap: 15px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: ${statusColor(step1Status)}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
                                         ${statusIcon(step1Status)}
                                     </div>
                                     <div style="flex: 1;">
-                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">Step 1: Generate Keywords</div>
-                                        <div style="font-size: 13px; color: #64748b;">AI-powered buyer-intent keyword research</div>
+                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 2px; font-size: 14px;">Generate Keywords</div>
+                                        <div style="font-size: 12px; color: #64748b;">AI-powered keyword research</div>
                                     </div>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 15px;">
-                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${statusColor(step2Status)}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: ${statusColor(step2Status)}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
                                         ${statusIcon(step2Status)}
                                     </div>
                                     <div style="flex: 1;">
-                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">Step 2: Analyze Competition</div>
-                                        <div style="font-size: 13px; color: #64748b;">Real-time SERP data collection</div>
+                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 2px; font-size: 14px;">Analyze Competition</div>
+                                        <div style="font-size: 12px; color: #64748b;">Real-time SERP data</div>
                                     </div>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 15px;">
-                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${statusColor(step3Status)}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: ${statusColor(step3Status)}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
                                         ${statusIcon(step3Status)}
                                     </div>
                                     <div style="flex: 1;">
-                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">Step 3: Generate Insights</div>
-                                        <div style="font-size: 13px; color: #64748b;">Comprehensive market analysis</div>
+                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 2px; font-size: 14px;">Core Analysis</div>
+                                        <div style="font-size: 12px; color: #64748b;">Score & competition breakdown</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: ${statusColor(step4Status)}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
+                                        ${statusIcon(step4Status)}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 2px; font-size: 14px;">Detailed Strategy</div>
+                                        <div style="font-size: 12px; color: #64748b;">Content plan & revenue projections</div>
                                     </div>
                                 </div>
                             </div>
@@ -8343,10 +8353,10 @@
 
                 console.log(`Step 2 complete: ${step2Data.serp_results.length} keywords analyzed, ${step2Data.competitor_domains.length} competitors found in ${step2Data.duration_ms}ms`);
 
-                // STEP 3: Generate Comprehensive Analysis
-                updateProgress(3, 'loading', 'Generating comprehensive insights...');
+                // STEP 3A: Generate Core Analysis
+                updateProgress(3, 'loading', 'Analyzing competition and keywords...');
 
-                const step3Response = await fetch('/api/validate-niche-step3', {
+                const step3aResponse = await fetch('/api/validate-niche-step3a', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -8356,26 +8366,50 @@
                     })
                 });
 
-                if (!step3Response.ok) {
-                    throw new Error('Failed to generate analysis');
+                if (!step3aResponse.ok) {
+                    throw new Error('Failed to generate core analysis');
                 }
 
-                const step3Data = await step3Response.json();
-                if (!step3Data.success) {
-                    throw new Error(step3Data.error || 'Analysis generation failed');
+                const step3aData = await step3aResponse.json();
+                if (!step3aData.success) {
+                    throw new Error(step3aData.error || 'Core analysis failed');
                 }
 
-                console.log(`Step 3 complete: Analysis generated in ${step3Data.duration_ms}ms`);
+                console.log(`Step 3A complete: Core analysis in ${step3aData.duration_ms}ms`);
+
+                // STEP 3B: Generate Detailed Sections
+                updateProgress(4, 'loading', 'Generating content strategy and revenue projections...');
+
+                const step3bResponse = await fetch('/api/validate-niche-step3b', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        niche_keyword: keyword,
+                        core_analysis: step3aData.core_analysis
+                    })
+                });
+
+                if (!step3bResponse.ok) {
+                    throw new Error('Failed to generate detailed analysis');
+                }
+
+                const step3bData = await step3bResponse.json();
+                if (!step3bData.success) {
+                    throw new Error(step3bData.error || 'Detailed analysis failed');
+                }
+
+                console.log(`Step 3B complete: Detailed sections in ${step3bData.duration_ms}ms`);
 
                 // Combine all data into validation object
                 const validation = {
                     success: true,
                     niche_keyword: keyword,
                     timestamp: new Date().toISOString(),
-                    ...step3Data.analysis,
+                    ...step3aData.core_analysis,
+                    ...step3bData.detailed_sections,
                     keywords: step1Data.keywords,
                     serp_results: step2Data.serp_results,
-                    total_duration_ms: step1Data.duration_ms + step2Data.duration_ms + step3Data.duration_ms
+                    total_duration_ms: step1Data.duration_ms + step2Data.duration_ms + step3aData.duration_ms + step3bData.duration_ms
                 };
 
                 // Auto-save validation to history
