@@ -1,3 +1,6 @@
+# Content Flow - Netlify Configuration
+# Builds static site and deploys serverless functions
+
 [build]
   command = "mkdir -p public && cp index.html public/ && cp *.js public/ && cp *.png public/"
   publish = "public"
