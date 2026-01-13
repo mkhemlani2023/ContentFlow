@@ -5425,14 +5425,22 @@ Keywords:`;
           throw new Error('No competitor data available for analysis. Step 2 may have failed.');
         }
 
-        const analysisPrompt = `You are an expert SEO analyst and affiliate marketer with deep experience in competitive analysis and revenue modeling. Analyze the niche "${niche_keyword}" in extreme detail.
+        // Optimize: Only send top 5 keywords to AI to reduce payload size and processing time
+        const topSerpResults = serp_results.slice(0, 5).map(result => ({
+          keyword: result.keyword,
+          top_domains: result.top_10_domains ? result.top_10_domains.slice(0, 5) : [],
+          related_searches: result.related_searches ? result.related_searches.slice(0, 3) : []
+        }));
 
-SERP DATA (Top keywords analyzed):
-${JSON.stringify(serp_results, null, 2)}
+        console.log(`[STEP 3] Sending ${topSerpResults.length} keywords to AI for analysis`);
 
-COMPETITOR ANALYSIS:
-- Unique competitor domains: ${competitor_domains.length}
-- Sample competitors: ${competitor_domains.slice(0, 10).join(', ')}
+        const analysisPrompt = `You are an expert SEO analyst and affiliate marketer. Analyze the niche "${niche_keyword}".
+
+SERP DATA (Top 5 keywords):
+${JSON.stringify(topSerpResults)}
+
+COMPETITORS: ${competitor_domains.length} unique domains found
+Sample: ${competitor_domains.slice(0, 10).join(', ')}
 
 Provide COMPREHENSIVE analysis in this EXACT JSON format (return ONLY valid JSON):
 {
@@ -5534,6 +5542,7 @@ ANALYSIS REQUIREMENTS:
 
 Return ONLY the JSON object, no markdown.`;
 
+        console.log(`[STEP 3] Calling OpenRouter API...`);
         const aiAnalysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -5549,16 +5558,28 @@ Return ONLY the JSON object, no markdown.`;
               content: analysisPrompt
             }],
             temperature: 0.3,
-            max_tokens: 3000
+            max_tokens: 2000  // Reduced from 3000 for faster response
           })
         });
 
+        console.log(`[STEP 3] OpenRouter response status: ${aiAnalysisResponse.status}`);
+
         if (!aiAnalysisResponse.ok) {
-          throw new Error(`AI analysis failed: ${aiAnalysisResponse.statusText}`);
+          const errorText = await aiAnalysisResponse.text();
+          console.error(`[STEP 3] AI analysis failed:`, errorText);
+          throw new Error(`AI analysis failed: ${aiAnalysisResponse.status} - ${errorText.substring(0, 200)}`);
         }
 
         const aiAnalysisData = await aiAnalysisResponse.json();
+        console.log(`[STEP 3] Received AI response, parsing...`);
+
+        if (!aiAnalysisData.choices || !aiAnalysisData.choices[0] || !aiAnalysisData.choices[0].message) {
+          console.error(`[STEP 3] Invalid AI response structure:`, aiAnalysisData);
+          throw new Error('Invalid AI response structure');
+        }
+
         const aiAnalysisContent = aiAnalysisData.choices[0].message.content.trim();
+        console.log(`[STEP 3] AI response length: ${aiAnalysisContent.length} chars`);
 
         // Parse AI analysis
         let analysis;
@@ -5567,11 +5588,13 @@ Return ONLY the JSON object, no markdown.`;
           if (jsonMatch) {
             analysis = JSON.parse(jsonMatch[0]);
           } else {
+            console.error(`[STEP 3] No JSON found in response:`, aiAnalysisContent.substring(0, 500));
             throw new Error('No JSON found in AI analysis response');
           }
         } catch (parseError) {
-          console.error('Failed to parse AI analysis:', parseError);
-          throw new Error('Failed to parse AI analysis response');
+          console.error('[STEP 3] Failed to parse AI analysis:', parseError);
+          console.error('[STEP 3] Raw content:', aiAnalysisContent.substring(0, 500));
+          throw new Error(`Failed to parse AI analysis response: ${parseError.message}`);
         }
 
         const duration = Date.now() - startTime;
