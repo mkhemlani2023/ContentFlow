@@ -5307,21 +5307,28 @@ Keywords:`;
 
         let serpResults = [];
         let competitorDomains = new Set();
+        let failedQueries = [];
 
         // Analyze top 8 keywords
         const keywordsToAnalyze = keywords.slice(0, 8);
+        console.log(`[STEP 2] Keywords to analyze:`, keywordsToAnalyze);
 
         // Query all keywords in parallel
         const serpPromises = keywordsToAnalyze.map(keyword =>
           callSerperAPI(keyword, 'us', 'en', 10)
-            .then(serpData => ({ keyword, serpData }))
+            .then(result => {
+              console.log(`[STEP 2] SERP query success for "${keyword}"`);
+              return { keyword, serpData: result.data, error: null };
+            })
             .catch(error => {
-              console.error(`  Error analyzing "${keyword}":`, error.message);
-              return { keyword, serpData: null };
+              console.error(`[STEP 2] SERP query failed for "${keyword}":`, error.message);
+              failedQueries.push({ keyword, error: error.message });
+              return { keyword, serpData: null, error: error.message };
             })
         );
 
         const serpResponses = await Promise.all(serpPromises);
+        console.log(`[STEP 2] Received ${serpResponses.length} SERP responses, ${failedQueries.length} failed`);
 
         // Process SERP responses
         for (const { keyword, serpData } of serpResponses) {
@@ -5352,7 +5359,15 @@ Keywords:`;
         }
 
         const duration = Date.now() - startTime;
-        console.log(`[STEP 2 COMPLETE] Analyzed ${serpResults.length} keywords, found ${competitorDomains.size} competitors in ${duration}ms`);
+        console.log(`[STEP 2 COMPLETE] Analyzed ${serpResults.length}/${keywordsToAnalyze.length} keywords, found ${competitorDomains.size} competitors in ${duration}ms`);
+
+        // Validation: Ensure we have at least some SERP data
+        if (serpResults.length === 0) {
+          const errorMsg = failedQueries.length > 0
+            ? `All SERP queries failed. First error: ${failedQueries[0].error}`
+            : 'No SERP data could be retrieved. Please try again.';
+          throw new Error(errorMsg);
+        }
 
         return {
           statusCode: 200,
@@ -5363,6 +5378,7 @@ Keywords:`;
             niche_keyword,
             serp_results: serpResults,
             competitor_domains: Array.from(competitorDomains),
+            failed_queries: failedQueries,
             duration_ms: duration
           })
         };
@@ -5397,7 +5413,17 @@ Keywords:`;
 
       try {
         console.log(`[STEP 3] Generating comprehensive analysis for: ${niche_keyword}`);
+        console.log(`[STEP 3] SERP results count: ${serp_results.length}, Competitors: ${competitor_domains.length}`);
         const startTime = Date.now();
+
+        // Validation: Ensure we have sufficient data
+        if (!Array.isArray(serp_results) || serp_results.length === 0) {
+          throw new Error('No SERP data available for analysis. Step 2 may have failed.');
+        }
+
+        if (!Array.isArray(competitor_domains) || competitor_domains.length === 0) {
+          throw new Error('No competitor data available for analysis. Step 2 may have failed.');
+        }
 
         const analysisPrompt = `You are an expert SEO analyst and affiliate marketer with deep experience in competitive analysis and revenue modeling. Analyze the niche "${niche_keyword}" in extreme detail.
 
