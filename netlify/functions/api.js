@@ -5197,7 +5197,9 @@ RULES:
         console.log(`Timestamp: ${new Date().toISOString()}`);
 
         // Step 1: Use AI to generate buyer-intent keyword ideas for the niche
-        console.log('Step 1: Generating buyer-intent keywords with AI...');
+        console.log('[STEP 1 START] Generating buyer-intent keywords with AI...');
+        const step1Start = Date.now();
+
         const keywordPrompt = `You are an expert SEO and keyword researcher specializing in affiliate marketing niches.
 
 Analyze the niche: "${niche_keyword}"
@@ -5214,6 +5216,7 @@ Return ONLY a JSON array of keyword strings, nothing else. Example format:
 
 Keywords:`;
 
+        console.log('[STEP 1] Calling OpenRouter API...');
         const aiKeywordResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -5233,12 +5236,17 @@ Keywords:`;
           })
         });
 
+        console.log(`[STEP 1] Response status: ${aiKeywordResponse.status}`);
+
         if (!aiKeywordResponse.ok) {
           throw new Error(`AI keyword generation failed: ${aiKeywordResponse.statusText}`);
         }
 
+        console.log('[STEP 1] Parsing response...');
         const aiKeywordData = await aiKeywordResponse.json();
         const aiKeywordContent = aiKeywordData.choices[0].message.content.trim();
+        const step1Duration = Date.now() - step1Start;
+        console.log(`[STEP 1 COMPLETE] Duration: ${step1Duration}ms`);
 
         // Parse AI response (handle potential markdown code blocks)
         let aiGeneratedKeywords;
@@ -5270,8 +5278,8 @@ Keywords:`;
         let serpResults = [];
         let competitorDomains = new Set();
 
-        // Analyze top 5 keywords from AI (reduced for performance)
-        const keywordsToAnalyze = aiGeneratedKeywords.slice(0, 5);
+        // Analyze top 8 keywords from AI (increased for paid tier)
+        const keywordsToAnalyze = aiGeneratedKeywords.slice(0, 8);
 
         // Query all keywords in parallel for speed
         const serpPromises = keywordsToAnalyze.map(keyword =>

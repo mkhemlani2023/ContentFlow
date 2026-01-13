@@ -13,8 +13,8 @@
 
 # Functions configuration
 [functions]
-  # Increase function timeout to maximum allowed (26 seconds for Pro, 10 seconds for Free tier)
-  # Note: Free tier is limited to 10 seconds and cannot be increased
+  # Function timeout for paid tier
+  timeout = 30
   node_bundler = "esbuild"
 
 [build.environment]
