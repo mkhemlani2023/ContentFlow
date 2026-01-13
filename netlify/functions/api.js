@@ -6014,7 +6014,10 @@ Return ONLY the JSON object, no markdown.`;
           'POST /api/wordpress-categories',
           'POST /api/wordpress-create-category',
           'POST /api/affiliate-research',
-          'POST /api/validate-niche'
+          'POST /api/validate-niche',
+          'POST /api/validate-niche-step1',
+          'POST /api/validate-niche-step2',
+          'POST /api/validate-niche-step3'
         ]
       })
     };
