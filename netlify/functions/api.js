@@ -5202,7 +5202,7 @@ RULES:
 
 Analyze the niche: "${niche_keyword}"
 
-Generate 15-20 high-value buyer-intent keywords for this niche. Focus on:
+Generate 12 high-value buyer-intent keywords for this niche. Focus on:
 1. Commercial intent keywords (best, top, review, vs, comparison)
 2. Product-specific keywords (specific brands, models, types)
 3. Problem-solving keywords (how to choose, what to look for)
@@ -5229,7 +5229,7 @@ Keywords:`;
               content: keywordPrompt
             }],
             temperature: 0.7,
-            max_tokens: 1000
+            max_tokens: 500  // Reduced for speed
           })
         });
 
@@ -5270,42 +5270,48 @@ Keywords:`;
         let serpResults = [];
         let competitorDomains = new Set();
 
-        // Analyze top 10 keywords from AI
-        const keywordsToAnalyze = aiGeneratedKeywords.slice(0, 10);
+        // Analyze top 5 keywords from AI (reduced for performance)
+        const keywordsToAnalyze = aiGeneratedKeywords.slice(0, 5);
 
-        for (const keyword of keywordsToAnalyze) {
-          try {
-            console.log(`  Querying SERP for: ${keyword}`);
-            const serpData = await callSerperAPI(keyword, 'us', 'en', 10);
+        // Query all keywords in parallel for speed
+        const serpPromises = keywordsToAnalyze.map(keyword =>
+          callSerperAPI(keyword, 'us', 'en', 10)
+            .then(serpData => ({ keyword, serpData }))
+            .catch(error => {
+              console.error(`  Error analyzing "${keyword}":`, error.message);
+              return { keyword, serpData: null };
+            })
+        );
 
-            if (serpData && serpData.organic) {
-              // Extract competitor domains
-              const domains = serpData.organic.map(result => {
-                try {
-                  const url = new URL(result.link);
-                  return url.hostname.replace('www.', '');
-                } catch (e) {
-                  return null;
-                }
-              }).filter(d => d !== null);
+        const serpResponses = await Promise.all(serpPromises);
 
-              domains.forEach(d => competitorDomains.add(d));
+        // Process SERP responses
+        for (const { keyword, serpData } of serpResponses) {
+          if (serpData && serpData.organic) {
+            // Extract competitor domains
+            const domains = serpData.organic.map(result => {
+              try {
+                const url = new URL(result.link);
+                return url.hostname.replace('www.', '');
+              } catch (e) {
+                return null;
+              }
+            }).filter(d => d !== null);
 
-              // Store SERP results for AI analysis
-              serpResults.push({
-                keyword,
-                top_10_domains: domains,
-                related_searches: serpData.relatedSearches || [],
-                people_also_ask: serpData.peopleAlsoAsk || [],
-                organic_results: serpData.organic.map(r => ({
-                  title: r.title,
-                  domain: domains[serpData.organic.indexOf(r)] || 'unknown',
-                  position: r.position
-                }))
-              });
-            }
-          } catch (error) {
-            console.error(`  Error analyzing "${keyword}":`, error.message);
+            domains.forEach(d => competitorDomains.add(d));
+
+            // Store SERP results for AI analysis
+            serpResults.push({
+              keyword,
+              top_10_domains: domains,
+              related_searches: serpData.relatedSearches || [],
+              people_also_ask: serpData.peopleAlsoAsk || [],
+              organic_results: serpData.organic.map(r => ({
+                title: r.title,
+                domain: domains[serpData.organic.indexOf(r)] || 'unknown',
+                position: r.position
+              }))
+            });
           }
         }
 
@@ -5439,7 +5445,7 @@ Return ONLY the JSON object, no markdown.`;
               content: analysisPrompt
             }],
             temperature: 0.3,
-            max_tokens: 4000  // Increased for comprehensive analysis
+            max_tokens: 3000  // Balanced for speed and detail
           })
         });
 
