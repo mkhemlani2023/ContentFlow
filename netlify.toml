@@ -3,5 +3,5 @@ command = "mkdir -p public && cp index.html public/ && cp *.js public/ && cp *.p
 publish = "public"
 functions = "netlify/functions"
 
-[functions]
-timeout = 30
+[functions."api"]
+node_bundler = "esbuild"
