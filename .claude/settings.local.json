@@ -14,7 +14,8 @@
       "WebFetch(domain:apitracker.io)",
       "WebSearch",
       "WebFetch(domain:docs.dataforseo.com)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

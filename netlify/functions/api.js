@@ -5176,7 +5176,7 @@ RULES:
       }
     }
 
-    // Niche Validation endpoint - Validates niche viability using search data
+    // Niche Validation endpoint - AI-powered niche validation with real keyword research
     if (path === '/api/validate-niche' && method === 'POST') {
       const { niche_keyword } = body;
 
@@ -5192,162 +5192,242 @@ RULES:
       }
 
       try {
-        console.log(`\n========== NICHE VALIDATION START ==========`);
+        console.log(`\n========== AI-POWERED NICHE VALIDATION START ==========`);
         console.log(`Niche: ${niche_keyword}`);
         console.log(`Timestamp: ${new Date().toISOString()}`);
 
-        // Step 1: Get seed keywords for the niche
-        const seedKeywords = [
-          niche_keyword,
-          `${niche_keyword} reviews`,
-          `best ${niche_keyword}`,
-          `${niche_keyword} guide`,
-          `${niche_keyword} comparison`,
-          `how to choose ${niche_keyword}`,
-          `${niche_keyword} cost`,
-          `top ${niche_keyword}`
-        ];
+        // Step 1: Use AI to generate buyer-intent keyword ideas for the niche
+        console.log('Step 1: Generating buyer-intent keywords with AI...');
+        const keywordPrompt = `You are an expert SEO and keyword researcher specializing in affiliate marketing niches.
 
-        console.log('Seed keywords generated:', seedKeywords);
+Analyze the niche: "${niche_keyword}"
 
-        // Step 2: Query Serper for SERP data to analyze competition and search volume indicators
-        let totalSearches = 0;
-        let avgCompetitionDA = 0;
-        let keywordOpportunities = [];
+Generate 15-20 high-value buyer-intent keywords for this niche. Focus on:
+1. Commercial intent keywords (best, top, review, vs, comparison)
+2. Product-specific keywords (specific brands, models, types)
+3. Problem-solving keywords (how to choose, what to look for)
+4. Cost-related keywords (price, cost, affordable, cheap)
+5. Long-tail keywords with lower competition potential
+
+Return ONLY a JSON array of keyword strings, nothing else. Example format:
+["best pet insurance for dogs", "pet insurance cost comparison", "nationwide pet insurance review"]
+
+Keywords:`;
+
+        const aiKeywordResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.getseowizard.com',
+            'X-Title': 'SEO Wizard - Niche Validation'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{
+              role: 'user',
+              content: keywordPrompt
+            }],
+            temperature: 0.7,
+            max_tokens: 1000
+          })
+        });
+
+        if (!aiKeywordResponse.ok) {
+          throw new Error(`AI keyword generation failed: ${aiKeywordResponse.statusText}`);
+        }
+
+        const aiKeywordData = await aiKeywordResponse.json();
+        const aiKeywordContent = aiKeywordData.choices[0].message.content.trim();
+
+        // Parse AI response (handle potential markdown code blocks)
+        let aiGeneratedKeywords;
+        try {
+          const jsonMatch = aiKeywordContent.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            aiGeneratedKeywords = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('No JSON array found in AI response');
+          }
+        } catch (parseError) {
+          console.error('Failed to parse AI keywords, using fallback');
+          // Fallback to basic keywords
+          aiGeneratedKeywords = [
+            niche_keyword,
+            `best ${niche_keyword}`,
+            `${niche_keyword} reviews`,
+            `${niche_keyword} comparison`,
+            `top ${niche_keyword}`,
+            `${niche_keyword} cost`
+          ];
+        }
+
+        console.log(`AI generated ${aiGeneratedKeywords.length} keywords`);
+        console.log('Sample keywords:', aiGeneratedKeywords.slice(0, 5));
+
+        // Step 2: Analyze top 10 AI-generated keywords with Serper to get real SERP data
+        console.log('Step 2: Analyzing keywords with real SERP data...');
+        let serpResults = [];
         let competitorDomains = new Set();
 
-        for (const keyword of seedKeywords.slice(0, 5)) { // Sample 5 keywords to avoid timeouts
+        // Analyze top 10 keywords from AI
+        const keywordsToAnalyze = aiGeneratedKeywords.slice(0, 10);
+
+        for (const keyword of keywordsToAnalyze) {
           try {
-            console.log(`Analyzing keyword: ${keyword}`);
+            console.log(`  Querying SERP for: ${keyword}`);
             const serpData = await callSerperAPI(keyword, 'us', 'en', 10);
 
             if (serpData && serpData.organic) {
-              // Analyze top 10 results for competition
+              // Extract competitor domains
               const domains = serpData.organic.map(result => {
-                const url = new URL(result.link);
-                return url.hostname.replace('www.', '');
-              });
+                try {
+                  const url = new URL(result.link);
+                  return url.hostname.replace('www.', '');
+                } catch (e) {
+                  return null;
+                }
+              }).filter(d => d !== null);
 
               domains.forEach(d => competitorDomains.add(d));
 
-              // Estimate DA for top 10
-              const daScores = domains.map(domain => estimateDomainAuthority(domain));
-              const avgDA = daScores.reduce((sum, da) => sum + da, 0) / daScores.length;
-              avgCompetitionDA += avgDA;
-
-              console.log(`  Average DA for "${keyword}": ${avgDA.toFixed(1)}`);
-
-              // Related searches indicate search volume
-              const relatedSearchesCount = serpData.relatedSearches ? serpData.relatedSearches.length : 0;
-              const estimatedSearches = relatedSearchesCount * 500; // Rough estimate
-
-              totalSearches += estimatedSearches;
-
-              keywordOpportunities.push({
+              // Store SERP results for AI analysis
+              serpResults.push({
                 keyword,
-                estimated_monthly_searches: estimatedSearches,
-                competition_da: Math.round(avgDA),
-                difficulty: avgDA > 70 ? 'hard' : avgDA > 50 ? 'medium' : 'easy',
-                ranking_potential: avgDA < 50 ? 'high' : avgDA < 65 ? 'medium' : 'low'
+                top_10_domains: domains,
+                related_searches: serpData.relatedSearches || [],
+                people_also_ask: serpData.peopleAlsoAsk || [],
+                organic_results: serpData.organic.map(r => ({
+                  title: r.title,
+                  domain: domains[serpData.organic.indexOf(r)] || 'unknown',
+                  position: r.position
+                }))
               });
             }
           } catch (error) {
-            console.error(`Error analyzing keyword "${keyword}":`, error.message);
+            console.error(`  Error analyzing "${keyword}":`, error.message);
           }
         }
 
-        avgCompetitionDA = avgCompetitionDA / seedKeywords.slice(0, 5).length;
+        console.log(`Analyzed ${serpResults.length} keywords`);
+        console.log(`Found ${competitorDomains.size} unique competitor domains`);
 
-        console.log(`Total estimated searches: ${totalSearches}`);
-        console.log(`Average competition DA: ${avgCompetitionDA.toFixed(1)}`);
-        console.log(`Unique competitor domains: ${competitorDomains.size}`);
+        // Step 3: Use AI to analyze SERP data and provide niche scoring + keyword recommendations
+        console.log('Step 3: AI analyzing SERP data for niche viability...');
 
-        // Step 3: Calculate Niche Validation Score (0-100)
-        let score = 0;
-        const breakdown = {};
+        const analysisPrompt = `You are an expert SEO analyst and affiliate marketer. Analyze the following SERP data for the niche "${niche_keyword}" and provide a detailed niche validation analysis.
 
-        // Factor 1: Search Volume (30 points)
-        // High volume: 10,000+ monthly = 30 points
-        // Medium volume: 5,000-10,000 = 20 points
-        // Low volume: 1,000-5,000 = 10 points
-        // Very low: <1,000 = 5 points
-        if (totalSearches >= 10000) {
-          breakdown.search_volume = { score: 30, rating: 'excellent', value: totalSearches };
-          score += 30;
-        } else if (totalSearches >= 5000) {
-          breakdown.search_volume = { score: 20, rating: 'good', value: totalSearches };
-          score += 20;
-        } else if (totalSearches >= 1000) {
-          breakdown.search_volume = { score: 10, rating: 'moderate', value: totalSearches };
-          score += 10;
-        } else {
-          breakdown.search_volume = { score: 5, rating: 'low', value: totalSearches };
-          score += 5;
+SERP DATA (Top 10 keywords analyzed):
+${JSON.stringify(serpResults, null, 2)}
+
+COMPETITOR ANALYSIS:
+- Unique competitor domains: ${competitorDomains.size}
+- Sample competitors: ${Array.from(competitorDomains).slice(0, 10).join(', ')}
+
+Provide your analysis in this EXACT JSON format (return ONLY valid JSON, no other text):
+{
+  "score": <number 0-100 based on opportunity>,
+  "recommendation": "<One sentence recommendation>",
+  "priority": "<high/medium/low/very-low>",
+  "action": "<Specific action plan>",
+  "estimated_monthly_traffic": <estimated total monthly search volume for this niche>,
+  "avg_competition_da": <estimated average domain authority 0-100 of competitors>,
+  "breakdown": {
+    "search_volume": {"score": <0-30>, "rating": "<excellent/good/moderate/low>"},
+    "competition": {"score": <0-25>, "rating": "<low/medium/high>"},
+    "keyword_opportunities": {"score": <0-20>, "rating": "<excellent/good/moderate/poor>"},
+    "content_diversity": {"score": <0-15>, "rating": "<excellent/good/moderate/poor>"},
+    "commercial_intent": {"score": <0-10>, "rating": "<excellent/good/moderate/poor>"}
+  },
+  "keyword_opportunities": [
+    {
+      "keyword": "<exact keyword>",
+      "estimated_monthly_searches": <number>,
+      "competition_da": <estimated DA of top 10>,
+      "difficulty": "<easy/medium/hard>",
+      "ranking_potential": "<high/medium/low>",
+      "buyer_intent": "<high/medium/low>",
+      "reason": "<Why this keyword is an opportunity>"
+    }
+  ],
+  "top_competitors": ["<domain1>", "<domain2>", "<domain3>"],
+  "insights": "<2-3 sentence insight about the niche opportunity>"
+}
+
+SCORING CRITERIA:
+- Search Volume (0-30): High traffic potential = higher score
+- Competition (0-25): Lower DA competitors = higher score
+- Keyword Opportunities (0-20): More low-competition buyer keywords = higher score
+- Content Diversity (0-15): More competitor angles = higher score
+- Commercial Intent (0-10): More buyer-intent keywords = higher score
+
+Focus on finding 5-8 keywords with:
+1. High buyer intent (best, review, vs, comparison, cost)
+2. Lower competition (DA < 60 ideally)
+3. Reasonable search volume (500+ monthly)
+4. Long-tail variations with easier ranking potential
+
+Return ONLY the JSON object, no markdown, no explanation.`;
+
+        const aiAnalysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.getseowizard.com',
+            'X-Title': 'SEO Wizard - Niche Analysis'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{
+              role: 'user',
+              content: analysisPrompt
+            }],
+            temperature: 0.3,
+            max_tokens: 2000
+          })
+        });
+
+        if (!aiAnalysisResponse.ok) {
+          throw new Error(`AI analysis failed: ${aiAnalysisResponse.statusText}`);
         }
 
-        // Factor 2: Competition/Keyword Difficulty (25 points)
-        // Low competition (DA < 40): 25 points
-        // Medium competition (DA 40-60): 15 points
-        // High competition (DA > 60): 5 points
-        if (avgCompetitionDA < 40) {
-          breakdown.competition = { score: 25, rating: 'low', avg_da: Math.round(avgCompetitionDA) };
-          score += 25;
-        } else if (avgCompetitionDA < 60) {
-          breakdown.competition = { score: 15, rating: 'medium', avg_da: Math.round(avgCompetitionDA) };
-          score += 15;
-        } else {
-          breakdown.competition = { score: 5, rating: 'high', avg_da: Math.round(avgCompetitionDA) };
-          score += 5;
+        const aiAnalysisData = await aiAnalysisResponse.json();
+        const aiAnalysisContent = aiAnalysisData.choices[0].message.content.trim();
+
+        // Parse AI analysis
+        let analysis;
+        try {
+          const jsonMatch = aiAnalysisContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            analysis = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('No JSON found in AI analysis response');
+          }
+        } catch (parseError) {
+          console.error('Failed to parse AI analysis:', parseError);
+          throw new Error('AI analysis returned invalid format');
         }
 
-        // Factor 3: Keyword Opportunities (20 points)
-        // Based on number of keywords with high/medium ranking potential
-        const highPotential = keywordOpportunities.filter(k => k.ranking_potential === 'high').length;
-        const mediumPotential = keywordOpportunities.filter(k => k.ranking_potential === 'medium').length;
-        const opportunityScore = Math.min(20, (highPotential * 5) + (mediumPotential * 3));
-        breakdown.keyword_opportunities = { score: opportunityScore, high: highPotential, medium: mediumPotential };
-        score += opportunityScore;
+        console.log(`AI Analysis Complete - Score: ${analysis.score}/100`);
+        console.log(`Recommendation: ${analysis.recommendation}`);
+        console.log(`Top Keywords: ${analysis.keyword_opportunities.slice(0, 3).map(k => k.keyword).join(', ')}`);
 
-        // Factor 4: Content Diversity (15 points)
-        // More unique competitor domains = more content angles
-        const diversityScore = Math.min(15, competitorDomains.size * 2);
-        breakdown.content_diversity = { score: diversityScore, unique_competitors: competitorDomains.size };
-        score += diversityScore;
+        // Extract values from AI analysis
+        const {
+          score,
+          recommendation,
+          priority,
+          action,
+          estimated_monthly_traffic,
+          avg_competition_da,
+          breakdown,
+          keyword_opportunities,
+          top_competitors,
+          insights
+        } = analysis;
 
-        // Factor 5: Commercial Intent (10 points)
-        // Keywords with "best", "reviews", "vs", "cost" indicate buyer intent
-        const commercialKeywords = keywordOpportunities.filter(k =>
-          k.keyword.includes('best') || k.keyword.includes('review') ||
-          k.keyword.includes('vs') || k.keyword.includes('cost') ||
-          k.keyword.includes('comparison')
-        ).length;
-        const commercialScore = Math.min(10, commercialKeywords * 2);
-        breakdown.commercial_intent = { score: commercialScore, commercial_keywords: commercialKeywords };
-        score += commercialScore;
-
-        // Final score (capped at 100)
-        score = Math.min(100, Math.round(score));
-
-        // Determine recommendation
-        let recommendation, priority, action;
-        if (score >= 80) {
-          recommendation = 'Excellent opportunity - Start immediately';
-          priority = 'high';
-          action = 'Build a comprehensive site with 50+ articles targeting this niche';
-        } else if (score >= 60) {
-          recommendation = 'Good potential - Worth pursuing with strategy';
-          priority = 'medium';
-          action = 'Create focused content targeting low-competition keywords first';
-        } else if (score >= 40) {
-          recommendation = 'Moderate opportunity - Requires careful planning';
-          priority = 'low';
-          action = 'Focus on long-tail keywords and build authority slowly';
-        } else {
-          recommendation = 'Difficult niche - Consider alternatives';
-          priority = 'very-low';
-          action = 'Explore different niches with better opportunity scores';
-        }
-
+        // Build final result with AI analysis
         const result = {
           success: true,
           niche: niche_keyword,
@@ -5356,15 +5436,19 @@ RULES:
           priority,
           action,
           breakdown,
-          keyword_opportunities: keywordOpportunities,
-          estimated_monthly_traffic: totalSearches,
-          avg_competition_da: Math.round(avgCompetitionDA),
+          keyword_opportunities, // AI-generated opportunities with buyer intent
+          estimated_monthly_traffic,
+          avg_competition_da,
           unique_competitors: competitorDomains.size,
+          top_competitors: top_competitors || Array.from(competitorDomains).slice(0, 5),
+          insights: insights || '',
+          ai_powered: true, // Flag to indicate this is AI analysis
           timestamp: new Date().toISOString()
         };
 
-        console.log(`✅ Niche validation score: ${score}/100`);
-        console.log(`Recommendation: ${recommendation}`);
+        console.log(`✅ AI-Powered Niche Validation Complete`);
+        console.log(`Score: ${score}/100 | Priority: ${priority}`);
+        console.log(`Keyword Opportunities: ${keyword_opportunities.length}`);
         console.log(`========== NICHE VALIDATION END ==========\n`);
 
         return {
