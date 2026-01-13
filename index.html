@@ -1971,15 +1971,23 @@
                         score: validation.score,
                         recommendation: validation.recommendation,
                         priority: validation.priority,
-                        estimated_monthly_traffic: validation.estimated_monthly_traffic,
-                        avg_competition_da: validation.avg_competition_da,
+                        action: validation.action,
+                        estimated_monthly_traffic: validation.estimated_monthly_traffic || 0,
+                        avg_competition_da: validation.avg_competition_da || 0,
                         unique_competitors: validation.competitor_domains?.length || validation.unique_competitors || 0,
-                        breakdown: validation.breakdown,
-                        keyword_opportunities: validation.keyword_opportunities,
-                        action: validation.action
+                        breakdown: validation.breakdown || {},
+                        competition_analysis: validation.competition_analysis || {},
+                        keyword_opportunities: validation.keyword_opportunities || [],
+                        content_strategy: validation.content_strategy || {},
+                        affiliate_programs: validation.affiliate_programs || {},
+                        revenue_projection: validation.revenue_projection || {},
+                        strategic_insights: validation.strategic_insights || '',
+                        success_probability: validation.success_probability || '',
+                        keywords: validation.keywords || [],
+                        serp_results: validation.serp_results || []
                     };
 
-                    console.log('Saving niche validation:', dataToSave);
+                    console.log('Saving niche validation:', JSON.stringify(dataToSave, null, 2));
 
                     const { data, error} = await supabaseClient
                         .from('niche_validations')
