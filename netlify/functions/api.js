@@ -5176,6 +5176,406 @@ RULES:
       }
     }
 
+    // MODULAR NICHE VALIDATION - STEP 1: Generate Keywords
+    if (path === '/api/validate-niche-step1' && method === 'POST') {
+      const { niche_keyword } = body;
+
+      if (!niche_keyword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Niche keyword is required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[STEP 1] Generating keywords for: ${niche_keyword}`);
+        const startTime = Date.now();
+
+        const keywordPrompt = `You are an expert SEO and keyword researcher specializing in affiliate marketing niches.
+
+Analyze the niche: "${niche_keyword}"
+
+Generate 12 high-value buyer-intent keywords for this niche. Focus on:
+1. Commercial intent keywords (best, top, review, vs, comparison)
+2. Product-specific keywords (specific brands, models, types)
+3. Problem-solving keywords (how to choose, what to look for)
+4. Cost-related keywords (price, cost, affordable, cheap)
+5. Long-tail keywords with lower competition potential
+
+Return ONLY a JSON array of keyword strings, nothing else. Example format:
+["best pet insurance for dogs", "pet insurance cost comparison", "nationwide pet insurance review"]
+
+Keywords:`;
+
+        const aiKeywordResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.getseowizard.com',
+            'X-Title': 'SEO Wizard - Niche Validation'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{
+              role: 'user',
+              content: keywordPrompt
+            }],
+            temperature: 0.7,
+            max_tokens: 500
+          })
+        });
+
+        if (!aiKeywordResponse.ok) {
+          throw new Error(`AI keyword generation failed: ${aiKeywordResponse.statusText}`);
+        }
+
+        const aiKeywordData = await aiKeywordResponse.json();
+        const aiKeywordContent = aiKeywordData.choices[0].message.content.trim();
+
+        // Parse AI response
+        let aiGeneratedKeywords;
+        try {
+          const jsonMatch = aiKeywordContent.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            aiGeneratedKeywords = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('No JSON array found in AI response');
+          }
+        } catch (parseError) {
+          console.error('Failed to parse AI keywords, using fallback');
+          aiGeneratedKeywords = [
+            niche_keyword,
+            `best ${niche_keyword}`,
+            `${niche_keyword} reviews`,
+            `${niche_keyword} comparison`,
+            `top ${niche_keyword}`,
+            `${niche_keyword} cost`
+          ];
+        }
+
+        const duration = Date.now() - startTime;
+        console.log(`[STEP 1 COMPLETE] Generated ${aiGeneratedKeywords.length} keywords in ${duration}ms`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            step: 1,
+            niche_keyword,
+            keywords: aiGeneratedKeywords,
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[STEP 1 ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: error.message
+          })
+        };
+      }
+    }
+
+    // MODULAR NICHE VALIDATION - STEP 2: Analyze SERP Data
+    if (path === '/api/validate-niche-step2' && method === 'POST') {
+      const { niche_keyword, keywords } = body;
+
+      if (!niche_keyword || !keywords || !Array.isArray(keywords)) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Niche keyword and keywords array are required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[STEP 2] Analyzing SERP data for ${keywords.length} keywords`);
+        const startTime = Date.now();
+
+        let serpResults = [];
+        let competitorDomains = new Set();
+
+        // Analyze top 8 keywords
+        const keywordsToAnalyze = keywords.slice(0, 8);
+
+        // Query all keywords in parallel
+        const serpPromises = keywordsToAnalyze.map(keyword =>
+          callSerperAPI(keyword, 'us', 'en', 10)
+            .then(serpData => ({ keyword, serpData }))
+            .catch(error => {
+              console.error(`  Error analyzing "${keyword}":`, error.message);
+              return { keyword, serpData: null };
+            })
+        );
+
+        const serpResponses = await Promise.all(serpPromises);
+
+        // Process SERP responses
+        for (const { keyword, serpData } of serpResponses) {
+          if (serpData && serpData.organic) {
+            const domains = serpData.organic.map(result => {
+              try {
+                const url = new URL(result.link);
+                return url.hostname.replace('www.', '');
+              } catch (e) {
+                return null;
+              }
+            }).filter(d => d !== null);
+
+            domains.forEach(d => competitorDomains.add(d));
+
+            serpResults.push({
+              keyword,
+              top_10_domains: domains,
+              related_searches: serpData.relatedSearches || [],
+              people_also_ask: serpData.peopleAlsoAsk || [],
+              organic_results: serpData.organic.map(r => ({
+                title: r.title,
+                domain: domains[serpData.organic.indexOf(r)] || 'unknown',
+                position: r.position
+              }))
+            });
+          }
+        }
+
+        const duration = Date.now() - startTime;
+        console.log(`[STEP 2 COMPLETE] Analyzed ${serpResults.length} keywords, found ${competitorDomains.size} competitors in ${duration}ms`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            step: 2,
+            niche_keyword,
+            serp_results: serpResults,
+            competitor_domains: Array.from(competitorDomains),
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[STEP 2 ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: error.message
+          })
+        };
+      }
+    }
+
+    // MODULAR NICHE VALIDATION - STEP 3: Generate Comprehensive Analysis
+    if (path === '/api/validate-niche-step3' && method === 'POST') {
+      const { niche_keyword, serp_results, competitor_domains } = body;
+
+      if (!niche_keyword || !serp_results || !competitor_domains) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Niche keyword, serp_results, and competitor_domains are required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[STEP 3] Generating comprehensive analysis for: ${niche_keyword}`);
+        const startTime = Date.now();
+
+        const analysisPrompt = `You are an expert SEO analyst and affiliate marketer with deep experience in competitive analysis and revenue modeling. Analyze the niche "${niche_keyword}" in extreme detail.
+
+SERP DATA (Top keywords analyzed):
+${JSON.stringify(serp_results, null, 2)}
+
+COMPETITOR ANALYSIS:
+- Unique competitor domains: ${competitor_domains.length}
+- Sample competitors: ${competitor_domains.slice(0, 10).join(', ')}
+
+Provide COMPREHENSIVE analysis in this EXACT JSON format (return ONLY valid JSON):
+{
+  "score": <0-100>,
+  "recommendation": "<One sentence>",
+  "priority": "<high/medium/low/very-low>",
+  "action": "<Specific action plan>",
+  "estimated_monthly_traffic": <number>,
+  "avg_competition_da": <0-100>,
+  "breakdown": {
+    "search_volume": {"score": <0-30>, "rating": "<excellent/good/moderate/low>", "details": "<Explain traffic potential>"},
+    "competition": {"score": <0-25>, "rating": "<low/medium/high>", "details": "<Explain competitive landscape>"},
+    "keyword_opportunities": {"score": <0-20>, "rating": "<excellent/good/moderate/poor>", "details": "<Explain keyword gaps>"},
+    "content_diversity": {"score": <0-15>, "rating": "<excellent/good/moderate/poor>", "details": "<Explain content angles>"},
+    "commercial_intent": {"score": <0-10>, "rating": "<excellent/good/moderate/poor>", "details": "<Explain monetization potential>"}
+  },
+  "competition_analysis": {
+    "total_competitors": <number>,
+    "competitor_types": {
+      "major_brands": ["<brand1>", "<brand2>"],
+      "authority_sites": ["<site1>", "<site2>"],
+      "affiliate_sites": ["<site1>", "<site2>"],
+      "niche_blogs": ["<site1>", "<site2>"]
+    },
+    "da_distribution": {
+      "high_da_80_plus": <count>,
+      "medium_da_50_79": <count>,
+      "low_da_below_50": <count>
+    },
+    "weakness_opportunities": "<2-3 sentences on competitor weaknesses and gaps>",
+    "market_saturation": "<low/medium/high> - <Explanation>"
+  },
+  "keyword_opportunities": [
+    {
+      "keyword": "<exact keyword>",
+      "estimated_monthly_searches": <number>,
+      "competition_da": <number>,
+      "difficulty": "<easy/medium/hard>",
+      "ranking_potential": "<high/medium/low>",
+      "buyer_intent": "<high/medium/low>",
+      "reason": "<Detailed explanation>",
+      "current_competition": "<Who ranks and why there's opportunity>"
+    }
+  ],
+  "content_strategy": {
+    "first_20_articles": [
+      {"title": "<Article title>", "type": "<review/comparison/guide/listicle>", "priority": "<high/medium/low>", "target_keyword": "<keyword>"}
+    ],
+    "content_pillars": ["<Pillar 1>", "<Pillar 2>", "<Pillar 3>"],
+    "content_gaps": "<What content is missing in the niche>",
+    "subject_diversity_score": <1-10>,
+    "topic_clusters": [
+      {"cluster": "<Topic cluster name>", "articles": <count>, "examples": ["<Article 1>", "<Article 2>"]}
+    ]
+  },
+  "affiliate_programs": {
+    "recommended_programs": [
+      {
+        "program_name": "<Program name>",
+        "commission_structure": "<Percentage or fixed amount>",
+        "cookie_duration": "<days>",
+        "average_commission_per_sale": <dollar amount>,
+        "why_recommended": "<Explanation>"
+      }
+    ],
+    "total_programs_available": <estimated count>,
+    "monetization_difficulty": "<easy/medium/hard> - <Explanation>"
+  },
+  "revenue_projection": {
+    "month_6": {
+      "estimated_traffic": <number>,
+      "conversion_rate": "<percentage>",
+      "avg_commission": <dollar amount>,
+      "estimated_revenue": <dollar amount>,
+      "assumptions": "<Key assumptions>"
+    },
+    "month_12": {
+      "estimated_traffic": <number>,
+      "conversion_rate": "<percentage>",
+      "avg_commission": <dollar amount>,
+      "estimated_revenue": <dollar amount>,
+      "assumptions": "<Key assumptions>"
+    },
+    "revenue_factors": "<What drives revenue in this niche>",
+    "realistic_expectations": "<Honest assessment of earning potential>"
+  },
+  "strategic_insights": "<3-4 sentences providing strategic recommendations and market positioning advice>",
+  "risks_and_challenges": "<2-3 specific challenges to be aware of>",
+  "success_probability": "<high/medium/low> - <Why>"
+}
+
+ANALYSIS REQUIREMENTS:
+1. Competition: Be specific about WHO the competitors are (brands vs affiliates vs bloggers)
+2. Keywords: Find 10-12 keywords with LOW competition (<DA 50) + HIGH buyer intent + reasonable volume (500+)
+3. Content Strategy: Provide 20 specific article titles ready to write
+4. Affiliate Programs: Research typical programs in this niche
+5. Revenue: Be realistic with projections based on traffic, conversion rates, commissions
+6. Subject Diversity: Analyze how many different sub-topics and angles exist
+
+Return ONLY the JSON object, no markdown.`;
+
+        const aiAnalysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.getseowizard.com',
+            'X-Title': 'SEO Wizard - Niche Analysis'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{
+              role: 'user',
+              content: analysisPrompt
+            }],
+            temperature: 0.3,
+            max_tokens: 3000
+          })
+        });
+
+        if (!aiAnalysisResponse.ok) {
+          throw new Error(`AI analysis failed: ${aiAnalysisResponse.statusText}`);
+        }
+
+        const aiAnalysisData = await aiAnalysisResponse.json();
+        const aiAnalysisContent = aiAnalysisData.choices[0].message.content.trim();
+
+        // Parse AI analysis
+        let analysis;
+        try {
+          const jsonMatch = aiAnalysisContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            analysis = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('No JSON found in AI analysis response');
+          }
+        } catch (parseError) {
+          console.error('Failed to parse AI analysis:', parseError);
+          throw new Error('Failed to parse AI analysis response');
+        }
+
+        const duration = Date.now() - startTime;
+        console.log(`[STEP 3 COMPLETE] Generated comprehensive analysis in ${duration}ms`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            step: 3,
+            niche_keyword,
+            analysis,
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[STEP 3 ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: error.message
+          })
+        };
+      }
+    }
+
     // Niche Validation endpoint - AI-powered niche validation with real keyword research
     if (path === '/api/validate-niche' && method === 'POST') {
       const { niche_keyword } = body;

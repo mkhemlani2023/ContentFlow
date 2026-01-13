@@ -8248,44 +8248,145 @@
 
             const resultsDiv = document.getElementById('nicheResearchResults');
 
-            // Show loading state
-            resultsDiv.innerHTML = `
-                <div style="background: white; border-radius: 16px; padding: 60px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: center;">
-                    <div class="spinner" style="margin: 0 auto 20px;"></div>
-                    <h3 style="color: #1e293b; margin-bottom: 10px; font-size: 20px;">Validating "${keyword}"...</h3>
-                    <p style="color: #64748b; font-size: 14px; margin: 10px 0;">Analyzing search volume, competition, and opportunities</p>
-                    <p style="color: #94a3b8; font-size: 12px; margin-top: 15px;">This may take 15-30 seconds</p>
-                </div>
-            `;
+            // Helper function to update progress
+            function updateProgress(step, status, message) {
+                const step1Status = step >= 1 ? (status === 'loading' && step === 1 ? 'loading' : 'complete') : 'pending';
+                const step2Status = step >= 2 ? (status === 'loading' && step === 2 ? 'loading' : step > 2 ? 'complete' : 'pending') : 'pending';
+                const step3Status = step >= 3 ? (status === 'loading' && step === 3 ? 'loading' : step > 3 ? 'complete' : 'pending') : 'pending';
+
+                const statusIcon = (s) => s === 'complete' ? '✓' : s === 'loading' ? '⏳' : '○';
+                const statusColor = (s) => s === 'complete' ? '#10b981' : s === 'loading' ? '#3b82f6' : '#cbd5e1';
+
+                resultsDiv.innerHTML = `
+                    <div style="background: white; border-radius: 16px; padding: 60px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+                        <div style="text-align: center; margin-bottom: 40px;">
+                            <div class="spinner" style="margin: 0 auto 20px;"></div>
+                            <h3 style="color: #1e293b; margin-bottom: 10px; font-size: 20px;">Analyzing "${keyword}"...</h3>
+                            <p style="color: #64748b; font-size: 14px; margin: 10px 0;">${message}</p>
+                        </div>
+                        <div style="max-width: 500px; margin: 0 auto;">
+                            <div style="display: flex; flex-direction: column; gap: 20px;">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${statusColor(step1Status)}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px;">
+                                        ${statusIcon(step1Status)}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">Step 1: Generate Keywords</div>
+                                        <div style="font-size: 13px; color: #64748b;">AI-powered buyer-intent keyword research</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${statusColor(step2Status)}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px;">
+                                        ${statusIcon(step2Status)}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">Step 2: Analyze Competition</div>
+                                        <div style="font-size: 13px; color: #64748b;">Real-time SERP data collection</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${statusColor(step3Status)}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px;">
+                                        ${statusIcon(step3Status)}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">Step 3: Generate Insights</div>
+                                        <div style="font-size: 13px; color: #64748b;">Comprehensive market analysis</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
 
             try {
-                // Call validation API
-                const validationResponse = await fetch('/api/validate-niche', {
+                // STEP 1: Generate Keywords
+                updateProgress(1, 'loading', 'Generating high-value keywords...');
+
+                const step1Response = await fetch('/api/validate-niche-step1', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ niche_keyword: keyword })
                 });
 
-                if (!validationResponse.ok) {
-                    throw new Error('Failed to validate niche');
+                if (!step1Response.ok) {
+                    throw new Error('Failed to generate keywords');
                 }
 
-                const validation = await validationResponse.json();
-
-                if (!validation.success) {
-                    throw new Error(validation.message || 'Niche validation failed');
+                const step1Data = await step1Response.json();
+                if (!step1Data.success) {
+                    throw new Error(step1Data.error || 'Keyword generation failed');
                 }
+
+                console.log(`Step 1 complete: ${step1Data.keywords.length} keywords generated in ${step1Data.duration_ms}ms`);
+
+                // STEP 2: Analyze SERP Data
+                updateProgress(2, 'loading', 'Analyzing search engine results...');
+
+                const step2Response = await fetch('/api/validate-niche-step2', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        niche_keyword: keyword,
+                        keywords: step1Data.keywords
+                    })
+                });
+
+                if (!step2Response.ok) {
+                    throw new Error('Failed to analyze SERP data');
+                }
+
+                const step2Data = await step2Response.json();
+                if (!step2Data.success) {
+                    throw new Error(step2Data.error || 'SERP analysis failed');
+                }
+
+                console.log(`Step 2 complete: ${step2Data.serp_results.length} keywords analyzed, ${step2Data.competitor_domains.length} competitors found in ${step2Data.duration_ms}ms`);
+
+                // STEP 3: Generate Comprehensive Analysis
+                updateProgress(3, 'loading', 'Generating comprehensive insights...');
+
+                const step3Response = await fetch('/api/validate-niche-step3', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        niche_keyword: keyword,
+                        serp_results: step2Data.serp_results,
+                        competitor_domains: step2Data.competitor_domains
+                    })
+                });
+
+                if (!step3Response.ok) {
+                    throw new Error('Failed to generate analysis');
+                }
+
+                const step3Data = await step3Response.json();
+                if (!step3Data.success) {
+                    throw new Error(step3Data.error || 'Analysis generation failed');
+                }
+
+                console.log(`Step 3 complete: Analysis generated in ${step3Data.duration_ms}ms`);
+
+                // Combine all data into validation object
+                const validation = {
+                    success: true,
+                    niche_keyword: keyword,
+                    timestamp: new Date().toISOString(),
+                    ...step3Data.analysis,
+                    keywords: step1Data.keywords,
+                    serp_results: step2Data.serp_results,
+                    total_duration_ms: step1Data.duration_ms + step2Data.duration_ms + step3Data.duration_ms
+                };
 
                 // Auto-save validation to history
                 try {
                     const saveResult = await SupabaseService.saveNicheValidation(validation);
                     if (saveResult.success) {
                         console.log('Validation saved to history:', saveResult.data.id);
-                        validation.savedId = saveResult.data.id; // Store ID for later use
+                        validation.savedId = saveResult.data.id;
                     }
                 } catch (saveError) {
                     console.error('Failed to save validation to history:', saveError);
-                    // Don't block display if save fails
                 }
 
                 // Display standalone validation results
