@@ -8,6 +8,32 @@
 
 ## 🆕 LATEST SESSION - 2026-01-13 (Niche Research Section + Validation History - Phase 1B.6 ✅)
 
+**⚠️ CRITICAL FIX (2026-01-13):** Fixed affiliate-database.js deployment issue that was preventing Niche Research section from working.
+
+**The Problem:**
+- `affiliate-database.js` was not being copied to `public/` directory during build
+- Server returned 404 HTML page instead of JavaScript file
+- Caused MIME type error: "Refused to execute script because its MIME type ('text/html') is not executable"
+- Niche Research section failed to respond when clicked
+- All discovery and validation features were broken
+
+**The Solution:**
+- Updated `netlify.toml` build command to include `*.js` files
+- Changed: `cp index.html public/` → `cp index.html public/ && cp *.js public/`
+- Now all JavaScript files are properly deployed to production
+
+**Git Commit:**
+- `da3a6b0`: Fix affiliate-database.js deployment: Include JS files in build
+
+**Verification After Redeploy:**
+1. Visit https://www.getseowizard.com
+2. Check browser console - should NOT see MIME type error
+3. Click "🔍 Niche Research" in main navigation
+4. Section should load properly with search interface
+5. Enter niche keyword and validate - should work end-to-end
+
+---
+
 **MAJOR MILESTONES:**
 1. **Dedicated Niche Research Section** - First-class feature in main navigation
 2. **Auto-Save Validation History** - Every validation saved to Supabase
@@ -111,6 +137,7 @@ addSelectedPrograms(blogId)             // Batch add to blog
 - `d0a2578`: PHASE 1B.5: Niche Validation System - Complete Implementation
 - `6f8f7ea`: Add Dedicated Niche Research Section - First-Class Feature
 - `02d7554`: Add Validation Auto-Save and Supabase Methods
+- `da3a6b0`: Fix affiliate-database.js deployment: Include JS files in build ⚠️ CRITICAL
 
 **How to Test (After Deploy):**
 
