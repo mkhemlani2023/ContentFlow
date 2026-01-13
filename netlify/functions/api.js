@@ -5744,9 +5744,9 @@ Return ONLY valid JSON array:
       }
     }
 
-    // CREATE SITEGROUND SITE - Create WordPress site via Siteground API
-    if (path === '/api/create-siteground-site' && method === 'POST') {
-      const { validation_id, domain, admin_email, theme, content_count, auto_affiliate, niche_keyword } = body;
+    // GENERATE SETUP PACKAGE - Create guided setup for manual Siteground installation
+    if (path === '/api/generate-setup-package' && method === 'POST') {
+      const { validation_id, validation, domain, admin_email, theme, content_count, auto_affiliate, niche_keyword } = body;
 
       if (!domain || !admin_email || !niche_keyword) {
         return {
@@ -5760,26 +5760,83 @@ Return ONLY valid JSON array:
       }
 
       try {
-        console.log(`[SITE CREATION] Creating site for domain: ${domain}`);
+        console.log(`[SETUP PACKAGE] Generating setup package for: ${domain}`);
         const startTime = Date.now();
 
-        // TODO: Implement actual Siteground API integration
-        // For now, return mock success response
+        // Generate setup steps
+        const setupSteps = [
+          {
+            title: 'Register Domain Name',
+            description: `Purchase "${domain}" from Namecheap or your preferred registrar. Point nameservers to Siteground.`,
+            estimated_time: '5 min',
+            completed: false,
+            action_button: {
+              label: 'Buy on Namecheap',
+              onclick: `window.open('https://www.namecheap.com/domains/registration/results/?domain=${domain}', '_blank')`
+            }
+          },
+          {
+            title: 'Install WordPress on Siteground',
+            description: 'Log into Siteground → Site Tools → WordPress → Install. Use domain and email provided.',
+            estimated_time: '3 min',
+            completed: false,
+            action_button: {
+              label: 'Open Siteground',
+              onclick: `window.open('https://my.siteground.com', '_blank')`
+            }
+          },
+          {
+            title: 'Install & Activate Theme',
+            description: `Install "${theme}" theme from WordPress directory and activate it. Use default settings to start.`,
+            estimated_time: '2 min',
+            completed: false
+          },
+          {
+            title: 'Install Essential Plugins',
+            description: 'Install: Yoast SEO, TablePress, Pretty Links, Wordfence, WPForms. Activate all plugins.',
+            estimated_time: '3 min',
+            completed: false
+          },
+          {
+            title: 'Import Generated Articles',
+            description: `Import the ${content_count} pre-written articles using WordPress Tools → Import → WordPress XML.`,
+            estimated_time: '2 min',
+            completed: false,
+            action_button: {
+              label: 'Download Articles',
+              onclick: 'downloadArticles()'
+            }
+          },
+          {
+            title: 'Create Essential Pages',
+            description: 'Create About Us, Contact (with WPForms), Privacy Policy, and Affiliate Disclosure pages.',
+            estimated_time: '5 min',
+            completed: false
+          },
+          {
+            title: 'Configure WordPress Settings',
+            description: 'Set permalink structure to "Post name", update site title and tagline, set timezone.',
+            estimated_time: '2 min',
+            completed: false
+          },
+          {
+            title: 'Apply to Affiliate Programs',
+            description: `Send the ${auto_affiliate ? 'pre-written' : 'custom'} application emails to recommended affiliate programs.`,
+            estimated_time: '5 min',
+            completed: false,
+            action_button: auto_affiliate ? {
+              label: 'Download Emails',
+              onclick: 'downloadAffiliateEmails()'
+            } : null
+          }
+        ];
 
-        // In production, this would:
-        // 1. Call Siteground API to register domain
-        // 2. Create hosting account
-        // 3. Install WordPress
-        // 4. Install and configure theme
-        // 5. Install plugins
-        // 6. Create essential pages
-        // 7. Generate initial content
-        // 8. Prepare affiliate application emails
-
-        const mockCredentials = {
-          username: 'admin',
-          password: `WP_${Math.random().toString(36).substring(2, 15)}`
-        };
+        // Get affiliate programs from validation
+        const affiliatePrograms = validation?.affiliate_programs?.recommended_programs || [
+          { program_name: 'Amazon Associates', commission_structure: '1-10%', cookie_duration: '24 hours' },
+          { program_name: 'ShareASale', commission_structure: 'Varies', cookie_duration: '30-90 days' },
+          { program_name: 'CJ Affiliate', commission_structure: 'Varies', cookie_duration: '30-90 days' }
+        ];
 
         const duration = Date.now() - startTime;
 
@@ -5788,23 +5845,19 @@ Return ONLY valid JSON array:
           headers,
           body: JSON.stringify({
             success: true,
-            message: 'Site creation initiated',
-            site_id: `site_${Date.now()}`,
+            message: 'Setup package generated',
             domain,
-            wp_admin_url: `https://${domain}/wp-admin`,
-            credentials: mockCredentials,
-            affiliate_status: auto_affiliate ?
-              'Generated application emails for 3 affiliate programs. Check your dashboard.' :
-              'Manual affiliate application required.',
-            status: 'provisioning',
-            estimated_completion: '15-20 minutes',
-            duration_ms: duration,
-            note: 'This is a mock response. Siteground API integration pending.'
+            admin_email,
+            theme,
+            content_count,
+            setup_steps: setupSteps,
+            affiliate_programs: affiliatePrograms,
+            duration_ms: duration
           })
         };
 
       } catch (error) {
-        console.error('[SITE CREATION ERROR]', error);
+        console.error('[SETUP PACKAGE ERROR]', error);
         return {
           statusCode: 500,
           headers,

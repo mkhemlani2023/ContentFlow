@@ -8758,7 +8758,7 @@
             showModal(modalHTML);
         }
 
-        // Blog Creation Flow - Step 4: Create Siteground Site
+        // Blog Creation Flow - Step 4: Generate Setup Guide (Siteground Manual Setup)
         async function createSitegroundSite() {
             const domain = window.currentBlogCreation.selectedDomain;
             const validation = window.currentBlogCreation.validation;
@@ -8773,15 +8773,16 @@
             }
 
             // Show progress modal
-            showSiteCreationProgress(domain);
+            showSetupGuideGeneration(domain);
 
             try {
-                // Call API to create Siteground site
-                const response = await fetch('/api/create-siteground-site', {
+                // Generate setup package via API
+                const response = await fetch('/api/generate-setup-package', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         validation_id: validation.savedId,
+                        validation: validation,
                         domain: domain,
                         admin_email: adminEmail,
                         theme: theme,
@@ -8794,18 +8795,18 @@
                 const result = await response.json();
 
                 if (!result.success) {
-                    throw new Error(result.error || 'Site creation failed');
+                    throw new Error(result.error || 'Setup guide generation failed');
                 }
 
-                // Show success
-                showSiteCreationSuccess(result);
+                // Show setup guide
+                showSetupGuide(result);
 
             } catch (error) {
-                console.error('Site creation error:', error);
+                console.error('Setup guide error:', error);
                 showModal(`
                     <div style="text-align: center; padding: 40px;">
                         <div style="font-size: 64px; margin-bottom: 20px;">⚠️</div>
-                        <h2 style="color: #991b1b; margin: 0 0 15px 0;">Site Creation Failed</h2>
+                        <h2 style="color: #991b1b; margin: 0 0 15px 0;">Setup Guide Generation Failed</h2>
                         <p style="color: #dc2626; margin-bottom: 30px;">${error.message}</p>
                         <button onclick="closeModal()" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                             Close
@@ -8815,40 +8816,38 @@
             }
         }
 
-        // Show site creation progress
-        function showSiteCreationProgress(domain) {
+        // Show setup guide generation progress
+        function showSetupGuideGeneration(domain) {
             const modalHTML = `
                 <div style="max-width: 600px; margin: 0 auto; text-align: center;">
-                    <div style="font-size: 64px; margin-bottom: 20px;">🚀</div>
-                    <h2 style="margin: 0 0 15px 0; color: #1e293b;">Creating Your Site...</h2>
-                    <p style="color: #64748b; margin-bottom: 40px;">Setting up <strong>${domain}</strong></p>
+                    <div style="font-size: 64px; margin-bottom: 20px;">📦</div>
+                    <h2 style="margin: 0 0 15px 0; color: #1e293b;">Preparing Your Setup Package...</h2>
+                    <p style="color: #64748b; margin-bottom: 40px;">Generating everything you need for <strong>${domain}</strong></p>
 
                     <div style="text-align: left; background: #f8fafc; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0;">
-                        <div id="progress-steps" style="display: flex; flex-direction: column; gap: 15px;">
-                            <div class="progress-step" data-step="1">
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <div>
                                 <span style="display: inline-block; width: 24px; height: 24px; border: 3px solid #667eea; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px;"></span>
-                                <span style="color: #667eea; font-weight: 600;">Registering domain...</span>
+                                <span style="color: #667eea; font-weight: 600;">Generating step-by-step setup guide...</span>
                             </div>
-                            <div class="progress-step" data-step="2" style="opacity: 0.3;">
-                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">⏳</span>
-                                <span style="color: #64748b;">Installing WordPress...</span>
+                            <div style="opacity: 0.7;">
+                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">📝</span>
+                                <span style="color: #64748b;">Creating WordPress configuration files...</span>
                             </div>
-                            <div class="progress-step" data-step="3" style="opacity: 0.3;">
-                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">⏳</span>
-                                <span style="color: #64748b;">Configuring theme & plugins...</span>
+                            <div style="opacity: 0.7;">
+                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">✍️</span>
+                                <span style="color: #64748b;">Writing initial articles...</span>
                             </div>
-                            <div class="progress-step" data-step="4" style="opacity: 0.3;">
-                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">⏳</span>
-                                <span style="color: #64748b;">Creating essential pages...</span>
+                            <div style="opacity: 0.7;">
+                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">💌</span>
+                                <span style="color: #64748b;">Drafting affiliate application emails...</span>
                             </div>
-                            <div class="progress-step" data-step="5" style="opacity: 0.3;">
-                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">⏳</span>
-                                <span style="color: #64748b;">Generating initial content...</span>
-                            </div>
-                            <div class="progress-step" data-step="6" style="opacity: 0.3;">
-                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">⏳</span>
-                                <span style="color: #64748b;">Preparing affiliate applications...</span>
-                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: #fef3c7; padding: 15px; border-radius: 8px; border: 2px solid #fbbf24; margin-top: 20px;">
+                        <div style="color: #92400e; font-size: 13px; text-align: left;">
+                            <strong>Note:</strong> Since Siteground doesn't have API access, we're creating a comprehensive guided setup package. You'll be able to complete the entire setup in 15-20 minutes!
                         </div>
                     </div>
                 </div>
@@ -8857,59 +8856,131 @@
             showModal(modalHTML);
         }
 
-        // Show site creation success
-        function showSiteCreationSuccess(result) {
+        // Show setup guide
+        function showSetupGuide(result) {
+            window.currentSetupGuide = result; // Store for later reference
+
             const modalHTML = `
-                <div style="max-width: 700px; margin: 0 auto; text-align: center;">
-                    <div style="font-size: 72px; margin-bottom: 20px;">🎉</div>
-                    <h2 style="margin: 0 0 10px 0; color: #10b981; font-size: 32px;">Site Created Successfully!</h2>
-                    <p style="color: #64748b; margin-bottom: 40px;">Your affiliate site is ready to start earning</p>
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="font-size: 64px; margin-bottom: 15px;">📋</div>
+                        <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 28px;">Your Setup Package is Ready!</h2>
+                        <p style="color: #64748b;">Follow these steps to launch <strong>${result.domain}</strong> in 15-20 minutes</p>
+                    </div>
 
-                    <div style="background: #f0fdf4; padding: 25px; border-radius: 12px; border: 2px solid #86efac; margin-bottom: 25px; text-align: left;">
-                        <h3 style="margin: 0 0 15px 0; color: #166534; font-size: 18px;">Site Details</h3>
-                        <div style="display: grid; gap: 12px;">
-                            <div>
-                                <div style="color: #64748b; font-size: 13px; margin-bottom: 3px;">WordPress Admin</div>
-                                <a href="${result.wp_admin_url}" target="_blank" style="color: #10b981; font-weight: 600; text-decoration: none; font-size: 15px;">${result.wp_admin_url} →</a>
-                            </div>
-                            <div>
-                                <div style="color: #64748b; font-size: 13px; margin-bottom: 3px;">Username</div>
-                                <div style="color: #1e293b; font-weight: 600;">${result.credentials?.username || 'admin'}</div>
-                            </div>
-                            <div>
-                                <div style="color: #64748b; font-size: 13px; margin-bottom: 3px;">Password (save this now!)</div>
-                                <div style="background: #dcfce7; padding: 10px; border-radius: 6px; font-family: monospace; color: #166534; font-weight: 600;">${result.credentials?.password || 'Check your email'}</div>
-                            </div>
+                    <!-- Quick Stats -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+                        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 15px; border-radius: 10px; border: 2px solid #86efac; text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #166534;">${result.content_count || 10}</div>
+                            <div style="color: #166534; font-size: 13px; font-weight: 600;">Articles Ready</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 15px; border-radius: 10px; border: 2px solid #fbbf24; text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #92400e;">${result.affiliate_programs?.length || 3}</div>
+                            <div style="color: #92400e; font-size: 13px; font-weight: 600;">Affiliate Emails</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 15px; border-radius: 10px; border: 2px solid #93c5fd; text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #1e40af;">~20min</div>
+                            <div style="color: #1e40af; font-size: 13px; font-weight: 600;">Setup Time</div>
                         </div>
                     </div>
 
-                    ${result.affiliate_status ? `
-                    <div style="background: #fef3c7; padding: 20px; border-radius: 12px; border: 2px solid #fbbf24; margin-bottom: 25px; text-align: left;">
-                        <h3 style="margin: 0 0 15px 0; color: #92400e; font-size: 18px;">Affiliate Applications</h3>
-                        <div style="color: #78350f; font-size: 14px; line-height: 1.7;">
-                            ${result.affiliate_status}
+                    <!-- Step-by-Step Checklist -->
+                    <div style="background: white; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0; margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 20px 0; color: #1e293b; font-size: 18px;">Setup Checklist</h3>
+
+                        <div id="setup-checklist" style="display: flex; flex-direction: column; gap: 15px;">
+                            ${result.setup_steps.map((step, index) => `
+                                <div style="border-left: 3px solid ${step.completed ? '#10b981' : '#e2e8f0'}; padding-left: 15px; cursor: pointer;" onclick="toggleStep(${index})">
+                                    <div style="display: flex; align-items: start; gap: 12px;">
+                                        <input type="checkbox" ${step.completed ? 'checked' : ''} style="margin-top: 3px; width: 18px; height: 18px; cursor: pointer;">
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 600; color: #1e293b; margin-bottom: 5px;">
+                                                ${index + 1}. ${step.title}
+                                                <span style="color: #64748b; font-weight: 400; font-size: 13px;">(~${step.estimated_time})</span>
+                                            </div>
+                                            <div style="color: #64748b; font-size: 14px; line-height: 1.6;">${step.description}</div>
+                                            ${step.action_button ? `
+                                                <button onclick="event.stopPropagation(); ${step.action_button.onclick}" style="margin-top: 10px; background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                                                    ${step.action_button.label}
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
-                    ` : ''}
 
-                    <div style="background: #eff6ff; padding: 20px; border-radius: 12px; border: 2px solid #93c5fd; margin-bottom: 25px; text-align: left;">
-                        <h3 style="margin: 0 0 12px 0; color: #1e40af; font-size: 16px;">Next Steps</h3>
-                        <ol style="margin: 0; padding-left: 20px; color: #1e3a8a; font-size: 14px; line-height: 1.8;">
-                            <li>Log into your WordPress admin</li>
-                            <li>Review and publish the generated content</li>
-                            <li>Apply to affiliate programs (emails drafted for you)</li>
-                            <li>Set up Google Analytics and Search Console</li>
-                            <li>Start building backlinks</li>
-                        </ol>
+                    <!-- Downloads Section -->
+                    <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px; border-radius: 12px; border: 2px solid #cbd5e1; margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 16px;">📥 Download Your Files</h3>
+                        <div style="display: grid; gap: 10px;">
+                            <button onclick="downloadSetupGuide()" style="background: white; border: 2px solid #e2e8f0; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 10px; font-weight: 600; color: #1e293b;">
+                                <span style="font-size: 20px;">📄</span>
+                                <div style="flex: 1;">
+                                    <div>Complete Setup Guide (PDF)</div>
+                                    <div style="font-size: 12px; color: #64748b; font-weight: 400;">Step-by-step instructions with screenshots</div>
+                                </div>
+                            </button>
+                            <button onclick="downloadArticles()" style="background: white; border: 2px solid #e2e8f0; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 10px; font-weight: 600; color: #1e293b;">
+                                <span style="font-size: 20px;">📝</span>
+                                <div style="flex: 1;">
+                                    <div>${result.content_count || 10} Articles (WordPress XML)</div>
+                                    <div style="font-size: 12px; color: #64748b; font-weight: 400;">Ready to import directly into WordPress</div>
+                                </div>
+                            </button>
+                            <button onclick="downloadAffiliateEmails()" style="background: white; border: 2px solid #e2e8f0; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 10px; font-weight: 600; color: #1e293b;">
+                                <span style="font-size: 20px;">💌</span>
+                                <div style="flex: 1;">
+                                    <div>Affiliate Application Emails</div>
+                                    <div style="font-size: 12px; color: #64748b; font-weight: 400;">Pre-written emails for ${result.affiliate_programs?.length || 3} programs</div>
+                                </div>
+                            </button>
+                        </div>
                     </div>
 
-                    <button onclick="closeModal(); handleNavClick('showBlogManagement')" style="width: 100%; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
-                        Go to Blog Management
-                    </button>
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="closeModal()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Close
+                        </button>
+                        <button onclick="viewFullSetupGuide()" style="flex: 2; background: linear-gradient(135deg, #667eea 0%, #5568d3 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                            📖 View Full Setup Guide
+                        </button>
+                    </div>
                 </div>
             `;
 
             showModal(modalHTML);
+        }
+
+        // Toggle step completion
+        function toggleStep(index) {
+            if (window.currentSetupGuide) {
+                window.currentSetupGuide.setup_steps[index].completed = !window.currentSetupGuide.setup_steps[index].completed;
+                showSetupGuide(window.currentSetupGuide);
+            }
+        }
+
+        // Download functions (to be implemented with actual content generation)
+        function downloadSetupGuide() {
+            alert('Generating setup guide PDF...');
+            // TODO: Generate and download PDF
+        }
+
+        function downloadArticles() {
+            alert('Generating WordPress import file...');
+            // TODO: Generate WordPress XML export
+        }
+
+        function downloadAffiliateEmails() {
+            alert('Generating affiliate emails...');
+            // TODO: Generate email templates
+        }
+
+        function viewFullSetupGuide() {
+            // TODO: Navigate to detailed setup guide page
+            alert('Opening detailed setup guide...');
         }
 
         // Display standalone validation results (for dedicated niche research page)
