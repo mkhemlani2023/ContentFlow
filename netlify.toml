@@ -1,49 +1,33 @@
 [build]
-  # Build command - ensure public directory exists and copy files
   command = "mkdir -p public && cp index.html public/ && cp *.js public/ && cp *.png public/ 2>/dev/null || true && echo 'Build completed successfully'"
-
-  # Directory to publish - serve static files from public
   publish = "public"
-
-  # Functions directory for serverless functions
   functions = "netlify/functions"
-
-  # Ignore TypeScript build command
   ignore = "exit 0"
 
-# Functions configuration
 [functions]
-  # Function timeout for paid tier
   timeout = 30
   node_bundler = "esbuild"
 
 [build.environment]
-  # Node.js version
   NODE_VERSION = "18"
-
-  # Production environment
   NODE_ENV = "production"
 
-# Redirect all API calls to the api serverless function
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api"
   status = 200
 
-# Redirect OAuth routes to the api serverless function
 [[redirects]]
   from = "/oauth/*"
   to = "/.netlify/functions/api"
   status = 200
 
-# SPA fallback for client-side routing (except API and OAuth calls)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
   force = false
 
-# Headers for security and performance
 [[headers]]
   for = "/*"
   [headers.values]
@@ -52,6 +36,3 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: https://images.pexels.com https://images.unsplash.com https://picsum.photos; connect-src 'self' https: https://google.serper.dev https://openrouter.ai https://api.pexels.com https://api.unsplash.com https://images.pexels.com https://images.unsplash.com https://picsum.photos https://*.supabase.co;"
-
-# Environment-specific settings removed for simplicity
-# Using single build command for all contexts
