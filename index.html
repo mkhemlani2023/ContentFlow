@@ -1965,24 +1965,32 @@
                     return { success: false, error: 'User not logged in' };
                 }
                 try {
+                    const dataToSave = {
+                        user_id: currentUser.id,
+                        niche_keyword: validation.niche_keyword || validation.niche,
+                        score: validation.score,
+                        recommendation: validation.recommendation,
+                        priority: validation.priority,
+                        estimated_monthly_traffic: validation.estimated_monthly_traffic,
+                        avg_competition_da: validation.avg_competition_da,
+                        unique_competitors: validation.competitor_domains?.length || validation.unique_competitors || 0,
+                        breakdown: validation.breakdown,
+                        keyword_opportunities: validation.keyword_opportunities,
+                        action: validation.action
+                    };
+
+                    console.log('Saving niche validation:', dataToSave);
+
                     const { data, error} = await supabaseClient
                         .from('niche_validations')
-                        .insert([{
-                            user_id: currentUser.id,
-                            niche_keyword: validation.niche_keyword || validation.niche,
-                            score: validation.score,
-                            recommendation: validation.recommendation,
-                            priority: validation.priority,
-                            estimated_monthly_traffic: validation.estimated_monthly_traffic,
-                            avg_competition_da: validation.avg_competition_da,
-                            unique_competitors: validation.competitor_domains?.length || validation.unique_competitors,
-                            breakdown: validation.breakdown,
-                            keyword_opportunities: validation.keyword_opportunities,
-                            action: validation.action
-                        }])
+                        .insert([dataToSave])
                         .select();
 
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Supabase error details:', error);
+                        throw error;
+                    }
+                    console.log('Successfully saved to Supabase:', data[0]);
                     return { success: true, data: data[0] };
                 } catch (error) {
                     console.error('Error saving niche validation:', error);
