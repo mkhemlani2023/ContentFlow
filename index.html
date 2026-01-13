@@ -9090,11 +9090,186 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
             const resultsDiv = document.getElementById('discoveryResults');
 
-            // Show loading state
+            // Show loading state - Step 1: Validating niche
             resultsDiv.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
                     <div class="spinner" style="margin: 0 auto 20px;"></div>
-                    <p style="color: #64748b;">Searching for programs matching "${keyword}"...</p>
+                    <h3 style="color: #1e293b; margin-bottom: 10px;">Validating "${keyword}" Niche...</h3>
+                    <p style="color: #64748b; font-size: 14px;">Analyzing search volume, competition, and opportunities</p>
+                    <p style="color: #94a3b8; font-size: 12px; margin-top: 10px;">This may take 15-30 seconds</p>
+                </div>
+            `;
+
+            try {
+                // STEP 1: Validate the niche using real search data
+                console.log('Validating niche:', keyword);
+                const validationResponse = await fetch('/api/validate-niche', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ niche_keyword: keyword })
+                });
+
+                if (!validationResponse.ok) {
+                    throw new Error('Failed to validate niche');
+                }
+
+                const validation = await validationResponse.json();
+
+                if (!validation.success) {
+                    throw new Error(validation.message || 'Niche validation failed');
+                }
+
+                console.log('Validation result:', validation);
+
+                // Display validation results
+                showNicheValidationResults(validation, blogId, keyword);
+
+            } catch (error) {
+                console.error('Validation error:', error);
+
+                // Fall back to showing programs without validation
+                resultsDiv.innerHTML = `
+                    <div style="background: #fef3c7; padding: 20px; border-radius: 12px; border: 1px solid #fbbf24; margin-bottom: 20px;">
+                        <div style="color: #92400e; font-size: 14px; font-weight: 600; margin-bottom: 8px;">⚠️ Validation Unavailable</div>
+                        <div style="color: #78350f; font-size: 13px;">
+                            Could not validate niche: ${error.message}. Showing available programs instead.
+                        </div>
+                    </div>
+                `;
+
+                // Continue with program discovery
+                showProgramsWithoutValidation(keyword, blogId, resultsDiv);
+            }
+        }
+
+        // Show niche validation results with option to view programs
+        function showNicheValidationResults(validation, blogId, keyword) {
+            const resultsDiv = document.getElementById('discoveryResults');
+
+            const scoreColor = validation.score >= 80 ? '#10b981' :
+                              validation.score >= 60 ? '#f59e0b' :
+                              validation.score >= 40 ? '#f97316' : '#ef4444';
+
+            const priorityEmoji = validation.priority === 'high' ? '🟢' :
+                                 validation.priority === 'medium' ? '🟡' :
+                                 validation.priority === 'low' ? '🟠' : '🔴';
+
+            let validationHTML = `
+                <div style="background: white; border: 2px solid ${scoreColor}; border-radius: 16px; padding: 30px; margin-bottom: 25px;">
+                    <!-- Score Display -->
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <div style="width: 150px; height: 150px; margin: 0 auto 20px; position: relative;">
+                            <svg viewBox="0 0 100 100" style="transform: rotate(-90deg);">
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="${scoreColor}" stroke-width="10"
+                                    stroke-dasharray="${(validation.score / 100) * 283} 283"
+                                    stroke-linecap="round"/>
+                            </svg>
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                <div style="font-size: 36px; font-weight: 700; color: ${scoreColor};">${validation.score}</div>
+                                <div style="font-size: 12px; color: #64748b; font-weight: 600;">/ 100</div>
+                            </div>
+                        </div>
+                        <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 24px; text-transform: capitalize;">
+                            ${keyword}
+                        </h2>
+                        <div style="display: inline-block; background: linear-gradient(135deg, ${scoreColor} 0%, ${scoreColor}dd 100%); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">
+                            ${priorityEmoji} ${validation.recommendation}
+                        </div>
+                    </div>
+
+                    <!-- Key Metrics -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <div style="color: #64748b; font-size: 12px; margin-bottom: 4px; font-weight: 600;">Est. Monthly Searches</div>
+                            <div style="color: #1e293b; font-size: 20px; font-weight: 700;">${validation.estimated_monthly_traffic.toLocaleString()}</div>
+                        </div>
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <div style="color: #64748b; font-size: 12px; margin-bottom: 4px; font-weight: 600;">Avg. Competition (DA)</div>
+                            <div style="color: #1e293b; font-size: 20px; font-weight: 700;">${validation.avg_competition_da}</div>
+                        </div>
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <div style="color: #64748b; font-size: 12px; margin-bottom: 4px; font-weight: 600;">Unique Competitors</div>
+                            <div style="color: #1e293b; font-size: 20px; font-weight: 700;">${validation.unique_competitors}</div>
+                        </div>
+                    </div>
+
+                    <!-- Score Breakdown -->
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 25px;">
+                        <h4 style="margin: 0 0 15px 0; color: #1e293b; font-size: 14px; font-weight: 600;">Score Breakdown</h4>
+                        ${Object.entries(validation.breakdown).map(([key, data]) => {
+                            const label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                            const maxScore = key === 'search_volume' ? 30 :
+                                           key === 'competition' ? 25 :
+                                           key === 'keyword_opportunities' ? 20 :
+                                           key === 'content_diversity' ? 15 : 10;
+                            return `
+                                <div style="margin-bottom: 12px;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                        <span style="color: #475569; font-size: 13px; font-weight: 500;">${label}</span>
+                                        <span style="color: #1e293b; font-size: 13px; font-weight: 600;">${data.score}/${maxScore}</span>
+                                    </div>
+                                    <div style="background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+                                        <div style="background: ${scoreColor}; height: 100%; width: ${(data.score / maxScore) * 100}%; transition: width 0.3s;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <!-- Keyword Opportunities -->
+                    <div style="background: #f0fdf4; padding: 20px; border-radius: 12px; border: 1px solid #86efac; margin-bottom: 25px;">
+                        <h4 style="margin: 0 0 15px 0; color: #166534; font-size: 14px; font-weight: 600;">💡 Top Keyword Opportunities</h4>
+                        <div style="display: grid; gap: 10px;">
+                            ${validation.keyword_opportunities.slice(0, 5).map(kw => `
+                                <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #86efac;">
+                                    <div style="display: flex; justify-content: between; align-items: start; margin-bottom: 6px;">
+                                        <div style="flex: 1;">
+                                            <div style="color: #1e293b; font-size: 13px; font-weight: 600;">${kw.keyword}</div>
+                                            <div style="display: flex; gap: 10px; margin-top: 4px; font-size: 11px; color: #64748b;">
+                                                <span>📊 ~${kw.estimated_monthly_searches.toLocaleString()} searches/mo</span>
+                                                <span>🎯 ${kw.difficulty} difficulty</span>
+                                                <span>DA: ${kw.competition_da}</span>
+                                            </div>
+                                        </div>
+                                        <span style="background: ${kw.ranking_potential === 'high' ? '#10b981' : kw.ranking_potential === 'medium' ? '#f59e0b' : '#64748b'}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; white-space: nowrap;">
+                                            ${kw.ranking_potential.toUpperCase()}
+                                        </span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Action Plan -->
+                    <div style="background: #eff6ff; padding: 20px; border-radius: 12px; border: 1px solid #93c5fd; margin-bottom: 25px;">
+                        <h4 style="margin: 0 0 10px 0; color: #1e40af; font-size: 14px; font-weight: 600;">📋 Recommended Action Plan</h4>
+                        <p style="color: #1e3a8a; font-size: 13px; margin: 0; line-height: 1.6;">${validation.action}</p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="closeModal()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                            Try Different Niche
+                        </button>
+                        <button onclick="showProgramsAfterValidation('${keyword}', '${blogId}')" style="flex: 2; background: linear-gradient(135deg, ${scoreColor} 0%, ${scoreColor}dd 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px ${scoreColor}40;">
+                            ${validation.score >= 60 ? '✓ View Affiliate Programs' : '⚠️ View Programs Anyway'}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            resultsDiv.innerHTML = validationHTML;
+        }
+
+        // Show programs after validation
+        async function showProgramsAfterValidation(keyword, blogId) {
+            const resultsDiv = document.getElementById('discoveryResults');
+
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div class="spinner" style="margin: 0 auto 20px;"></div>
+                    <p style="color: #64748b;">Loading affiliate programs for "${keyword}"...</p>
                 </div>
             `;
 
@@ -9222,6 +9397,117 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                     </div>
                 `;
             }
+        }
+
+        // Helper function: Show programs without validation (fallback)
+        function showProgramsWithoutValidation(keyword, blogId, resultsDiv) {
+            const nicheResults = discoverNichesByKeyword(keyword);
+
+            if (nicheResults.length === 0) {
+                resultsDiv.innerHTML += `
+                    <div style="text-align: center; padding: 40px; background: #fef2f2; border-radius: 12px; border: 1px solid #fecaca;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">😕</div>
+                        <h3 style="color: #991b1b; margin: 0 0 10px 0;">No Programs Found</h3>
+                        <p style="color: #dc2626; font-size: 14px;">No affiliate programs match "${keyword}".</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Use same display logic as showProgramsAfterValidation
+            const scoredNiches = nicheResults.map(niche => {
+                const score = scoreNiche(niche.niche);
+                return { ...niche, scoreData: score };
+            }).sort((a, b) => b.scoreData.score - a.scoreData.score);
+
+            let resultsHTML = `
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #1e293b; font-size: 16px; font-weight: 600; margin: 0 0 10px 0;">
+                        Found ${scoredNiches.length} matching niche${scoredNiches.length !== 1 ? 's' : ''} with ${scoredNiches.reduce((sum, n) => sum + n.programs.length, 0)} programs
+                    </h3>
+                </div>
+            `;
+
+            scoredNiches.forEach((niche, nicheIndex) => {
+                const scoreColor = niche.scoreData.score >= 75 ? '#10b981' : niche.scoreData.score >= 60 ? '#f59e0b' : '#64748b';
+                const trendEmoji = niche.trend === 'growing' ? '📈' : niche.trend === 'stable' ? '➡️' : '📉';
+
+                resultsHTML += `
+                    <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                            <div>
+                                <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 18px; font-weight: 600; text-transform: capitalize;">
+                                    ${niche.niche.replace(/_/g, ' ')}
+                                </h4>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <span style="background: linear-gradient(135deg, ${scoreColor} 0%, ${scoreColor}dd 100%); color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                                        Score: ${niche.scoreData.score}/100
+                                    </span>
+                                    <span style="background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                                        ${trendEmoji} ${niche.trend}
+                                    </span>
+                                    <span style="background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                                        ${niche.programs.length} program${niche.programs.length !== 1 ? 's' : ''}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; gap: 12px; margin-top: 15px;">
+                            ${niche.programs.map((program, programIndex) => {
+                                const commissionDisplay = program.commission_type === 'percentage'
+                                    ? `${program.commission_rate}%`
+                                    : program.commission_type === 'flat'
+                                    ? `$${program.commission_rate}`
+                                    : `${program.commission_rate}`;
+
+                                const networkColor = program.network === 'impact' ? '#10a37f' :
+                                                    program.network === 'shareasale' ? '#3b82f6' :
+                                                    program.network === 'cj' ? '#8b5cf6' : '#64748b';
+
+                                return `
+                                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                                        <div style="display: flex; align-items: start; gap: 12px;">
+                                            <input type="checkbox" id="program_${nicheIndex}_${programIndex}"
+                                                data-program='${JSON.stringify(program).replace(/'/g, "&apos;")}'
+                                                style="margin-top: 2px; width: 18px; height: 18px; cursor: pointer;">
+                                            <div style="flex: 1;">
+                                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px;">
+                                                    <label for="program_${nicheIndex}_${programIndex}" style="font-weight: 600; color: #1e293b; font-size: 14px; cursor: pointer;">
+                                                        ${program.name}
+                                                    </label>
+                                                    <span style="background: ${networkColor}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase;">
+                                                        ${program.network}
+                                                    </span>
+                                                </div>
+                                                <div style="display: flex; gap: 15px; flex-wrap: wrap; font-size: 12px; color: #64748b;">
+                                                    <span><strong>Commission:</strong> ${commissionDisplay}</span>
+                                                    <span><strong>Cookie:</strong> ${program.cookie_days} days</span>
+                                                    ${program.epc ? `<span><strong>EPC:</strong> $${program.epc}</span>` : ''}
+                                                    ${program.avg_order_value ? `<span><strong>AOV:</strong> $${program.avg_order_value}</span>` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            resultsHTML += `
+                <div style="display: flex; gap: 10px; margin-top: 25px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
+                    <button onclick="closeModal()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        Cancel
+                    </button>
+                    <button onclick="addSelectedPrograms('${blogId}')" style="flex: 2; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
+                        ✓ Add Selected Programs
+                    </button>
+                </div>
+            `;
+
+            resultsDiv.innerHTML += resultsHTML;
         }
 
         // Add selected programs to blog

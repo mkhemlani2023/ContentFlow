@@ -5176,6 +5176,222 @@ RULES:
       }
     }
 
+    // Niche Validation endpoint - Validates niche viability using search data
+    if (path === '/api/validate-niche' && method === 'POST') {
+      const { niche_keyword } = body;
+
+      if (!niche_keyword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Niche keyword is required'
+          })
+        };
+      }
+
+      try {
+        console.log(`\n========== NICHE VALIDATION START ==========`);
+        console.log(`Niche: ${niche_keyword}`);
+        console.log(`Timestamp: ${new Date().toISOString()}`);
+
+        // Step 1: Get seed keywords for the niche
+        const seedKeywords = [
+          niche_keyword,
+          `${niche_keyword} reviews`,
+          `best ${niche_keyword}`,
+          `${niche_keyword} guide`,
+          `${niche_keyword} comparison`,
+          `how to choose ${niche_keyword}`,
+          `${niche_keyword} cost`,
+          `top ${niche_keyword}`
+        ];
+
+        console.log('Seed keywords generated:', seedKeywords);
+
+        // Step 2: Query Serper for SERP data to analyze competition and search volume indicators
+        let totalSearches = 0;
+        let avgCompetitionDA = 0;
+        let keywordOpportunities = [];
+        let competitorDomains = new Set();
+
+        for (const keyword of seedKeywords.slice(0, 5)) { // Sample 5 keywords to avoid timeouts
+          try {
+            console.log(`Analyzing keyword: ${keyword}`);
+            const serpData = await callSerperAPI(keyword, 'us', 'en', 10);
+
+            if (serpData && serpData.organic) {
+              // Analyze top 10 results for competition
+              const domains = serpData.organic.map(result => {
+                const url = new URL(result.link);
+                return url.hostname.replace('www.', '');
+              });
+
+              domains.forEach(d => competitorDomains.add(d));
+
+              // Estimate DA for top 10
+              const daScores = domains.map(domain => estimateDomainAuthority(domain));
+              const avgDA = daScores.reduce((sum, da) => sum + da, 0) / daScores.length;
+              avgCompetitionDA += avgDA;
+
+              console.log(`  Average DA for "${keyword}": ${avgDA.toFixed(1)}`);
+
+              // Related searches indicate search volume
+              const relatedSearchesCount = serpData.relatedSearches ? serpData.relatedSearches.length : 0;
+              const estimatedSearches = relatedSearchesCount * 500; // Rough estimate
+
+              totalSearches += estimatedSearches;
+
+              keywordOpportunities.push({
+                keyword,
+                estimated_monthly_searches: estimatedSearches,
+                competition_da: Math.round(avgDA),
+                difficulty: avgDA > 70 ? 'hard' : avgDA > 50 ? 'medium' : 'easy',
+                ranking_potential: avgDA < 50 ? 'high' : avgDA < 65 ? 'medium' : 'low'
+              });
+            }
+          } catch (error) {
+            console.error(`Error analyzing keyword "${keyword}":`, error.message);
+          }
+        }
+
+        avgCompetitionDA = avgCompetitionDA / seedKeywords.slice(0, 5).length;
+
+        console.log(`Total estimated searches: ${totalSearches}`);
+        console.log(`Average competition DA: ${avgCompetitionDA.toFixed(1)}`);
+        console.log(`Unique competitor domains: ${competitorDomains.size}`);
+
+        // Step 3: Calculate Niche Validation Score (0-100)
+        let score = 0;
+        const breakdown = {};
+
+        // Factor 1: Search Volume (30 points)
+        // High volume: 10,000+ monthly = 30 points
+        // Medium volume: 5,000-10,000 = 20 points
+        // Low volume: 1,000-5,000 = 10 points
+        // Very low: <1,000 = 5 points
+        if (totalSearches >= 10000) {
+          breakdown.search_volume = { score: 30, rating: 'excellent', value: totalSearches };
+          score += 30;
+        } else if (totalSearches >= 5000) {
+          breakdown.search_volume = { score: 20, rating: 'good', value: totalSearches };
+          score += 20;
+        } else if (totalSearches >= 1000) {
+          breakdown.search_volume = { score: 10, rating: 'moderate', value: totalSearches };
+          score += 10;
+        } else {
+          breakdown.search_volume = { score: 5, rating: 'low', value: totalSearches };
+          score += 5;
+        }
+
+        // Factor 2: Competition/Keyword Difficulty (25 points)
+        // Low competition (DA < 40): 25 points
+        // Medium competition (DA 40-60): 15 points
+        // High competition (DA > 60): 5 points
+        if (avgCompetitionDA < 40) {
+          breakdown.competition = { score: 25, rating: 'low', avg_da: Math.round(avgCompetitionDA) };
+          score += 25;
+        } else if (avgCompetitionDA < 60) {
+          breakdown.competition = { score: 15, rating: 'medium', avg_da: Math.round(avgCompetitionDA) };
+          score += 15;
+        } else {
+          breakdown.competition = { score: 5, rating: 'high', avg_da: Math.round(avgCompetitionDA) };
+          score += 5;
+        }
+
+        // Factor 3: Keyword Opportunities (20 points)
+        // Based on number of keywords with high/medium ranking potential
+        const highPotential = keywordOpportunities.filter(k => k.ranking_potential === 'high').length;
+        const mediumPotential = keywordOpportunities.filter(k => k.ranking_potential === 'medium').length;
+        const opportunityScore = Math.min(20, (highPotential * 5) + (mediumPotential * 3));
+        breakdown.keyword_opportunities = { score: opportunityScore, high: highPotential, medium: mediumPotential };
+        score += opportunityScore;
+
+        // Factor 4: Content Diversity (15 points)
+        // More unique competitor domains = more content angles
+        const diversityScore = Math.min(15, competitorDomains.size * 2);
+        breakdown.content_diversity = { score: diversityScore, unique_competitors: competitorDomains.size };
+        score += diversityScore;
+
+        // Factor 5: Commercial Intent (10 points)
+        // Keywords with "best", "reviews", "vs", "cost" indicate buyer intent
+        const commercialKeywords = keywordOpportunities.filter(k =>
+          k.keyword.includes('best') || k.keyword.includes('review') ||
+          k.keyword.includes('vs') || k.keyword.includes('cost') ||
+          k.keyword.includes('comparison')
+        ).length;
+        const commercialScore = Math.min(10, commercialKeywords * 2);
+        breakdown.commercial_intent = { score: commercialScore, commercial_keywords: commercialKeywords };
+        score += commercialScore;
+
+        // Final score (capped at 100)
+        score = Math.min(100, Math.round(score));
+
+        // Determine recommendation
+        let recommendation, priority, action;
+        if (score >= 80) {
+          recommendation = 'Excellent opportunity - Start immediately';
+          priority = 'high';
+          action = 'Build a comprehensive site with 50+ articles targeting this niche';
+        } else if (score >= 60) {
+          recommendation = 'Good potential - Worth pursuing with strategy';
+          priority = 'medium';
+          action = 'Create focused content targeting low-competition keywords first';
+        } else if (score >= 40) {
+          recommendation = 'Moderate opportunity - Requires careful planning';
+          priority = 'low';
+          action = 'Focus on long-tail keywords and build authority slowly';
+        } else {
+          recommendation = 'Difficult niche - Consider alternatives';
+          priority = 'very-low';
+          action = 'Explore different niches with better opportunity scores';
+        }
+
+        const result = {
+          success: true,
+          niche: niche_keyword,
+          score,
+          recommendation,
+          priority,
+          action,
+          breakdown,
+          keyword_opportunities: keywordOpportunities,
+          estimated_monthly_traffic: totalSearches,
+          avg_competition_da: Math.round(avgCompetitionDA),
+          unique_competitors: competitorDomains.size,
+          timestamp: new Date().toISOString()
+        };
+
+        console.log(`✅ Niche validation score: ${score}/100`);
+        console.log(`Recommendation: ${recommendation}`);
+        console.log(`========== NICHE VALIDATION END ==========\n`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(result)
+        };
+
+      } catch (error) {
+        console.error(`\n========== NICHE VALIDATION ERROR ==========`);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error(`========== ERROR END ==========\n`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Failed to validate niche',
+            message: error.message,
+            timestamp: new Date().toISOString()
+          })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
