@@ -1,31 +1,51 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2026-01-12 (Latest Session - Universal Affiliate Automation Phase 1B Complete)
-**Current Session:** Building Universal Affiliate Site Automation System
+**Last Updated:** 2026-01-12 (Latest Session - Universal Affiliate Automation Phase 1B.5 Complete)
+**Current Session:** Building Universal Affiliate Site Automation System with Niche Validation
 **Developer:** Mahesh + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2026-01-12 (Universal Affiliate Automation - Phase 1B Complete ✅)
+## 🆕 LATEST SESSION - 2026-01-12 (Universal Affiliate Automation - Phase 1B.5 Complete ✅)
 
-**MAJOR MILESTONE:** Discovery UI complete! Users can now search and add affiliate programs with one click.
+**MAJOR MILESTONE:** Niche Validation System complete! Users can now validate niches with REAL search data BEFORE selecting programs.
 
-**What Was Built (Phase 1A + 1B):**
+**What Was Built (Phase 1A + 1B + 1B.5):**
 - ✅ Affiliate Programs Database (280+ programs across 6 major niches)
 - ✅ Niche scoring algorithm (0-100 viability scores)
 - ✅ Discovery and matching functions
 - ✅ Discovery UI with keyword search
 - ✅ Multi-select program addition
 - ✅ Integration with Blog Management tab
+- ✅ **NICHE VALIDATION SYSTEM** - Real-time validation with search data
+- ✅ **Smart Recommendations** - Data-driven niche selection
 
 **Files Created/Modified:**
 1. `affiliate-database.js` - Core database with 280+ affiliate programs
 2. `AUTOMATION_ROADMAP.md` - Complete implementation plan
-3. `index.html` - Added discovery modal and functions (lines 9036-9298)
+3. `index.html` - Added discovery modal and niche validation UI (lines 9081-9511)
+4. `netlify/functions/api.js` - Added /api/validate-niche endpoint (lines 5179-5393)
+
+**Niche Validation Features (NEW):**
+- 🔍 **Real Search Data** - Queries Serper API for 5 seed keywords per niche
+- 📊 **5-Factor Scoring** (0-100):
+  - Search Volume (30 pts) - Est. monthly traffic potential
+  - Competition (25 pts) - Average DA of top 10 results
+  - Keyword Opportunities (20 pts) - High/medium ranking potential
+  - Content Diversity (15 pts) - Number of unique competitors
+  - Commercial Intent (10 pts) - Buyer intent keywords
+- 🎯 **Smart Recommendations**:
+  - 80-100: 🟢 Excellent - Start immediately
+  - 60-79: 🟡 Good - Worth pursuing with strategy
+  - 40-59: 🟠 Moderate - Requires planning
+  - 0-39: 🔴 Difficult - Consider alternatives
+- 💡 **Top 5 Keyword Opportunities** - With search volume and difficulty ratings
+- 📋 **Action Plan** - Specific recommendations based on score
 
 **Discovery Features:**
 - 🔍 Keyword search (e.g., "pet insurance", "gut health", "supplements")
-- 📊 Niche scoring with visual indicators (0-100)
+- ✅ **VALIDATE FIRST** - Niche validation runs before showing programs
+- 📊 Beautiful circular score display with color coding
 - 💰 Program details: commission, cookie days, network, EPC, AOV
 - ✓ Multi-select checkboxes for batch adding
 - 🎯 One-click add to affiliate programs tab
@@ -56,6 +76,16 @@ addSelectedPrograms(blogId)             // Batch add to blog
 **Git Commits:**
 - `476eb32`: PHASE 1A: Add Universal Affiliate Programs Database - Foundation
 - `8386113`: PHASE 1B: Add Discovery UI - Search and Add Affiliate Programs
+- `d0a2578`: PHASE 1B.5: Niche Validation System - Complete Implementation
+
+**Recommended Workflow:**
+1. Go to Blog Management → Affiliate Programs tab
+2. Click "🔍 Discover Programs" button
+3. Enter niche keyword (e.g., "pet insurance", "gut health")
+4. **Review validation report** with score, competition, and keyword opportunities
+5. If score is good (60+), click "View Affiliate Programs"
+6. Select programs and add to blog
+7. **Data-driven decision making** - Choose niches with best opportunity scores
 
 **What's Next (PHASE 1C - Smart Article Generation):**
 - Niche-aware content templates (review, comparison, best list, guide)
