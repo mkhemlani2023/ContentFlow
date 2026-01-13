@@ -5435,6 +5435,7 @@ Return ONLY valid JSON:
   "score": <0-100>,
   "recommendation": "<One sentence>",
   "priority": "<high/medium/low/very-low>",
+  "action": "<Specific 1-sentence action plan>",
   "estimated_monthly_traffic": <number>,
   "avg_competition_da": <0-100>,
   "breakdown": {
@@ -5450,7 +5451,7 @@ Return ONLY valid JSON:
     "market_saturation": "<low/medium/high> - <Brief explanation>"
   },
   "keyword_opportunities": [
-    {"keyword": "<keyword>", "estimated_monthly_searches": <number>, "difficulty": "<easy/medium/hard>", "buyer_intent": "<high/medium/low>"}
+    {"keyword": "<keyword>", "estimated_monthly_searches": <number>, "competition_da": <number>, "difficulty": "<easy/medium/hard>", "ranking_potential": "<high/medium/low>", "buyer_intent": "<high/medium/low>", "reason": "<Why this keyword is good>"}
   ]
 }`;
 
@@ -5539,13 +5540,16 @@ Return ONLY valid JSON:
   },
   "affiliate_programs": {
     "recommended_programs": [
-      {"program_name": "<Name>", "commission_structure": "<Structure>", "average_commission_per_sale": <amount>}
+      {"program_name": "<Name>", "commission_structure": "<% or $X>", "cookie_duration": "<30 days>", "average_commission_per_sale": <dollar amount>, "why_recommended": "<Brief reason>"}
     ],
+    "total_programs_available": <estimated count>,
     "monetization_difficulty": "<easy/medium/hard>"
   },
   "revenue_projection": {
-    "month_6": {"estimated_traffic": <number>, "estimated_revenue": <dollar amount>},
-    "month_12": {"estimated_traffic": <number>, "estimated_revenue": <dollar amount>}
+    "month_6": {"estimated_traffic": <number>, "conversion_rate": "<X%>", "avg_commission": <dollar amount>, "estimated_revenue": <dollar amount>},
+    "month_12": {"estimated_traffic": <number>, "conversion_rate": "<X%>", "avg_commission": <dollar amount>, "estimated_revenue": <dollar amount>},
+    "revenue_factors": "<What drives revenue>",
+    "realistic_expectations": "<Honest assessment>"
   },
   "strategic_insights": "<2-3 sentences>",
   "success_probability": "<high/medium/low> - <Why>"
