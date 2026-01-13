@@ -5605,6 +5605,214 @@ Return ONLY valid JSON:
       }
     }
 
+    // DOMAIN RECOMMENDATION - AI generates domain name suggestions
+    if (path === '/api/recommend-domains' && method === 'POST') {
+      const { niche_keyword, count = 8 } = body;
+
+      if (!niche_keyword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Niche keyword is required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[DOMAIN RECOMMENDATION] Generating ${count} domains for: ${niche_keyword}`);
+        const startTime = Date.now();
+
+        const domainPrompt = `Generate ${count} domain name suggestions for a "${niche_keyword}" affiliate site.
+
+Requirements:
+- Brandable and memorable
+- .com preferred
+- SEO-friendly keywords included where natural
+- Under 20 characters
+- Easy to spell and pronounce
+- Avoid hyphens and numbers
+- Mix of exact-match and brandable options
+
+Return ONLY valid JSON array:
+[
+  {
+    "domain": "example.com",
+    "reason": "Short explanation why this domain works"
+  }
+]`;
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.getseowizard.com',
+            'X-Title': 'SEO Wizard'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{ role: 'user', content: domainPrompt }],
+            temperature: 0.7,
+            max_tokens: 600
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`AI failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices[0].message.content.trim();
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        const suggestions = JSON.parse(jsonMatch[0]);
+
+        const duration = Date.now() - startTime;
+        console.log(`[DOMAIN RECOMMENDATION COMPLETE] ${suggestions.length} domains in ${duration}ms`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            niche_keyword,
+            suggestions,
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[DOMAIN RECOMMENDATION ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // CHECK DOMAIN AVAILABILITY - Check if domains are available for registration
+    if (path === '/api/check-domain-availability' && method === 'POST') {
+      const { domains } = body;
+
+      if (!domains || !Array.isArray(domains) || domains.length === 0) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Domains array is required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[DOMAIN CHECK] Checking availability for ${domains.length} domains`);
+
+        // For now, return mock data (replace with real domain API later)
+        // Real implementation would use Namecheap, GoDaddy, or Siteground API
+        const results = domains.map(domain => {
+          // Simple heuristic: assume availability based on domain characteristics
+          // In production, use actual domain registration API
+          const isCommon = domain.length < 10 || domain.includes('best') || domain.includes('top');
+          const available = Math.random() > (isCommon ? 0.7 : 0.3);
+
+          return {
+            domain,
+            available,
+            price: available ? 12.99 : null
+          };
+        });
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            results
+          })
+        };
+
+      } catch (error) {
+        console.error('[DOMAIN CHECK ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // CREATE SITEGROUND SITE - Create WordPress site via Siteground API
+    if (path === '/api/create-siteground-site' && method === 'POST') {
+      const { validation_id, domain, admin_email, theme, content_count, auto_affiliate, niche_keyword } = body;
+
+      if (!domain || !admin_email || !niche_keyword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Domain, admin_email, and niche_keyword are required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[SITE CREATION] Creating site for domain: ${domain}`);
+        const startTime = Date.now();
+
+        // TODO: Implement actual Siteground API integration
+        // For now, return mock success response
+
+        // In production, this would:
+        // 1. Call Siteground API to register domain
+        // 2. Create hosting account
+        // 3. Install WordPress
+        // 4. Install and configure theme
+        // 5. Install plugins
+        // 6. Create essential pages
+        // 7. Generate initial content
+        // 8. Prepare affiliate application emails
+
+        const mockCredentials = {
+          username: 'admin',
+          password: `WP_${Math.random().toString(36).substring(2, 15)}`
+        };
+
+        const duration = Date.now() - startTime;
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            message: 'Site creation initiated',
+            site_id: `site_${Date.now()}`,
+            domain,
+            wp_admin_url: `https://${domain}/wp-admin`,
+            credentials: mockCredentials,
+            affiliate_status: auto_affiliate ?
+              'Generated application emails for 3 affiliate programs. Check your dashboard.' :
+              'Manual affiliate application required.',
+            status: 'provisioning',
+            estimated_completion: '15-20 minutes',
+            duration_ms: duration,
+            note: 'This is a mock response. Siteground API integration pending.'
+          })
+        };
+
+      } catch (error) {
+        console.error('[SITE CREATION ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
     // MODULAR NICHE VALIDATION - STEP 3: Generate Comprehensive Analysis
     if (path === '/api/validate-niche-step3' && method === 'POST') {
       const { niche_keyword, serp_results, competitor_domains } = body;

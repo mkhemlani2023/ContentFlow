@@ -8460,6 +8460,458 @@
             }
         }
 
+        // Blog Creation Flow - Step 1: Recommend Domain Names
+        async function startBlogCreationFlow(validation) {
+            console.log('Starting blog creation flow for:', validation.niche_keyword);
+
+            // Show modal with loading state
+            showModal(`
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">🌐</div>
+                    <h2 style="margin: 0 0 15px 0; color: #1e293b;">Generating Domain Suggestions</h2>
+                    <p style="color: #64748b; margin-bottom: 30px;">AI is analyzing "${validation.niche_keyword}" to suggest perfect domain names...</p>
+                    <div style="display: inline-block; width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                </div>
+            `);
+
+            try {
+                // Call AI to generate domain suggestions
+                const response = await fetch('/api/recommend-domains', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        niche_keyword: validation.niche_keyword,
+                        count: 8
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate domain suggestions');
+                }
+
+                const domainData = await response.json();
+
+                if (!domainData.success) {
+                    throw new Error(domainData.error || 'Domain generation failed');
+                }
+
+                // Show domain selection modal
+                showDomainSelectionModal(validation, domainData.suggestions);
+
+            } catch (error) {
+                console.error('Domain generation error:', error);
+                showModal(`
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">⚠️</div>
+                        <h2 style="color: #991b1b; margin: 0 0 15px 0;">Domain Generation Failed</h2>
+                        <p style="color: #dc2626; margin-bottom: 30px;">${error.message}</p>
+                        <button onclick="closeModal()" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Close
+                        </button>
+                    </div>
+                `);
+            }
+        }
+
+        // Blog Creation Flow - Step 2: Show Domain Selection Modal
+        function showDomainSelectionModal(validation, domains) {
+            const modalHTML = `
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 28px;">Choose Your Domain Name</h2>
+                    <p style="color: #64748b; margin-bottom: 30px;">Select a domain for your ${validation.niche_keyword} affiliate site</p>
+
+                    <div id="domainSuggestions" style="display: grid; gap: 15px; margin-bottom: 30px;">
+                        ${domains.map((domain, index) => `
+                            <div onclick="selectDomain('${domain.domain}', ${index})" id="domain-${index}" style="background: white; border: 2px solid #e2e8f0; padding: 20px; border-radius: 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#667eea'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.2)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">${domain.domain}</div>
+                                        <div style="color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 12px;">${domain.reason}</div>
+                                        <div style="display: flex; gap: 12px; align-items: center;">
+                                            <span id="availability-${index}" style="color: #64748b; font-size: 13px;">
+                                                <span style="display: inline-block; width: 12px; height: 12px; border: 2px solid #64748b; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 5px;"></span>
+                                                Checking availability...
+                                            </span>
+                                            <span id="price-${index}" style="display: none; background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;"></span>
+                                        </div>
+                                    </div>
+                                    <div id="checkmark-${index}" style="display: none; font-size: 32px; color: #10b981;">✓</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0; margin-bottom: 20px;">
+                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 10px;">Or enter your own domain:</div>
+                        <input type="text" id="customDomainInput" placeholder="yourdomain.com" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 15px;" onkeyup="checkCustomDomain(event)">
+                        <div id="customDomainStatus" style="margin-top: 10px; font-size: 13px;"></div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="closeModal()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Cancel
+                        </button>
+                        <button id="continueBtn" onclick="proceedWithSelectedDomain()" disabled style="flex: 2; background: #667eea; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; opacity: 0.5;" onmouseover="if(!this.disabled) this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                            Continue with Selected Domain
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            showModal(modalHTML);
+
+            // Store validation data for later steps
+            window.currentBlogCreation = { validation, selectedDomain: null };
+
+            // Check availability for all suggested domains
+            domains.forEach((domain, index) => {
+                checkDomainAvailability(domain.domain, index);
+            });
+        }
+
+        // Check domain availability
+        async function checkDomainAvailability(domain, index) {
+            try {
+                const response = await fetch('/api/check-domain-availability', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domains: [domain] })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.results && result.results[0]) {
+                    const domainResult = result.results[0];
+                    const availSpan = document.getElementById(`availability-${index}`);
+                    const priceSpan = document.getElementById(`price-${index}`);
+
+                    if (availSpan) {
+                        if (domainResult.available) {
+                            availSpan.innerHTML = '<span style="color: #10b981; font-weight: 600;">✓ Available</span>';
+                            if (priceSpan && domainResult.price) {
+                                priceSpan.textContent = `$${domainResult.price}/year`;
+                                priceSpan.style.display = 'inline-block';
+                            }
+                        } else {
+                            availSpan.innerHTML = '<span style="color: #ef4444; font-weight: 600;">✗ Taken</span>';
+                            const domainDiv = document.getElementById(`domain-${index}`);
+                            if (domainDiv) {
+                                domainDiv.style.opacity = '0.5';
+                                domainDiv.style.cursor = 'not-allowed';
+                                domainDiv.onclick = null;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking domain:', error);
+                const availSpan = document.getElementById(`availability-${index}`);
+                if (availSpan) {
+                    availSpan.innerHTML = '<span style="color: #f59e0b;">⚠ Check failed</span>';
+                }
+            }
+        }
+
+        // Select a domain
+        function selectDomain(domain, index) {
+            // Remove selection from all domains
+            document.querySelectorAll('[id^="domain-"]').forEach(el => {
+                el.style.borderColor = '#e2e8f0';
+                el.style.background = 'white';
+            });
+            document.querySelectorAll('[id^="checkmark-"]').forEach(el => {
+                el.style.display = 'none';
+            });
+
+            // Highlight selected domain
+            const selectedDiv = document.getElementById(`domain-${index}`);
+            if (selectedDiv && selectedDiv.style.opacity !== '0.5') {
+                selectedDiv.style.borderColor = '#10b981';
+                selectedDiv.style.background = '#f0fdf4';
+                document.getElementById(`checkmark-${index}`).style.display = 'block';
+
+                // Store selected domain
+                window.currentBlogCreation.selectedDomain = domain;
+
+                // Enable continue button
+                const continueBtn = document.getElementById('continueBtn');
+                continueBtn.disabled = false;
+                continueBtn.style.opacity = '1';
+            }
+        }
+
+        // Check custom domain
+        let customDomainTimeout;
+        function checkCustomDomain(event) {
+            clearTimeout(customDomainTimeout);
+            const domain = event.target.value.trim();
+
+            if (domain.length < 4) {
+                document.getElementById('customDomainStatus').innerHTML = '';
+                return;
+            }
+
+            document.getElementById('customDomainStatus').innerHTML = '<span style="color: #64748b;">Checking...</span>';
+
+            customDomainTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch('/api/check-domain-availability', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ domains: [domain] })
+                    });
+
+                    const result = await response.json();
+                    const statusDiv = document.getElementById('customDomainStatus');
+
+                    if (result.success && result.results[0]) {
+                        if (result.results[0].available) {
+                            statusDiv.innerHTML = `<span style="color: #10b981; font-weight: 600;">✓ Available - $${result.results[0].price || '12.99'}/year</span>`;
+                            window.currentBlogCreation.selectedDomain = domain;
+                            const continueBtn = document.getElementById('continueBtn');
+                            continueBtn.disabled = false;
+                            continueBtn.style.opacity = '1';
+                        } else {
+                            statusDiv.innerHTML = '<span style="color: #ef4444; font-weight: 600;">✗ Already taken</span>';
+                        }
+                    }
+                } catch (error) {
+                    document.getElementById('customDomainStatus').innerHTML = '<span style="color: #f59e0b;">Error checking domain</span>';
+                }
+            }, 500);
+        }
+
+        // Proceed with selected domain
+        function proceedWithSelectedDomain() {
+            if (!window.currentBlogCreation.selectedDomain) {
+                alert('Please select a domain first');
+                return;
+            }
+
+            showSiteSetupOptions(window.currentBlogCreation.validation, window.currentBlogCreation.selectedDomain);
+        }
+
+        // Blog Creation Flow - Step 3: Show Site Setup Options
+        function showSiteSetupOptions(validation, domain) {
+            const modalHTML = `
+                <div style="max-width: 700px; margin: 0 auto;">
+                    <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 28px;">Configure Your Site</h2>
+                    <p style="color: #64748b; margin-bottom: 30px;">Set up your WordPress site for <strong>${domain}</strong></p>
+
+                    <div style="background: white; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0; margin-bottom: 20px;">
+                        <!-- Admin Email -->
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Admin Email</label>
+                            <input type="email" id="adminEmail" value="${currentUser?.email || ''}" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                        </div>
+
+                        <!-- Theme Selection -->
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Choose Theme</label>
+                            <select id="themeSelect" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                                <option value="generatepress">GeneratePress (Recommended)</option>
+                                <option value="astra">Astra</option>
+                                <option value="kadence">Kadence</option>
+                            </select>
+                        </div>
+
+                        <!-- Initial Content Count -->
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Initial Articles to Generate</label>
+                            <select id="contentCount" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                                <option value="5">5 articles</option>
+                                <option value="10" selected>10 articles</option>
+                                <option value="20">20 articles</option>
+                            </select>
+                        </div>
+
+                        <!-- Auto-apply to Affiliate Programs -->
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="checkbox" id="autoAffiliate" checked style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
+                                <span style="font-weight: 600; color: #1e293b;">Auto-apply to affiliate programs</span>
+                            </label>
+                            <div style="color: #64748b; font-size: 13px; margin-top: 5px; margin-left: 30px;">We'll generate application emails for recommended programs</div>
+                        </div>
+                    </div>
+
+                    <div style="background: #fef3c7; padding: 15px; border-radius: 8px; border: 2px solid #fbbf24; margin-bottom: 20px;">
+                        <div style="font-weight: 600; color: #92400e; margin-bottom: 5px;">💰 Estimated Setup Time & Cost</div>
+                        <div style="color: #78350f; font-size: 14px;">
+                            <div>⏱ Setup Time: ~15-20 minutes</div>
+                            <div>💵 Domain: ~$12.99/year</div>
+                            <div>🏠 Hosting: From $4.99/month (Siteground)</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="showDomainSelectionModal(${JSON.stringify(validation).replace(/'/g, '&apos;')}, [])" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            ← Back
+                        </button>
+                        <button onclick="createSitegroundSite()" style="flex: 2; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
+                            🚀 Create Site
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            showModal(modalHTML);
+        }
+
+        // Blog Creation Flow - Step 4: Create Siteground Site
+        async function createSitegroundSite() {
+            const domain = window.currentBlogCreation.selectedDomain;
+            const validation = window.currentBlogCreation.validation;
+            const adminEmail = document.getElementById('adminEmail').value;
+            const theme = document.getElementById('themeSelect').value;
+            const contentCount = parseInt(document.getElementById('contentCount').value);
+            const autoAffiliate = document.getElementById('autoAffiliate').checked;
+
+            if (!adminEmail || !adminEmail.includes('@')) {
+                alert('Please enter a valid email address');
+                return;
+            }
+
+            // Show progress modal
+            showSiteCreationProgress(domain);
+
+            try {
+                // Call API to create Siteground site
+                const response = await fetch('/api/create-siteground-site', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        validation_id: validation.savedId,
+                        domain: domain,
+                        admin_email: adminEmail,
+                        theme: theme,
+                        content_count: contentCount,
+                        auto_affiliate: autoAffiliate,
+                        niche_keyword: validation.niche_keyword
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Site creation failed');
+                }
+
+                // Show success
+                showSiteCreationSuccess(result);
+
+            } catch (error) {
+                console.error('Site creation error:', error);
+                showModal(`
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">⚠️</div>
+                        <h2 style="color: #991b1b; margin: 0 0 15px 0;">Site Creation Failed</h2>
+                        <p style="color: #dc2626; margin-bottom: 30px;">${error.message}</p>
+                        <button onclick="closeModal()" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Close
+                        </button>
+                    </div>
+                `);
+            }
+        }
+
+        // Show site creation progress
+        function showSiteCreationProgress(domain) {
+            const modalHTML = `
+                <div style="max-width: 600px; margin: 0 auto; text-align: center;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">🚀</div>
+                    <h2 style="margin: 0 0 15px 0; color: #1e293b;">Creating Your Site...</h2>
+                    <p style="color: #64748b; margin-bottom: 40px;">Setting up <strong>${domain}</strong></p>
+
+                    <div style="text-align: left; background: #f8fafc; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0;">
+                        <div id="progress-steps" style="display: flex; flex-direction: column; gap: 15px;">
+                            <div class="progress-step" data-step="1">
+                                <span style="display: inline-block; width: 24px; height: 24px; border: 3px solid #667eea; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px;"></span>
+                                <span style="color: #667eea; font-weight: 600;">Registering domain...</span>
+                            </div>
+                            <div class="progress-step" data-step="2" style="opacity: 0.3;">
+                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">⏳</span>
+                                <span style="color: #64748b;">Installing WordPress...</span>
+                            </div>
+                            <div class="progress-step" data-step="3" style="opacity: 0.3;">
+                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">⏳</span>
+                                <span style="color: #64748b;">Configuring theme & plugins...</span>
+                            </div>
+                            <div class="progress-step" data-step="4" style="opacity: 0.3;">
+                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">⏳</span>
+                                <span style="color: #64748b;">Creating essential pages...</span>
+                            </div>
+                            <div class="progress-step" data-step="5" style="opacity: 0.3;">
+                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">⏳</span>
+                                <span style="color: #64748b;">Generating initial content...</span>
+                            </div>
+                            <div class="progress-step" data-step="6" style="opacity: 0.3;">
+                                <span style="display: inline-block; width: 20px; height: 20px; margin-right: 10px;">⏳</span>
+                                <span style="color: #64748b;">Preparing affiliate applications...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            showModal(modalHTML);
+        }
+
+        // Show site creation success
+        function showSiteCreationSuccess(result) {
+            const modalHTML = `
+                <div style="max-width: 700px; margin: 0 auto; text-align: center;">
+                    <div style="font-size: 72px; margin-bottom: 20px;">🎉</div>
+                    <h2 style="margin: 0 0 10px 0; color: #10b981; font-size: 32px;">Site Created Successfully!</h2>
+                    <p style="color: #64748b; margin-bottom: 40px;">Your affiliate site is ready to start earning</p>
+
+                    <div style="background: #f0fdf4; padding: 25px; border-radius: 12px; border: 2px solid #86efac; margin-bottom: 25px; text-align: left;">
+                        <h3 style="margin: 0 0 15px 0; color: #166534; font-size: 18px;">Site Details</h3>
+                        <div style="display: grid; gap: 12px;">
+                            <div>
+                                <div style="color: #64748b; font-size: 13px; margin-bottom: 3px;">WordPress Admin</div>
+                                <a href="${result.wp_admin_url}" target="_blank" style="color: #10b981; font-weight: 600; text-decoration: none; font-size: 15px;">${result.wp_admin_url} →</a>
+                            </div>
+                            <div>
+                                <div style="color: #64748b; font-size: 13px; margin-bottom: 3px;">Username</div>
+                                <div style="color: #1e293b; font-weight: 600;">${result.credentials?.username || 'admin'}</div>
+                            </div>
+                            <div>
+                                <div style="color: #64748b; font-size: 13px; margin-bottom: 3px;">Password (save this now!)</div>
+                                <div style="background: #dcfce7; padding: 10px; border-radius: 6px; font-family: monospace; color: #166534; font-weight: 600;">${result.credentials?.password || 'Check your email'}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${result.affiliate_status ? `
+                    <div style="background: #fef3c7; padding: 20px; border-radius: 12px; border: 2px solid #fbbf24; margin-bottom: 25px; text-align: left;">
+                        <h3 style="margin: 0 0 15px 0; color: #92400e; font-size: 18px;">Affiliate Applications</h3>
+                        <div style="color: #78350f; font-size: 14px; line-height: 1.7;">
+                            ${result.affiliate_status}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div style="background: #eff6ff; padding: 20px; border-radius: 12px; border: 2px solid #93c5fd; margin-bottom: 25px; text-align: left;">
+                        <h3 style="margin: 0 0 12px 0; color: #1e40af; font-size: 16px;">Next Steps</h3>
+                        <ol style="margin: 0; padding-left: 20px; color: #1e3a8a; font-size: 14px; line-height: 1.8;">
+                            <li>Log into your WordPress admin</li>
+                            <li>Review and publish the generated content</li>
+                            <li>Apply to affiliate programs (emails drafted for you)</li>
+                            <li>Set up Google Analytics and Search Console</li>
+                            <li>Start building backlinks</li>
+                        </ol>
+                    </div>
+
+                    <button onclick="closeModal(); handleNavClick('showBlogManagement')" style="width: 100%; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
+                        Go to Blog Management
+                    </button>
+                </div>
+            `;
+
+            showModal(modalHTML);
+        }
+
         // Display standalone validation results (for dedicated niche research page)
         function displayStandaloneValidationResults(validation) {
             const resultsDiv = document.getElementById('nicheResearchResults');
@@ -8489,10 +8941,35 @@
                             </div>
                         </div>
                         <h2 style="margin: 0 0 15px 0; color: #1e293b; font-size: 32px; text-transform: capitalize; font-weight: 700;">
-                            ${validation.niche}
+                            ${validation.niche_keyword || validation.niche || 'Unknown Niche'}
                         </h2>
                         <div style="display: inline-block; background: linear-gradient(135deg, ${scoreColor} 0%, ${scoreColor}dd 100%); color: white; padding: 12px 24px; border-radius: 25px; font-size: 16px; font-weight: 600;">
                             ${priorityEmoji} ${validation.recommendation}
+                        </div>
+
+                        <!-- Score Legend (moved here from bottom) -->
+                        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; padding: 20px; margin-top: 30px; border: 2px solid #86efac; max-width: 900px; margin-left: auto; margin-right: auto;">
+                            <h3 style="font-size: 16px; color: #166534; margin: 0 0 15px 0; font-weight: 600; text-align: center;">
+                                📊 Understanding Your Niche Score
+                            </h3>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                <div>
+                                    <div style="font-weight: 600; color: #10b981; margin-bottom: 5px;">🟢 80-100: Excellent</div>
+                                    <div style="color: #166534; font-size: 13px;">High traffic, low competition. Start immediately with confidence.</div>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; color: #f59e0b; margin-bottom: 5px;">🟡 60-79: Good</div>
+                                    <div style="color: #166534; font-size: 13px;">Solid opportunity with strategic approach. Target long-tail keywords first.</div>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; color: #f97316; margin-bottom: 5px;">🟠 40-59: Moderate</div>
+                                    <div style="color: #166534; font-size: 13px;">Challenging but possible. Requires strong SEO and patience.</div>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; color: #ef4444; margin-bottom: 5px;">🔴 0-39: Difficult</div>
+                                    <div style="color: #166534; font-size: 13px;">High competition or low traffic. Consider alternative niches.</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -8785,8 +9262,8 @@
                         <button onclick="document.getElementById('nicheResearchInput').value = ''; document.getElementById('nicheResearchResults').innerHTML = '';" style="flex: 1; min-width: 200px; background: #f1f5f9; color: #334155; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px;">
                             Validate Another Niche
                         </button>
-                        <button onclick="handleNavClick('showBlogManagement')" style="flex: 1; min-width: 200px; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
-                            ${validation.score >= 60 ? '✅ Create Blog for This Niche' : '📝 Go to Blog Management'}
+                        <button onclick='startBlogCreationFlow(${JSON.stringify(validation).replace(/'/g, "&apos;")})' style="flex: 1; min-width: 200px; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
+                            ${validation.score >= 60 ? '✅ Create Blog for This Niche' : '📝 Create Blog Anyway'}
                         </button>
                     </div>
                 </div>
