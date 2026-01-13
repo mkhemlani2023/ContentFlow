@@ -1956,6 +1956,95 @@
                     console.error('Error loading affiliate content:', error);
                     return { success: false, error: error.message };
                 }
+            },
+
+            // Save niche validation
+            async saveNicheValidation(validation) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('niche_validations')
+                        .insert([{
+                            user_id: currentUser.id,
+                            niche_keyword: validation.niche,
+                            score: validation.score,
+                            recommendation: validation.recommendation,
+                            priority: validation.priority,
+                            estimated_monthly_traffic: validation.estimated_monthly_traffic,
+                            avg_competition_da: validation.avg_competition_da,
+                            unique_competitors: validation.unique_competitors,
+                            breakdown: validation.breakdown,
+                            keyword_opportunities: validation.keyword_opportunities,
+                            action: validation.action
+                        }])
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error saving niche validation:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load niche validations
+            async loadNicheValidations(limit = 20) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('niche_validations')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .order('created_at', { ascending: false })
+                        .limit(limit);
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading niche validations:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load single niche validation by ID
+            async loadNicheValidation(id) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('niche_validations')
+                        .select('*')
+                        .eq('id', id)
+                        .single();
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading niche validation:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Delete niche validation
+            async deleteNicheValidation(id) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { error } = await supabaseClient
+                        .from('niche_validations')
+                        .delete()
+                        .eq('id', id)
+                        .eq('user_id', currentUser.id);
+
+                    if (error) throw error;
+                    return { success: true };
+                } catch (error) {
+                    console.error('Error deleting niche validation:', error);
+                    return { success: false, error: error.message };
+                }
             }
         };
 
@@ -8187,8 +8276,23 @@
                     throw new Error(validation.message || 'Niche validation failed');
                 }
 
+                // Auto-save validation to history
+                try {
+                    const saveResult = await SupabaseService.saveNicheValidation(validation);
+                    if (saveResult.success) {
+                        console.log('Validation saved to history:', saveResult.data.id);
+                        validation.savedId = saveResult.data.id; // Store ID for later use
+                    }
+                } catch (saveError) {
+                    console.error('Failed to save validation to history:', saveError);
+                    // Don't block display if save fails
+                }
+
                 // Display standalone validation results
                 displayStandaloneValidationResults(validation);
+
+                // Refresh history sidebar if visible
+                loadValidationHistory();
 
             } catch (error) {
                 console.error('Validation error:', error);
