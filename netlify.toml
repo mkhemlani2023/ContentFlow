@@ -1,5 +1,5 @@
 [build]
-command = "mkdir -p public && cp index.html public/ && cp *.js public/ && cp *.png public/"
+command = "mkdir -p public && cp index.html public/ && cp *.js public/ && cp *.png public/ && cp _redirects public/"
 publish = "public"
 functions = "netlify/functions"
 
