@@ -1,16 +1,19 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2026-01-12 (Latest Session - Universal Affiliate Automation Phase 1B.5 Complete)
+**Last Updated:** 2026-01-13 (Latest Session - Dedicated Niche Research + Auto-Save Complete)
 **Current Session:** Building Universal Affiliate Site Automation System with Niche Validation
 **Developer:** Mahesh + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2026-01-12 (Universal Affiliate Automation - Phase 1B.5 Complete ✅)
+## 🆕 LATEST SESSION - 2026-01-13 (Niche Research Section + Validation History - Phase 1B.6 ✅)
 
-**MAJOR MILESTONE:** Niche Validation System complete! Users can now validate niches with REAL search data BEFORE selecting programs.
+**MAJOR MILESTONES:**
+1. **Dedicated Niche Research Section** - First-class feature in main navigation
+2. **Auto-Save Validation History** - Every validation saved to Supabase
+3. **Foundation for Comparison & Export** - Ready for next phase
 
-**What Was Built (Phase 1A + 1B + 1B.5):**
+**What Was Built (Phase 1A + 1B + 1B.5 + 1B.6):**
 - ✅ Affiliate Programs Database (280+ programs across 6 major niches)
 - ✅ Niche scoring algorithm (0-100 viability scores)
 - ✅ Discovery and matching functions
@@ -19,6 +22,9 @@
 - ✅ Integration with Blog Management tab
 - ✅ **NICHE VALIDATION SYSTEM** - Real-time validation with search data
 - ✅ **Smart Recommendations** - Data-driven niche selection
+- ✅ **DEDICATED NICHE RESEARCH SECTION** - First-class navigation feature
+- ✅ **AUTO-SAVE VALIDATION HISTORY** - Every validation stored in Supabase
+- ✅ **Supabase Integration** - Complete CRUD for validation history
 
 **Files Created/Modified:**
 1. `affiliate-database.js` - Core database with 280+ affiliate programs
@@ -73,21 +79,66 @@ searchNichePrograms(blogId)             // Search and display results
 addSelectedPrograms(blogId)             // Batch add to blog
 ```
 
+**New Features (This Session):**
+
+1. **🔍 Niche Research in Main Navigation**
+   - Click "🔍 Niche Research" from top menu (one click away!)
+   - No more digging through Blog Management
+   - Desktop and mobile navigation support
+
+2. **📊 Dedicated Research Interface**
+   - Clean, focused full-page view
+   - Large search input with enter-key support
+   - Beautiful results with 180px circular score
+   - Enhanced metrics cards with gradients
+   - Quick guide explaining score ranges
+
+3. **💾 Auto-Save to History**
+   - Every validation automatically saved to Supabase
+   - Complete data stored: score, breakdown, keywords, action plan
+   - Foundation for history sidebar (coming next)
+   - Foundation for comparison tool (coming next)
+
+4. **🗄️ Database Integration**
+   - New table: `niche_validations`
+   - RLS policies for data security
+   - CRUD operations via SupabaseService
+   - Ready for history display, comparison, export
+
 **Git Commits:**
 - `476eb32`: PHASE 1A: Add Universal Affiliate Programs Database - Foundation
 - `8386113`: PHASE 1B: Add Discovery UI - Search and Add Affiliate Programs
 - `d0a2578`: PHASE 1B.5: Niche Validation System - Complete Implementation
+- `6f8f7ea`: Add Dedicated Niche Research Section - First-Class Feature
+- `02d7554`: Add Validation Auto-Save and Supabase Methods
 
-**Recommended Workflow:**
+**How to Test (After Deploy):**
+
+**NEW: Dedicated Niche Research (Recommended)**
+1. Login to https://www.getseowizard.com
+2. Click **"🔍 Niche Research"** in main navigation
+3. Enter niche keyword (e.g., "pet insurance", "gut health", "keto diet")
+4. Press Enter or click "🔍 Validate Niche"
+5. Wait 15-30 seconds for real search data analysis
+6. Review beautiful validation report
+7. Check browser console - should see "Validation saved to history: [uuid]"
+8. Validate 2-3 different niches to build history
+9. Check Supabase → `niche_validations` table to see saved data
+
+**OR: Via Blog Management (Original Method)**
 1. Go to Blog Management → Affiliate Programs tab
 2. Click "🔍 Discover Programs" button
-3. Enter niche keyword (e.g., "pet insurance", "gut health")
-4. **Review validation report** with score, competition, and keyword opportunities
-5. If score is good (60+), click "View Affiliate Programs"
-6. Select programs and add to blog
-7. **Data-driven decision making** - Choose niches with best opportunity scores
+3. Enter niche keyword
+4. View validation before seeing programs
 
-**What's Next (PHASE 1C - Smart Article Generation):**
+**What's Next (PHASE 1B.7 - History & Comparison Features):**
+- 📜 **Validation History Sidebar** - Show past 10 validations with quick reload
+- 🔄 **Compare Niches** - Side-by-side comparison of 2-3 niches (score, traffic, competition)
+- 📄 **Export Reports** - Download validation as PDF or print
+- 🔍 **Search History** - Find past validations by keyword
+- ⭐ **Favorite Niches** - Mark best niches for quick reference
+
+**Then: PHASE 1C - Smart Article Generation**
 - Niche-aware content templates (review, comparison, best list, guide)
 - Auto-inject relevant programs into articles based on niche
 - Banner auto-placement (after-intro, mid-article, before-conclusion)
