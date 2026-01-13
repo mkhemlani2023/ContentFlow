@@ -5315,7 +5315,7 @@ Keywords:`;
         // Step 3: Use AI to analyze SERP data and provide niche scoring + keyword recommendations
         console.log('Step 3: AI analyzing SERP data for niche viability...');
 
-        const analysisPrompt = `You are an expert SEO analyst and affiliate marketer. Analyze the following SERP data for the niche "${niche_keyword}" and provide a detailed niche validation analysis.
+        const analysisPrompt = `You are an expert SEO analyst and affiliate marketer with deep experience in competitive analysis and revenue modeling. Analyze the niche "${niche_keyword}" in extreme detail.
 
 SERP DATA (Top 10 keywords analyzed):
 ${JSON.stringify(serpResults, null, 2)}
@@ -5324,50 +5324,105 @@ COMPETITOR ANALYSIS:
 - Unique competitor domains: ${competitorDomains.size}
 - Sample competitors: ${Array.from(competitorDomains).slice(0, 10).join(', ')}
 
-Provide your analysis in this EXACT JSON format (return ONLY valid JSON, no other text):
+Provide COMPREHENSIVE analysis in this EXACT JSON format (return ONLY valid JSON):
 {
-  "score": <number 0-100 based on opportunity>,
-  "recommendation": "<One sentence recommendation>",
+  "score": <0-100>,
+  "recommendation": "<One sentence>",
   "priority": "<high/medium/low/very-low>",
   "action": "<Specific action plan>",
-  "estimated_monthly_traffic": <estimated total monthly search volume for this niche>,
-  "avg_competition_da": <estimated average domain authority 0-100 of competitors>,
+  "estimated_monthly_traffic": <number>,
+  "avg_competition_da": <0-100>,
   "breakdown": {
-    "search_volume": {"score": <0-30>, "rating": "<excellent/good/moderate/low>"},
-    "competition": {"score": <0-25>, "rating": "<low/medium/high>"},
-    "keyword_opportunities": {"score": <0-20>, "rating": "<excellent/good/moderate/poor>"},
-    "content_diversity": {"score": <0-15>, "rating": "<excellent/good/moderate/poor>"},
-    "commercial_intent": {"score": <0-10>, "rating": "<excellent/good/moderate/poor>"}
+    "search_volume": {"score": <0-30>, "rating": "<excellent/good/moderate/low>", "details": "<Explain traffic potential>"},
+    "competition": {"score": <0-25>, "rating": "<low/medium/high>", "details": "<Explain competitive landscape>"},
+    "keyword_opportunities": {"score": <0-20>, "rating": "<excellent/good/moderate/poor>", "details": "<Explain keyword gaps>"},
+    "content_diversity": {"score": <0-15>, "rating": "<excellent/good/moderate/poor>", "details": "<Explain content angles>"},
+    "commercial_intent": {"score": <0-10>, "rating": "<excellent/good/moderate/poor>", "details": "<Explain monetization potential>"}
+  },
+  "competition_analysis": {
+    "total_competitors": <number>,
+    "competitor_types": {
+      "major_brands": ["<brand1>", "<brand2>"],
+      "authority_sites": ["<site1>", "<site2>"],
+      "affiliate_sites": ["<site1>", "<site2>"],
+      "niche_blogs": ["<site1>", "<site2>"]
+    },
+    "da_distribution": {
+      "high_da_80_plus": <count>,
+      "medium_da_50_79": <count>,
+      "low_da_below_50": <count>
+    },
+    "weakness_opportunities": "<2-3 sentences on competitor weaknesses and gaps>",
+    "market_saturation": "<low/medium/high> - <Explanation>"
   },
   "keyword_opportunities": [
     {
       "keyword": "<exact keyword>",
       "estimated_monthly_searches": <number>,
-      "competition_da": <estimated DA of top 10>,
+      "competition_da": <number>,
       "difficulty": "<easy/medium/hard>",
       "ranking_potential": "<high/medium/low>",
       "buyer_intent": "<high/medium/low>",
-      "reason": "<Why this keyword is an opportunity>"
+      "reason": "<Detailed explanation>",
+      "current_competition": "<Who ranks and why there's opportunity>"
     }
   ],
-  "top_competitors": ["<domain1>", "<domain2>", "<domain3>"],
-  "insights": "<2-3 sentence insight about the niche opportunity>"
+  "content_strategy": {
+    "first_20_articles": [
+      {"title": "<Article title>", "type": "<review/comparison/guide/listicle>", "priority": "<high/medium/low>", "target_keyword": "<keyword>"}
+    ],
+    "content_pillars": ["<Pillar 1>", "<Pillar 2>", "<Pillar 3>"],
+    "content_gaps": "<What content is missing in the niche>",
+    "subject_diversity_score": <1-10>,
+    "topic_clusters": [
+      {"cluster": "<Topic cluster name>", "articles": <count>, "examples": ["<Article 1>", "<Article 2>"]}
+    ]
+  },
+  "affiliate_programs": {
+    "recommended_programs": [
+      {
+        "program_name": "<Program name>",
+        "commission_structure": "<Percentage or fixed amount>",
+        "cookie_duration": "<days>",
+        "average_commission_per_sale": <dollar amount>,
+        "why_recommended": "<Explanation>"
+      }
+    ],
+    "total_programs_available": <estimated count>,
+    "monetization_difficulty": "<easy/medium/hard> - <Explanation>"
+  },
+  "revenue_projection": {
+    "month_6": {
+      "estimated_traffic": <number>,
+      "conversion_rate": "<percentage>",
+      "avg_commission": <dollar amount>,
+      "estimated_revenue": <dollar amount>,
+      "assumptions": "<Key assumptions>"
+    },
+    "month_12": {
+      "estimated_traffic": <number>,
+      "conversion_rate": "<percentage>",
+      "avg_commission": <dollar amount>,
+      "estimated_revenue": <dollar amount>,
+      "assumptions": "<Key assumptions>"
+    },
+    "revenue_factors": "<What drives revenue in this niche>",
+    "realistic_expectations": "<Honest assessment of earning potential>"
+  },
+  "strategic_insights": "<3-4 sentences providing strategic recommendations and market positioning advice>",
+  "risks_and_challenges": "<2-3 specific challenges to be aware of>",
+  "success_probability": "<high/medium/low> - <Why>"
 }
 
-SCORING CRITERIA:
-- Search Volume (0-30): High traffic potential = higher score
-- Competition (0-25): Lower DA competitors = higher score
-- Keyword Opportunities (0-20): More low-competition buyer keywords = higher score
-- Content Diversity (0-15): More competitor angles = higher score
-- Commercial Intent (0-10): More buyer-intent keywords = higher score
+ANALYSIS REQUIREMENTS:
+1. Competition: Be specific about WHO the competitors are (brands vs affiliates vs bloggers)
+2. Keywords: Find 10-12 keywords with LOW competition (<DA 50) + HIGH buyer intent + reasonable volume (500+)
+3. Content Strategy: Provide 20 specific article titles ready to write
+4. Affiliate Programs: Research typical programs in this niche (even if not in database)
+5. Revenue: Be realistic with projections based on traffic, conversion rates, commissions
+6. Subject Diversity: Analyze how many different sub-topics and angles exist
 
-Focus on finding 5-8 keywords with:
-1. High buyer intent (best, review, vs, comparison, cost)
-2. Lower competition (DA < 60 ideally)
-3. Reasonable search volume (500+ monthly)
-4. Long-tail variations with easier ranking potential
-
-Return ONLY the JSON object, no markdown, no explanation.`;
+Return ONLY the JSON object, no markdown.`;
 
         const aiAnalysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -5384,7 +5439,7 @@ Return ONLY the JSON object, no markdown, no explanation.`;
               content: analysisPrompt
             }],
             temperature: 0.3,
-            max_tokens: 2000
+            max_tokens: 4000  // Increased for comprehensive analysis
           })
         });
 
@@ -5413,7 +5468,7 @@ Return ONLY the JSON object, no markdown, no explanation.`;
         console.log(`Recommendation: ${analysis.recommendation}`);
         console.log(`Top Keywords: ${analysis.keyword_opportunities.slice(0, 3).map(k => k.keyword).join(', ')}`);
 
-        // Extract values from AI analysis
+        // Extract values from comprehensive AI analysis
         const {
           score,
           recommendation,
@@ -5423,11 +5478,16 @@ Return ONLY the JSON object, no markdown, no explanation.`;
           avg_competition_da,
           breakdown,
           keyword_opportunities,
-          top_competitors,
-          insights
+          competition_analysis,
+          content_strategy,
+          affiliate_programs,
+          revenue_projection,
+          strategic_insights,
+          risks_and_challenges,
+          success_probability
         } = analysis;
 
-        // Build final result with AI analysis
+        // Build final result with comprehensive AI analysis
         const result = {
           success: true,
           niche: niche_keyword,
@@ -5436,13 +5496,50 @@ Return ONLY the JSON object, no markdown, no explanation.`;
           priority,
           action,
           breakdown,
-          keyword_opportunities, // AI-generated opportunities with buyer intent
+          keyword_opportunities, // AI-generated opportunities with buyer intent + competition details
           estimated_monthly_traffic,
           avg_competition_da,
           unique_competitors: competitorDomains.size,
-          top_competitors: top_competitors || Array.from(competitorDomains).slice(0, 5),
-          insights: insights || '',
-          ai_powered: true, // Flag to indicate this is AI analysis
+
+          // NEW: Comprehensive competitive analysis
+          competition_analysis: competition_analysis || {
+            total_competitors: competitorDomains.size,
+            competitor_types: { major_brands: [], authority_sites: [], affiliate_sites: [], niche_blogs: [] },
+            da_distribution: { high_da_80_plus: 0, medium_da_50_79: 0, low_da_below_50: 0 },
+            weakness_opportunities: '',
+            market_saturation: 'medium - Analysis pending'
+          },
+
+          // NEW: Content strategy with 20 article titles
+          content_strategy: content_strategy || {
+            first_20_articles: [],
+            content_pillars: [],
+            content_gaps: '',
+            subject_diversity_score: 5,
+            topic_clusters: []
+          },
+
+          // NEW: Affiliate program recommendations
+          affiliate_programs: affiliate_programs || {
+            recommended_programs: [],
+            total_programs_available: 0,
+            monetization_difficulty: 'medium - Analysis pending'
+          },
+
+          // NEW: Revenue projections
+          revenue_projection: revenue_projection || {
+            month_6: { estimated_traffic: 0, conversion_rate: '0%', avg_commission: 0, estimated_revenue: 0, assumptions: '' },
+            month_12: { estimated_traffic: 0, conversion_rate: '0%', avg_commission: 0, estimated_revenue: 0, assumptions: '' },
+            revenue_factors: '',
+            realistic_expectations: ''
+          },
+
+          // Enhanced insights
+          strategic_insights: strategic_insights || '',
+          risks_and_challenges: risks_and_challenges || '',
+          success_probability: success_probability || 'medium - Analysis pending',
+
+          ai_powered: true,
           timestamp: new Date().toISOString()
         };
 

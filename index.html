@@ -8412,11 +8412,211 @@
                         </div>
                     </div>
 
-                    <!-- AI Insights (if available) -->
-                    ${validation.insights ? `
-                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 25px; border-radius: 12px; border: 2px solid #fbbf24; margin-bottom: 30px;">
-                        <h4 style="margin: 0 0 15px 0; color: #92400e; font-size: 18px; font-weight: 600;">🎯 AI Strategic Insights</h4>
-                        <p style="color: #78350f; font-size: 15px; margin: 0; line-height: 1.7;">${validation.insights}</p>
+                    <!-- Competition Analysis -->
+                    ${validation.competition_analysis ? `
+                    <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); padding: 25px; border-radius: 12px; border: 2px solid #fca5a5; margin-bottom: 30px;">
+                        <h4 style="margin: 0 0 20px 0; color: #991b1b; font-size: 20px; font-weight: 700;">🎯 Competitive Landscape Analysis</h4>
+
+                        <!-- Market Saturation -->
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <div style="font-weight: 600; color: #dc2626; margin-bottom: 8px;">Market Saturation:</div>
+                            <div style="color: #7f1d1d; line-height: 1.6;">${validation.competition_analysis.market_saturation}</div>
+                        </div>
+
+                        <!-- DA Distribution -->
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <div style="font-weight: 600; color: #dc2626; margin-bottom: 10px;">Domain Authority Distribution:</div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                                <div style="padding: 10px; background: #fef2f2; border-radius: 6px; text-align: center;">
+                                    <div style="font-size: 24px; font-weight: 700; color: #dc2626;">${validation.competition_analysis.da_distribution?.high_da_80_plus || 0}</div>
+                                    <div style="font-size: 12px; color: #7f1d1d;">DA 80+ (Hard)</div>
+                                </div>
+                                <div style="padding: 10px; background: #fef2f2; border-radius: 6px; text-align: center;">
+                                    <div style="font-size: 24px; font-weight: 700; color: #ea580c;">${validation.competition_analysis.da_distribution?.medium_da_50_79 || 0}</div>
+                                    <div style="font-size: 12px; color: #7f1d1d;">DA 50-79 (Medium)</div>
+                                </div>
+                                <div style="padding: 10px; background: #fef2f2; border-radius: 6px; text-align: center;">
+                                    <div style="font-size: 24px; font-weight: 700; color: #16a34a;">${validation.competition_analysis.da_distribution?.low_da_below_50 || 0}</div>
+                                    <div style="font-size: 12px; color: #7f1d1d;">DA <50 (Easy)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Competitor Types -->
+                        ${validation.competition_analysis.competitor_types ? `
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <div style="font-weight: 600; color: #dc2626; margin-bottom: 10px;">Who You're Competing Against:</div>
+                            <div style="display: grid; gap: 8px;">
+                                ${validation.competition_analysis.competitor_types.major_brands?.length > 0 ? `<div><span style="color: #7f1d1d; font-weight: 600;">Major Brands:</span> <span style="color: #991b1b;">${validation.competition_analysis.competitor_types.major_brands.join(', ')}</span></div>` : ''}
+                                ${validation.competition_analysis.competitor_types.authority_sites?.length > 0 ? `<div><span style="color: #7f1d1d; font-weight: 600;">Authority Sites:</span> <span style="color: #991b1b;">${validation.competition_analysis.competitor_types.authority_sites.join(', ')}</span></div>` : ''}
+                                ${validation.competition_analysis.competitor_types.affiliate_sites?.length > 0 ? `<div><span style="color: #7f1d1d; font-weight: 600;">Affiliate Sites:</span> <span style="color: #991b1b;">${validation.competition_analysis.competitor_types.affiliate_sites.join(', ')}</span></div>` : ''}
+                                ${validation.competition_analysis.competitor_types.niche_blogs?.length > 0 ? `<div><span style="color: #7f1d1d; font-weight: 600;">Niche Blogs:</span> <span style="color: #991b1b;">${validation.competition_analysis.competitor_types.niche_blogs.join(', ')}</span></div>` : ''}
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <!-- Opportunities in Competition -->
+                        ${validation.competition_analysis.weakness_opportunities ? `
+                        <div style="background: white; padding: 15px; border-radius: 8px;">
+                            <div style="font-weight: 600; color: #dc2626; margin-bottom: 8px;">💎 Opportunity Gaps:</div>
+                            <div style="color: #7f1d1d; line-height: 1.6;">${validation.competition_analysis.weakness_opportunities}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+
+                    <!-- Content Strategy -->
+                    ${validation.content_strategy?.first_20_articles?.length > 0 ? `
+                    <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 25px; border-radius: 12px; border: 2px solid #7dd3fc; margin-bottom: 30px;">
+                        <h4 style="margin: 0 0 20px 0; color: #075985; font-size: 20px; font-weight: 700;">📝 Content Strategy - First 20 Articles</h4>
+
+                        <!-- Content Pillars -->
+                        ${validation.content_strategy.content_pillars?.length > 0 ? `
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <div style="font-weight: 600; color: #0369a1; margin-bottom: 8px;">Content Pillars:</div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                ${validation.content_strategy.content_pillars.map(pillar => `
+                                    <span style="background: #e0f2fe; color: #075985; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600;">${pillar}</span>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <!-- Subject Diversity Score -->
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <div style="font-weight: 600; color: #0369a1; margin-bottom: 8px;">Subject Diversity Score: ${validation.content_strategy.subject_diversity_score || 0}/10</div>
+                            <div style="color: #075985; font-size: 14px; font-style: italic;">${validation.content_strategy.content_gaps || ''}</div>
+                        </div>
+
+                        <!-- Article List -->
+                        <div style="background: white; padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #e0f2fe;">
+                                        <th style="text-align: left; padding: 10px; color: #075985; font-weight: 700;">#</th>
+                                        <th style="text-align: left; padding: 10px; color: #075985; font-weight: 700;">Article Title</th>
+                                        <th style="text-align: left; padding: 10px; color: #075985; font-weight: 700;">Type</th>
+                                        <th style="text-align: center; padding: 10px; color: #075985; font-weight: 700;">Priority</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${validation.content_strategy.first_20_articles.map((article, idx) => `
+                                        <tr style="border-bottom: 1px solid #f0f9ff;">
+                                            <td style="padding: 12px; color: #0c4a6e; font-weight: 600;">${idx + 1}</td>
+                                            <td style="padding: 12px; color: #0c4a6e;">${article.title}</td>
+                                            <td style="padding: 12px;"><span style="background: #e0f2fe; color: #075985; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">${article.type}</span></td>
+                                            <td style="padding: 12px; text-align: center;">
+                                                <span style="background: ${article.priority === 'high' ? '#dcfce7' : article.priority === 'medium' ? '#fef3c7' : '#fee2e2'};
+                                                             color: ${article.priority === 'high' ? '#166534' : article.priority === 'medium' ? '#92400e' : '#991b1b'};
+                                                             padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                                                    ${article.priority.toUpperCase()}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- Affiliate Programs -->
+                    ${validation.affiliate_programs?.recommended_programs?.length > 0 ? `
+                    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 25px; border-radius: 12px; border: 2px solid #86efac; margin-bottom: 30px;">
+                        <h4 style="margin: 0 0 20px 0; color: #166534; font-size: 20px; font-weight: 700;">💰 Recommended Affiliate Programs</h4>
+
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <div><span style="color: #166534; font-weight: 600;">Total Programs Available:</span> <span style="color: #15803d; font-size: 18px; font-weight: 700;">${validation.affiliate_programs.total_programs_available}</span></div>
+                                <div><span style="color: #166534; font-weight: 600;">Monetization Difficulty:</span> <span style="color: #15803d;">${validation.affiliate_programs.monetization_difficulty}</span></div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; gap: 12px;">
+                            ${validation.affiliate_programs.recommended_programs.map(program => `
+                                <div style="background: white; padding: 18px; border-radius: 8px; border: 1px solid #86efac;">
+                                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                        <div style="flex: 1;">
+                                            <div style="font-size: 16px; font-weight: 700; color: #166534; margin-bottom: 6px;">${program.program_name}</div>
+                                            <div style="display: flex; gap: 15px; font-size: 13px; color: #15803d; margin-bottom: 8px;">
+                                                <span>💵 ${program.commission_structure}</span>
+                                                <span>🕐 ${program.cookie_duration} days</span>
+                                                <span>📊 ~$${program.average_commission_per_sale} avg/sale</span>
+                                            </div>
+                                            <div style="color: #166534; font-size: 14px; line-height: 1.5; font-style: italic;">${program.why_recommended}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- Revenue Projections -->
+                    ${validation.revenue_projection ? `
+                    <div style="background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); padding: 25px; border-radius: 12px; border: 2px solid #fbbf24; margin-bottom: 30px;">
+                        <h4 style="margin: 0 0 20px 0; color: #92400e; font-size: 20px; font-weight: 700;">📈 Revenue Projections</h4>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                            <!-- Month 6 -->
+                            <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #fbbf24;">
+                                <div style="font-size: 16px; font-weight: 700; color: #92400e; margin-bottom: 15px; text-align: center;">Month 6 Projection</div>
+                                <div style="font-size: 32px; font-weight: 700; color: #b45309; text-align: center; margin-bottom: 15px;">$${validation.revenue_projection.month_6?.estimated_revenue?.toLocaleString() || '0'}</div>
+                                <div style="font-size: 13px; color: #78350f; line-height: 1.6;">
+                                    <div style="margin-bottom: 6px;">📊 Traffic: ${validation.revenue_projection.month_6?.estimated_traffic?.toLocaleString() || 0}/month</div>
+                                    <div style="margin-bottom: 6px;">🎯 Conversion: ${validation.revenue_projection.month_6?.conversion_rate || '0%'}</div>
+                                    <div style="margin-bottom: 10px;">💵 Avg Commission: $${validation.revenue_projection.month_6?.avg_commission || 0}</div>
+                                    <div style="font-size: 12px; font-style: italic; padding-top: 10px; border-top: 1px solid #fef3c7;">${validation.revenue_projection.month_6?.assumptions || ''}</div>
+                                </div>
+                            </div>
+
+                            <!-- Month 12 -->
+                            <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #10b981;">
+                                <div style="font-size: 16px; font-weight: 700; color: #065f46; margin-bottom: 15px; text-align: center;">Month 12 Projection</div>
+                                <div style="font-size: 32px; font-weight: 700; color: #059669; text-align: center; margin-bottom: 15px;">$${validation.revenue_projection.month_12?.estimated_revenue?.toLocaleString() || '0'}</div>
+                                <div style="font-size: 13px; color: #064e3b; line-height: 1.6;">
+                                    <div style="margin-bottom: 6px;">📊 Traffic: ${validation.revenue_projection.month_12?.estimated_traffic?.toLocaleString() || 0}/month</div>
+                                    <div style="margin-bottom: 6px;">🎯 Conversion: ${validation.revenue_projection.month_12?.conversion_rate || '0%'}</div>
+                                    <div style="margin-bottom: 10px;">💵 Avg Commission: $${validation.revenue_projection.month_12?.avg_commission || 0}</div>
+                                    <div style="font-size: 12px; font-style: italic; padding-top: 10px; border-top: 1px solid #d1fae5;">${validation.revenue_projection.month_12?.assumptions || ''}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <div style="font-weight: 600; color: #92400e; margin-bottom: 8px;">Revenue Drivers:</div>
+                            <div style="color: #78350f; line-height: 1.6; font-size: 14px;">${validation.revenue_projection.revenue_factors || ''}</div>
+                        </div>
+
+                        <div style="background: white; padding: 15px; border-radius: 8px;">
+                            <div style="font-weight: 600; color: #92400e; margin-bottom: 8px;">Realistic Expectations:</div>
+                            <div style="color: #78350f; line-height: 1.6; font-size: 14px;">${validation.revenue_projection.realistic_expectations || ''}</div>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- Strategic Insights + Risks -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 30px;">
+                        ${validation.strategic_insights ? `
+                        <div style="background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); padding: 20px; border-radius: 12px; border: 2px solid #c4b5fd;">
+                            <h4 style="margin: 0 0 12px 0; color: #5b21b6; font-size: 16px; font-weight: 700;">🎯 Strategic Recommendations</h4>
+                            <p style="color: #6b21a8; font-size: 14px; margin: 0; line-height: 1.7;">${validation.strategic_insights}</p>
+                        </div>
+                        ` : ''}
+
+                        ${validation.risks_and_challenges ? `
+                        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); padding: 20px; border-radius: 12px; border: 2px solid #fca5a5;">
+                            <h4 style="margin: 0 0 12px 0; color: #991b1b; font-size: 16px; font-weight: 700;">⚠️ Risks & Challenges</h4>
+                            <p style="color: #7f1d1d; font-size: 14px; margin: 0; line-height: 1.7;">${validation.risks_and_challenges}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Success Probability -->
+                    ${validation.success_probability ? `
+                    <div style="background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); padding: 20px; border-radius: 12px; border: 2px solid #5eead4; margin-bottom: 30px; text-align: center;">
+                        <h4 style="margin: 0 0 10px 0; color: #115e59; font-size: 18px; font-weight: 700;">🎲 Success Probability</h4>
+                        <div style="color: #134e4a; font-size: 16px; font-weight: 600;">${validation.success_probability}</div>
                     </div>
                     ` : ''}
 
