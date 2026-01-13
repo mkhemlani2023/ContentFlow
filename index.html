@@ -993,6 +993,7 @@
     <div id="websiteTracking" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 9999; overflow-y: auto; padding: 20px;"></div>
     <div id="blogManagement" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 9999; overflow-y: auto; padding: 20px;"></div>
     <div id="savedArticlesLibrary" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 9999; overflow-y: auto; padding: 20px;"></div>
+    <div id="nicheResearch" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 9999; overflow-y: auto; padding: 20px;"></div>
     <div id="results" class="results"></div>
     <div id="contentResult" class="results" style="display: none;"></div>
 
@@ -8144,21 +8145,18 @@
             const savedArticlesLibrary = document.getElementById('savedArticlesLibrary');
 
             // Hide other full-page sections
-            blogManagement.style.display = 'none';
-            creditDashboard.style.display = 'none';
-            websiteTracking.style.display = 'none';
-            savedArticlesLibrary.style.display = 'none';
+            if (blogManagement) blogManagement.style.display = 'none';
+            if (creditDashboard) creditDashboard.style.display = 'none';
+            if (websiteTracking) websiteTracking.style.display = 'none';
+            if (savedArticlesLibrary) savedArticlesLibrary.style.display = 'none';
 
             // Show niche research as full page overlay
-            if (!nicheResearch) {
-                // Create niche research section if it doesn't exist
-                const newSection = document.createElement('div');
-                newSection.id = 'nicheResearch';
-                newSection.style.display = 'none';
-                document.getElementById('app').appendChild(newSection);
+            if (nicheResearch) {
+                nicheResearch.style.display = 'block';
+                displayNicheResearch();
+            } else {
+                console.error('nicheResearch element not found');
             }
-            document.getElementById('nicheResearch').style.display = 'block';
-            displayNicheResearch();
         }
 
         async function displayNicheResearch() {
