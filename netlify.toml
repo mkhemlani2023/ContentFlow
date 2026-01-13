@@ -1,8 +1,7 @@
 [build]
-  command = "mkdir -p public && cp index.html public/ && cp *.js public/ && cp *.png public/ 2>/dev/null || true && echo 'Build completed successfully'"
+  command = "mkdir -p public && cp index.html public/ && cp *.js public/ && cp *.png public/"
   publish = "public"
   functions = "netlify/functions"
-  ignore = "exit 0"
 
 [functions]
   timeout = 30
@@ -34,5 +33,3 @@
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: https://images.pexels.com https://images.unsplash.com https://picsum.photos; connect-src 'self' https: https://google.serper.dev https://openrouter.ai https://api.pexels.com https://api.unsplash.com https://images.pexels.com https://images.unsplash.com https://picsum.photos https://*.supabase.co;"
