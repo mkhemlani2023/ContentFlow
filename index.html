@@ -8915,7 +8915,7 @@
             showModal(modalHTML);
         }
 
-        // Blog Creation Flow - Step 4: Generate Setup Guide (Siteground Manual Setup)
+        // Blog Creation Flow - Step 4: Trigger GitHub Actions Deployment
         async function createSitegroundSite() {
             const domain = window.currentBlogCreation.selectedDomain;
             const validation = window.currentBlogCreation.validation;
@@ -8929,12 +8929,12 @@
                 return;
             }
 
-            // Show progress modal
-            showSetupGuideGeneration(domain);
+            // Show deployment progress modal
+            showGitHubDeploymentProgress(domain);
 
             try {
-                // Generate setup package via API
-                const response = await fetch('/api/generate-setup-package', {
+                // Trigger GitHub Actions workflow
+                const response = await fetch('/api/trigger-github-deployment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -8952,25 +8952,120 @@
                 const result = await response.json();
 
                 if (!result.success) {
-                    throw new Error(result.error || 'Setup guide generation failed');
+                    throw new Error(result.error || 'Deployment trigger failed');
                 }
 
-                // Show setup guide
-                showSetupGuide(result);
+                // Show deployment initiated success
+                showDeploymentInitiated(result);
 
             } catch (error) {
-                console.error('Setup guide error:', error);
+                console.error('Deployment error:', error);
                 showModal(`
                     <div style="text-align: center; padding: 40px;">
                         <div style="font-size: 64px; margin-bottom: 20px;">⚠️</div>
-                        <h2 style="color: #991b1b; margin: 0 0 15px 0;">Setup Guide Generation Failed</h2>
+                        <h2 style="color: #991b1b; margin: 0 0 15px 0;">Deployment Failed</h2>
                         <p style="color: #dc2626; margin-bottom: 30px;">${error.message}</p>
+                        ${error.message.includes('GitHub') ? `
+                            <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">
+                                Make sure GitHub Secrets are configured correctly.<br>
+                                Check: GITHUB_PAT, SITEGROUND_SSH_KEY, etc.
+                            </p>
+                        ` : ''}
                         <button onclick="closeModal()" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                             Close
                         </button>
                     </div>
                 `);
             }
+        }
+
+        // Show GitHub Actions deployment progress
+        function showGitHubDeploymentProgress(domain) {
+            showModal(`
+                <div style="max-width: 600px; margin: 0 auto; text-align: center;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">🚀</div>
+                    <h2 style="margin: 0 0 15px 0; color: #1e293b;">Deploying WordPress Site...</h2>
+                    <p style="color: #64748b; margin-bottom: 30px;">Setting up <strong>${domain}</strong> via GitHub Actions</p>
+
+                    <div style="background: #f8fafc; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0;">
+                        <div style="display: flex; flex-direction: column; gap: 15px; text-align: left;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="display: inline-block; width: 20px; height: 20px; border: 3px solid #667eea; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></span>
+                                <span style="color: #667eea; font-weight: 600;">Creating MySQL database...</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; opacity: 0.6;">
+                                <span>⏳</span>
+                                <span style="color: #64748b;">Installing WordPress core...</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; opacity: 0.6;">
+                                <span>⏳</span>
+                                <span style="color: #64748b;">Configuring theme & plugins...</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; opacity: 0.6;">
+                                <span>⏳</span>
+                                <span style="color: #64748b;">Creating legal pages (Privacy, Terms, etc.)...</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; opacity: 0.6;">
+                                <span>⏳</span>
+                                <span style="color: #64748b;">Setting up GDPR compliance...</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; opacity: 0.6;">
+                                <span>⏳</span>
+                                <span style="color: #64748b;">Configuring SEO & security...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border: 2px solid #3b82f6; margin-top: 25px;">
+                        <p style="margin: 0; color: #1e3a8a; font-size: 14px;">
+                            <strong>Estimated time:</strong> 8-10 minutes<br>
+                            You can close this dialog and we'll notify you when ready
+                        </p>
+                    </div>
+                </div>
+            `);
+        }
+
+        // Show deployment initiated success message
+        function showDeploymentInitiated(result) {
+            showModal(`
+                <div style="max-width: 700px; margin: 0 auto; text-align: center;">
+                    <div style="font-size: 72px; margin-bottom: 20px;">✅</div>
+                    <h2 style="margin: 0 0 10px 0; color: #10b981;">Deployment Started!</h2>
+                    <p style="color: #64748b; margin-bottom: 30px;">WordPress site deployment initiated for <strong>${result.domain}</strong></p>
+
+                    <div style="background: #f0fdf4; padding: 25px; border-radius: 12px; border: 2px solid #86efac; margin: 30px 0;">
+                        <h3 style="margin: 0 0 20px 0; color: #166534; font-size: 18px;">What's Happening Now:</h3>
+                        <ul style="text-align: left; line-height: 2; margin: 0; padding-left: 25px; color: #065f46;">
+                            <li>✅ GitHub Actions workflow triggered</li>
+                            <li>⏳ Creating database and installing WordPress</li>
+                            <li>⏳ Installing <strong>${result.site_title}</strong></li>
+                            <li>⏳ Setting up legal pages and GDPR compliance</li>
+                            <li>⏳ Configuring SEO and security plugins</li>
+                            <li>⏳ Installing theme: <strong>GeneratePress</strong></li>
+                        </ul>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                        <p style="margin: 0 0 10px 0; color: #1e293b; font-weight: 600;">Estimated completion:</p>
+                        <p style="margin: 0; color: #64748b; font-size: 18px; font-weight: 700;">${result.estimated_completion}</p>
+                    </div>
+
+                    <a href="${result.workflow_url}" target="_blank"
+                       style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 20px 0; font-weight: 600; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
+                        View Progress in GitHub Actions →
+                    </a>
+
+                    <p style="color: #64748b; font-size: 14px; margin: 25px 0;">
+                        You'll receive your WordPress admin credentials when deployment completes.<br>
+                        Check your email or the GitHub Actions log.
+                    </p>
+
+                    <button onclick="closeModal()" style="background: #f1f5f9; color: #334155; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-weight: 600;">
+                        Close
+                    </button>
+                </div>
+            `);
         }
 
         // Show setup guide generation progress
