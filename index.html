@@ -9205,15 +9205,15 @@
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 40px;">
                         <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0;">
                             <div style="color: #64748b; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Est. Monthly Searches</div>
-                            <div style="color: #1e293b; font-size: 28px; font-weight: 700;">${validation.estimated_monthly_traffic.toLocaleString()}</div>
+                            <div style="color: #1e293b; font-size: 28px; font-weight: 700;">${(validation.estimated_monthly_traffic || 0).toLocaleString()}</div>
                         </div>
                         <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0;">
                             <div style="color: #64748b; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Avg. Competition (DA)</div>
-                            <div style="color: #1e293b; font-size: 28px; font-weight: 700;">${validation.avg_competition_da}</div>
+                            <div style="color: #1e293b; font-size: 28px; font-weight: 700;">${validation.avg_competition_da || 0}</div>
                         </div>
                         <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0;">
                             <div style="color: #64748b; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Unique Competitors</div>
-                            <div style="color: #1e293b; font-size: 28px; font-weight: 700;">${validation.unique_competitors}</div>
+                            <div style="color: #1e293b; font-size: 28px; font-weight: 700;">${validation.unique_competitors || validation.competitor_domains?.length || 0}</div>
                         </div>
                     </div>
 
@@ -10719,7 +10719,7 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                         </div>
                         <div style="background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0;">
                             <div style="color: #64748b; font-size: 12px; margin-bottom: 4px; font-weight: 600;">Unique Competitors</div>
-                            <div style="color: #1e293b; font-size: 20px; font-weight: 700;">${validation.unique_competitors}</div>
+                            <div style="color: #1e293b; font-size: 20px; font-weight: 700;">${validation.unique_competitors || validation.competitor_domains?.length || 0}</div>
                         </div>
                     </div>
 
