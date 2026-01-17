@@ -75,7 +75,7 @@ jobs:
 
       - name: Create MySQL database
         run: |
-          ssh -i ~/.ssh/id_rsa -p ${{ secrets.SITEGROUND_SSH_PORT }} ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
           mysql -u ${{ secrets.SITEGROUND_DB_USER }} -p'${{ secrets.SITEGROUND_DB_PASS }}' << EOF
           CREATE DATABASE IF NOT EXISTS ${{ steps.vars.outputs.db_name }};
           CREATE USER IF NOT EXISTS '${{ steps.vars.outputs.db_user }}'@'localhost' IDENTIFIED BY '${{ steps.vars.outputs.db_pass }}';
@@ -86,14 +86,14 @@ jobs:
 
       - name: Create site directory
         run: |
-          ssh -i ~/.ssh/id_rsa -p ${{ secrets.SITEGROUND_SSH_PORT }} ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
           mkdir -p ${{ steps.vars.outputs.site_path }}
           cd ${{ steps.vars.outputs.site_path }}
           ENDSSH
 
       - name: Download and install WordPress
         run: |
-          ssh -i ~/.ssh/id_rsa -p ${{ secrets.SITEGROUND_SSH_PORT }} ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
           cd ${{ steps.vars.outputs.site_path }}
 
           # Download latest WordPress
@@ -121,7 +121,7 @@ jobs:
 
       - name: Install WP-CLI
         run: |
-          ssh -i ~/.ssh/id_rsa -p ${{ secrets.SITEGROUND_SSH_PORT }} ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
           cd ${{ steps.vars.outputs.site_path }}
 
           # Download WP-CLI if not exists
@@ -133,7 +133,7 @@ jobs:
 
       - name: Complete WordPress installation
         run: |
-          ssh -i ~/.ssh/id_rsa -p ${{ secrets.SITEGROUND_SSH_PORT }} ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
           cd ${{ steps.vars.outputs.site_path }}
 
           # Install WordPress core
@@ -154,7 +154,7 @@ jobs:
 
       - name: Install and activate theme
         run: |
-          ssh -i ~/.ssh/id_rsa -p ${{ secrets.SITEGROUND_SSH_PORT }} ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
           cd ${{ steps.vars.outputs.site_path }}
 
           # Install theme
@@ -166,7 +166,7 @@ jobs:
 
       - name: Install essential plugins
         run: |
-          ssh -i ~/.ssh/id_rsa -p ${{ secrets.SITEGROUND_SSH_PORT }} ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
           cd ${{ steps.vars.outputs.site_path }}
 
           # Install and activate plugins
@@ -183,7 +183,7 @@ jobs:
 
       - name: Create essential pages
         run: |
-          ssh -i ~/.ssh/id_rsa -p ${{ secrets.SITEGROUND_SSH_PORT }} ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
           cd ${{ steps.vars.outputs.site_path }}
 
           # Copy page templates from repository
@@ -192,12 +192,12 @@ jobs:
 
       - name: Transfer page templates
         run: |
-          scp -i ~/.ssh/id_rsa -P ${{ secrets.SITEGROUND_SSH_PORT }} -r ./wordpress-templates/* \
+          scp -i ~/.ssh/id_rsa -r ./wordpress-templates/* \
             ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }}:${{ steps.vars.outputs.site_path }}/wp-content/uploads/
 
       - name: Import pages via WP-CLI
         run: |
-          ssh -i ~/.ssh/id_rsa -p ${{ secrets.SITEGROUND_SSH_PORT }} ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
           cd ${{ steps.vars.outputs.site_path }}
 
           # Create About Us page
@@ -250,7 +250,7 @@ jobs:
 
       - name: Configure cookie consent
         run: |
-          ssh -i ~/.ssh/id_rsa -p ${{ secrets.SITEGROUND_SSH_PORT }} ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
           cd ${{ steps.vars.outputs.site_path }}
 
           # Configure GDPR Cookie Consent plugin
@@ -266,7 +266,7 @@ jobs:
 
       - name: Setup WPForms contact form
         run: |
-          ssh -i ~/.ssh/id_rsa -p ${{ secrets.SITEGROUND_SSH_PORT }} ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
           cd ${{ steps.vars.outputs.site_path }}
 
           # Import contact form template
