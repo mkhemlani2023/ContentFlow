@@ -1,0 +1,326 @@
+name: Deploy WordPress Site to Siteground
+
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: 'Domain name for the site (e.g., example.com)'
+        required: true
+        type: string
+      niche_keyword:
+        description: 'Niche keyword for the site'
+        required: true
+        type: string
+      site_title:
+        description: 'WordPress site title'
+        required: true
+        type: string
+      admin_email:
+        description: 'WordPress admin email'
+        required: true
+        type: string
+      theme:
+        description: 'WordPress theme to install'
+        required: false
+        default: 'generatepress'
+        type: choice
+        options:
+          - generatepress
+          - astra
+          - kadence
+      content_count:
+        description: 'Number of initial articles to generate'
+        required: false
+        default: '10'
+        type: choice
+        options:
+          - '5'
+          - '10'
+          - '20'
+
+jobs:
+  deploy-wordpress:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SITEGROUND_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SITEGROUND_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH connection
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} "echo 'SSH connection successful'"
+
+      - name: Setup deployment variables
+        id: vars
+        run: |
+          SAFE_DOMAIN=$(echo "${{ inputs.domain }}" | sed 's/\./_/g')
+          SITE_PATH="/home/${{ secrets.SITEGROUND_USER }}/public_html/${{ inputs.domain }}"
+          DB_NAME="wp_${SAFE_DOMAIN}_$(date +%s)"
+          DB_USER="wp_${SAFE_DOMAIN}_user"
+          DB_PASS=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 24)
+          WP_ADMIN_PASS=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9!@#$%^&*' | head -c 24)
+
+          echo "site_path=${SITE_PATH}" >> $GITHUB_OUTPUT
+          echo "db_name=${DB_NAME}" >> $GITHUB_OUTPUT
+          echo "db_user=${DB_USER}" >> $GITHUB_OUTPUT
+          echo "db_pass=${DB_PASS}" >> $GITHUB_OUTPUT
+          echo "wp_admin_pass=${WP_ADMIN_PASS}" >> $GITHUB_OUTPUT
+
+      - name: Create MySQL database
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          mysql -u ${{ secrets.SITEGROUND_DB_USER }} -p'${{ secrets.SITEGROUND_DB_PASS }}' << EOF
+          CREATE DATABASE IF NOT EXISTS ${{ steps.vars.outputs.db_name }};
+          CREATE USER IF NOT EXISTS '${{ steps.vars.outputs.db_user }}'@'localhost' IDENTIFIED BY '${{ steps.vars.outputs.db_pass }}';
+          GRANT ALL PRIVILEGES ON ${{ steps.vars.outputs.db_name }}.* TO '${{ steps.vars.outputs.db_user }}'@'localhost';
+          FLUSH PRIVILEGES;
+          EOF
+          ENDSSH
+
+      - name: Create site directory
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          mkdir -p ${{ steps.vars.outputs.site_path }}
+          cd ${{ steps.vars.outputs.site_path }}
+          ENDSSH
+
+      - name: Download and install WordPress
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          cd ${{ steps.vars.outputs.site_path }}
+
+          # Download latest WordPress
+          wget https://wordpress.org/latest.tar.gz
+          tar -xzf latest.tar.gz
+          mv wordpress/* .
+          rmdir wordpress
+          rm latest.tar.gz
+
+          # Create wp-config.php
+          cp wp-config-sample.php wp-config.php
+          sed -i "s/database_name_here/${{ steps.vars.outputs.db_name }}/" wp-config.php
+          sed -i "s/username_here/${{ steps.vars.outputs.db_user }}/" wp-config.php
+          sed -i "s/password_here/${{ steps.vars.outputs.db_pass }}/" wp-config.php
+
+          # Add WordPress salts
+          SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/)
+          STRING='put your unique phrase here'
+          printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s wp-config.php
+
+          # Set proper permissions
+          find . -type d -exec chmod 755 {} \;
+          find . -type f -exec chmod 644 {} \;
+          ENDSSH
+
+      - name: Install WP-CLI
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          cd ${{ steps.vars.outputs.site_path }}
+
+          # Download WP-CLI if not exists
+          if [ ! -f wp-cli.phar ]; then
+            curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+            chmod +x wp-cli.phar
+          fi
+          ENDSSH
+
+      - name: Complete WordPress installation
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          cd ${{ steps.vars.outputs.site_path }}
+
+          # Install WordPress core
+          ./wp-cli.phar core install \
+            --url="https://${{ inputs.domain }}" \
+            --title="${{ inputs.site_title }}" \
+            --admin_user="admin" \
+            --admin_password="${{ steps.vars.outputs.wp_admin_pass }}" \
+            --admin_email="${{ inputs.admin_email }}" \
+            --skip-email
+
+          # Set permalink structure
+          ./wp-cli.phar rewrite structure '/%postname%/' --hard
+
+          # Update site description
+          ./wp-cli.phar option update blogdescription "Your guide to ${{ inputs.niche_keyword }}"
+          ENDSSH
+
+      - name: Install and activate theme
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          cd ${{ steps.vars.outputs.site_path }}
+
+          # Install theme
+          ./wp-cli.phar theme install ${{ inputs.theme }} --activate
+
+          # Delete default themes
+          ./wp-cli.phar theme delete twentytwentyone twentytwentytwo twentytwentythree --force
+          ENDSSH
+
+      - name: Install essential plugins
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          cd ${{ steps.vars.outputs.site_path }}
+
+          # Install and activate plugins
+          ./wp-cli.phar plugin install wordpress-seo --activate
+          ./wp-cli.phar plugin install tablepress --activate
+          ./wp-cli.phar plugin install pretty-links --activate
+          ./wp-cli.phar plugin install wpforms-lite --activate
+          ./wp-cli.phar plugin install cookie-notice --activate
+          ./wp-cli.phar plugin install gdpr-cookie-consent --activate
+
+          # Delete default plugins
+          ./wp-cli.phar plugin delete hello akismet --force
+          ENDSSH
+
+      - name: Create essential pages
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          cd ${{ steps.vars.outputs.site_path }}
+
+          # Copy page templates from repository
+          # Note: These will be transferred from the repo
+          ENDSSH
+
+      - name: Transfer page templates
+        run: |
+          scp -i ~/.ssh/id_rsa -r ./wordpress-templates/* \
+            ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }}:${{ steps.vars.outputs.site_path }}/wp-content/uploads/
+
+      - name: Import pages via WP-CLI
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          cd ${{ steps.vars.outputs.site_path }}
+
+          # Create About Us page
+          ./wp-cli.phar post create \
+            --post_type=page \
+            --post_title="About Us" \
+            --post_status=publish \
+            --post_content="$(cat wp-content/uploads/about-us.html)"
+
+          # Create Privacy Policy page
+          PRIVACY_PAGE_ID=$(./wp-cli.phar post create \
+            --post_type=page \
+            --post_title="Privacy Policy" \
+            --post_status=publish \
+            --post_content="$(cat wp-content/uploads/privacy-policy.html)" \
+            --porcelain)
+
+          # Set as privacy policy page
+          ./wp-cli.phar option update wp_page_for_privacy_policy "$PRIVACY_PAGE_ID"
+
+          # Create Terms of Service page
+          ./wp-cli.phar post create \
+            --post_type=page \
+            --post_title="Terms of Service" \
+            --post_status=publish \
+            --post_content="$(cat wp-content/uploads/terms-of-service.html)"
+
+          # Create Cookie Policy page
+          ./wp-cli.phar post create \
+            --post_type=page \
+            --post_title="Cookie Policy" \
+            --post_status=publish \
+            --post_content="$(cat wp-content/uploads/cookie-policy.html)"
+
+          # Create Affiliate Disclosure page
+          ./wp-cli.phar post create \
+            --post_type=page \
+            --post_title="Affiliate Disclosure" \
+            --post_status=publish \
+            --post_content="$(cat wp-content/uploads/affiliate-disclosure.html)"
+
+          # Create Contact page
+          CONTACT_PAGE_ID=$(./wp-cli.phar post create \
+            --post_type=page \
+            --post_title="Contact" \
+            --post_status=publish \
+            --post_content="[wpforms id='1']" \
+            --porcelain)
+          ENDSSH
+
+      - name: Configure cookie consent
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          cd ${{ steps.vars.outputs.site_path }}
+
+          # Configure GDPR Cookie Consent plugin
+          ./wp-cli.phar option update gdpr_cookie_consent_settings '{
+            "is_on": true,
+            "cookie_bar_as": "banner",
+            "notify_message": "We use cookies to ensure that we give you the best experience on our website. If you continue to use this site we will assume that you are happy with it.",
+            "button_accept_text": "Accept",
+            "button_settings_text": "Cookie Settings",
+            "show_credits": false
+          }' --format=json
+          ENDSSH
+
+      - name: Setup WPForms contact form
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }} << 'ENDSSH'
+          cd ${{ steps.vars.outputs.site_path }}
+
+          # Import contact form template
+          ./wp-cli.phar wpforms create \
+            --title="Contact Form" \
+            --template="simple-contact-form"
+          ENDSSH
+
+      - name: Save deployment credentials
+        run: |
+          echo "🎉 WordPress site deployed successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Site Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: https://${{ inputs.domain }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Admin URL**: https://${{ inputs.domain }}/wp-admin" >> $GITHUB_STEP_SUMMARY
+          echo "- **Admin Username**: admin" >> $GITHUB_STEP_SUMMARY
+          echo "- **Admin Password**: \`${{ steps.vars.outputs.wp_admin_pass }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Database**: ${{ steps.vars.outputs.db_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pages Created" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ About Us" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Privacy Policy" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Terms of Service" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Cookie Policy" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Affiliate Disclosure" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Contact (with form)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Theme & Plugins" >> $GITHUB_STEP_SUMMARY
+          echo "- **Theme**: ${{ inputs.theme }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Plugins**: Yoast SEO, TablePress, Pretty Links, WPForms, Cookie Notice, GDPR Cookie Consent" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify ContentFlow API
+        if: success()
+        run: |
+          curl -X POST https://your-app-url.netlify.app/api/site-deployment-complete \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CONTENTFLOW_API_KEY }}" \
+            -d '{
+              "domain": "${{ inputs.domain }}",
+              "status": "success",
+              "wp_admin_url": "https://${{ inputs.domain }}/wp-admin",
+              "admin_username": "admin",
+              "admin_password": "${{ steps.vars.outputs.wp_admin_pass }}",
+              "db_name": "${{ steps.vars.outputs.db_name }}"
+            }'
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          curl -X POST https://your-app-url.netlify.app/api/site-deployment-complete \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CONTENTFLOW_API_KEY }}" \
+            -d '{
+              "domain": "${{ inputs.domain }}",
+              "status": "failed",
+              "error": "Deployment failed. Check GitHub Actions logs."
+            }'

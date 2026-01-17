@@ -16,7 +16,9 @@
       "WebFetch(domain:docs.dataforseo.com)",
       "Bash(awk:*)",
       "Bash(cat:*)",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "WebFetch(domain:medium.com)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []
