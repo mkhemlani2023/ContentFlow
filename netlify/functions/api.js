@@ -27,6 +27,12 @@ const GOOGLE_OAUTH_CLIENT_SECRET = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
 const GOOGLE_OAUTH_REDIRECT_URI = process.env.GOOGLE_OAUTH_REDIRECT_URI || 'https://www.getseowizard.com/oauth/google/callback';
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY; // 32-byte key for AES-256
 
+// GitHub Actions credentials for WordPress deployment automation
+const GITHUB_PAT = process.env.GITHUB_PAT; // Personal Access Token
+const GITHUB_REPO_OWNER = process.env.GITHUB_REPO_OWNER || 'mkhemlani2023';
+const GITHUB_REPO_NAME = process.env.GITHUB_REPO_NAME || 'ContentFlow';
+const CONTENTFLOW_API_KEY = process.env.CONTENTFLOW_API_KEY; // For webhook authentication
+
 // Domain Authority and Backlink Estimation Functions
 const estimateDomainAuthority = (domain) => {
   // High authority domains (80-95 DA)
@@ -5635,11 +5641,26 @@ Requirements:
 - Avoid hyphens and numbers
 - Mix of exact-match and brandable options
 
+For each domain, provide an SEO score (1-100) based on:
+- Keyword relevance to niche (40 points)
+- Domain length - shorter is better (20 points)
+- Brandability and memorability (20 points)
+- TLD quality - .com gets full points (10 points)
+- Ease of typing and spelling (10 points)
+
 Return ONLY valid JSON array:
 [
   {
     "domain": "example.com",
-    "reason": "Short explanation why this domain works"
+    "reason": "Short explanation why this domain works",
+    "seo_score": 85,
+    "score_breakdown": {
+      "keyword_relevance": 35,
+      "length": 18,
+      "brandability": 18,
+      "tld": 10,
+      "typability": 9
+    }
   }
 ]`;
 
@@ -5858,6 +5879,267 @@ Return ONLY valid JSON array:
 
       } catch (error) {
         console.error('[SETUP PACKAGE ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // GENERATE AFFILIATE EMAILS - AI generates personalized application emails
+    if (path === '/api/generate-affiliate-emails' && method === 'POST') {
+      const { niche_keyword, domain, programs, site_description } = body;
+
+      if (!niche_keyword || !domain || !programs || programs.length === 0) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Missing required fields: niche_keyword, domain, and programs'
+          })
+        };
+      }
+
+      try {
+        console.log(`[AFFILIATE EMAILS] Generating emails for ${programs.length} programs`);
+        const startTime = Date.now();
+
+        const emails = [];
+
+        // Generate email for each program
+        for (const program of programs) {
+          const emailPrompt = `Write a professional affiliate program application email for:
+
+Program: ${program.program_name}
+${program.network ? `Network: ${program.network}` : ''}
+
+My Website Details:
+- Domain: ${domain}
+- Niche: ${niche_keyword}
+- Description: ${site_description || `A comprehensive resource for ${niche_keyword} enthusiasts`}
+
+Requirements:
+- Professional and concise (200-300 words)
+- Highlight why my site is a good fit for their program
+- Mention my niche expertise and target audience
+- Express enthusiasm about their products/services
+- Request affiliate program access
+- Professional closing
+
+Return ONLY valid JSON:
+{
+  "subject": "Email subject line",
+  "body": "Full email body text",
+  "recipient": "Email address if known, or 'See program website' if unknown"
+}`;
+
+          const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://www.getseowizard.com',
+              'X-Title': 'SEO Wizard'
+            },
+            body: JSON.stringify({
+              model: 'openai/gpt-4o-mini',
+              messages: [{ role: 'user', content: emailPrompt }],
+              temperature: 0.7,
+              max_tokens: 500
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`AI failed for ${program.program_name}: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const content = data.choices[0].message.content.trim();
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          const emailData = JSON.parse(jsonMatch[0]);
+
+          emails.push({
+            program_name: program.program_name,
+            subject: emailData.subject,
+            body: emailData.body,
+            recipient: emailData.recipient || program.application_url || 'See program website'
+          });
+        }
+
+        const duration = Date.now() - startTime;
+        console.log(`[AFFILIATE EMAILS COMPLETE] Generated ${emails.length} emails in ${duration}ms`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            emails,
+            count: emails.length,
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[AFFILIATE EMAILS ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // TRIGGER GITHUB ACTIONS - Deploy WordPress site via GitHub Actions workflow
+    if (path === '/api/trigger-github-deployment' && method === 'POST') {
+      const { validation_id, validation, domain, admin_email, theme, content_count, auto_affiliate, niche_keyword } = body;
+
+      if (!domain || !admin_email || !niche_keyword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Domain, admin_email, and niche_keyword are required'
+          })
+        };
+      }
+
+      if (!GITHUB_PAT) {
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'GitHub Personal Access Token not configured. Please add GITHUB_PAT to environment variables.'
+          })
+        };
+      }
+
+      try {
+        console.log(`[GITHUB DEPLOYMENT] Triggering workflow for domain: ${domain}`);
+        const startTime = Date.now();
+
+        // Generate site title from niche keyword
+        const siteTitle = niche_keyword
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ') + ' Guide';
+
+        // Trigger GitHub Actions workflow
+        const workflowResponse = await fetch(
+          `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/actions/workflows/deploy-wordpress-site.yml/dispatches`,
+          {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/vnd.github+json',
+              'Authorization': `Bearer ${GITHUB_PAT}`,
+              'X-GitHub-Api-Version': '2022-11-28',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ref: 'main',
+              inputs: {
+                domain: domain,
+                niche_keyword: niche_keyword,
+                site_title: siteTitle,
+                admin_email: admin_email,
+                theme: theme || 'generatepress',
+                content_count: String(content_count || 10)
+              }
+            })
+          }
+        );
+
+        if (!workflowResponse.ok) {
+          const errorText = await workflowResponse.text();
+          console.error('[GITHUB DEPLOYMENT ERROR]', workflowResponse.status, errorText);
+          throw new Error(`GitHub API error: ${workflowResponse.status} - ${errorText}`);
+        }
+
+        const duration = Date.now() - startTime;
+        console.log(`[GITHUB DEPLOYMENT SUCCESS] Workflow triggered in ${duration}ms`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            message: 'WordPress deployment initiated via GitHub Actions',
+            domain,
+            site_title: siteTitle,
+            status: 'deploying',
+            estimated_completion: '8-10 minutes',
+            duration_ms: duration,
+            workflow_url: `https://github.com/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/actions`,
+            note: 'You can monitor progress in GitHub Actions. You will receive credentials when deployment completes.'
+          })
+        };
+
+      } catch (error) {
+        console.error('[GITHUB DEPLOYMENT ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: error.message,
+            hint: 'Check that GITHUB_PAT has workflow permissions and GitHub Actions is enabled'
+          })
+        };
+      }
+    }
+
+    // DEPLOYMENT COMPLETE CALLBACK - Receive credentials from GitHub Actions
+    if (path === '/api/deployment-complete' && method === 'POST') {
+      // Verify webhook authentication
+      const authHeader = event.headers['authorization'];
+      if (!authHeader || authHeader !== `Bearer ${CONTENTFLOW_API_KEY}`) {
+        return {
+          statusCode: 401,
+          headers,
+          body: JSON.stringify({ success: false, error: 'Unauthorized' })
+        };
+      }
+
+      try {
+        const { domain, status, wp_admin_url, admin_username, admin_password, db_name, error } = body;
+
+        console.log(`[DEPLOYMENT CALLBACK] Received for domain: ${domain}, status: ${status}`);
+
+        if (status === 'success') {
+          // Store credentials securely in database or send email to user
+          // For now, just log and return success
+          console.log(`[DEPLOYMENT SUCCESS] Site ready: ${wp_admin_url}`);
+          console.log(`[DEPLOYMENT SUCCESS] Credentials: ${admin_username} / ${admin_password}`);
+
+          // TODO: Store in Supabase niche_sites table
+          // TODO: Send email to user with credentials
+
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              message: 'Deployment completion recorded'
+            })
+          };
+        } else {
+          console.error(`[DEPLOYMENT FAILED]`, error);
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              message: 'Deployment failure recorded'
+            })
+          };
+        }
+
+      } catch (error) {
+        console.error('[DEPLOYMENT CALLBACK ERROR]', error);
         return {
           statusCode: 500,
           headers,

@@ -8678,12 +8678,31 @@
                     <p style="color: #64748b; margin-bottom: 30px;">Select a domain for your ${validation.niche_keyword} affiliate site</p>
 
                     <div id="domainSuggestions" style="display: grid; gap: 15px; margin-bottom: 30px;">
-                        ${domains.map((domain, index) => `
+                        ${domains.map((domain, index) => {
+                            const seoScore = domain.seo_score || 70;
+                            const scoreColor = seoScore >= 80 ? '#10b981' : seoScore >= 65 ? '#f59e0b' : '#f97316';
+                            const scoreLabel = seoScore >= 80 ? 'Excellent' : seoScore >= 65 ? 'Good' : 'Fair';
+                            return `
                             <div onclick="selectDomain('${domain.domain}', ${index})" id="domain-${index}" style="background: white; border: 2px solid #e2e8f0; padding: 20px; border-radius: 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#667eea'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.2)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; gap: 20px;">
                                     <div style="flex: 1;">
-                                        <div style="font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">${domain.domain}</div>
+                                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                            <div style="font-size: 18px; font-weight: 600; color: #1e293b;">${domain.domain}</div>
+                                            <div style="background: ${scoreColor}; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700;">
+                                                SEO ${seoScore}/100 - ${scoreLabel}
+                                            </div>
+                                        </div>
                                         <div style="color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 12px;">${domain.reason}</div>
+                                        ${domain.score_breakdown ? `
+                                            <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 12px;">
+                                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                                                    <div>🎯 Keywords: ${domain.score_breakdown.keyword_relevance}/40</div>
+                                                    <div>📏 Length: ${domain.score_breakdown.length}/20</div>
+                                                    <div>✨ Brand: ${domain.score_breakdown.brandability}/20</div>
+                                                    <div>⌨️ Typing: ${domain.score_breakdown.typability}/10</div>
+                                                </div>
+                                            </div>
+                                        ` : ''}
                                         <div style="display: flex; gap: 12px; align-items: center;">
                                             <span id="availability-${index}" style="color: #64748b; font-size: 13px;">
                                                 <span style="display: inline-block; width: 12px; height: 12px; border: 2px solid #64748b; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 5px;"></span>
@@ -8695,7 +8714,7 @@
                                     <div id="checkmark-${index}" style="display: none; font-size: 32px; color: #10b981;">✓</div>
                                 </div>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
 
                     <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0; margin-bottom: 20px;">
@@ -8845,10 +8864,225 @@
                 return;
             }
 
+            // NEW FLOW: Show affiliate program selection before site setup
+            showAffiliateSelection(window.currentBlogCreation.validation, window.currentBlogCreation.selectedDomain);
+        }
+
+        // Blog Creation Flow - Step 3: Affiliate Program Selection
+        function showAffiliateSelection(validation, domain) {
+            const affiliatePrograms = validation.affiliate_programs?.recommended_programs || [];
+
+            // Initialize selected programs storage
+            window.currentBlogCreation.selectedAffiliatePrograms = [];
+
+            const modalHTML = `
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 28px;">💰 Select Affiliate Programs</h2>
+                    <p style="color: #64748b; margin-bottom: 30px;">Choose which affiliate programs to apply to for <strong>${domain}</strong></p>
+
+                    ${affiliatePrograms.length > 0 ? `
+                        <div style="background: #f0fdf4; padding: 20px; border-radius: 12px; border: 2px solid #86efac; margin-bottom: 25px;">
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 24px; font-weight: 700; color: #166534;">${affiliatePrograms.length}</div>
+                                    <div style="color: #166534; font-size: 13px;">Programs Available</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 24px; font-weight: 700; color: #166534;">${validation.affiliate_programs?.monetization_difficulty || 'Medium'}</div>
+                                    <div style="color: #166534; font-size: 13px;">Difficulty</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div id="selectedCount" style="font-size: 24px; font-weight: 700; color: #166534;">0</div>
+                                    <div style="color: #166534; font-size: 13px;">Selected</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; gap: 15px; margin-bottom: 30px; max-height: 500px; overflow-y: auto; padding-right: 10px;">
+                            ${affiliatePrograms.map((program, index) => {
+                                const programJson = JSON.stringify(program).replace(/"/g, '&quot;');
+                                return `
+                                <div id="affiliate-${index}" onclick='toggleAffiliateProgram(${index}, "${programJson}")' style="background: white; border: 2px solid #e2e8f0; padding: 20px; border-radius: 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#667eea'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.2)'" onmouseout="if(!this.classList.contains('selected')) {this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'}">
+                                    <div style="display: flex; justify-content: space-between; align-items: start; gap: 20px;">
+                                        <div style="flex: 1;">
+                                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                                <div style="font-size: 18px; font-weight: 600; color: #1e293b;">${program.program_name}</div>
+                                                ${program.commission_rate ? `
+                                                    <div style="background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                                                        ${program.commission_rate} commission
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+
+                                            ${program.program_description ? `
+                                                <div style="color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 12px;">${program.program_description}</div>
+                                            ` : ''}
+
+                                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                                                ${program.cookie_duration ? `<div style="background: #f1f5f9; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #475569;">🕐 ${program.cookie_duration} cookies</div>` : ''}
+                                                ${program.avg_order_value ? `<div style="background: #f1f5f9; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #475569;">💰 $${program.avg_order_value} AOV</div>` : ''}
+                                                ${program.network ? `<div style="background: #f1f5f9; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #475569;">🏢 ${program.network}</div>` : ''}
+                                            </div>
+
+                                            ${program.why_recommended ? `
+                                                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; font-size: 13px; color: #92400e;">
+                                                    <strong>Why recommended:</strong> ${program.why_recommended}
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                        <div id="checkmark-affiliate-${index}" style="display: none; font-size: 32px; color: #10b981;">✓</div>
+                                    </div>
+                                </div>
+                            `}).join('')}
+                        </div>
+                    ` : `
+                        <div style="background: #fef3c7; padding: 30px; border-radius: 12px; border: 2px solid #fbbf24; text-align: center; margin-bottom: 30px;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+                            <h3 style="margin: 0 0 10px 0; color: #92400e;">No Affiliate Programs Found</h3>
+                            <p style="color: #92400e; margin: 0;">We couldn't find affiliate programs for this niche during validation. You can still create the site and add programs later.</p>
+                        </div>
+                    `}
+
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="closeModal(); showCreateBlogModal(${JSON.stringify(validation).replace(/'/g, '&apos;')})" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            ← Back
+                        </button>
+                        <button onclick="proceedWithAffiliateSelection()" style="flex: 2; background: #667eea; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                            ${affiliatePrograms.length > 0 ? 'Continue (Application emails will be generated)' : 'Skip and Continue'}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            showModal(modalHTML);
+        }
+
+        // Toggle affiliate program selection
+        function toggleAffiliateProgram(index, programJson) {
+            const program = JSON.parse(programJson.replace(/&quot;/g, '"'));
+            const div = document.getElementById(`affiliate-${index}`);
+            const checkmark = document.getElementById(`checkmark-affiliate-${index}`);
+            const selectedCount = document.getElementById('selectedCount');
+
+            if (div.classList.contains('selected')) {
+                // Deselect
+                div.classList.remove('selected');
+                div.style.borderColor = '#e2e8f0';
+                div.style.background = 'white';
+                checkmark.style.display = 'none';
+
+                // Remove from selected array
+                window.currentBlogCreation.selectedAffiliatePrograms =
+                    window.currentBlogCreation.selectedAffiliatePrograms.filter(p => p.program_name !== program.program_name);
+            } else {
+                // Select
+                div.classList.add('selected');
+                div.style.borderColor = '#10b981';
+                div.style.background = '#f0fdf4';
+                checkmark.style.display = 'block';
+
+                // Add to selected array
+                window.currentBlogCreation.selectedAffiliatePrograms.push(program);
+            }
+
+            // Update count
+            selectedCount.textContent = window.currentBlogCreation.selectedAffiliatePrograms.length;
+        }
+
+        // Proceed after affiliate selection
+        function proceedWithAffiliateSelection() {
+            // Continue to domain registration step
+            showDomainRegistration(window.currentBlogCreation.validation, window.currentBlogCreation.selectedDomain);
+        }
+
+        // Blog Creation Flow - Step 4: Domain Registration
+        function showDomainRegistration(validation, domain) {
+            const modalHTML = `
+                <div style="max-width: 700px; margin: 0 auto;">
+                    <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 28px;">🌐 Domain Registration</h2>
+                    <p style="color: #64748b; margin-bottom: 30px;">Register and configure <strong>${domain}</strong></p>
+
+                    <div style="background: #eff6ff; padding: 25px; border-radius: 12px; border: 2px solid #93c5fd; margin-bottom: 25px;">
+                        <h3 style="margin: 0 0 15px 0; color: #1e3a8a; font-size: 18px;">Domain Registration Options</h3>
+
+                        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                            <label style="display: flex; align-items: start; cursor: pointer;">
+                                <input type="radio" name="domainOption" value="manual" checked onchange="updateDomainOption('manual')" style="margin-top: 4px; margin-right: 12px;">
+                                <div>
+                                    <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">I'll register it manually</div>
+                                    <div style="color: #64748b; font-size: 14px;">Register domain yourself via Namecheap, GoDaddy, etc. and configure DNS to point to Siteground</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                            <label style="display: flex; align-items: start; cursor: pointer;">
+                                <input type="radio" name="domainOption" value="already-owned" onchange="updateDomainOption('already-owned')" style="margin-top: 4px; margin-right: 12px;">
+                                <div>
+                                    <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">I already own this domain</div>
+                                    <div style="color: #64748b; font-size: 14px;">Skip registration and configure DNS to point to Siteground</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div id="manualInstructions" style="background: #fef3c7; padding: 20px; border-radius: 8px; border: 2px solid #fbbf24;">
+                            <h4 style="margin: 0 0 10px 0; color: #92400e; font-size: 15px;">Manual Registration Steps:</h4>
+                            <ol style="margin: 0; padding-left: 20px; color: #92400e; font-size: 14px; line-height: 1.8;">
+                                <li>Register ${domain} at Namecheap or GoDaddy (~$12.99/year)</li>
+                                <li>In DNS settings, add A record pointing to Siteground IP</li>
+                                <li>Wait 24-48 hours for DNS propagation</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="showAffiliateSelection(${JSON.stringify(validation).replace(/'/g, '&apos;')}, '${domain}')" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            ← Back
+                        </button>
+                        <button onclick="proceedToSiteSetup()" style="flex: 2; background: #667eea; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                            Continue to Site Setup →
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            showModal(modalHTML);
+        }
+
+        // Update domain registration option
+        function updateDomainOption(option) {
+            const instructions = document.getElementById('manualInstructions');
+            if (option === 'already-owned') {
+                instructions.innerHTML = `
+                    <h4 style="margin: 0 0 10px 0; color: #166534; font-size: 15px;">DNS Configuration:</h4>
+                    <ol style="margin: 0; padding-left: 20px; color: #166534; font-size: 14px; line-height: 1.8;">
+                        <li>Log in to your domain registrar</li>
+                        <li>Add A record pointing to Siteground IP (will be provided after setup)</li>
+                        <li>Wait 24-48 hours for DNS propagation</li>
+                    </ol>
+                `;
+                instructions.style.background = '#f0fdf4';
+                instructions.style.borderColor = '#86efac';
+            } else {
+                instructions.innerHTML = `
+                    <h4 style="margin: 0 0 10px 0; color: #92400e; font-size: 15px;">Manual Registration Steps:</h4>
+                    <ol style="margin: 0; padding-left: 20px; color: #92400e; font-size: 14px; line-height: 1.8;">
+                        <li>Register ${window.currentBlogCreation.selectedDomain} at Namecheap or GoDaddy (~$12.99/year)</li>
+                        <li>In DNS settings, add A record pointing to Siteground IP</li>
+                        <li>Wait 24-48 hours for DNS propagation</li>
+                    </ol>
+                `;
+                instructions.style.background = '#fef3c7';
+                instructions.style.borderColor = '#fbbf24';
+            }
+        }
+
+        // Proceed to site setup after domain decision
+        function proceedToSiteSetup() {
             showSiteSetupOptions(window.currentBlogCreation.validation, window.currentBlogCreation.selectedDomain);
         }
 
-        // Blog Creation Flow - Step 3: Show Site Setup Options
+        // Blog Creation Flow - Step 5: Show Site Setup Options
         function showSiteSetupOptions(validation, domain) {
             const modalHTML = `
                 <div style="max-width: 700px; margin: 0 auto;">
@@ -8915,7 +9149,7 @@
             showModal(modalHTML);
         }
 
-        // Blog Creation Flow - Step 4: Trigger GitHub Actions Deployment
+        // Blog Creation Flow - Step 6: Trigger GitHub Actions Deployment
         async function createSitegroundSite() {
             const domain = window.currentBlogCreation.selectedDomain;
             const validation = window.currentBlogCreation.validation;
@@ -8929,9 +9163,194 @@
                 return;
             }
 
+            // If affiliate programs selected, generate emails first
+            if (autoAffiliate && window.currentBlogCreation.selectedAffiliatePrograms?.length > 0) {
+                await generateAndShowAffiliateEmails();
+                return; // Email modal will have a continue button
+            }
+
+            // Otherwise proceed directly to deployment
+            triggerWordPressDeployment();
+        }
+
+        // Generate affiliate application emails
+        async function generateAndShowAffiliateEmails() {
+            const validation = window.currentBlogCreation.validation;
+            const domain = window.currentBlogCreation.selectedDomain;
+            const selectedPrograms = window.currentBlogCreation.selectedAffiliatePrograms;
+
+            // Show generating progress
+            showModal(`
+                <div style="max-width: 600px; margin: 0 auto; text-align: center;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">✍️</div>
+                    <h2 style="margin: 0 0 15px 0; color: #1e293b;">Generating Application Emails...</h2>
+                    <p style="color: #64748b; margin-bottom: 30px;">Creating personalized emails for ${selectedPrograms.length} affiliate programs</p>
+                    <div style="display: inline-block; width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                </div>
+            `);
+
+            try {
+                const response = await fetch('/api/generate-affiliate-emails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        niche_keyword: validation.niche_keyword,
+                        domain: domain,
+                        programs: selectedPrograms,
+                        site_description: validation.strategic_insights
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Email generation failed');
+                }
+
+                // Show generated emails
+                showAffiliateEmailsModal(result.emails);
+
+            } catch (error) {
+                console.error('Email generation error:', error);
+                showModal(`
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">⚠️</div>
+                        <h2 style="color: #991b1b; margin: 0 0 15px 0;">Email Generation Failed</h2>
+                        <p style="color: #dc2626; margin-bottom: 30px;">${error.message}</p>
+                        <div style="display: flex; gap: 12px; justify-content: center;">
+                            <button onclick="closeModal(); showSiteSetupOptions(window.currentBlogCreation.validation, window.currentBlogCreation.selectedDomain)" style="background: #f1f5f9; color: #334155; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                ← Back
+                            </button>
+                            <button onclick="closeModal(); triggerWordPressDeployment()" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                Skip Emails & Deploy Site
+                            </button>
+                        </div>
+                    </div>
+                `);
+            }
+        }
+
+        // Show affiliate emails modal with download option
+        function showAffiliateEmailsModal(emails) {
+            const modalHTML = `
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 28px;">📧 Affiliate Application Emails Ready</h2>
+                    <p style="color: #64748b; margin-bottom: 30px;">Review and send these personalized emails to apply for affiliate programs</p>
+
+                    <div style="max-height: 500px; overflow-y: auto; padding-right: 10px; margin-bottom: 25px;">
+                        ${emails.map((email, index) => `
+                            <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
+                                    <h3 style="margin: 0; color: #1e293b; font-size: 18px;">${email.program_name}</h3>
+                                    <button onclick="copyEmailToClipboard(${index})" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                                        📋 Copy Email
+                                    </button>
+                                </div>
+
+                                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 12px;">
+                                    <div style="margin-bottom: 10px;">
+                                        <strong style="color: #475569;">To:</strong>
+                                        <span style="color: #1e293b;">${email.recipient || 'See program website for contact'}</span>
+                                    </div>
+                                    <div style="margin-bottom: 10px;">
+                                        <strong style="color: #475569;">Subject:</strong>
+                                        <span style="color: #1e293b;">${email.subject}</span>
+                                    </div>
+                                </div>
+
+                                <div id="email-body-${index}" style="background: #ffffff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.8; white-space: pre-wrap; color: #1e293b;">${email.body}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="background: #f0fdf4; padding: 20px; border-radius: 12px; border: 2px solid #86efac; margin-bottom: 25px;">
+                        <h4 style="margin: 0 0 10px 0; color: #166534;">📌 Next Steps:</h4>
+                        <ol style="margin: 0; padding-left: 20px; color: #166534; line-height: 1.8;">
+                            <li>Copy each email using the "Copy Email" button</li>
+                            <li>Send to the respective affiliate programs</li>
+                            <li>Wait for approval (typically 1-7 days)</li>
+                            <li>Once approved, add affiliate links to your articles</li>
+                        </ol>
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="downloadAffiliateEmailsFile()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            💾 Download All Emails
+                        </button>
+                        <button onclick="closeModal(); triggerWordPressDeployment()" style="flex: 2; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
+                            Continue to WordPress Deployment →
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            showModal(modalHTML);
+
+            // Store emails globally for download function
+            window.currentBlogCreation.affiliateEmails = emails;
+        }
+
+        // Copy individual email to clipboard
+        function copyEmailToClipboard(index) {
+            const emails = window.currentBlogCreation.affiliateEmails;
+            const email = emails[index];
+            const fullEmail = `To: ${email.recipient || 'See program website'}\nSubject: ${email.subject}\n\n${email.body}`;
+
+            navigator.clipboard.writeText(fullEmail).then(() => {
+                // Show success feedback
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.innerHTML = '✓ Copied!';
+                button.style.background = '#10b981';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.style.background = '#667eea';
+                }, 2000);
+            });
+        }
+
+        // Download all emails as a text file
+        function downloadAffiliateEmailsFile() {
+            const emails = window.currentBlogCreation.affiliateEmails;
+            const domain = window.currentBlogCreation.selectedDomain;
+
+            let content = `AFFILIATE PROGRAM APPLICATION EMAILS\nDomain: ${domain}\nGenerated: ${new Date().toLocaleDateString()}\n\n`;
+            content += '='.repeat(80) + '\n\n';
+
+            emails.forEach((email, index) => {
+                content += `${index + 1}. ${email.program_name}\n`;
+                content += '-'.repeat(80) + '\n';
+                content += `To: ${email.recipient || 'See program website for contact'}\n`;
+                content += `Subject: ${email.subject}\n\n`;
+                content += `${email.body}\n\n`;
+                content += '='.repeat(80) + '\n\n';
+            });
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `affiliate-emails-${domain}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Trigger WordPress deployment via GitHub Actions
+        function triggerWordPressDeployment() {
+            const domain = window.currentBlogCreation.selectedDomain;
+            const validation = window.currentBlogCreation.validation;
+            const adminEmail = document.getElementById('adminEmail')?.value || currentUser?.email;
+            const theme = document.getElementById('themeSelect')?.value || 'generatepress';
+            const contentCount = parseInt(document.getElementById('contentCount')?.value || 10);
+
             // Show deployment progress modal
             showGitHubDeploymentProgress(domain);
 
+            performDeployment(domain, validation, adminEmail, theme, contentCount);
+        }
+
+        // Perform the actual deployment
+        async function performDeployment(domain, validation, adminEmail, theme, contentCount) {
             try {
                 // Trigger GitHub Actions workflow
                 const response = await fetch('/api/trigger-github-deployment', {
@@ -8944,7 +9363,8 @@
                         admin_email: adminEmail,
                         theme: theme,
                         content_count: contentCount,
-                        auto_affiliate: autoAffiliate,
+                        auto_affiliate: window.currentBlogCreation.selectedAffiliatePrograms?.length > 0,
+                        selected_programs: window.currentBlogCreation.selectedAffiliatePrograms || [],
                         niche_keyword: validation.niche_keyword
                     })
                 });
