@@ -8175,6 +8175,16 @@
             }
         }
 
+        // Close niche research and return to main
+        function closeNicheResearch() {
+            const nicheResearch = document.getElementById('nicheResearch');
+            if (nicheResearch) {
+                nicheResearch.style.display = 'none';
+            }
+            // Reset main view
+            document.getElementById('results').innerHTML = '';
+        }
+
         async function displayNicheResearch() {
             const nicheResearch = document.getElementById('nicheResearch');
 
@@ -8198,11 +8208,16 @@
 
                     <!-- Main Content -->
                     <div>
-                        <!-- Header -->
+                        <!-- Header with Back Button -->
                         <div style="margin-bottom: 40px;">
-                            <h1 style="font-size: 32px; color: #1e293b; margin: 0 0 10px 0; font-weight: 700;">
-                                🔍 Niche Research & Validation
-                            </h1>
+                            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
+                                <button onclick="closeNicheResearch()" style="background: #f1f5f9; color: #334155; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                    ← Back
+                                </button>
+                                <h1 style="font-size: 32px; color: #1e293b; margin: 0; font-weight: 700;">
+                                    🔍 Niche Research & Validation
+                                </h1>
+                            </div>
                             <p style="color: #64748b; font-size: 16px; margin: 0;">
                                 Validate niches with REAL search data before investing time and money. Make data-driven decisions for your next affiliate site.
                             </p>
@@ -10002,10 +10017,13 @@
 
                     <!-- Action Buttons -->
                     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <button onclick="document.getElementById('nicheResearchInput').value = ''; document.getElementById('nicheResearchResults').innerHTML = '';" style="flex: 1; min-width: 200px; background: #f1f5f9; color: #334155; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px;">
+                        <button onclick="document.getElementById('nicheResearchInput').value = ''; document.getElementById('nicheResearchResults').innerHTML = '';" style="flex: 1; min-width: 180px; background: #f1f5f9; color: #334155; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
                             Validate Another Niche
                         </button>
-                        <button onclick='startBlogCreationFlow(${JSON.stringify(validation).replace(/'/g, "&apos;")})' style="flex: 1; min-width: 200px; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
+                        <button onclick="saveAndExitNicheValidation()" style="flex: 1; min-width: 180px; background: #667eea; color: white; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                            💾 Save & Exit
+                        </button>
+                        <button onclick='startBlogCreationFlow(${JSON.stringify(validation).replace(/'/g, "&apos;")})' style="flex: 1; min-width: 180px; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(16, 163, 127, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 163, 127, 0.3)'">
                             ${validation.score >= 60 ? '✅ Create Blog for This Niche' : '📝 Create Blog Anyway'}
                         </button>
                     </div>
@@ -10013,6 +10031,21 @@
             `;
 
             resultsDiv.innerHTML = resultsHTML;
+        }
+
+        // Save and exit niche validation
+        function saveAndExitNicheValidation() {
+            showModal(`
+                <div style="max-width: 500px; margin: 0 auto; text-align: center; padding: 40px;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">✓</div>
+                    <h2 style="margin: 0 0 15px 0; color: #10b981;">Validation Saved!</h2>
+                    <p style="color: #64748b; margin-bottom: 30px;">Your niche validation has been saved. You can access it anytime from the "Past Validations" sidebar.</p>
+                    <button onclick="closeModal(); closeNicheResearch()" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        Return to Dashboard
+                    </button>
+                </div>
+            `);
+        }
         }
 
         // Load validation history (stub for Phase 1B.7)
@@ -15369,6 +15402,9 @@ Return ONLY the JSON array, no other text.`;
 
         // Connect Google Analytics via OAuth
         async function connectGoogleAnalytics() {
+            // Remove any existing event listener first to prevent duplicates
+            window.removeEventListener('message', handleOAuthMessage);
+
             // Generate a temporary blog ID if we're adding a new blog
             // Or use the current editing blog ID
             const tempBlogId = 'temp_' + Date.now();
@@ -15398,7 +15434,7 @@ Return ONLY the JSON array, no other text.`;
 
             console.log('Popup opened successfully, listening for OAuth callback...');
 
-            // Listen for OAuth callback message
+            // Add fresh event listener for OAuth callback
             window.addEventListener('message', handleOAuthMessage);
         }
 
@@ -15515,14 +15551,29 @@ Return ONLY the JSON array, no other text.`;
             currentGATokens = null;
             currentOAuthBlogId = null;
 
+            // Remove any existing event listeners
+            window.removeEventListener('message', handleOAuthMessage);
+
             // Reset UI
             document.getElementById('gaConnectedStatus').style.display = 'none';
             document.getElementById('gaPropertySelector').style.display = 'none';
             document.getElementById('gaConnectSection').style.display = 'block';
-            document.getElementById('gaPropertyDropdown').innerHTML = '<option value="">Loading properties...</option>';
+            document.getElementById('gaPropertyDropdown').innerHTML = '<option value="">Select a property...</option>';
             document.getElementById('gaPropertyInfo').textContent = '';
 
-            console.log('Disconnected Google Analytics');
+            console.log('Disconnected Google Analytics - ready to reconnect');
+
+            // Show reconnection prompt
+            showModal(`
+                <div style="max-width: 500px; margin: 0 auto; text-align: center; padding: 40px;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">✓</div>
+                    <h2 style="margin: 0 0 15px 0; color: #10b981;">Google Analytics Disconnected</h2>
+                    <p style="color: #64748b; margin-bottom: 30px;">You can reconnect anytime using the "Connect Google Analytics" button.</p>
+                    <button onclick="closeModal()" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        Got it
+                    </button>
+                </div>
+            `);
         }
 
         // ===== EDIT MODAL OAUTH FUNCTIONS =====
