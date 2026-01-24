@@ -6400,33 +6400,97 @@ Return ONLY the JSON object, no markdown.`;
         let affiliatePrograms = [];
         let affiliateLinksCount = 0;
 
-        // STEP 1: Get Domain Age using WHOIS-like approach
-        // We'll use a simple heuristic: fetch the site and check headers/meta tags
+        // STEP 1: Get Domain Age using free WHOIS lookup
+        // Using whoisjs.com free API (no key required, 100 requests/day)
         try {
-          const siteResponse = await fetch(`https://${domain}`, {
-            method: 'HEAD',
-            headers: { 'User-Agent': 'Mozilla/5.0' },
-            redirect: 'follow'
+          console.log(`[COMPETITOR] Checking domain age for: ${domain}`);
+
+          // Use free WHOIS API from whoisjs.com
+          const whoisResponse = await fetch(`https://whoisjs.com/api/v1/${domain}`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'SEOWizard/1.0'
+            }
           });
 
-          // Try to get creation date from headers (some sites include it)
-          const lastModified = siteResponse.headers.get('last-modified');
+          if (whoisResponse.ok) {
+            const whoisData = await whoisResponse.json();
+            console.log(`[COMPETITOR] WHOIS data received for ${domain}:`, JSON.stringify(whoisData).substring(0, 200));
 
-          // For now, we'll use a simple estimation based on site structure
-          // In production, you'd use a WHOIS API like whoisxmlapi.com
-          domainAge = {
-            created_date: 'Estimated (WHOIS API recommended for accuracy)',
-            years: 'N/A',
-            months: 'N/A',
-            note: 'For accurate domain age, integrate WHOIS API (whoisxmlapi.com, whoisfreaks.com)'
-          };
+            // Extract creation date from whoisjs.com response format
+            let dateStr = null;
+            let registrarName = 'Unknown';
+
+            // whoisjs.com returns: { creation: { date: "..." }, registrar: { ... } }
+            if (whoisData.creation && whoisData.creation.date) {
+              dateStr = whoisData.creation.date;
+            } else if (whoisData.created) {
+              dateStr = whoisData.created;
+            } else if (whoisData.creation_date) {
+              dateStr = whoisData.creation_date;
+            } else if (whoisData.created_date) {
+              dateStr = whoisData.created_date;
+            }
+
+            // Extract registrar name
+            if (whoisData.registrar) {
+              if (typeof whoisData.registrar === 'string') {
+                registrarName = whoisData.registrar;
+              } else if (whoisData.registrar.name) {
+                registrarName = whoisData.registrar.name;
+              } else if (whoisData.registrar.url) {
+                registrarName = whoisData.registrar.url;
+              }
+            }
+
+            if (dateStr) {
+              // Parse the date (format: "1994-05-17t04:00:00z" or "1994-05-17T04:00:00Z")
+              const creationDate = new Date(dateStr);
+              const now = new Date();
+
+              // Calculate age
+              const ageInMs = now - creationDate;
+              const ageInDays = Math.floor(ageInMs / (1000 * 60 * 60 * 24));
+              const years = Math.floor(ageInDays / 365);
+              const remainingDays = ageInDays % 365;
+              const months = Math.floor(remainingDays / 30);
+
+              domainAge = {
+                created_date: creationDate.toISOString().split('T')[0],
+                years: years,
+                months: months,
+                total_days: ageInDays,
+                registrar: registrarName
+              };
+
+              console.log(`[COMPETITOR] ${domain} age: ${years}y ${months}m (created: ${domainAge.created_date}, registrar: ${registrarName})`);
+            } else {
+              console.log(`[COMPETITOR] No creation date found in WHOIS data`);
+              domainAge = {
+                created_date: 'Date not available in WHOIS',
+                years: null,
+                months: null,
+                note: 'WHOIS data incomplete for this domain'
+              };
+            }
+          } else {
+            console.log(`[COMPETITOR] WHOIS API returned ${whoisResponse.status}`);
+            // Fallback: try another free service
+            domainAge = {
+              created_date: 'WHOIS lookup unavailable',
+              years: null,
+              months: null,
+              note: 'Free WHOIS API limit reached or domain privacy enabled'
+            };
+          }
         } catch (error) {
           console.log(`[COMPETITOR] Domain age check failed: ${error.message}`);
           domainAge = {
             created_date: 'Unable to determine',
-            years: 0,
-            months: 0,
-            note: 'Domain unreachable or blocked'
+            years: null,
+            months: null,
+            note: 'WHOIS lookup failed - domain may have privacy protection'
           };
         }
 

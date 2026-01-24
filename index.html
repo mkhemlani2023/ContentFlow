@@ -10141,14 +10141,26 @@
                 if (data.success) {
                     // Update domain age
                     if (ageSpan && data.domain_age) {
-                        const years = data.domain_age.years || 0;
-                        const months = data.domain_age.months || 0;
-                        const ageText = years > 0
-                            ? `${years} year${years > 1 ? 's' : ''}${months > 0 ? `, ${months} month${months > 1 ? 's' : ''}` : ''} old`
-                            : months > 0
-                            ? `${months} month${months > 1 ? 's' : ''} old`
-                            : 'Less than 1 month old';
-                        ageSpan.innerHTML = `<strong style="color: #059669;">${ageText}</strong> (Registered: ${data.domain_age.created_date || 'Unknown'})`;
+                        const years = data.domain_age.years;
+                        const months = data.domain_age.months;
+                        const createdDate = data.domain_age.created_date;
+                        const note = data.domain_age.note;
+
+                        if (years !== null && years !== undefined) {
+                            // We have real age data
+                            const ageText = years > 0
+                                ? `${years} year${years > 1 ? 's' : ''}${months > 0 ? `, ${months} month${months > 1 ? 's' : ''}` : ''} old`
+                                : months > 0
+                                ? `${months} month${months > 1 ? 's' : ''} old`
+                                : 'Less than 1 month old';
+
+                            const registrarInfo = data.domain_age.registrar ? ` | Registrar: ${data.domain_age.registrar}` : '';
+                            ageSpan.innerHTML = `<strong style="color: #059669;">${ageText}</strong><br><span style="color: #64748b; font-size: 11px;">Registered: ${createdDate}${registrarInfo}</span>`;
+                        } else {
+                            // No age data available
+                            const reasonColor = createdDate.includes('unavailable') ? '#f59e0b' : '#dc2626';
+                            ageSpan.innerHTML = `<span style="color: ${reasonColor};">${createdDate}</span>${note ? `<br><span style="color: #64748b; font-size: 11px;">${note}</span>` : ''}`;
+                        }
                     } else if (ageSpan) {
                         ageSpan.innerHTML = '<span style="color: #dc2626;">Unable to determine</span>';
                     }
