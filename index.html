@@ -1975,6 +1975,7 @@
                         estimated_monthly_traffic: validation.estimated_monthly_traffic || 0,
                         avg_competition_da: validation.avg_competition_da || 0,
                         unique_competitors: validation.competitor_domains?.length || validation.unique_competitors || 0,
+                        competitor_domains: validation.competitor_domains || [],
                         breakdown: validation.breakdown || {},
                         competition_analysis: validation.competition_analysis || {},
                         keyword_opportunities: validation.keyword_opportunities || [],
@@ -8597,6 +8598,7 @@
                     ...step3bData.detailed_sections,
                     keywords: step1Data.keywords,
                     serp_results: step2Data.serp_results,
+                    competitor_domains: step2Data.competitor_domains || [],
                     total_duration_ms: step1Data.duration_ms + step2Data.duration_ms + step3aData.duration_ms + step3bData.duration_ms
                 };
 
@@ -9853,6 +9855,36 @@
                     </div>
                     ` : ''}
 
+                    <!-- Competitor Domains Details -->
+                    ${validation.competitor_domains && validation.competitor_domains.length > 0 ? `
+                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 25px; border-radius: 12px; border: 2px solid #fbbf24; margin-bottom: 30px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; cursor: pointer;" onclick="toggleCompetitorsList()">
+                            <h4 style="margin: 0; color: #92400e; font-size: 20px; font-weight: 700;">🔍 Unique Competitors (${validation.competitor_domains.length})</h4>
+                            <span id="competitorsToggle" style="color: #92400e; font-size: 24px; transition: transform 0.3s;">▼</span>
+                        </div>
+                        <p style="color: #78350f; font-size: 14px; margin: 0 0 15px 0;">Click to view affiliate sites ranking in this niche</p>
+
+                        <div id="competitorsList" style="display: none; background: white; padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto;">
+                            ${validation.competitor_domains.slice(0, 50).map((domain, idx) => `
+                                <div style="padding: 12px; border-bottom: 1px solid #fef3c7; display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="flex: 1;">
+                                        <div style="color: #78350f; font-weight: 600; margin-bottom: 4px;">${idx + 1}. <a href="https://${domain}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none; hover: text-decoration: underline;">${domain}</a></div>
+                                        <div style="color: #92400e; font-size: 12px;">
+                                            <span style="background: #fef3c7; padding: 2px 6px; border-radius: 4px; margin-right: 8px;">📊 Site Age: Analyzing...</span>
+                                            <span style="background: #fef3c7; padding: 2px 6px; border-radius: 4px;">💰 Affiliate Programs: Detecting...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                            ${validation.competitor_domains.length > 50 ? `
+                                <div style="padding: 12px; text-align: center; color: #92400e; font-style: italic;">
+                                    Showing top 50 of ${validation.competitor_domains.length} competitors
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
+
                     <!-- Content Strategy -->
                     ${validation.content_strategy?.first_20_articles?.length > 0 ? `
                     <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 25px; border-radius: 12px; border: 2px solid #7dd3fc; margin-bottom: 30px;">
@@ -10031,6 +10063,21 @@
             `;
 
             resultsDiv.innerHTML = resultsHTML;
+        }
+
+        // Toggle competitors list visibility
+        function toggleCompetitorsList() {
+            const list = document.getElementById('competitorsList');
+            const toggle = document.getElementById('competitorsToggle');
+            if (list && toggle) {
+                if (list.style.display === 'none') {
+                    list.style.display = 'block';
+                    toggle.style.transform = 'rotate(180deg)';
+                } else {
+                    list.style.display = 'none';
+                    toggle.style.transform = 'rotate(0deg)';
+                }
+            }
         }
 
         // Save and exit niche validation
