@@ -6377,6 +6377,136 @@ Return ONLY the JSON object, no markdown.`;
       }
     }
 
+    // Competitor Analysis endpoint - Analyze domain age and affiliate programs
+    if (path === '/api/analyze-competitor' && method === 'POST') {
+      const { domain } = body;
+
+      if (!domain) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Domain is required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[COMPETITOR ANALYSIS] Analyzing: ${domain}`);
+
+        // Initialize results
+        let domainAge = null;
+        let affiliatePrograms = [];
+        let affiliateLinksCount = 0;
+
+        // STEP 1: Get Domain Age using WHOIS-like approach
+        // We'll use a simple heuristic: fetch the site and check headers/meta tags
+        try {
+          const siteResponse = await fetch(`https://${domain}`, {
+            method: 'HEAD',
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            redirect: 'follow'
+          });
+
+          // Try to get creation date from headers (some sites include it)
+          const lastModified = siteResponse.headers.get('last-modified');
+
+          // For now, we'll use a simple estimation based on site structure
+          // In production, you'd use a WHOIS API like whoisxmlapi.com
+          domainAge = {
+            created_date: 'Estimated (WHOIS API recommended for accuracy)',
+            years: 'N/A',
+            months: 'N/A',
+            note: 'For accurate domain age, integrate WHOIS API (whoisxmlapi.com, whoisfreaks.com)'
+          };
+        } catch (error) {
+          console.log(`[COMPETITOR] Domain age check failed: ${error.message}`);
+          domainAge = {
+            created_date: 'Unable to determine',
+            years: 0,
+            months: 0,
+            note: 'Domain unreachable or blocked'
+          };
+        }
+
+        // STEP 2: Detect Affiliate Programs
+        // We'll use pattern matching on the domain and common affiliate networks
+        try {
+          const pageResponse = await fetch(`https://${domain}`, {
+            method: 'GET',
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            redirect: 'follow'
+          });
+
+          const html = await pageResponse.text();
+
+          // Common affiliate network patterns
+          const affiliatePatterns = [
+            { name: 'Amazon Associates', pattern: /amazon\.com\/.*?tag=|amzn\.to/i },
+            { name: 'ShareASale', pattern: /shareasale\.com|shareAsale/i },
+            { name: 'CJ Affiliate', pattern: /anrdoezrs\.net|dpbolvw\.net|jdoqocy\.com|kqzyfj\.com|tkqlhce\.com/i },
+            { name: 'ClickBank', pattern: /clickbank\.net|hop\.clickbank/i },
+            { name: 'Rakuten', pattern: /linksynergy\.com|rakuten\.com/i },
+            { name: 'Impact', pattern: /impact\.com|impactradius/i },
+            { name: 'Awin', pattern: /awin1\.com|zanox/i },
+            { name: 'FlexOffers', pattern: /flexoffers\.com|flexlinks/i },
+            { name: 'PartnerStack', pattern: /partnerstack\.com/i },
+            { name: 'Refersion', pattern: /refersion\.com/i },
+            { name: 'Commission Junction', pattern: /cj\.com/i },
+            { name: 'Skimlinks', pattern: /skimlinks\.com|skimresources/i },
+            { name: 'VigLink', pattern: /viglink\.com/i },
+            { name: 'RewardStyle', pattern: /rstyle\.me|shopstyle/i },
+            { name: 'Pepperjam', pattern: /pepperjam\.com|pjatr/i },
+            { name: 'eBay Partner', pattern: /ebay\..*?campid=|rover\.ebay/i },
+            { name: 'Walmart Affiliate', pattern: /walmart\.com\/.*?affcampaign/i }
+          ];
+
+          const detectedPrograms = new Set();
+          let linkCount = 0;
+
+          for (const { name, pattern } of affiliatePatterns) {
+            const matches = html.match(new RegExp(pattern, 'g'));
+            if (matches && matches.length > 0) {
+              detectedPrograms.add(name);
+              linkCount += matches.length;
+            }
+          }
+
+          affiliatePrograms = Array.from(detectedPrograms);
+          affiliateLinksCount = linkCount;
+
+        } catch (error) {
+          console.log(`[COMPETITOR] Affiliate detection failed: ${error.message}`);
+          // Don't fail the whole request, just return empty results
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            domain,
+            domain_age: domainAge,
+            affiliate_programs: affiliatePrograms,
+            affiliate_links_count: affiliateLinksCount,
+            note: 'For production: Use WHOIS API for accurate domain age, consider using web scraping service for better affiliate detection'
+          })
+        };
+
+      } catch (error) {
+        console.error('[COMPETITOR ANALYSIS ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: error.message
+          })
+        };
+      }
+    }
+
     // Niche Validation endpoint - AI-powered niche validation with real keyword research
     if (path === '/api/validate-niche' && method === 'POST') {
       const { niche_keyword } = body;
@@ -6818,7 +6948,8 @@ Return ONLY the JSON object, no markdown.`;
           'POST /api/validate-niche',
           'POST /api/validate-niche-step1',
           'POST /api/validate-niche-step2',
-          'POST /api/validate-niche-step3'
+          'POST /api/validate-niche-step3',
+          'POST /api/analyze-competitor'
         ]
       })
     };

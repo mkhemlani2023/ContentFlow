@@ -9856,34 +9856,56 @@
                     ` : ''}
 
                     <!-- Competitor Domains Details -->
-                    ${validation.competitor_domains && validation.competitor_domains.length > 0 ? `
+                    ${(() => {
+                        if (!validation.competitor_domains || validation.competitor_domains.length === 0) return '';
+
+                        // Filter out popular sites (Reddit, YouTube, NYTimes, etc.)
+                        const popularSites = ['reddit.com', 'youtube.com', 'nytimes.com', 'wikipedia.org', 'forbes.com', 'cnn.com', 'bbc.com', 'bbc.co.uk', 'washingtonpost.com', 'theguardian.com', 'facebook.com', 'twitter.com', 'x.com', 'linkedin.com', 'instagram.com', 'pinterest.com', 'quora.com', 'medium.com', 'huffpost.com', 'buzzfeed.com', 'vice.com', 'vox.com', 'slate.com', 'businessinsider.com', 'wsj.com', 'bloomberg.com', 'cnbc.com', 'usatoday.com', 'time.com', 'newsweek.com', 'npr.org', 'pbs.org', 'espn.com', 'cnet.com', 'techcrunch.com', 'wired.com', 'theverge.com', 'engadget.com', 'ign.com', 'gamespot.com', 'imdb.com', 'rottentomatoes.com', 'goodreads.com', 'webmd.com', 'mayoclinic.org', 'healthline.com', 'medicalnewstoday.com', 'nih.gov', 'cdc.gov', 'who.int', 'amazon.com', 'ebay.com', 'walmart.com', 'target.com', 'bestbuy.com', 'homedepot.com', 'lowes.com', 'etsy.com'];
+
+                        const filteredDomains = validation.competitor_domains.filter(domain => {
+                            return !popularSites.some(popular => domain.includes(popular));
+                        });
+
+                        if (filteredDomains.length === 0) return '';
+
+                        return `
                     <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 25px; border-radius: 12px; border: 2px solid #fbbf24; margin-bottom: 30px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; cursor: pointer;" onclick="toggleCompetitorsList()">
-                            <h4 style="margin: 0; color: #92400e; font-size: 20px; font-weight: 700;">🔍 Unique Competitors (${validation.competitor_domains.length})</h4>
+                            <h4 style="margin: 0; color: #92400e; font-size: 20px; font-weight: 700;">🔍 Affiliate Competitor Sites (${filteredDomains.length})</h4>
                             <span id="competitorsToggle" style="color: #92400e; font-size: 24px; transition: transform 0.3s;">▼</span>
                         </div>
-                        <p style="color: #78350f; font-size: 14px; margin: 0 0 15px 0;">Click to view affiliate sites ranking in this niche</p>
+                        <p style="color: #78350f; font-size: 14px; margin: 0 0 15px 0;">Click on any site to analyze its age and affiliate programs</p>
 
                         <div id="competitorsList" style="display: none; background: white; padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto;">
-                            ${validation.competitor_domains.slice(0, 50).map((domain, idx) => `
-                                <div style="padding: 12px; border-bottom: 1px solid #fef3c7; display: flex; justify-content: space-between; align-items: center;">
-                                    <div style="flex: 1;">
-                                        <div style="color: #78350f; font-weight: 600; margin-bottom: 4px;">${idx + 1}. <a href="https://${domain}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: none; hover: text-decoration: underline;">${domain}</a></div>
-                                        <div style="color: #92400e; font-size: 12px;">
-                                            <span style="background: #fef3c7; padding: 2px 6px; border-radius: 4px; margin-right: 8px;">📊 Site Age: Analyzing...</span>
-                                            <span style="background: #fef3c7; padding: 2px 6px; border-radius: 4px;">💰 Affiliate Programs: Detecting...</span>
+                            ${filteredDomains.slice(0, 40).map((domain, idx) => `
+                                <div id="competitor-${idx}" style="padding: 12px; border-bottom: 1px solid #fef3c7; cursor: pointer; transition: background 0.2s;" onclick="analyzeCompetitor('${domain}', ${idx})" onmouseover="this.style.background='#fef3c7'" onmouseout="this.style.background='white'">
+                                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                                        <div style="flex: 1;">
+                                            <div style="color: #78350f; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                                                <span>${idx + 1}.</span>
+                                                <a href="https://${domain}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color: #2563eb; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${domain}</a>
+                                                <span style="background: #e0f2fe; color: #075985; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">CLICK TO ANALYZE</span>
+                                            </div>
+                                            <div id="competitor-details-${idx}" style="color: #92400e; font-size: 12px; margin-top: 8px; display: none;">
+                                                <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border-left: 3px solid #fbbf24;">
+                                                    <div style="margin-bottom: 6px;">📊 <strong>Site Age:</strong> <span id="age-${idx}">Analyzing...</span></div>
+                                                    <div style="margin-bottom: 6px;">💰 <strong>Affiliate Programs:</strong> <span id="programs-${idx}">Detecting...</span></div>
+                                                    <div>🔗 <strong>Affiliate Links Found:</strong> <span id="links-${idx}">Scanning...</span></div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             `).join('')}
-                            ${validation.competitor_domains.length > 50 ? `
+                            ${filteredDomains.length > 40 ? `
                                 <div style="padding: 12px; text-align: center; color: #92400e; font-style: italic;">
-                                    Showing top 50 of ${validation.competitor_domains.length} competitors
+                                    Showing top 40 affiliate sites of ${filteredDomains.length} total (filtered out ${validation.competitor_domains.length - filteredDomains.length} popular news/social sites)
                                 </div>
                             ` : ''}
                         </div>
                     </div>
-                    ` : ''}
+                        `;
+                    })()}
 
                     <!-- Content Strategy -->
                     ${validation.content_strategy?.first_20_articles?.length > 0 ? `
@@ -10077,6 +10099,87 @@
                     list.style.display = 'none';
                     toggle.style.transform = 'rotate(0deg)';
                 }
+            }
+        }
+
+        // Analyze competitor on click
+        async function analyzeCompetitor(domain, index) {
+            const detailsDiv = document.getElementById(`competitor-details-${index}`);
+            const ageSpan = document.getElementById(`age-${index}`);
+            const programsSpan = document.getElementById(`programs-${index}`);
+            const linksSpan = document.getElementById(`links-${index}`);
+
+            if (!detailsDiv) return;
+
+            // Toggle visibility
+            if (detailsDiv.style.display === 'block') {
+                detailsDiv.style.display = 'none';
+                return;
+            }
+
+            detailsDiv.style.display = 'block';
+
+            // Reset to loading state
+            if (ageSpan) ageSpan.innerHTML = '<span style="display: inline-block; width: 10px; height: 10px; border: 2px solid #92400e; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></span> Analyzing...';
+            if (programsSpan) programsSpan.innerHTML = '<span style="display: inline-block; width: 10px; height: 10px; border: 2px solid #92400e; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></span> Detecting...';
+            if (linksSpan) linksSpan.innerHTML = '<span style="display: inline-block; width: 10px; height: 10px; border: 2px solid #92400e; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></span> Scanning...';
+
+            try {
+                // Call API to analyze competitor
+                const response = await fetch('/api/analyze-competitor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Analysis failed');
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update domain age
+                    if (ageSpan && data.domain_age) {
+                        const years = data.domain_age.years || 0;
+                        const months = data.domain_age.months || 0;
+                        const ageText = years > 0
+                            ? `${years} year${years > 1 ? 's' : ''}${months > 0 ? `, ${months} month${months > 1 ? 's' : ''}` : ''} old`
+                            : months > 0
+                            ? `${months} month${months > 1 ? 's' : ''} old`
+                            : 'Less than 1 month old';
+                        ageSpan.innerHTML = `<strong style="color: #059669;">${ageText}</strong> (Registered: ${data.domain_age.created_date || 'Unknown'})`;
+                    } else if (ageSpan) {
+                        ageSpan.innerHTML = '<span style="color: #dc2626;">Unable to determine</span>';
+                    }
+
+                    // Update affiliate programs
+                    if (programsSpan && data.affiliate_programs && data.affiliate_programs.length > 0) {
+                        programsSpan.innerHTML = data.affiliate_programs.map(program =>
+                            `<span style="background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; margin-right: 4px; font-weight: 600;">${program}</span>`
+                        ).join('');
+                    } else if (programsSpan) {
+                        programsSpan.innerHTML = '<span style="color: #78350f;">None detected (or site uses generic links)</span>';
+                    }
+
+                    // Update affiliate links count
+                    if (linksSpan) {
+                        const count = data.affiliate_links_count || 0;
+                        if (count > 0) {
+                            linksSpan.innerHTML = `<strong style="color: #059669;">${count} link${count > 1 ? 's' : ''}</strong> detected`;
+                        } else {
+                            linksSpan.innerHTML = '<span style="color: #78350f;">None found</span>';
+                        }
+                    }
+                } else {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+
+            } catch (error) {
+                console.error('Competitor analysis error:', error);
+                if (ageSpan) ageSpan.innerHTML = '<span style="color: #dc2626;">Failed to analyze</span>';
+                if (programsSpan) programsSpan.innerHTML = '<span style="color: #dc2626;">Analysis failed</span>';
+                if (linksSpan) linksSpan.innerHTML = '<span style="color: #dc2626;">Scan failed</span>';
             }
         }
 
@@ -13805,6 +13908,17 @@ Return ONLY the JSON array, no other text.`;
             } catch (error) {
                 console.error('Affiliate article generation error:', error);
                 showToast('Failed to generate article: ' + error.message, 'error');
+            }
+        }
+
+        // Show modal with HTML content
+        function showModal(htmlContent) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+
+            if (modal && modalContent) {
+                modalContent.innerHTML = htmlContent;
+                modal.style.display = 'flex';
             }
         }
 
