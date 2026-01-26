@@ -1993,14 +1993,18 @@
                     const { data, error} = await supabaseClient
                         .from('niche_validations')
                         .insert([dataToSave])
-                        .select();
+                        .select('*')
+                        .single();
 
                     if (error) {
                         console.error('Supabase error details:', error);
-                        throw error;
+                        console.error('Error code:', error.code);
+                        console.error('Error message:', error.message);
+                        // Continue anyway - don't fail validation if save fails
+                        return { success: false, error: error.message, savedLocally: true };
                     }
-                    console.log('Successfully saved to Supabase:', data[0]);
-                    return { success: true, data: data[0] };
+                    console.log('Successfully saved to Supabase:', data);
+                    return { success: true, data: data };
                 } catch (error) {
                     console.error('Error saving niche validation:', error);
                     return { success: false, error: error.message };

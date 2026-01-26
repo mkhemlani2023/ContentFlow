@@ -6399,6 +6399,8 @@ Return ONLY the JSON object, no markdown.`;
         let domainAge = null;
         let affiliatePrograms = [];
         let affiliateLinksCount = 0;
+        let hasOwnAffiliateProgram = false;
+        let ownProgramUrl = null;
 
         // STEP 1: Get Domain Age using free WHOIS lookup
         // Using whoisjs.com free API (no key required, 100 requests/day)
@@ -6541,9 +6543,6 @@ Return ONLY the JSON object, no markdown.`;
           affiliateLinksCount = linkCount;
 
           // STEP 2B: Check if this site HAS ITS OWN affiliate/ambassador program
-          let hasOwnAffiliateProgram = false;
-          let ownProgramUrl = null;
-
           // Check for affiliate program indicators in the HTML
           const affiliateIndicators = [
             /\/affiliate|\/affiliates|\/partner|\/partners|\/ambassador|\/influencer/i,
@@ -6590,8 +6589,7 @@ Return ONLY the JSON object, no markdown.`;
         } catch (error) {
           console.log(`[COMPETITOR] Affiliate detection failed: ${error.message}`);
           // Don't fail the whole request, just return empty results
-          hasOwnAffiliateProgram = false;
-          ownProgramUrl = null;
+          // hasOwnAffiliateProgram and ownProgramUrl already initialized to false/null
         }
 
         return {
