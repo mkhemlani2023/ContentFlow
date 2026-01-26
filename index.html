@@ -9676,6 +9676,13 @@
         function displayStandaloneValidationResults(validation) {
             const resultsDiv = document.getElementById('nicheResearchResults');
 
+            // Pre-filter competitor domains to get accurate count for metrics
+            const popularSites = ['reddit.com', 'youtube.com', 'nytimes.com', 'wikipedia.org', 'forbes.com', 'cnn.com', 'bbc.com', 'bbc.co.uk', 'washingtonpost.com', 'theguardian.com', 'facebook.com', 'twitter.com', 'x.com', 'linkedin.com', 'instagram.com', 'pinterest.com', 'quora.com', 'medium.com', 'huffpost.com', 'buzzfeed.com', 'vice.com', 'vox.com', 'slate.com', 'businessinsider.com', 'wsj.com', 'bloomberg.com', 'cnbc.com', 'usatoday.com', 'time.com', 'newsweek.com', 'npr.org', 'pbs.org', 'espn.com', 'cnet.com', 'techcrunch.com', 'wired.com', 'theverge.com', 'engadget.com', 'ign.com', 'gamespot.com', 'imdb.com', 'rottentomatoes.com', 'goodreads.com', 'webmd.com', 'mayoclinic.org', 'healthline.com', 'medicalnewstoday.com', 'nih.gov', 'cdc.gov', 'who.int', 'amazon.com', 'ebay.com', 'walmart.com', 'target.com', 'bestbuy.com', 'homedepot.com', 'lowes.com', 'etsy.com'];
+
+            validation.filteredCompetitorDomains = (validation.competitor_domains || []).filter(domain => {
+                return !popularSites.some(popular => domain.includes(popular));
+            });
+
             const scoreColor = validation.score >= 80 ? '#10b981' :
                               validation.score >= 60 ? '#f59e0b' :
                               validation.score >= 40 ? '#f97316' : '#ef4444';
@@ -9744,8 +9751,9 @@
                             <div style="color: #1e293b; font-size: 28px; font-weight: 700;">${validation.avg_competition_da || 0}</div>
                         </div>
                         <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0;">
-                            <div style="color: #64748b; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Unique Competitors</div>
-                            <div style="color: #1e293b; font-size: 28px; font-weight: 700;">${validation.unique_competitors || validation.competitor_domains?.length || 0}</div>
+                            <div style="color: #64748b; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Affiliate Competitors</div>
+                            <div style="color: #1e293b; font-size: 28px; font-weight: 700;">${validation.filteredCompetitorDomains?.length || 0}</div>
+                            <div style="color: #64748b; font-size: 11px; margin-top: 4px;">${validation.competitor_domains?.length - (validation.filteredCompetitorDomains?.length || 0) || 0} popular sites filtered</div>
                         </div>
                     </div>
 
@@ -9975,21 +9983,29 @@
                         </div>
 
                         <div style="display: grid; gap: 12px;">
-                            ${validation.affiliate_programs.recommended_programs.map(program => `
+                            ${validation.affiliate_programs.recommended_programs.map(program => {
+                                // Generate affiliate program signup URL
+                                const signupUrl = program.signup_url || generateAffiliateSignupUrl(program.program_name);
+                                return `
                                 <div style="background: white; padding: 18px; border-radius: 8px; border: 1px solid #86efac;">
-                                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: start; gap: 15px;">
                                         <div style="flex: 1;">
                                             <div style="font-size: 16px; font-weight: 700; color: #166534; margin-bottom: 6px;">${program.program_name}</div>
-                                            <div style="display: flex; gap: 15px; font-size: 13px; color: #15803d; margin-bottom: 8px;">
+                                            <div style="display: flex; gap: 15px; font-size: 13px; color: #15803d; margin-bottom: 8px; flex-wrap: wrap;">
                                                 <span>💵 ${program.commission_structure}</span>
                                                 <span>🕐 ${program.cookie_duration} days</span>
                                                 <span>📊 ~$${program.average_commission_per_sale} avg/sale</span>
                                             </div>
-                                            <div style="color: #166534; font-size: 14px; line-height: 1.5; font-style: italic;">${program.why_recommended}</div>
+                                            <div style="color: #166534; font-size: 14px; line-height: 1.5; font-style: italic; margin-bottom: 10px;">${program.why_recommended}</div>
+                                        </div>
+                                        <div style="flex-shrink: 0;">
+                                            <a href="${signupUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; white-space: nowrap; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(16, 185, 129, 0.3)'">
+                                                🚀 Join Program
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
-                            `).join('')}
+                            `}).join('')}
                         </div>
                     </div>
                     ` : ''}
@@ -10087,6 +10103,47 @@
             resultsDiv.innerHTML = resultsHTML;
         }
 
+        // Generate affiliate program signup URL based on program name
+        function generateAffiliateSignupUrl(programName) {
+            const programUrls = {
+                // Common affiliate networks
+                'Amazon Associates': 'https://affiliate-program.amazon.com/',
+                'ShareASale': 'https://www.shareasale.com/info/affiliates/',
+                'CJ Affiliate': 'https://www.cj.com/affiliate-sign-up',
+                'ClickBank': 'https://www.clickbank.com/sign-up/',
+                'Rakuten Advertising': 'https://rakutenadvertising.com/affiliate/',
+                'Impact': 'https://impact.com/affiliates/',
+                'Awin': 'https://www.awin.com/gb/affiliate',
+                'FlexOffers': 'https://www.flexoffers.com/affiliate-programs/',
+                'PartnerStack': 'https://www.partnerstack.com/',
+                'Refersion': 'https://www.refersion.com/',
+                'Commission Junction': 'https://www.cj.com/affiliate-sign-up',
+                'Skimlinks': 'https://skimlinks.com/',
+                'VigLink': 'https://www.viglink.com/',
+                'RewardStyle': 'https://www.rewardstyle.com/apply',
+                'Pepperjam': 'https://www.pepperjam.com/affiliates/',
+                'eBay Partner Network': 'https://partnernetwork.ebay.com/join',
+                'Walmart Affiliate': 'https://affiliates.walmart.com/'
+            };
+
+            // Check for exact match
+            if (programUrls[programName]) {
+                return programUrls[programName];
+            }
+
+            // Check for partial match (case-insensitive)
+            for (const [key, url] of Object.entries(programUrls)) {
+                if (programName.toLowerCase().includes(key.toLowerCase()) ||
+                    key.toLowerCase().includes(programName.toLowerCase())) {
+                    return url;
+                }
+            }
+
+            // Default: Google search for "{program name} affiliate program"
+            const searchQuery = encodeURIComponent(`${programName} affiliate program signup`);
+            return `https://www.google.com/search?q=${searchQuery}`;
+        }
+
         // Toggle competitors list visibility
         function toggleCompetitorsList() {
             const list = document.getElementById('competitorsList');
@@ -10166,12 +10223,30 @@
                     }
 
                     // Update affiliate programs
-                    if (programsSpan && data.affiliate_programs && data.affiliate_programs.length > 0) {
-                        programsSpan.innerHTML = data.affiliate_programs.map(program =>
-                            `<span style="background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; margin-right: 4px; font-weight: 600;">${program}</span>`
-                        ).join('');
-                    } else if (programsSpan) {
-                        programsSpan.innerHTML = '<span style="color: #78350f;">None detected (or site uses generic links)</span>';
+                    if (programsSpan) {
+                        let programsHtml = '';
+
+                        // Check if this site HAS ITS OWN affiliate program
+                        if (data.has_own_affiliate_program) {
+                            const joinUrl = data.own_program_url || `https://${domain}/affiliate`;
+                            programsHtml += `<div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; font-weight: 700;">
+                                🎉 This site HAS its own affiliate program!
+                                <a href="${joinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: white; color: #059669; padding: 4px 12px; border-radius: 4px; text-decoration: none; margin-left: 8px; font-size: 12px; font-weight: 700;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='white'">
+                                    🚀 JOIN PROGRAM
+                                </a>
+                            </div>`;
+                        }
+
+                        // Show detected third-party programs
+                        if (data.affiliate_programs && data.affiliate_programs.length > 0) {
+                            programsHtml += '<div style="margin-top: 6px;"><strong>Uses:</strong> ' + data.affiliate_programs.map(program =>
+                                `<span style="background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; margin-right: 4px; font-weight: 600;">${program}</span>`
+                            ).join('') + '</div>';
+                        } else if (!data.has_own_affiliate_program) {
+                            programsHtml = '<span style="color: #78350f;">None detected (or site uses generic links)</span>';
+                        }
+
+                        programsSpan.innerHTML = programsHtml;
                     }
 
                     // Update affiliate links count

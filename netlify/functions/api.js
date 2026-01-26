@@ -6540,9 +6540,58 @@ Return ONLY the JSON object, no markdown.`;
           affiliatePrograms = Array.from(detectedPrograms);
           affiliateLinksCount = linkCount;
 
+          // STEP 2B: Check if this site HAS ITS OWN affiliate/ambassador program
+          let hasOwnAffiliateProgram = false;
+          let ownProgramUrl = null;
+
+          // Check for affiliate program indicators in the HTML
+          const affiliateIndicators = [
+            /\/affiliate|\/affiliates|\/partner|\/partners|\/ambassador|\/influencer/i,
+            /become an affiliate|join our affiliate|affiliate program|partner program|ambassador program/i,
+            /earn commission|refer and earn|join our program/i
+          ];
+
+          for (const indicator of affiliateIndicators) {
+            if (html.match(indicator)) {
+              hasOwnAffiliateProgram = true;
+              break;
+            }
+          }
+
+          // If indicators found, try to find the signup page URL
+          if (hasOwnAffiliateProgram) {
+            // Common affiliate page patterns
+            const affiliateUrls = [
+              `https://${domain}/affiliate`,
+              `https://${domain}/affiliates`,
+              `https://${domain}/partner`,
+              `https://${domain}/partners`,
+              `https://${domain}/ambassador`,
+              `https://${domain}/influencer`,
+              `https://${domain}/affiliate-program`,
+              `https://${domain}/partner-program`
+            ];
+
+            // Try to find which URL exists
+            for (const url of affiliateUrls) {
+              const linkPattern = new RegExp(url.replace('https://', '').replace(/\//g, '\\/'), 'i');
+              if (html.match(linkPattern)) {
+                ownProgramUrl = url;
+                break;
+              }
+            }
+
+            // If no specific URL found, default to /affiliate
+            if (!ownProgramUrl) {
+              ownProgramUrl = `https://${domain}/affiliate`;
+            }
+          }
+
         } catch (error) {
           console.log(`[COMPETITOR] Affiliate detection failed: ${error.message}`);
           // Don't fail the whole request, just return empty results
+          hasOwnAffiliateProgram = false;
+          ownProgramUrl = null;
         }
 
         return {
@@ -6554,6 +6603,8 @@ Return ONLY the JSON object, no markdown.`;
             domain_age: domainAge,
             affiliate_programs: affiliatePrograms,
             affiliate_links_count: affiliateLinksCount,
+            has_own_affiliate_program: hasOwnAffiliateProgram || false,
+            own_program_url: ownProgramUrl,
             note: 'For production: Use WHOIS API for accurate domain age, consider using web scraping service for better affiliate detection'
           })
         };
