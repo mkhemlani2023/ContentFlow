@@ -8643,13 +8643,18 @@
 
                 // Auto-save validation to history
                 try {
+                    console.log('Attempting to save validation for:', validation.niche_keyword);
                     const saveResult = await SupabaseService.saveNicheValidation(validation);
                     if (saveResult.success) {
                         console.log('Validation saved to history:', saveResult.data.id);
                         validation.savedId = saveResult.data.id;
+                    } else {
+                        console.error('Save returned failure:', saveResult.error);
+                        alert('Warning: Failed to save validation to history. Error: ' + (saveResult.error || 'Unknown error'));
                     }
                 } catch (saveError) {
                     console.error('Failed to save validation to history:', saveError);
+                    alert('Warning: Error saving validation: ' + saveError.message);
                 }
 
                 // Display standalone validation results
