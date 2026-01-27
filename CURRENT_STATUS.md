@@ -1,12 +1,89 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2026-01-24 (Critical Bug Fix - JavaScript Syntax Error)
-**Current Session:** Fixing JavaScript syntax error preventing app from loading
+**Last Updated:** 2026-01-27 (Past Validations Bug Fix)
+**Current Session:** Setting up iPad remote development + Fixing Past Validations bug
 **Developer:** Mahesh + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2026-01-24 (CRITICAL BUG FIXES + Niche Validation Enhancements ⚠️✨)
+## 🆕 LATEST SESSION - 2026-01-27 (iPad Remote Dev Setup + Past Validations Bug Fix 🐛)
+
+**SESSION OVERVIEW:** Set up remote development environment on Digital Ocean droplet for iPad development via Terminus SSH. Identified and fixed critical bug preventing Past Validations from appearing.
+
+### PART 1: REMOTE DEVELOPMENT SETUP ✅
+
+**Environment Configured:**
+- Digital Ocean Droplet: 157.245.127.106
+- Node.js: v20.20.0
+- npm: v10.8.2
+- Netlify CLI: v23.13.5
+- Repository cloned to: ~/projects/ContentFlow
+
+**Steps Completed:**
+1. ✅ Verified disk space (6.2GB available)
+2. ✅ Repository already cloned
+3. ✅ npm dependencies installed
+4. ✅ Netlify CLI installed globally
+5. ✅ Environment variables configured (.env file created with 600 permissions)
+6. ✅ Netlify login and site link (linked to aicontentflow/getseowizard.com)
+7. ✅ Built public directory with required files
+8. ✅ Started dev server on port 8888
+9. ✅ Opened firewall port 8888 for external access
+
+**Access URL:** http://157.245.127.106:8888
+
+### PART 2: PAST VALIDATIONS BUG FIX 🐛
+
+**The Problem:**
+- User saves a niche validation for reference later
+- Validation does NOT appear in the "Past Validations" sidebar
+- Sidebar shows "No past validations yet" even after saving
+
+**Root Cause Identified:**
+- The `niche_validations` table does NOT exist in Supabase!
+- Code tries to save to `niche_validations` table (line 1994)
+- Insert fails because table doesn't exist
+- `loadNicheValidations()` returns empty data
+- Sidebar shows empty state
+
+**The Fix:**
+- Created `create-niche-validations-table.sql` migration file
+- Table includes all required columns:
+  - id, user_id, niche_keyword, score, recommendation, priority, action
+  - estimated_monthly_traffic, avg_competition_da, unique_competitors
+  - competitor_domains, breakdown, competition_analysis
+  - keyword_opportunities, content_strategy, affiliate_programs
+  - revenue_projection, strategic_insights, success_probability
+  - keywords, serp_results, created_at
+- Includes proper RLS (Row Level Security) policies
+- Indexes for performance
+
+**To Apply Fix:**
+1. Go to Supabase Dashboard → SQL Editor
+2. Copy contents of `create-niche-validations-table.sql`
+3. Run the SQL
+4. Past Validations will now work!
+
+**Files Created:**
+- `create-niche-validations-table.sql` - SQL migration for the missing table
+
+**What Was Broken:**
+- ❌ Past Validations sidebar always empty
+- ❌ Validations not being saved to database
+- ❌ "Save & Exit" saves nothing
+- ❌ Can't resume previous validation research
+
+**What's Fixed (After Running SQL):**
+- ✅ Validations saved to Supabase
+- ✅ Past Validations sidebar populated
+- ✅ Click to reload any past validation
+- ✅ Full validation history preserved
+
+**Status:** ⚠️ REQUIRES ACTION - Run the SQL migration in Supabase
+
+---
+
+## 🆕 PREVIOUS SESSION - 2026-01-24 (CRITICAL BUG FIXES + Niche Validation Enhancements ⚠️✨)
 
 **SESSION OVERVIEW:** Fixed critical JavaScript syntax error and enhanced Niche Validation section with detailed competitor analysis.
 

@@ -8321,19 +8321,24 @@
                     const timeAgo = getTimeAgo(new Date(validation.created_at));
 
                     return `
-                        <div onclick="loadSavedValidation('${validation.id}')" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 15px; border-radius: 10px; cursor: pointer; border: 2px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.borderColor='${scoreColor}'; this.style.boxShadow='0 4px 12px ${scoreColor}40'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <div style="font-weight: 600; color: #1e293b; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
-                                    ${validation.niche_keyword}
+                        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 15px; border-radius: 10px; border: 2px solid #e2e8f0; transition: all 0.2s; position: relative;" onmouseover="this.style.borderColor='${scoreColor}'; this.style.boxShadow='0 4px 12px ${scoreColor}40'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                            <div onclick="loadSavedValidation('${validation.id}')" style="cursor: pointer;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <div style="font-weight: 600; color: #1e293b; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                                        ${validation.niche_keyword}
+                                    </div>
+                                    <div style="background: ${scoreColor}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 700; margin-left: 8px;">
+                                        ${validation.score}
+                                    </div>
                                 </div>
-                                <div style="background: ${scoreColor}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 700; margin-left: 8px;">
-                                    ${validation.score}
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #64748b;">
+                                    <span>${validation.priority || 'medium'}</span>
+                                    <span>${timeAgo}</span>
                                 </div>
                             </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #64748b;">
-                                <span>${validation.priority || 'medium'}</span>
-                                <span>${timeAgo}</span>
-                            </div>
+                            <button onclick="event.stopPropagation(); deleteValidation('${validation.id}', '${validation.niche_keyword.replace(/'/g, "\\'")}')" style="position: absolute; top: 8px; right: 8px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; font-size: 14px; opacity: 0.6; transition: all 0.2s;" onmouseover="this.style.opacity='1'; this.style.color='#ef4444'" onmouseout="this.style.opacity='0.6'; this.style.color='#94a3b8'" title="Delete validation">
+                                &times;
+                            </button>
                         </div>
                     `;
                 }).join('');
@@ -8351,6 +8356,34 @@
         // Refresh validation history
         function refreshValidationHistory() {
             loadValidationHistory();
+        }
+
+        // Delete a validation with confirmation
+        async function deleteValidation(validationId, nicheKeyword) {
+            if (!confirm(`Delete validation for "${nicheKeyword}"?\n\nThis cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const result = await SupabaseService.deleteNicheValidation(validationId);
+
+                if (result.success) {
+                    // Refresh the history list
+                    loadValidationHistory();
+
+                    // Clear results if we're viewing the deleted validation
+                    const resultsDiv = document.getElementById('nicheResearchResults');
+                    if (resultsDiv && resultsDiv.dataset.validationId === validationId) {
+                        resultsDiv.innerHTML = '';
+                        delete resultsDiv.dataset.validationId;
+                    }
+                } else {
+                    alert('Failed to delete validation: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error deleting validation:', error);
+                alert('Error deleting validation. Please try again.');
+            }
         }
 
         // Helper function to get human-readable time ago
@@ -10288,12 +10321,8 @@
             `);
         }
 
-        // Load validation history (stub for Phase 1B.7)
-        async function loadValidationHistory() {
-            // TODO: Implement history sidebar in Phase 1B.7
-            // This function will load and display past validations
-            console.log('loadValidationHistory called (to be implemented in Phase 1B.7)');
-        }
+        // Load validation history - Real implementation is at line ~8298
+        // Stub removed - was overwriting the actual implementation
 
         // Blog Management System
         function showBlogManagement() {
