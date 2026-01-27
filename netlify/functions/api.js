@@ -5548,8 +5548,9 @@ Return ONLY valid JSON:
     "recommended_programs": [
       {"program_name": "<Name>", "commission_structure": "<% or $X>", "cookie_duration": "<30 days>", "average_commission_per_sale": <dollar amount>, "why_recommended": "<Brief reason>"}
     ],
-    "total_programs_available": <estimated count>,
-    "monetization_difficulty": "<easy/medium/hard>"
+    "total_programs_available": <count of programs in recommended_programs array>,
+    "monetization_difficulty": "<easy/medium/hard>",
+    "note": "IMPORTANT: List ALL relevant affiliate programs you can identify (aim for 8-12 programs). total_programs_available must equal the number of programs in the array."
   },
   "revenue_projection": {
     "month_6": {"estimated_traffic": <number>, "conversion_rate": "<X%>", "avg_commission": <dollar amount>, "estimated_revenue": <dollar amount>},
@@ -5573,7 +5574,7 @@ Return ONLY valid JSON:
             model: 'openai/gpt-4o-mini',
             messages: [{ role: 'user', content: detailPrompt }],
             temperature: 0.5,
-            max_tokens: 1200
+            max_tokens: 2000
           })
         });
 
