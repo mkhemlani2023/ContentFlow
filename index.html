@@ -8321,7 +8321,7 @@
                     const timeAgo = getTimeAgo(new Date(validation.created_at));
 
                     return `
-                        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 15px; border-radius: 10px; border: 2px solid #e2e8f0; transition: all 0.2s; position: relative;" onmouseover="this.style.borderColor='${scoreColor}'; this.style.boxShadow='0 4px 12px ${scoreColor}40'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 15px; border-radius: 10px; border: 2px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.borderColor='${scoreColor}'; this.style.boxShadow='0 4px 12px ${scoreColor}40'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
                             <div onclick="loadSavedValidation('${validation.id}')" style="cursor: pointer;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                     <div style="font-weight: 600; color: #1e293b; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
@@ -8336,9 +8336,11 @@
                                     <span>${timeAgo}</span>
                                 </div>
                             </div>
-                            <button onclick="event.stopPropagation(); deleteValidation('${validation.id}', '${validation.niche_keyword.replace(/'/g, "\\'")}')" style="position: absolute; top: 8px; right: 8px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; font-size: 14px; opacity: 0.6; transition: all 0.2s;" onmouseover="this.style.opacity='1'; this.style.color='#ef4444'" onmouseout="this.style.opacity='0.6'; this.style.color='#94a3b8'" title="Delete validation">
-                                &times;
-                            </button>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+                                <button onclick="event.stopPropagation(); deleteValidation('${validation.id}', '${validation.niche_keyword.replace(/'/g, "\\'")}')" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 4px 10px; font-size: 11px; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.background='#dc2626'; this.style.color='white'" onmouseout="this.style.background='#fee2e2'; this.style.color='#dc2626'">
+                                    Delete
+                                </button>
+                            </div>
                         </div>
                     `;
                 }).join('');
