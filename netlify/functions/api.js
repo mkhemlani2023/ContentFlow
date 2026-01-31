@@ -10738,6 +10738,547 @@ ${c.cta_section ? `
     }
 
     // ============================================================
+    // LEGAL PAGES AI GENERATION
+    // ============================================================
+
+    // Generate comprehensive legal pages for affiliate sites
+    if (path === '/api/generate-legal-pages' && method === 'POST') {
+      const {
+        domain_name,
+        site_name,
+        niche,
+        business_name,
+        business_email,
+        business_address,
+        country = 'United States',
+        pages = ['privacy-policy', 'terms-of-service', 'cookie-policy', 'gdpr-compliance', 'affiliate-disclosure']
+      } = body;
+
+      if (!domain_name || !site_name) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Domain name and site name are required'
+          })
+        };
+      }
+
+      console.log(`[LEGAL PAGES] Generating ${pages.length} legal pages for ${domain_name}`);
+
+      const generatedPages = {};
+      const today = new Date().toISOString().split('T')[0];
+      const businessInfo = {
+        name: business_name || site_name,
+        email: business_email || `contact@${domain_name}`,
+        address: business_address || '[Business Address]',
+        country: country
+      };
+
+      try {
+        for (const pageType of pages) {
+          console.log(`[LEGAL PAGES] Generating ${pageType}...`);
+
+          const prompt = generateLegalPagePrompt(pageType, {
+            domain_name,
+            site_name,
+            niche,
+            business: businessInfo,
+            date: today
+          });
+
+          const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://www.getseowizard.com',
+              'X-Title': 'SEO Wizard - Legal Pages'
+            },
+            body: JSON.stringify({
+              model: 'anthropic/claude-3.5-sonnet',
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.3,
+              max_tokens: 4000
+            })
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[LEGAL PAGES] Failed to generate ${pageType}:`, errorText);
+            generatedPages[pageType] = {
+              error: `Failed to generate ${pageType}`,
+              html: null
+            };
+            continue;
+          }
+
+          const data = await response.json();
+          const content = data.choices[0].message.content;
+
+          // Extract HTML from response
+          const htmlMatch = content.match(/<div[^>]*class="legal-page"[^>]*>[\s\S]*<\/div>/i) ||
+                           content.match(/<article[^>]*>[\s\S]*<\/article>/i) ||
+                           content.match(/<section[^>]*>[\s\S]*<\/section>/i);
+
+          generatedPages[pageType] = {
+            title: getPageTitle(pageType),
+            html: htmlMatch ? htmlMatch[0] : wrapInLegalPageDiv(content, pageType),
+            last_updated: today,
+            word_count: content.split(/\s+/).length
+          };
+        }
+
+        console.log(`[LEGAL PAGES] Successfully generated ${Object.keys(generatedPages).length} pages`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            domain_name,
+            site_name,
+            pages: generatedPages,
+            generated_at: new Date().toISOString()
+          })
+        };
+
+      } catch (error) {
+        console.error('[LEGAL PAGES] Generation error:', error);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: error.message,
+            partial_pages: generatedPages
+          })
+        };
+      }
+    }
+
+    // Helper function to generate legal page prompts
+    function generateLegalPagePrompt(pageType, context) {
+      const { domain_name, site_name, niche, business, date } = context;
+      const nicheText = niche ? ` in the ${niche} niche` : '';
+
+      const prompts = {
+        'privacy-policy': `Generate a comprehensive Privacy Policy for "${site_name}" (${domain_name}), an affiliate marketing website${nicheText}.
+
+Business Information:
+- Business Name: ${business.name}
+- Contact Email: ${business.email}
+- Country: ${business.country}
+- Effective Date: ${date}
+
+Generate a COMPLETE, PROFESSIONAL privacy policy in HTML format that covers:
+
+1. **Information We Collect**
+   - Personal information (name, email for newsletters/comments)
+   - Usage data (pages visited, time spent, referral source)
+   - Device information (browser type, IP address, device type)
+   - Cookies and tracking technologies
+
+2. **How We Use Your Information**
+   - To provide and improve our content
+   - To send newsletters (if subscribed)
+   - To respond to inquiries
+   - To analyze site performance
+   - For advertising and affiliate marketing
+
+3. **Third-Party Services We Use**
+   - Google Analytics
+   - Affiliate networks (Amazon Associates, etc.)
+   - Email marketing services
+   - Advertising partners
+   - Social media platforms
+
+4. **Cookies and Tracking**
+   - Types of cookies used (essential, analytics, advertising)
+   - How to manage cookie preferences
+   - Third-party cookies from affiliate partners
+
+5. **Data Sharing and Disclosure**
+   - We don't sell personal data
+   - Sharing with service providers
+   - Legal requirements
+
+6. **Your Rights** (include CCPA/GDPR rights)
+   - Access your data
+   - Request deletion
+   - Opt-out of marketing
+   - Data portability
+
+7. **Data Security**
+   - Security measures we implement
+   - No method is 100% secure disclaimer
+
+8. **Children's Privacy**
+   - Site not intended for children under 13
+   - COPPA compliance
+
+9. **International Data Transfers**
+   - Data may be processed in different countries
+
+10. **Changes to This Policy**
+    - How we notify users of changes
+
+11. **Contact Us**
+    - How to reach us with privacy concerns
+
+Format the response as clean HTML with:
+- <div class="legal-page privacy-policy">
+- Clear section headings with <h2> tags
+- Proper paragraphs with <p> tags
+- Bullet points with <ul><li> where appropriate
+- Bold text for emphasis on key terms
+- Professional, clear language
+- Actual company/site names (not placeholders)`,
+
+        'terms-of-service': `Generate comprehensive Terms of Service for "${site_name}" (${domain_name}), an affiliate marketing website${nicheText}.
+
+Business Information:
+- Business Name: ${business.name}
+- Contact Email: ${business.email}
+- Country: ${business.country}
+- Effective Date: ${date}
+
+Generate COMPLETE, PROFESSIONAL terms of service in HTML format covering:
+
+1. **Agreement to Terms**
+   - By using site, user agrees to terms
+   - Must be of legal age
+
+2. **Description of Service**
+   - We provide informational content about ${niche || 'various products and services'}
+   - We include affiliate links
+   - Content is for informational purposes only
+
+3. **Affiliate Disclosure**
+   - We earn commissions from affiliate links
+   - This doesn't affect our recommendations
+   - Prices may vary
+
+4. **Intellectual Property**
+   - All content is owned by ${business.name}
+   - Limited license to access for personal use
+   - No reproduction without permission
+
+5. **User Conduct**
+   - Prohibited activities
+   - No scraping or automated access
+   - No interference with site operation
+
+6. **Disclaimers**
+   - Content is for informational purposes
+   - Not professional advice (medical, financial, legal)
+   - We don't guarantee product quality
+   - Affiliate products are sold by third parties
+
+7. **Limitation of Liability**
+   - We're not liable for third-party products
+   - Maximum liability limited
+   - No consequential damages
+
+8. **External Links**
+   - We link to third-party sites
+   - Not responsible for their content or practices
+
+9. **Indemnification**
+   - User agrees to indemnify us
+
+10. **Modifications**
+    - We can modify terms at any time
+    - Continued use constitutes acceptance
+
+11. **Governing Law**
+    - Laws of ${business.country} apply
+    - Dispute resolution
+
+12. **Severability**
+    - Invalid provisions don't affect others
+
+13. **Contact Information**
+    - How to reach us
+
+Format as clean HTML with:
+- <div class="legal-page terms-of-service">
+- Clear <h2> section headings
+- Proper <p> paragraphs
+- <ul><li> lists where appropriate
+- Professional legal language (but readable)
+- Actual names, not placeholders`,
+
+        'cookie-policy': `Generate a comprehensive Cookie Policy for "${site_name}" (${domain_name}), an affiliate marketing website${nicheText}.
+
+Business Information:
+- Business Name: ${business.name}
+- Contact Email: ${business.email}
+- Effective Date: ${date}
+
+Generate a COMPLETE cookie policy in HTML format covering:
+
+1. **What Are Cookies**
+   - Definition of cookies
+   - How they work
+   - Why websites use them
+
+2. **How We Use Cookies**
+   - Essential/necessary cookies
+   - Analytics cookies
+   - Advertising/marketing cookies
+   - Affiliate tracking cookies
+
+3. **Types of Cookies We Use**
+
+   **Essential Cookies:**
+   - Session management
+   - Security
+   - User preferences
+
+   **Analytics Cookies:**
+   - Google Analytics
+   - Site performance tracking
+   - User behavior analysis
+
+   **Advertising Cookies:**
+   - Personalized ads
+   - Retargeting
+   - Frequency capping
+
+   **Affiliate Cookies:**
+   - Amazon Associates (90-day cookies)
+   - Other affiliate networks
+   - Commission tracking
+
+4. **Third-Party Cookies**
+   - Google (Analytics, Ads)
+   - Facebook/Meta Pixel
+   - Affiliate networks
+   - Social media embeds
+
+5. **Cookie Duration**
+   - Session cookies
+   - Persistent cookies
+   - Specific timeframes
+
+6. **Managing Cookies**
+   - Browser settings
+   - Opt-out links for major providers
+   - Consequences of disabling cookies
+
+7. **Do Not Track**
+   - DNT signal response
+
+8. **Updates to This Policy**
+   - How we notify of changes
+
+9. **Contact Us**
+   - Questions about cookies
+
+Format as clean HTML with:
+- <div class="legal-page cookie-policy">
+- <h2> section headings
+- Tables for cookie lists where helpful
+- Clear explanations
+- Practical opt-out instructions`,
+
+        'gdpr-compliance': `Generate a GDPR Compliance page for "${site_name}" (${domain_name}), an affiliate marketing website${nicheText}.
+
+Business Information:
+- Business Name: ${business.name}
+- Contact Email: ${business.email}
+- Country: ${business.country}
+- Effective Date: ${date}
+
+Generate comprehensive GDPR information in HTML format:
+
+1. **Our Commitment to GDPR**
+   - We respect EU privacy rights
+   - Overview of our compliance measures
+
+2. **Data Controller Information**
+   - ${business.name} is the data controller
+   - Contact details for privacy inquiries
+
+3. **Legal Basis for Processing**
+   - Consent (newsletters, comments)
+   - Legitimate interests (analytics, security)
+   - Contract (service delivery)
+
+4. **Your Rights Under GDPR**
+
+   **Right to Access (Article 15)**
+   - Request a copy of your data
+   - How to submit a request
+
+   **Right to Rectification (Article 16)**
+   - Correct inaccurate data
+   - Update incomplete data
+
+   **Right to Erasure (Article 17)**
+   - Request deletion of data
+   - Conditions and exceptions
+
+   **Right to Restriction (Article 18)**
+   - Limit how we process your data
+
+   **Right to Data Portability (Article 20)**
+   - Receive your data in portable format
+
+   **Right to Object (Article 21)**
+   - Object to processing
+   - Direct marketing opt-out
+
+   **Rights Related to Automated Decision-Making (Article 22)**
+   - We don't use automated decision-making
+
+5. **How to Exercise Your Rights**
+   - Contact email: ${business.email}
+   - Response timeframe (30 days)
+   - Identity verification
+
+6. **Data Retention**
+   - How long we keep different types of data
+   - Analytics data retention
+   - Email subscriber data
+
+7. **International Transfers**
+   - Data may be processed outside EU
+   - Safeguards in place (Standard Contractual Clauses)
+
+8. **Third-Party Processors**
+   - List of key processors
+   - Their GDPR compliance
+
+9. **Data Breach Procedures**
+   - How we handle breaches
+   - Notification procedures
+
+10. **Supervisory Authority**
+    - Right to lodge a complaint
+    - Relevant authority information
+
+11. **Updates to This Notice**
+    - How we communicate changes
+
+Format as clean HTML with:
+- <div class="legal-page gdpr-compliance">
+- Clear <h2> and <h3> headings
+- Organized sections
+- Easy-to-understand language
+- Practical instructions for exercising rights`,
+
+        'affiliate-disclosure': `Generate a comprehensive Affiliate Disclosure page for "${site_name}" (${domain_name}), an affiliate marketing website${nicheText}.
+
+Business Information:
+- Business Name: ${business.name}
+- Contact Email: ${business.email}
+- Effective Date: ${date}
+
+Generate a TRANSPARENT, FTC-COMPLIANT affiliate disclosure in HTML format:
+
+1. **Clear Statement of Affiliate Relationships**
+   - We participate in affiliate programs
+   - We earn commissions when you purchase through our links
+   - This is how we fund our free content
+
+2. **How Affiliate Links Work**
+   - Explanation in plain English
+   - No additional cost to readers
+   - How tracking works
+
+3. **Programs We Participate In**
+   - Amazon Associates Program (mention specifically as required)
+   - Other relevant affiliate networks
+   - Direct brand partnerships
+
+4. **Our Promise to Readers**
+   - We only recommend products we believe in
+   - Affiliate relationships don't influence our opinions
+   - Negative reviews when warranted
+   - Honest, unbiased content
+
+5. **Identifying Affiliate Links**
+   - How readers can identify affiliate links
+   - Disclosure language we use
+
+6. **FTC Compliance Statement**
+   - We comply with FTC guidelines
+   - Material connection disclosure
+
+7. **Amazon Associates Specific Disclosure**
+   (REQUIRED by Amazon)
+   - "As an Amazon Associate, ${site_name} earns from qualifying purchases"
+   - Amazon trademark acknowledgment
+
+8. **How We Choose Products to Recommend**
+   - Research process
+   - Testing when applicable
+   - Expert consultation
+
+9. **Editorial Independence**
+   - Affiliate partnerships don't affect content
+   - We maintain editorial integrity
+
+10. **Questions About Our Affiliate Relationships**
+    - Contact information
+    - We're happy to be transparent
+
+11. **Updates**
+    - Policy may be updated
+    - Check back periodically
+
+Format as clean HTML with:
+- <div class="legal-page affiliate-disclosure">
+- Friendly, conversational tone
+- Clear <h2> headings
+- Transparent and honest language
+- Build trust with readers
+- Meet FTC requirements`
+      };
+
+      return prompts[pageType] || prompts['privacy-policy'];
+    }
+
+    // Helper to get page title
+    function getPageTitle(pageType) {
+      const titles = {
+        'privacy-policy': 'Privacy Policy',
+        'terms-of-service': 'Terms of Service',
+        'cookie-policy': 'Cookie Policy',
+        'gdpr-compliance': 'GDPR Compliance',
+        'affiliate-disclosure': 'Affiliate Disclosure'
+      };
+      return titles[pageType] || pageType;
+    }
+
+    // Helper to wrap plain text in legal page div
+    function wrapInLegalPageDiv(content, pageType) {
+      // Remove markdown code blocks if present
+      let cleanContent = content.replace(/```html\n?/g, '').replace(/```\n?/g, '');
+
+      // If content doesn't have proper HTML structure, wrap it
+      if (!cleanContent.includes('<div') && !cleanContent.includes('<article')) {
+        // Convert markdown-style headers to HTML
+        cleanContent = cleanContent
+          .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+          .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+          .replace(/^\* (.*$)/gm, '<li>$1</li>')
+          .replace(/^- (.*$)/gm, '<li>$1</li>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\n\n/g, '</p><p>')
+          .replace(/<li>/g, '</p><ul><li>')
+          .replace(/<\/li>\n(?!<li>)/g, '</li></ul><p>');
+
+        cleanContent = `<div class="legal-page ${pageType}"><p>${cleanContent}</p></div>`;
+      }
+
+      return cleanContent;
+    }
+
+    // ============================================================
     // CONTENT PIPELINE ENDPOINTS
     // ============================================================
 
