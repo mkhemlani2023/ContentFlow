@@ -5806,6 +5806,14 @@ Return ONLY valid JSON array (no markdown):
           return true;
         });
 
+        // Filter out excluded domains (already shown to user)
+        if (exclude_domains.length > 0) {
+          const excludeSet = new Set(exclude_domains.map(d => d.toLowerCase()));
+          const beforeCount = allSuggestions.length;
+          allSuggestions = allSuggestions.filter(s => !excludeSet.has(s.domain.toLowerCase()));
+          console.log(`[DOMAIN RECOMMENDATION] Filtered out ${beforeCount - allSuggestions.length} previously shown domains`);
+        }
+
         console.log(`[DOMAIN RECOMMENDATION] Processing ${allSuggestions.length} unique suggestions...`);
 
         // Skip RDAP checks here - frontend will check availability for each domain

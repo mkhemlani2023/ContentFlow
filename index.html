@@ -9079,6 +9079,15 @@
                         <button onclick="generateMoreDomains()" id="generateMoreBtn" style="background: #f1f5f9; color: #334155; border: 2px solid #e2e8f0; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.borderColor='#667eea'; this.style.background='#f8fafc'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.background='#f1f5f9'">
                             🔄 Generate More Suggestions
                         </button>
+                        <div id="generateMoreProgress" style="display: none; margin-top: 15px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0;">
+                            <div id="generateMoreStatus" style="font-weight: 600; color: #334155; margin-bottom: 12px;">🔄 Generating suggestions...</div>
+                            <div style="background: #e2e8f0; border-radius: 8px; height: 12px; overflow: hidden; position: relative;">
+                                <div id="generateMoreProgressBar" style="height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); width: 0%; transition: width 0.3s ease; position: relative;">
+                                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: shimmer 1.5s infinite;"></div>
+                                </div>
+                            </div>
+                            <div id="generateMorePercent" style="font-size: 13px; color: #64748b; margin-top: 8px;">0% complete</div>
+                        </div>
                     </div>
 
                     <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0; margin-bottom: 20px;">
@@ -9185,7 +9194,6 @@
                 const seoScore = domain.seo_score || 70;
                 const scoreColor = seoScore >= 80 ? '#10b981' : seoScore >= 65 ? '#f59e0b' : '#f97316';
                 const scoreLabel = seoScore >= 80 ? 'Excellent' : seoScore >= 65 ? 'Good' : 'Fair';
-                const buyLink = `https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(domain.domain)}`;
 
                 const domainHTML = `
                     <div onclick="selectDomain('${domain.domain}', ${index})" id="domain-${index}" style="background: white; border: 2px solid #e2e8f0; padding: 20px; border-radius: 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#667eea'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.2)'" onmouseout="if(!this.classList.contains('selected')) { this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'; }">
@@ -9199,9 +9207,9 @@
                                     <span style="color: #10b981; font-weight: 600; font-size: 13px;">✓ Available</span>
                                 </div>
                                 <div style="color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 12px;">${domain.reason}</div>
-                                <a href="${buyLink}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="display: inline-block; background: #f97316; color: white; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none;">
-                                    🛒 Buy on Namecheap
-                                </a>
+                                <button onclick="event.stopPropagation(); buyDomainViaResellerClub('${domain.domain}')" style="display: inline-block; background: #10b981; color: white; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; border: none; cursor: pointer;">
+                                    🛒 Buy Domain
+                                </button>
                             </div>
                             <div id="checkmark-${index}" style="display: none; font-size: 32px; color: #10b981;">✓</div>
                         </div>
@@ -9230,10 +9238,34 @@
         // Generate more domain suggestions (avoiding duplicates)
         async function generateMoreDomains() {
             const btn = document.getElementById('generateMoreBtn');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<span style="display: inline-block; width: 14px; height: 14px; border: 2px solid #64748b; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px;"></span> Generating...';
-            }
+            const progressDiv = document.getElementById('generateMoreProgress');
+            const progressBar = document.getElementById('generateMoreProgressBar');
+            const progressStatus = document.getElementById('generateMoreStatus');
+            const progressPercent = document.getElementById('generateMorePercent');
+
+            // Hide button, show progress
+            if (btn) btn.style.display = 'none';
+            if (progressDiv) progressDiv.style.display = 'block';
+
+            // Progress animation
+            let progress = 0;
+            const updateProgress = (value, status) => {
+                progress = value;
+                if (progressBar) progressBar.style.width = `${value}%`;
+                if (progressPercent) progressPercent.textContent = `${value}% complete`;
+                if (status && progressStatus) progressStatus.textContent = status;
+            };
+
+            // Animate progress gradually
+            const progressInterval = setInterval(() => {
+                if (progress < 40) {
+                    updateProgress(progress + 2, '🔄 Generating domain suggestions...');
+                } else if (progress < 70) {
+                    updateProgress(progress + 1, '🔍 Analyzing SEO potential...');
+                } else if (progress < 85) {
+                    updateProgress(progress + 0.5, '✨ Checking availability...');
+                }
+            }, 200);
 
             try {
                 const validation = window.currentBlogCreation?.validation;
@@ -9243,6 +9275,8 @@
 
                 // Get list of already shown domains to exclude
                 const shownDomains = window.currentBlogCreation?.shownDomains || [];
+
+                updateProgress(15, '🌐 Contacting AI for suggestions...');
 
                 const response = await fetch('/api/recommend-domains', {
                     method: 'POST',
@@ -9254,6 +9288,8 @@
                     })
                 });
 
+                updateProgress(60, '📋 Processing suggestions...');
+
                 const data = await response.json();
 
                 if (data.success && data.suggestions && data.suggestions.length > 0) {
@@ -9262,21 +9298,40 @@
                         !shownDomains.includes(d.domain.toLowerCase())
                     );
 
+                    updateProgress(75, '🔍 Verifying domain availability...');
+
                     if (newSuggestions.length > 0) {
                         // Check and display new available domains
                         await checkAndDisplayAvailableDomains(newSuggestions);
+                        updateProgress(100, '✅ Complete!');
                     } else {
-                        alert('Could not find new unique domains. Try a slightly different niche keyword.');
+                        clearInterval(progressInterval);
+                        updateProgress(100, '⚠️ No new unique domains found');
+                        setTimeout(() => {
+                            alert('Could not find new unique domains. Try a slightly different niche keyword.');
+                        }, 500);
                     }
+                } else {
+                    updateProgress(100, '⚠️ No suggestions returned');
                 }
             } catch (error) {
                 console.error('Error generating more domains:', error);
-                alert('Failed to generate more domains. Please try again.');
+                clearInterval(progressInterval);
+                updateProgress(100, '❌ Error occurred');
+                setTimeout(() => {
+                    alert('Failed to generate more domains. Please try again.');
+                }, 500);
             } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '🔄 Generate More Suggestions';
-                }
+                clearInterval(progressInterval);
+                // Reset after a short delay
+                setTimeout(() => {
+                    if (progressDiv) progressDiv.style.display = 'none';
+                    if (btn) {
+                        btn.style.display = 'inline-block';
+                        btn.disabled = false;
+                    }
+                    if (progressBar) progressBar.style.width = '0%';
+                }, 1000);
             }
         }
 
@@ -9298,12 +9353,11 @@
 
                     if (availSpan) {
                         if (domainResult.available) {
-                            const buyLink = `https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(domain)}`;
                             availSpan.innerHTML = `
                                 <span style="color: #10b981; font-weight: 600;">✓ Available</span>
-                                <a href="${buyLink}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="margin-left: 10px; background: #f97316; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; display: inline-block;">
-                                    🛒 Buy on Namecheap
-                                </a>
+                                <button onclick="event.stopPropagation(); buyDomainViaResellerClub('${domain}')" style="margin-left: 10px; background: #10b981; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; border: none; cursor: pointer;">
+                                    🛒 Buy Domain
+                                </button>
                             `;
                             if (priceSpan && domainResult.price) {
                                 priceSpan.textContent = `~$${domainResult.price}/year`;
@@ -9327,6 +9381,16 @@
                     availSpan.innerHTML = '<span style="color: #f59e0b;">⚠ Check failed</span>';
                 }
             }
+        }
+
+        // Buy domain via ResellerClub
+        async function buyDomainViaResellerClub(domain) {
+            // Store the domain for the registration flow
+            window.currentBlogCreation = window.currentBlogCreation || {};
+            window.currentBlogCreation.selectedDomain = domain;
+
+            // Show the ResellerClub registration modal
+            showRegisterDomainModal(domain);
         }
 
         // Select a domain
@@ -9551,7 +9615,7 @@
                                 <input type="radio" name="domainOption" value="manual" checked onchange="updateDomainOption('manual')" style="margin-top: 4px; margin-right: 12px;">
                                 <div>
                                     <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">I'll register it manually</div>
-                                    <div style="color: #64748b; font-size: 14px;">Register domain yourself via Namecheap, GoDaddy, etc. and configure DNS to point to Siteground</div>
+                                    <div style="color: #64748b; font-size: 14px;">Register domain yourself via our domain service and configure DNS to point to your hosting</div>
                                 </div>
                             </label>
                         </div>
@@ -9569,7 +9633,7 @@
                         <div id="manualInstructions" style="background: #fef3c7; padding: 20px; border-radius: 8px; border: 2px solid #fbbf24;">
                             <h4 style="margin: 0 0 10px 0; color: #92400e; font-size: 15px;">Manual Registration Steps:</h4>
                             <ol style="margin: 0; padding-left: 20px; color: #92400e; font-size: 14px; line-height: 1.8;">
-                                <li>Register ${domain} at Namecheap or GoDaddy (~$12.99/year)</li>
+                                <li>Register ${domain} via our domain service (~$12.99/year)</li>
                                 <li>In DNS settings, add A record pointing to Siteground IP</li>
                                 <li>Wait 24-48 hours for DNS propagation</li>
                             </ol>
@@ -9608,7 +9672,7 @@
                 instructions.innerHTML = `
                     <h4 style="margin: 0 0 10px 0; color: #92400e; font-size: 15px;">Manual Registration Steps:</h4>
                     <ol style="margin: 0; padding-left: 20px; color: #92400e; font-size: 14px; line-height: 1.8;">
-                        <li>Register ${window.currentBlogCreation.selectedDomain} at Namecheap or GoDaddy (~$12.99/year)</li>
+                        <li>Register ${window.currentBlogCreation.selectedDomain} via our domain service (~$12.99/year)</li>
                         <li>In DNS settings, add A record pointing to Siteground IP</li>
                         <li>Wait 24-48 hours for DNS propagation</li>
                     </ol>
@@ -12167,7 +12231,18 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
         }
 
         // Show Register Domain Modal
-        function showRegisterDomainModal() {
+        function showRegisterDomainModal(prefillDomain = null) {
+            // Parse domain if provided (e.g., "example.com" -> name: "example", tld: "com")
+            let prefillName = '';
+            let prefillTld = 'com';
+            if (prefillDomain) {
+                const parts = prefillDomain.split('.');
+                if (parts.length >= 2) {
+                    prefillTld = parts.pop();
+                    prefillName = parts.join('.');
+                }
+            }
+
             const modalHTML = `
                 <div id="registerDomainModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
                     <div style="background: white; border-radius: 16px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.25);">
@@ -12179,13 +12254,13 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                             <div style="margin-bottom: 20px;">
                                 <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Domain Name</label>
                                 <div style="display: flex; gap: 10px;">
-                                    <input type="text" id="domainSearchInput" placeholder="yourdomain" style="flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px;">
+                                    <input type="text" id="domainSearchInput" placeholder="yourdomain" value="${prefillName}" style="flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px;">
                                     <select id="domainTldSelect" style="padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px;">
-                                        <option value="com">.com</option>
-                                        <option value="net">.net</option>
-                                        <option value="org">.org</option>
-                                        <option value="io">.io</option>
-                                        <option value="co">.co</option>
+                                        <option value="com" ${prefillTld === 'com' ? 'selected' : ''}>.com</option>
+                                        <option value="net" ${prefillTld === 'net' ? 'selected' : ''}>.net</option>
+                                        <option value="org" ${prefillTld === 'org' ? 'selected' : ''}>.org</option>
+                                        <option value="io" ${prefillTld === 'io' ? 'selected' : ''}>.io</option>
+                                        <option value="co" ${prefillTld === 'co' ? 'selected' : ''}>.co</option>
                                     </select>
                                 </div>
                             </div>
@@ -12200,6 +12275,11 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+            // Auto-check if domain was pre-filled
+            if (prefillDomain) {
+                setTimeout(() => checkDomainAvailability(), 100);
+            }
         }
 
         function closeRegisterDomainModal() {
