@@ -5680,38 +5680,20 @@ Return ONLY valid JSON:
           ? `\n\nCRITICAL: Do NOT suggest any of these domains (already shown): ${exclude_domains.slice(0, 20).join(', ')}`
           : '';
 
-        const domainPrompt = `Generate ${generateCount} UNIQUE domain name suggestions for a "${niche_keyword}" affiliate site.
+        const domainPrompt = `Generate ${generateCount} creative .com domain names for "${niche_keyword}" affiliate site.${exclusionNote}
 
-CRITICAL: Most obvious domains are ALREADY TAKEN. You MUST generate highly creative, unusual names.${exclusionNote}
+BE CREATIVE - most obvious names are taken! Use these strategies:
+- Invented words: Petlio, Furrex, Pawzzy, Covrix
+- Unexpected combos: VelvetPaw, NeonTail, CosmicMutt
+- Unique suffixes: Pawsify, Insurify, Petzy, Coverix
+- Abstract: AnchorPet, ShieldedPaws, NestGuard
 
-NAMING STRATEGIES (use a mix):
-1. INVENTED WORDS: Make up brandable words (Spotify, Zillow style) - e.g., Rovix, Klenzo, Petlio
-2. UNEXPECTED COMBOS: Pair unrelated words - e.g., VelvetPaw, NeonTail, CosmicMutt
-3. MISSPELLINGS: Creative respellings - e.g., Kover, Helth, Petz
-4. OBSCURE WORDS: Use lesser-known vocabulary - e.g., Aegis, Bastion, Nimbus
-5. ADD UNIQUE SUFFIXES: -ly, -ify, -io, -ix, -zy - e.g., Pawsify, Coverix, Petzy
-6. ABSTRACT CONCEPTS: Related metaphors - e.g., ShieldedPaws, AnchorPet
+AVOID common patterns (already taken): PetCare, BestPet, PetPro, PetHub, PawShield, PetGuard
 
-AVOID (these are ALL taken):
-- Common word pairs: PetCare, HealthPet, BestPets, PetPro, PetHub
-- Simple compounds: PawShield, PetGuard, FurCare, TailCare
-- Obvious metaphors: PetHaven, PawSanctuary, FurFortress
+Rules: .com only, no hyphens, no numbers, 6-14 chars, easy to spell.
 
-Requirements:
-- MUST be .com domains only
-- 6-12 characters preferred (shorter = more likely taken)
-- NO hyphens, NO numbers
-- Easy to pronounce when heard
-
-For each domain, provide an SEO score (1-100) based on:
-- Keyword relevance to niche (40 points)
-- Domain length - shorter is better (20 points)
-- Brandability and memorability (20 points)
-- TLD quality - .com gets full points (10 points)
-- Ease of typing and spelling (10 points)
-
-Return ONLY valid JSON array (no markdown):
-[{"domain": "example.com", "reason": "Short explanation", "seo_score": 85, "score_breakdown": {"keyword_relevance": 35, "length": 18, "brandability": 18, "tld": 10, "typability": 9}}]`;
+Return JSON array only:
+[{"domain":"Petlio.com","reason":"Invented brandable word","seo_score":82,"score_breakdown":{"keyword_relevance":32,"length":18,"brandability":18,"tld":10,"typability":9}}]`;
 
         // Add timeout to AI request (20 seconds max)
         const controller = new AbortController();
