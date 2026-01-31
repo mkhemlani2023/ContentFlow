@@ -9224,14 +9224,24 @@
                 generateMoreSection.style.display = 'block';
             }
 
-            if (availableDomains.length === 0 && startingCount === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 30px; background: #fef3c7; border-radius: 12px;">
-                        <div style="font-size: 32px; margin-bottom: 10px;">😕</div>
-                        <div style="color: #92400e; font-weight: 600; margin-bottom: 5px;">No available domains found</div>
-                        <div style="color: #a16207; font-size: 14px;">Click "Generate More" or enter a custom domain below</div>
-                    </div>
-                `;
+            if (availableDomains.length === 0) {
+                if (startingCount === 0) {
+                    // No domains at all
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 30px; background: #fef3c7; border-radius: 12px;">
+                            <div style="font-size: 32px; margin-bottom: 10px;">😕</div>
+                            <div style="color: #92400e; font-weight: 600; margin-bottom: 5px;">No available domains found</div>
+                            <div style="color: #a16207; font-size: 14px;">Click "Generate More" or enter a custom domain below</div>
+                        </div>
+                    `;
+                } else {
+                    // Had domains before, but new batch all taken - show toast message
+                    const toast = document.createElement('div');
+                    toast.style.cssText = 'position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #f59e0b; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);';
+                    toast.textContent = '⚠️ All suggested domains were taken. Try again!';
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 4000);
+                }
             }
         }
 

@@ -5682,18 +5682,26 @@ Return ONLY valid JSON:
 
         const domainPrompt = `Generate ${generateCount} UNIQUE domain name suggestions for a "${niche_keyword}" affiliate site.
 
-CRITICAL: Generate creative, unique names that are UNLIKELY to be taken. Avoid common words like "best", "top", "pro", "hub", "zone".${exclusionNote}
+CRITICAL: Most obvious domains are ALREADY TAKEN. You MUST generate highly creative, unusual names.${exclusionNote}
+
+NAMING STRATEGIES (use a mix):
+1. INVENTED WORDS: Make up brandable words (Spotify, Zillow style) - e.g., Rovix, Klenzo, Petlio
+2. UNEXPECTED COMBOS: Pair unrelated words - e.g., VelvetPaw, NeonTail, CosmicMutt
+3. MISSPELLINGS: Creative respellings - e.g., Kover, Helth, Petz
+4. OBSCURE WORDS: Use lesser-known vocabulary - e.g., Aegis, Bastion, Nimbus
+5. ADD UNIQUE SUFFIXES: -ly, -ify, -io, -ix, -zy - e.g., Pawsify, Coverix, Petzy
+6. ABSTRACT CONCEPTS: Related metaphors - e.g., ShieldedPaws, AnchorPet
+
+AVOID (these are ALL taken):
+- Common word pairs: PetCare, HealthPet, BestPets, PetPro, PetHub
+- Simple compounds: PawShield, PetGuard, FurCare, TailCare
+- Obvious metaphors: PetHaven, PawSanctuary, FurFortress
 
 Requirements:
 - MUST be .com domains only
-- Use creative word combinations, made-up brandable words, or unique phrases
-- Under 15 characters preferred
-- Easy to spell and pronounce
+- 6-12 characters preferred (shorter = more likely taken)
 - NO hyphens, NO numbers
-- Mix creative approaches: compound words, portmanteaus, invented words, metaphors
-
-Good examples for "gut health": GutZen.com, BellyBliss.com, FloraFix.com, TummyTribe.com, DigestiveDao.com
-Bad examples (too common, likely taken): GutHealth.com, HealthyGut.com, BestGut.com, GutPro.com
+- Easy to pronounce when heard
 
 For each domain, provide an SEO score (1-100) based on:
 - Keyword relevance to niche (40 points)
