@@ -12316,7 +12316,9 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
             `;
 
             try {
-                const response = await fetch('/api/domain/check-availability', {
+                // Use proxy server for ResellerClub API (Netlify IPs not whitelisted)
+                const RESELLERCLUB_PROXY = 'http://157.245.127.106:8889';
+                const response = await fetch(`${RESELLERCLUB_PROXY}/api/resellerclub/check-availability`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
