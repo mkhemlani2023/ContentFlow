@@ -5423,44 +5423,18 @@ Keywords:`;
           top_domains: result.top_10_domains ? result.top_10_domains.slice(0, 5) : []
         }));
 
-        // Calculate deterministic base score from SERP data
-        const numCompetitors = competitor_domains.length;
-        const hasLowDACompetitors = serp_results.some(r => r.top_10_domains?.some(d => d.domain_authority < 40));
-        const avgKeywordCount = serp_results.length;
-
-        // Base score factors (deterministic)
-        let baseCompetitionScore = numCompetitors < 30 ? 20 : numCompetitors < 60 ? 15 : numCompetitors < 100 ? 10 : 5;
-        let baseOpportunityScore = hasLowDACompetitors ? 15 : 8;
-
-        const corePrompt = `Analyze niche "${niche_keyword}" for affiliate marketing potential.
+        const corePrompt = `Analyze niche "${niche_keyword}".
 
 SERP DATA: ${JSON.stringify(topSerpResults)}
 COMPETITORS: ${competitor_domains.length} domains (${competitor_domains.slice(0, 8).join(', ')})
 
-DETERMINISTIC SCORING CONTEXT:
-- Competition base score: ${baseCompetitionScore}/25 (based on ${numCompetitors} competitors)
-- Opportunity base score: ${baseOpportunityScore}/20 (based on low-DA competitor presence)
-
-SCORING RULES (BE CONSISTENT - same niche should always get similar scores):
-- Search Volume (0-30): 25-30=excellent (100k+), 18-24=good (30k-100k), 10-17=moderate (10k-30k), 0-9=low (<10k)
-- Competition (0-25): Use base score ${baseCompetitionScore} and adjust max ±3 based on authority level
-- Keyword Opportunities (0-20): Use base score ${baseOpportunityScore} and adjust max ±3 based on keyword variety
-- Content Diversity (0-15): 12-15=many angles, 8-11=good variety, 4-7=limited, 0-3=narrow
-- Commercial Intent (0-10): 8-10=high buyer intent, 5-7=mixed, 2-4=informational, 0-1=no commercial value
-
-PRIORITY MAPPING (strict):
-- Score 75-100: high
-- Score 55-74: medium
-- Score 35-54: low
-- Score 0-34: very-low
-
 Return ONLY valid JSON:
 {
-  "score": <0-100 based on sum of breakdown scores>,
+  "score": <0-100>,
   "recommendation": "<One sentence>",
-  "priority": "<high/medium/low/very-low based on score>",
+  "priority": "<high/medium/low/very-low>",
   "action": "<Specific 1-sentence action plan>",
-  "estimated_monthly_traffic": <conservative number>,
+  "estimated_monthly_traffic": <number>,
   "avg_competition_da": <0-100>,
   "breakdown": {
     "search_volume": {"score": <0-30>, "rating": "<excellent/good/moderate/low>", "details": "<Brief>"},
@@ -5548,23 +5522,10 @@ Return ONLY valid JSON:
         console.log(`[STEP 3B] Generating detailed sections for: ${niche_keyword}`);
         const startTime = Date.now();
 
-        const detailPrompt = `Generate content strategy and CONSERVATIVE revenue projections for niche "${niche_keyword}".
+        const detailPrompt = `Generate content strategy and revenue projections for niche "${niche_keyword}".
 
 NICHE SCORE: ${core_analysis.score}/100
 PRIORITY: ${core_analysis.priority}
-
-IMPORTANT - CONSERVATIVE REVENUE PROJECTION GUIDELINES:
-- Month 6 traffic: New sites typically get 500-3,000 visitors/month after 6 months (NOT tens of thousands)
-- Month 12 traffic: Successful sites reach 3,000-15,000 visitors/month after 12 months
-- Conversion rates: Realistic affiliate conversion is 1-3%, NOT higher
-- Be PESSIMISTIC rather than optimistic - under-promise, over-deliver
-- These are INDICATIVE projections only, actual results vary significantly
-
-TRAFFIC BENCHMARKS (conservative):
-- High-priority niche month 6: 1,500-3,000 visitors
-- Medium-priority niche month 6: 800-1,500 visitors
-- Low-priority niche month 6: 300-800 visitors
-- Month 12 = roughly 3-5x month 6 traffic
 
 Return ONLY valid JSON:
 {
@@ -5584,10 +5545,10 @@ Return ONLY valid JSON:
     "note": "IMPORTANT: List ALL relevant affiliate programs you can identify (aim for 8-12 programs). total_programs_available must equal the number of programs in the array."
   },
   "revenue_projection": {
-    "month_6": {"estimated_traffic": <CONSERVATIVE number 500-3000>, "conversion_rate": "<1-2%>", "avg_commission": <dollar amount>, "estimated_revenue": <CONSERVATIVE dollar amount>, "assumptions": "<Key assumptions>"},
-    "month_12": {"estimated_traffic": <CONSERVATIVE number 3000-15000>, "conversion_rate": "<1-3%>", "avg_commission": <dollar amount>, "estimated_revenue": <CONSERVATIVE dollar amount>, "assumptions": "<Key assumptions>"},
+    "month_6": {"estimated_traffic": <number>, "conversion_rate": "<X%>", "avg_commission": <dollar amount>, "estimated_revenue": <dollar amount>},
+    "month_12": {"estimated_traffic": <number>, "conversion_rate": "<X%>", "avg_commission": <dollar amount>, "estimated_revenue": <dollar amount>},
     "revenue_factors": "<What drives revenue>",
-    "realistic_expectations": "<Honest assessment - include that actual results may vary significantly>"
+    "realistic_expectations": "<Honest assessment>"
   },
   "strategic_insights": "<2-3 sentences>",
   "success_probability": "<high/medium/low> - <Why>"
@@ -5604,7 +5565,7 @@ Return ONLY valid JSON:
           body: JSON.stringify({
             model: 'openai/gpt-4o-mini',
             messages: [{ role: 'user', content: detailPrompt }],
-            temperature: 0.2,
+            temperature: 0.5,
             max_tokens: 2000
           })
         });
@@ -5643,9 +5604,9 @@ Return ONLY valid JSON:
       }
     }
 
-    // DOMAIN RECOMMENDATION - AI generates domain name suggestions (availability checked by frontend)
+    // DOMAIN RECOMMENDATION - AI generates domain name suggestions with availability check
     if (path === '/api/recommend-domains' && method === 'POST') {
-      const { niche_keyword, count = 8, exclude_domains = [] } = body;
+      const { niche_keyword, count = 8 } = body;
 
       if (!niche_keyword) {
         return {
@@ -5659,20 +5620,15 @@ Return ONLY valid JSON:
       }
 
       try {
-        console.log(`[DOMAIN RECOMMENDATION] Generating domains for: ${niche_keyword}, excluding: ${exclude_domains.length} domains`);
+        console.log(`[DOMAIN RECOMMENDATION] Generating domains for: ${niche_keyword}`);
         const startTime = Date.now();
 
-        // Generate slightly more domains than requested (frontend will check availability)
-        const generateCount = Math.min(count + 4, 12); // Generate up to 12 max for speed
-
-        // Build exclusion list for the prompt
-        const exclusionNote = exclude_domains.length > 0
-          ? `\n\nCRITICAL: Do NOT suggest any of these domains (already shown): ${exclude_domains.slice(0, 20).join(', ')}`
-          : '';
+        // Generate MORE domains than requested to account for unavailable ones
+        const generateCount = count * 3; // Generate 3x more to find available ones
 
         const domainPrompt = `Generate ${generateCount} UNIQUE domain name suggestions for a "${niche_keyword}" affiliate site.
 
-CRITICAL: Generate creative, unique names that are UNLIKELY to be taken. Avoid common words like "best", "top", "pro", "hub", "zone".${exclusionNote}
+CRITICAL: Generate creative, unique names that are UNLIKELY to be taken. Avoid common words like "best", "top", "pro", "hub", "zone".
 
 Requirements:
 - MUST be .com domains only
@@ -5692,12 +5648,21 @@ For each domain, provide an SEO score (1-100) based on:
 - TLD quality - .com gets full points (10 points)
 - Ease of typing and spelling (10 points)
 
-Return ONLY valid JSON array (no markdown):
-[{"domain": "example.com", "reason": "Short explanation", "seo_score": 85, "score_breakdown": {"keyword_relevance": 35, "length": 18, "brandability": 18, "tld": 10, "typability": 9}}]`;
-
-        // Add timeout to AI request (20 seconds max)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000);
+Return ONLY valid JSON array:
+[
+  {
+    "domain": "example.com",
+    "reason": "Short explanation why this domain works",
+    "seo_score": 85,
+    "score_breakdown": {
+      "keyword_relevance": 35,
+      "length": 18,
+      "brandability": 18,
+      "tld": 10,
+      "typability": 9
+    }
+  }
+]`;
 
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -5711,12 +5676,9 @@ Return ONLY valid JSON array (no markdown):
             model: 'openai/gpt-4o-mini',
             messages: [{ role: 'user', content: domainPrompt }],
             temperature: 0.9,
-            max_tokens: 800 // Reduced for faster response
-          }),
-          signal: controller.signal
+            max_tokens: 1500
+          })
         });
-
-        clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new Error(`AI failed: ${response.status}`);
@@ -5737,83 +5699,89 @@ Return ONLY valid JSON array (no markdown):
           allSuggestions = JSON.parse(jsonMatch[0]);
         } catch (parseError) {
           console.error('[DOMAIN RECOMMENDATION] JSON parse error:', parseError.message);
-          // Fallback: generate unique domain suggestions
-          const keywords = niche_keyword.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(' ');
-          const baseWord = keywords[0] || 'site';
-          const secondWord = keywords[1] || '';
-
-          const suffixes = ['Nest', 'Wise', 'Scout', 'Spark', 'Bloom', 'Peak', 'Craft', 'Pulse', 'Flow', 'Hive', 'Hub', 'Lab', 'Bay', 'Box'];
-          const prefixes = ['True', 'Pure', 'Neo', 'Via', 'Eco', 'Zen', 'Vivo', 'Pro', 'My', 'Go', 'Get', 'Try'];
-          const reasons = [
-            `Brandable name combining "${baseWord}" with a memorable suffix`,
-            `Clean, professional domain for ${niche_keyword} content`,
-            `Easy to remember and type - great for ${niche_keyword} niche`,
-            `Modern, catchy name that stands out in the ${niche_keyword} space`,
-            `Short and brandable - perfect for building authority`
-          ];
+          // Fallback: generate simple domain suggestions
+          const keywords = niche_keyword.toLowerCase().split(' ');
+          const baseWord = keywords[0];
+          const suffixes = ['Hub', 'Zone', 'Guide', 'Pro', 'Tips', 'Life', 'Way', 'Now', 'Daily', 'Plus'];
+          const prefixes = ['Best', 'Top', 'My', 'The', 'Get', 'Try', 'Go'];
 
           allSuggestions = [];
-          const usedDomains = new Set();
-
-          // Generate unique combinations
-          for (const suffix of suffixes) {
-            if (allSuggestions.length >= generateCount) break;
-            const domain = `${baseWord}${suffix}.com`;
-            const domainCap = domain.charAt(0).toUpperCase() + domain.slice(1);
-            if (!usedDomains.has(domainCap.toLowerCase())) {
-              usedDomains.add(domainCap.toLowerCase());
-              allSuggestions.push({
-                domain: domainCap,
-                reason: reasons[allSuggestions.length % reasons.length],
-                seo_score: 72 + Math.floor(Math.random() * 13),
-                score_breakdown: { keyword_relevance: 30, length: 15, brandability: 17, tld: 10, typability: 8 }
-              });
-            }
-          }
-
-          for (const prefix of prefixes) {
-            if (allSuggestions.length >= generateCount) break;
-            const domain = `${prefix}${baseWord}.com`;
-            const domainCap = domain.charAt(0).toUpperCase() + domain.slice(1);
-            if (!usedDomains.has(domainCap.toLowerCase())) {
-              usedDomains.add(domainCap.toLowerCase());
-              allSuggestions.push({
-                domain: domainCap,
-                reason: reasons[allSuggestions.length % reasons.length],
-                seo_score: 70 + Math.floor(Math.random() * 15),
-                score_breakdown: { keyword_relevance: 28, length: 16, brandability: 16, tld: 10, typability: 8 }
-              });
-            }
+          for (let i = 0; i < generateCount; i++) {
+            const useSuffix = i % 2 === 0;
+            const word = useSuffix ? suffixes[i % suffixes.length] : prefixes[i % prefixes.length];
+            const domain = useSuffix
+              ? `${baseWord}${word}.com`
+              : `${word}${baseWord}.com`;
+            allSuggestions.push({
+              domain: domain.charAt(0).toUpperCase() + domain.slice(1),
+              reason: `SEO-friendly domain for ${niche_keyword}`,
+              seo_score: 70 + Math.floor(Math.random() * 15),
+              score_breakdown: { keyword_relevance: 30, length: 15, brandability: 15, tld: 10, typability: 8 }
+            });
           }
         }
 
-        // Remove any duplicates from AI response
-        const seenDomains = new Set();
-        allSuggestions = allSuggestions.filter(s => {
-          const lower = s.domain.toLowerCase();
-          if (seenDomains.has(lower)) return false;
-          seenDomains.add(lower);
-          return true;
-        });
+        console.log(`[DOMAIN RECOMMENDATION] Processing ${allSuggestions.length} suggestions, checking availability...`);
 
-        console.log(`[DOMAIN RECOMMENDATION] Processing ${allSuggestions.length} unique suggestions...`);
+        // Check availability for all domains using RDAP
+        const availabilityResults = await Promise.all(
+          allSuggestions.map(async (suggestion) => {
+            try {
+              const domain = suggestion.domain.toLowerCase();
+              const rdapUrl = `https://rdap.verisign.com/com/v1/domain/${domain.replace('.com', '')}`;
 
-        // Skip RDAP checks here - frontend will check availability for each domain
-        // This keeps the API fast and under Netlify's 30-second timeout
+              const rdapResponse = await fetch(rdapUrl, {
+                method: 'GET',
+                headers: { 'Accept': 'application/rdap+json' }
+              });
+
+              // 404 means domain is available, 200 means taken
+              const isAvailable = rdapResponse.status === 404;
+
+              return {
+                ...suggestion,
+                available: isAvailable
+              };
+            } catch (err) {
+              // On error, assume unavailable to be safe
+              return { ...suggestion, available: false };
+            }
+          })
+        );
+
+        // Filter to only available domains and take the requested count
+        const availableDomains = availabilityResults
+          .filter(d => d.available)
+          .slice(0, count);
+
         const duration = Date.now() - startTime;
-        console.log(`[DOMAIN RECOMMENDATION COMPLETE] Generated ${allSuggestions.length} domains in ${duration}ms (availability will be checked by frontend)`);
+        console.log(`[DOMAIN RECOMMENDATION COMPLETE] Found ${availableDomains.length} available domains out of ${allSuggestions.length} in ${duration}ms`);
 
-        // Return all suggestions - frontend will check availability
+        // If we didn't find enough available domains, let the user know
+        if (availableDomains.length === 0) {
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              niche_keyword,
+              suggestions: [],
+              message: 'No available domains found. Try a different niche or use the custom domain input.',
+              duration_ms: duration
+            })
+          };
+        }
+
         return {
           statusCode: 200,
           headers,
           body: JSON.stringify({
             success: true,
             niche_keyword,
-            suggestions: allSuggestions.slice(0, count + 4), // Return slightly more for frontend to filter
-            total_generated: allSuggestions.length,
-            duration_ms: duration,
-            note: 'Availability will be checked by frontend'
+            suggestions: availableDomains,
+            total_checked: allSuggestions.length,
+            available_count: availableDomains.length,
+            duration_ms: duration
           })
         };
 
@@ -6367,12 +6335,6 @@ Return ONLY valid JSON:
 
         console.log(`[STEP 3] Sending ${topSerpResults.length} keywords to AI for analysis`);
 
-        // Calculate deterministic base score from SERP data
-        const numCompetitors = competitor_domains.length;
-        const hasLowDACompetitors = serp_results.some(r => r.top_10_domains?.some(d => d.domain_authority < 40));
-        let baseCompetitionScore = numCompetitors < 30 ? 20 : numCompetitors < 60 ? 15 : numCompetitors < 100 ? 10 : 5;
-        let baseOpportunityScore = hasLowDACompetitors ? 15 : 8;
-
         const analysisPrompt = `You are an expert SEO analyst and affiliate marketer. Analyze the niche "${niche_keyword}".
 
 SERP DATA (Top 5 keywords):
@@ -6381,34 +6343,11 @@ ${JSON.stringify(topSerpResults)}
 COMPETITORS: ${competitor_domains.length} unique domains found
 Sample: ${competitor_domains.slice(0, 10).join(', ')}
 
-DETERMINISTIC SCORING CONTEXT:
-- Competition base score: ${baseCompetitionScore}/25 (based on ${numCompetitors} competitors)
-- Opportunity base score: ${baseOpportunityScore}/20 (based on low-DA competitor presence)
-
-SCORING RULES (BE CONSISTENT - same niche should always get similar scores):
-- Search Volume (0-30): 25-30=excellent (100k+), 18-24=good (30k-100k), 10-17=moderate (10k-30k), 0-9=low (<10k)
-- Competition (0-25): Use base score ${baseCompetitionScore} and adjust max ±3 based on authority level
-- Keyword Opportunities (0-20): Use base score ${baseOpportunityScore} and adjust max ±3 based on keyword variety
-- Content Diversity (0-15): 12-15=many angles, 8-11=good variety, 4-7=limited, 0-3=narrow
-- Commercial Intent (0-10): 8-10=high buyer intent, 5-7=mixed, 2-4=informational, 0-1=no commercial value
-
-PRIORITY MAPPING (strict):
-- Score 75-100: high
-- Score 55-74: medium
-- Score 35-54: low
-- Score 0-34: very-low
-
-CONSERVATIVE REVENUE PROJECTION GUIDELINES:
-- Month 6 traffic: New sites typically get 500-3,000 visitors/month (NOT tens of thousands)
-- Month 12 traffic: Successful sites reach 3,000-15,000 visitors/month
-- Conversion rates: Realistic affiliate conversion is 1-3%
-- These are INDICATIVE projections only
-
 Provide COMPREHENSIVE analysis in this EXACT JSON format (return ONLY valid JSON):
 {
-  "score": <0-100 based on sum of breakdown scores>,
+  "score": <0-100>,
   "recommendation": "<One sentence>",
-  "priority": "<high/medium/low/very-low based on score>",
+  "priority": "<high/medium/low/very-low>",
   "action": "<Specific action plan>",
   "estimated_monthly_traffic": <number>,
   "avg_competition_da": <0-100>,
@@ -6473,21 +6412,21 @@ Provide COMPREHENSIVE analysis in this EXACT JSON format (return ONLY valid JSON
   },
   "revenue_projection": {
     "month_6": {
-      "estimated_traffic": <CONSERVATIVE number 500-3000>,
-      "conversion_rate": "<1-2%>",
+      "estimated_traffic": <number>,
+      "conversion_rate": "<percentage>",
       "avg_commission": <dollar amount>,
-      "estimated_revenue": <CONSERVATIVE dollar amount>,
+      "estimated_revenue": <dollar amount>,
       "assumptions": "<Key assumptions>"
     },
     "month_12": {
-      "estimated_traffic": <CONSERVATIVE number 3000-15000>,
-      "conversion_rate": "<1-3%>",
+      "estimated_traffic": <number>,
+      "conversion_rate": "<percentage>",
       "avg_commission": <dollar amount>,
-      "estimated_revenue": <CONSERVATIVE dollar amount>,
+      "estimated_revenue": <dollar amount>,
       "assumptions": "<Key assumptions>"
     },
     "revenue_factors": "<What drives revenue in this niche>",
-    "realistic_expectations": "<Honest assessment - include that actual results may vary significantly>"
+    "realistic_expectations": "<Honest assessment of earning potential>"
   },
   "strategic_insights": "<3-4 sentences providing strategic recommendations and market positioning advice>",
   "risks_and_challenges": "<2-3 specific challenges to be aware of>",
@@ -6499,7 +6438,7 @@ ANALYSIS REQUIREMENTS:
 2. Keywords: Find 10-12 keywords with LOW competition (<DA 50) + HIGH buyer intent + reasonable volume (500+)
 3. Content Strategy: Provide 20 specific article titles ready to write
 4. Affiliate Programs: Research typical programs in this niche
-5. Revenue: Be CONSERVATIVE with projections - new sites rarely exceed 3k visitors at month 6
+5. Revenue: Be realistic with projections based on traffic, conversion rates, commissions
 6. Subject Diversity: Analyze how many different sub-topics and angles exist
 
 Return ONLY the JSON object, no markdown.`;
@@ -6983,12 +6922,6 @@ Keywords:`;
         // Step 3: Use AI to analyze SERP data and provide niche scoring + keyword recommendations
         console.log('Step 3: AI analyzing SERP data for niche viability...');
 
-        // Calculate deterministic base score from SERP data
-        const numCompetitors = competitorDomains.size;
-        const hasLowDACompetitors = serpResults.some(r => r.organic_results?.some(o => o.domain_authority < 40));
-        let baseCompetitionScore = numCompetitors < 30 ? 20 : numCompetitors < 60 ? 15 : numCompetitors < 100 ? 10 : 5;
-        let baseOpportunityScore = hasLowDACompetitors ? 15 : 8;
-
         const analysisPrompt = `You are an expert SEO analyst and affiliate marketer with deep experience in competitive analysis and revenue modeling. Analyze the niche "${niche_keyword}" in extreme detail.
 
 SERP DATA (Top 10 keywords analyzed):
@@ -6998,34 +6931,11 @@ COMPETITOR ANALYSIS:
 - Unique competitor domains: ${competitorDomains.size}
 - Sample competitors: ${Array.from(competitorDomains).slice(0, 10).join(', ')}
 
-DETERMINISTIC SCORING CONTEXT:
-- Competition base score: ${baseCompetitionScore}/25 (based on ${numCompetitors} competitors)
-- Opportunity base score: ${baseOpportunityScore}/20 (based on low-DA competitor presence)
-
-SCORING RULES (BE CONSISTENT - same niche should always get similar scores):
-- Search Volume (0-30): 25-30=excellent (100k+), 18-24=good (30k-100k), 10-17=moderate (10k-30k), 0-9=low (<10k)
-- Competition (0-25): Use base score ${baseCompetitionScore} and adjust max ±3 based on authority level
-- Keyword Opportunities (0-20): Use base score ${baseOpportunityScore} and adjust max ±3 based on keyword variety
-- Content Diversity (0-15): 12-15=many angles, 8-11=good variety, 4-7=limited, 0-3=narrow
-- Commercial Intent (0-10): 8-10=high buyer intent, 5-7=mixed, 2-4=informational, 0-1=no commercial value
-
-PRIORITY MAPPING (strict):
-- Score 75-100: high
-- Score 55-74: medium
-- Score 35-54: low
-- Score 0-34: very-low
-
-CONSERVATIVE REVENUE PROJECTION GUIDELINES:
-- Month 6 traffic: New sites typically get 500-3,000 visitors/month (NOT tens of thousands)
-- Month 12 traffic: Successful sites reach 3,000-15,000 visitors/month
-- Conversion rates: Realistic affiliate conversion is 1-3%
-- These are INDICATIVE projections only
-
 Provide COMPREHENSIVE analysis in this EXACT JSON format (return ONLY valid JSON):
 {
-  "score": <0-100 based on sum of breakdown scores>,
+  "score": <0-100>,
   "recommendation": "<One sentence>",
-  "priority": "<high/medium/low/very-low based on score>",
+  "priority": "<high/medium/low/very-low>",
   "action": "<Specific action plan>",
   "estimated_monthly_traffic": <number>,
   "avg_competition_da": <0-100>,
@@ -7090,21 +7000,21 @@ Provide COMPREHENSIVE analysis in this EXACT JSON format (return ONLY valid JSON
   },
   "revenue_projection": {
     "month_6": {
-      "estimated_traffic": <CONSERVATIVE number 500-3000>,
-      "conversion_rate": "<1-2%>",
+      "estimated_traffic": <number>,
+      "conversion_rate": "<percentage>",
       "avg_commission": <dollar amount>,
-      "estimated_revenue": <CONSERVATIVE dollar amount>,
+      "estimated_revenue": <dollar amount>,
       "assumptions": "<Key assumptions>"
     },
     "month_12": {
-      "estimated_traffic": <CONSERVATIVE number 3000-15000>,
-      "conversion_rate": "<1-3%>",
+      "estimated_traffic": <number>,
+      "conversion_rate": "<percentage>",
       "avg_commission": <dollar amount>,
-      "estimated_revenue": <CONSERVATIVE dollar amount>,
+      "estimated_revenue": <dollar amount>,
       "assumptions": "<Key assumptions>"
     },
     "revenue_factors": "<What drives revenue in this niche>",
-    "realistic_expectations": "<Honest assessment - include that actual results may vary significantly>"
+    "realistic_expectations": "<Honest assessment of earning potential>"
   },
   "strategic_insights": "<3-4 sentences providing strategic recommendations and market positioning advice>",
   "risks_and_challenges": "<2-3 specific challenges to be aware of>",
@@ -7116,7 +7026,7 @@ ANALYSIS REQUIREMENTS:
 2. Keywords: Find 10-12 keywords with LOW competition (<DA 50) + HIGH buyer intent + reasonable volume (500+)
 3. Content Strategy: Provide 20 specific article titles ready to write
 4. Affiliate Programs: Research typical programs in this niche (even if not in database)
-5. Revenue: Be CONSERVATIVE with projections - new sites rarely exceed 3k visitors at month 6
+5. Revenue: Be realistic with projections based on traffic, conversion rates, commissions
 6. Subject Diversity: Analyze how many different sub-topics and angles exist
 
 Return ONLY the JSON object, no markdown.`;
@@ -7492,696 +7402,9 @@ Return ONLY a JSON array of domain names without extensions, like:
       }
     }
 
-    // ============================================================
-    // RESELLERCLUB CUSTOMER MANAGEMENT
-    // ============================================================
-
-    // Create a new customer in ResellerClub
-    if (path === '/api/resellerclub/customer/create' && method === 'POST') {
-      const {
-        email,
-        password,
-        name,
-        company,
-        address_line_1,
-        city,
-        state,
-        country,
-        zipcode,
-        phone_cc,
-        phone
-      } = body;
-
-      if (!email || !password || !name || !address_line_1 || !city || !country || !zipcode || !phone_cc || !phone) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Missing required fields: email, password, name, address_line_1, city, country, zipcode, phone_cc, phone'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'username': email,
-          'passwd': password,
-          'name': name,
-          'company': company || name,
-          'address-line-1': address_line_1,
-          'city': city,
-          'state': state || city,
-          'country': country,
-          'zipcode': zipcode,
-          'phone-cc': phone_cc,
-          'phone': phone,
-          'lang-pref': 'en'
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/customers/signup.json?${params}`, {
-          method: 'POST'
-        });
-
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to create customer');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            customer_id: data,
-            email,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Create customer error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Get customer details by email
-    if (path === '/api/resellerclub/customer/get-by-email' && method === 'GET') {
-      const { email } = queryParams;
-
-      if (!email) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Email is required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'username': email
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/customers/details.json?${params}`);
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Customer not found');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            customer: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get customer error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Get customer details by ID
-    if (path === '/api/resellerclub/customer/get' && method === 'GET') {
-      const { customer_id } = queryParams;
-
-      if (!customer_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Customer ID is required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'customer-id': customer_id
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/customers/details-by-id.json?${params}`);
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Customer not found');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            customer: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get customer by ID error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Add funds to customer account
-    if (path === '/api/resellerclub/customer/add-funds' && method === 'POST') {
-      const { customer_id, amount, transaction_type = 'add', transaction_description } = body;
-
-      if (!customer_id || !amount) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Customer ID and amount are required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'customer-id': customer_id,
-          'amount': amount,
-          'transaction-type': transaction_type,
-          'transaction-description': transaction_description || 'Funds added via SEO Wizard'
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/customers/add-funds.json?${params}`, {
-          method: 'POST'
-        });
-
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to add funds');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            transaction: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Add funds error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // ============================================================
-    // RESELLERCLUB CONTACT MANAGEMENT
-    // ============================================================
-
-    // Create contact for domain registration
-    if (path === '/api/resellerclub/contact/create' && method === 'POST') {
-      const {
-        customer_id,
-        name,
-        company,
-        email,
-        address_line_1,
-        address_line_2,
-        address_line_3,
-        city,
-        state,
-        country,
-        zipcode,
-        phone_cc,
-        phone,
-        type = 'Contact'
-      } = body;
-
-      if (!customer_id || !name || !email || !address_line_1 || !city || !country || !zipcode || !phone_cc || !phone) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Missing required fields for contact creation'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'customer-id': customer_id,
-          'name': name,
-          'company': company || name,
-          'email': email,
-          'address-line-1': address_line_1,
-          'city': city,
-          'country': country,
-          'zipcode': zipcode,
-          'phone-cc': phone_cc,
-          'phone': phone,
-          'type': type
-        });
-
-        if (address_line_2) params.append('address-line-2', address_line_2);
-        if (address_line_3) params.append('address-line-3', address_line_3);
-        if (state) params.append('state', state);
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/contacts/add.json?${params}`, {
-          method: 'POST'
-        });
-
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to create contact');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            contact_id: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Create contact error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Get default contacts for a customer
-    if (path === '/api/resellerclub/contact/default' && method === 'GET') {
-      const { customer_id, type = 'Contact' } = queryParams;
-
-      if (!customer_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Customer ID is required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'customer-id': customer_id,
-          'type': type
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/contacts/default.json?${params}`);
-        const data = await response.json();
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            contact_id: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get default contact error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Search contacts for a customer
-    if (path === '/api/resellerclub/contact/search' && method === 'GET') {
-      const { customer_id, no_of_records = 10, page_no = 1 } = queryParams;
-
-      if (!customer_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Customer ID is required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'customer-id': customer_id,
-          'no-of-records': no_of_records,
-          'page-no': page_no
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/contacts/search.json?${params}`);
-        const data = await response.json();
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            contacts: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Search contacts error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // ============================================================
-    // RESELLERCLUB DOMAIN REGISTRATION (Full Implementation)
-    // ============================================================
-
-    // Register a domain
+    // Register a domain (requires payment integration)
     if (path === '/api/domain/register' && method === 'POST') {
-      const {
-        domain_name,
-        years = 1,
-        customer_id,
-        reg_contact_id,
-        admin_contact_id,
-        tech_contact_id,
-        billing_contact_id,
-        ns,
-        invoice_option = 'NoInvoice',
-        purchase_privacy = false,
-        protect_privacy = false
-      } = body;
-
-      if (!domain_name || !customer_id || !reg_contact_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Domain name, customer_id, and reg_contact_id are required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        // Parse domain name and TLD
-        const parts = domain_name.split('.');
-        const sld = parts[0];
-        const tld = parts.slice(1).join('.');
-
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'domain-name': domain_name,
-          'years': years.toString(),
-          'ns': ns || 'ns1.resellerclub.com',
-          'customer-id': customer_id,
-          'reg-contact-id': reg_contact_id,
-          'admin-contact-id': admin_contact_id || reg_contact_id,
-          'tech-contact-id': tech_contact_id || reg_contact_id,
-          'billing-contact-id': billing_contact_id || reg_contact_id,
-          'invoice-option': invoice_option,
-          'purchase-privacy': purchase_privacy ? 'true' : 'false',
-          'protect-privacy': protect_privacy ? 'true' : 'false'
-        });
-
-        // Add additional nameservers if provided as array
-        if (Array.isArray(ns)) {
-          ns.forEach(nameserver => params.append('ns', nameserver));
-        }
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/register.json?${params}`, {
-          method: 'POST'
-        });
-
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to register domain');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            order_id: data.entityid || data,
-            domain: domain_name,
-            years,
-            status: data.actionstatus || 'Success',
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Domain registration error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Get domain order details
-    if (path === '/api/domain/order-details' && method === 'GET') {
-      const { order_id } = queryParams;
-
-      if (!order_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Order ID is required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'order-id': order_id,
-          'options': 'All'
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/details.json?${params}`);
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to get order details');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            order: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get order details error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Get domain by name
-    if (path === '/api/domain/get-by-name' && method === 'GET') {
-      const { domain_name } = queryParams;
+      const { domain_name, years = 1, customer_id, contact_details } = body;
 
       if (!domain_name) {
         return {
@@ -8206,1452 +7429,84 @@ Return ONLY a JSON array of domain names without extensions, like:
         };
       }
 
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'domain-name': domain_name,
-          'options': 'All'
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/details-by-name.json?${params}`);
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Domain not found');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            domain: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get domain by name error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Renew domain
-    if (path === '/api/domain/renew' && method === 'POST') {
-      const { order_id, years = 1, exp_date, invoice_option = 'NoInvoice' } = body;
-
-      if (!order_id || !exp_date) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Order ID and expiration date are required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'order-id': order_id,
-          'years': years.toString(),
-          'exp-date': exp_date,
-          'invoice-option': invoice_option
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/renew.json?${params}`, {
-          method: 'POST'
-        });
-
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to renew domain');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            renewal: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Domain renewal error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Modify domain nameservers
-    if (path === '/api/domain/modify-ns' && method === 'POST') {
-      const { order_id, ns } = body;
-
-      if (!order_id || !ns || !Array.isArray(ns)) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Order ID and nameservers array are required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'order-id': order_id
-        });
-
-        ns.forEach(nameserver => params.append('ns', nameserver));
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/modify-ns.json?${params}`, {
-          method: 'POST'
-        });
-
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to modify nameservers');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            result: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Modify nameservers error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Search customer domains
-    if (path === '/api/domain/search' && method === 'GET') {
-      const { customer_id, no_of_records = 25, page_no = 1, status } = queryParams;
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'no-of-records': no_of_records,
-          'page-no': page_no
-        });
-
-        if (customer_id) params.append('customer-id', customer_id);
-        if (status) params.append('status', status);
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/search.json?${params}`);
-        const data = await response.json();
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            domains: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Search domains error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // ============================================================
-    // RESELLERCLUB WEB HOSTING SERVICES
-    // ============================================================
-
-    // Get hosting plans from ResellerClub
-    if (path === '/api/hosting/plans' && method === 'GET') {
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        // Return default plans if ResellerClub not configured
-        const defaultPlans = [
-          {
-            id: 'starter',
-            name: 'Starter',
-            description: 'Perfect for small blogs and personal websites',
-            monthly_price: 4.99,
-            yearly_price: 49.99,
-            features: [
-              '10 GB Storage',
-              '100 GB Bandwidth',
-              '1 Website',
-              'Free SSL',
-              'Daily Backups'
-            ],
-            source: 'default'
-          },
-          {
-            id: 'business',
-            name: 'Business',
-            description: 'For growing businesses and multiple sites',
-            monthly_price: 9.99,
-            yearly_price: 99.99,
-            features: [
-              '25 GB Storage',
-              'Unlimited Bandwidth',
-              '5 Websites',
-              'Free SSL',
-              'Daily Backups',
-              'Free Domain'
-            ],
-            source: 'default'
-          },
-          {
-            id: 'professional',
-            name: 'Professional',
-            description: 'For high-traffic websites and e-commerce',
-            monthly_price: 19.99,
-            yearly_price: 199.99,
-            features: [
-              '50 GB Storage',
-              'Unlimited Bandwidth',
-              'Unlimited Websites',
-              'Free SSL',
-              'Daily Backups',
-              'Free Domain',
-              'Priority Support',
-              'CDN Included'
-            ],
-            source: 'default'
-          }
-        ];
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            plans: defaultPlans,
-            configured: false
-          })
-        };
-      }
-
-      try {
-        // Get hosting plan pricing from ResellerClub
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'reseller-id': RESELLERCLUB_RESELLER_ID
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/products/reseller-cost-price.json?${params}`);
-        const data = await response.json();
-
-        // Parse ResellerClub hosting plans
-        const hostingProducts = data.hosting || data.multidomainhosting || {};
-        const plans = [];
-
-        // Map ResellerClub product categories to user-friendly plans
-        const planMappings = {
-          'linuxus': { name: 'Linux Hosting (US)', region: 'US' },
-          'linuxuk': { name: 'Linux Hosting (UK)', region: 'UK' },
-          'windowsus': { name: 'Windows Hosting (US)', region: 'US' },
-          'windowsuk': { name: 'Windows Hosting (UK)', region: 'UK' }
-        };
-
-        // Create structured plans from ResellerClub data
-        for (const [key, mapping] of Object.entries(planMappings)) {
-          if (hostingProducts[key]) {
-            const productData = hostingProducts[key];
-            plans.push({
-              id: key,
-              name: mapping.name,
-              region: mapping.region,
-              plans: productData,
-              source: 'resellerclub'
-            });
-          }
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            plans: plans.length > 0 ? plans : data,
-            raw: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get hosting plans error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Order hosting from ResellerClub
-    if (path === '/api/hosting/provision' && method === 'POST') {
-      const {
-        domain_name,
-        customer_id,
-        plan_id,
-        months = 1,
-        invoice_option = 'NoInvoice',
-        autorenew = true
-      } = body;
-
-      if (!domain_name || !customer_id || !plan_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Domain name, customer_id, and plan_id are required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'domain-name': domain_name,
-          'customer-id': customer_id,
-          'plan-id': plan_id,
-          'months': months.toString(),
-          'invoice-option': invoice_option,
-          'autorenew': autorenew ? 'true' : 'false'
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/linuxus/add.json?${params}`, {
-          method: 'POST'
-        });
-
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to provision hosting');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            order_id: data.entityid || data,
-            domain: domain_name,
-            plan_id,
-            months,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Provision hosting error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Get hosting order details
-    if (path === '/api/hosting/details' && method === 'GET') {
-      const { order_id } = queryParams;
-
-      if (!order_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Order ID is required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'order-id': order_id
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/details.json?${params}`);
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to get hosting details');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            hosting: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get hosting details error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Search customer hosting orders
-    if (path === '/api/hosting/search' && method === 'GET') {
-      const { customer_id, no_of_records = 25, page_no = 1, status } = queryParams;
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'no-of-records': no_of_records,
-          'page-no': page_no
-        });
-
-        if (customer_id) params.append('customer-id', customer_id);
-        if (status) params.append('status', status);
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/search.json?${params}`);
-        const data = await response.json();
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            hosting_orders: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Search hosting orders error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // ============================================================
-    // RESELLERCLUB EMAIL HOSTING SERVICES
-    // ============================================================
-
-    // Get email hosting plans
-    if (path === '/api/email/plans' && method === 'GET') {
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        // Return default plans if ResellerClub not configured
-        const defaultPlans = [
-          {
-            id: 'business_email',
-            name: 'Business Email',
-            provider: 'titan',
-            description: 'Professional email with 10GB storage per account',
-            monthly_price_per_user: 2.00,
-            features: [
-              'Professional email @yourdomain.com',
-              '10 GB storage per account',
-              'Web, mobile & desktop apps',
-              'Calendar & contacts',
-              'Read receipts'
-            ],
-            source: 'default'
-          },
-          {
-            id: 'enterprise_email',
-            name: 'Enterprise Email',
-            provider: 'titan',
-            description: 'Enhanced email with 30GB storage per account',
-            monthly_price_per_user: 4.00,
-            features: [
-              'Professional email @yourdomain.com',
-              '30 GB storage per account',
-              'Web, mobile & desktop apps',
-              'Calendar & contacts',
-              'Email templates',
-              'Follow-up reminders',
-              'Priority support'
-            ],
-            source: 'default'
-          },
-          {
-            id: 'google_workspace',
-            name: 'Google Workspace',
-            provider: 'google',
-            description: 'Gmail with Google productivity suite',
-            monthly_price_per_user: 6.00,
-            features: [
-              'Professional Gmail',
-              '30 GB cloud storage',
-              'Google Meet video conferencing',
-              'Google Docs, Sheets, Slides',
-              'Admin console',
-              'Standard support'
-            ],
-            source: 'default'
-          }
-        ];
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            plans: defaultPlans,
-            configured: false
-          })
-        };
-      }
-
-      try {
-        // Get email hosting plan pricing from ResellerClub
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'reseller-id': RESELLERCLUB_RESELLER_ID
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/products/reseller-cost-price.json?${params}`);
-        const data = await response.json();
-
-        // Parse email products
-        const emailProducts = data.email || data.emailacc || {};
-        const titanProducts = data.titan || {};
-        const gsuite = data.gsuite || {};
-
-        const plans = [];
-
-        // Add Titan Email plans if available
-        if (Object.keys(titanProducts).length > 0) {
-          plans.push({
-            id: 'titan_business',
-            name: 'Titan Business Email',
-            provider: 'titan',
-            pricing: titanProducts,
-            source: 'resellerclub'
-          });
-        }
-
-        // Add Google Workspace if available
-        if (Object.keys(gsuite).length > 0) {
-          plans.push({
-            id: 'google_workspace',
-            name: 'Google Workspace',
-            provider: 'google',
-            pricing: gsuite,
-            source: 'resellerclub'
-          });
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            plans: plans.length > 0 ? plans : emailProducts,
-            raw: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get email plans error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Order Titan Email (Business Email)
-    if (path === '/api/email/provision' && method === 'POST') {
-      const {
-        domain_name,
-        customer_id,
-        plan_id = 'business_email',
-        num_accounts = 1,
-        months = 12,
-        invoice_option = 'NoInvoice'
-      } = body;
-
-      if (!domain_name || !customer_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Domain name and customer_id are required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'domain-name': domain_name,
-          'customer-id': customer_id,
-          'number-of-accounts': num_accounts.toString(),
-          'months': months.toString(),
-          'invoice-option': invoice_option
-        });
-
-        // Use Titan Email API endpoint
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/add.json?${params}`, {
-          method: 'POST'
-        });
-
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to provision email hosting');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            order_id: data.entityid || data,
-            domain: domain_name,
-            num_accounts,
-            months,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Provision email error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Add email account to existing order
-    if (path === '/api/email/add-account' && method === 'POST') {
-      const { order_id, email, password, first_name, last_name, country_code = 'US' } = body;
-
-      if (!order_id || !email || !password) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Order ID, email, and password are required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'order-id': order_id,
-          'email': email,
-          'passwd': password,
-          'firstname': first_name || email.split('@')[0],
-          'lastname': last_name || '',
-          'countrycode': country_code
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/user/add.json?${params}`, {
-          method: 'POST'
-        });
-
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to add email account');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            account: data,
-            email,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Add email account error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Get email hosting order details
-    if (path === '/api/email/details' && method === 'GET') {
-      const { order_id } = queryParams;
-
-      if (!order_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Order ID is required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'order-id': order_id
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/details.json?${params}`);
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to get email details');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            email_hosting: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get email details error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Search email hosting orders
-    if (path === '/api/email/search' && method === 'GET') {
-      const { customer_id, no_of_records = 25, page_no = 1, status } = queryParams;
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'no-of-records': no_of_records,
-          'page-no': page_no
-        });
-
-        if (customer_id) params.append('customer-id', customer_id);
-        if (status) params.append('status', status);
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/search.json?${params}`);
-        const data = await response.json();
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            email_orders: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Search email orders error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Get DNS records for email setup
-    if (path === '/api/email/dns-records' && method === 'GET') {
-      const { order_id } = queryParams;
-
-      if (!order_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Order ID is required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'order-id': order_id
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/dns-records.json?${params}`);
-        const data = await response.json();
-
-        if (data.status === 'ERROR' || data.error) {
-          throw new Error(data.message || data.error || 'Failed to get DNS records');
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            dns_records: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get DNS records error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // ============================================================
-    // RESELLERCLUB ORDER MANAGEMENT
-    // ============================================================
-
-    // Get order pricing for any product
-    if (path === '/api/resellerclub/pricing' && method === 'GET') {
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'reseller-id': RESELLERCLUB_RESELLER_ID
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/products/reseller-cost-price.json?${params}`);
-        const data = await response.json();
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            pricing: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get pricing error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Get customer balance
-    if (path === '/api/resellerclub/balance' && method === 'GET') {
-      const { customer_id } = queryParams;
-
-      if (!customer_id) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Customer ID is required'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      try {
-        const params = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'customer-id': customer_id
-        });
-
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/billing/customer-balance.json?${params}`);
-        const data = await response.json();
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            balance: data,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Get balance error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Complete service registration flow (domain + hosting + email in one call)
-    if (path === '/api/resellerclub/complete-setup' && method === 'POST') {
-      const {
-        // Customer details
-        customer_email,
-        customer_password,
-        customer_name,
-        customer_company,
-        address_line_1,
-        city,
-        state,
-        country,
-        zipcode,
-        phone_cc,
-        phone,
-        // Domain details
-        domain_name,
-        domain_years = 1,
-        // Hosting
-        hosting_plan_id,
-        hosting_months = 12,
-        // Email
-        email_num_accounts = 1,
-        email_months = 12
-      } = body;
-
-      if (!customer_email || !customer_name || !domain_name || !address_line_1 || !city || !country || !zipcode || !phone_cc || !phone) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Missing required customer and domain details'
-          })
-        };
-      }
-
-      if (!RESELLERCLUB_RESELLER_ID || !RESELLERCLUB_API_KEY) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'ResellerClub integration not configured',
-            configured: false
-          })
-        };
-      }
-
-      const results = {
-        customer: null,
-        contact: null,
-        domain: null,
-        hosting: null,
-        email: null,
-        errors: []
+      // For now, return a placeholder response
+      // Full implementation requires:
+      // 1. Customer creation in ResellerClub
+      // 2. Contact creation
+      // 3. Payment processing
+      // 4. Domain registration API call
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          success: false,
+          error: 'Domain registration requires payment integration. Please contact support.',
+          domain: domain_name,
+          years,
+          sandbox: RESELLERCLUB_SANDBOX,
+          next_steps: [
+            'Configure payment processor (Stripe/PayPal)',
+            'Create customer account in ResellerClub',
+            'Process payment',
+            'Complete domain registration'
+          ]
+        })
       };
-
-      try {
-        // Step 1: Create customer
-        console.log('[SETUP] Creating customer:', customer_email);
-        const customerParams = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'username': customer_email,
-          'passwd': customer_password || `Pass${Date.now()}!`,
-          'name': customer_name,
-          'company': customer_company || customer_name,
-          'address-line-1': address_line_1,
-          'city': city,
-          'state': state || city,
-          'country': country,
-          'zipcode': zipcode,
-          'phone-cc': phone_cc,
-          'phone': phone,
-          'lang-pref': 'en'
-        });
-
-        const customerResponse = await fetch(`${RESELLERCLUB_BASE_URL}/customers/signup.json?${customerParams}`, { method: 'POST' });
-        const customerData = await customerResponse.json();
-
-        if (customerData.status === 'ERROR' || customerData.error) {
-          // Check if customer already exists
-          const existingParams = new URLSearchParams({
-            'auth-userid': RESELLERCLUB_RESELLER_ID,
-            'api-key': RESELLERCLUB_API_KEY,
-            'username': customer_email
-          });
-          const existingResponse = await fetch(`${RESELLERCLUB_BASE_URL}/customers/details.json?${existingParams}`);
-          const existingData = await existingResponse.json();
-
-          if (existingData && existingData.customerid) {
-            results.customer = { id: existingData.customerid, existing: true };
-          } else {
-            results.errors.push({ step: 'customer', error: customerData.message || customerData.error });
-          }
-        } else {
-          results.customer = { id: customerData, new: true };
-        }
-
-        if (!results.customer) {
-          throw new Error('Failed to create or find customer');
-        }
-
-        // Step 2: Create contact
-        console.log('[SETUP] Creating contact for customer:', results.customer.id);
-        const contactParams = new URLSearchParams({
-          'auth-userid': RESELLERCLUB_RESELLER_ID,
-          'api-key': RESELLERCLUB_API_KEY,
-          'customer-id': results.customer.id,
-          'name': customer_name,
-          'company': customer_company || customer_name,
-          'email': customer_email,
-          'address-line-1': address_line_1,
-          'city': city,
-          'country': country,
-          'zipcode': zipcode,
-          'phone-cc': phone_cc,
-          'phone': phone,
-          'type': 'Contact'
-        });
-        if (state) contactParams.append('state', state);
-
-        const contactResponse = await fetch(`${RESELLERCLUB_BASE_URL}/contacts/add.json?${contactParams}`, { method: 'POST' });
-        const contactData = await contactResponse.json();
-
-        if (contactData.status === 'ERROR' || contactData.error) {
-          // Try to get default contact
-          const defaultParams = new URLSearchParams({
-            'auth-userid': RESELLERCLUB_RESELLER_ID,
-            'api-key': RESELLERCLUB_API_KEY,
-            'customer-id': results.customer.id,
-            'type': 'Contact'
-          });
-          const defaultResponse = await fetch(`${RESELLERCLUB_BASE_URL}/contacts/default.json?${defaultParams}`);
-          const defaultData = await defaultResponse.json();
-
-          if (defaultData && !defaultData.error) {
-            results.contact = { id: defaultData, existing: true };
-          } else {
-            results.errors.push({ step: 'contact', error: contactData.message || contactData.error });
-          }
-        } else {
-          results.contact = { id: contactData, new: true };
-        }
-
-        // Step 3: Register domain (if contact was created)
-        if (results.contact) {
-          console.log('[SETUP] Registering domain:', domain_name);
-          const domainParams = new URLSearchParams({
-            'auth-userid': RESELLERCLUB_RESELLER_ID,
-            'api-key': RESELLERCLUB_API_KEY,
-            'domain-name': domain_name,
-            'years': domain_years.toString(),
-            'ns': 'ns1.resellerclub.com',
-            'customer-id': results.customer.id,
-            'reg-contact-id': results.contact.id,
-            'admin-contact-id': results.contact.id,
-            'tech-contact-id': results.contact.id,
-            'billing-contact-id': results.contact.id,
-            'invoice-option': 'NoInvoice',
-            'purchase-privacy': 'false',
-            'protect-privacy': 'false'
-          });
-          domainParams.append('ns', 'ns2.resellerclub.com');
-
-          const domainResponse = await fetch(`${RESELLERCLUB_BASE_URL}/domains/register.json?${domainParams}`, { method: 'POST' });
-          const domainData = await domainResponse.json();
-
-          if (domainData.status === 'ERROR' || domainData.error) {
-            results.errors.push({ step: 'domain', error: domainData.message || domainData.error });
-          } else {
-            results.domain = { order_id: domainData.entityid || domainData, domain: domain_name };
-          }
-        }
-
-        // Step 4: Provision hosting (if requested and domain succeeded)
-        if (hosting_plan_id && results.domain) {
-          console.log('[SETUP] Provisioning hosting for:', domain_name);
-          const hostingParams = new URLSearchParams({
-            'auth-userid': RESELLERCLUB_RESELLER_ID,
-            'api-key': RESELLERCLUB_API_KEY,
-            'domain-name': domain_name,
-            'customer-id': results.customer.id,
-            'plan-id': hosting_plan_id,
-            'months': hosting_months.toString(),
-            'invoice-option': 'NoInvoice',
-            'autorenew': 'true'
-          });
-
-          const hostingResponse = await fetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/linuxus/add.json?${hostingParams}`, { method: 'POST' });
-          const hostingData = await hostingResponse.json();
-
-          if (hostingData.status === 'ERROR' || hostingData.error) {
-            results.errors.push({ step: 'hosting', error: hostingData.message || hostingData.error });
-          } else {
-            results.hosting = { order_id: hostingData.entityid || hostingData };
-          }
-        }
-
-        // Step 5: Provision email (if requested)
-        if (email_num_accounts > 0 && results.domain) {
-          console.log('[SETUP] Provisioning email for:', domain_name);
-          const emailParams = new URLSearchParams({
-            'auth-userid': RESELLERCLUB_RESELLER_ID,
-            'api-key': RESELLERCLUB_API_KEY,
-            'domain-name': domain_name,
-            'customer-id': results.customer.id,
-            'number-of-accounts': email_num_accounts.toString(),
-            'months': email_months.toString(),
-            'invoice-option': 'NoInvoice'
-          });
-
-          const emailResponse = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/add.json?${emailParams}`, { method: 'POST' });
-          const emailData = await emailResponse.json();
-
-          if (emailData.status === 'ERROR' || emailData.error) {
-            results.errors.push({ step: 'email', error: emailData.message || emailData.error });
-          } else {
-            results.email = { order_id: emailData.entityid || emailData, accounts: email_num_accounts };
-          }
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: results.errors.length === 0,
-            partial_success: results.errors.length > 0 && (results.customer || results.domain),
-            results,
-            sandbox: RESELLERCLUB_SANDBOX
-          })
-        };
-
-      } catch (error) {
-        console.error('Complete setup error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message,
-            partial_results: results
-          })
-        };
-      }
     }
 
     // ============================================================
-    // WORDPRESS SITE BUILDER - Automated Affiliate Site Generation
+    // HOSTING SERVICES
     // ============================================================
 
-    // Get available site templates
-    if (path === '/api/site-builder/templates' && method === 'GET') {
-      const templates = [
+    // Get hosting plans
+    if (path === '/api/hosting/plans' && method === 'GET') {
+      // Return available hosting plans (can be configured or fetched from provider)
+      const plans = [
         {
-          id: 'affiliate-starter',
-          name: 'Affiliate Starter',
-          description: 'Clean, fast-loading theme perfect for review sites and comparison content',
-          preview_image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800',
-          features: ['Mobile responsive', 'Fast loading', 'SEO optimized', 'Comparison tables', 'Review boxes'],
-          best_for: ['Product reviews', 'Comparisons', 'How-to guides'],
-          color_schemes: ['blue', 'green', 'purple', 'orange'],
-          recommended_plugins: ['yoast-seo', 'affiliate-link-manager', 'tablepress', 'wpforms-lite']
+          id: 'starter',
+          name: 'Starter',
+          description: 'Perfect for small blogs and personal websites',
+          monthly_price: 4.99,
+          yearly_price: 49.99,
+          features: [
+            '10 GB Storage',
+            '100 GB Bandwidth',
+            '1 Website',
+            'Free SSL',
+            'Daily Backups'
+          ]
         },
         {
-          id: 'authority-pro',
-          name: 'Authority Pro',
-          description: 'Professional design for building trust and authority in your niche',
-          preview_image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800',
-          features: ['Trust badges', 'Author boxes', 'Newsletter signup', 'Social proof', 'Expert reviews'],
-          best_for: ['Health & wellness', 'Finance', 'Technology'],
-          color_schemes: ['navy', 'teal', 'charcoal', 'forest'],
-          recommended_plugins: ['yoast-seo', 'mailchimp-forms', 'social-proof-widget', 'schema-pro']
+          id: 'business',
+          name: 'Business',
+          description: 'For growing businesses and multiple sites',
+          monthly_price: 9.99,
+          yearly_price: 99.99,
+          features: [
+            '25 GB Storage',
+            'Unlimited Bandwidth',
+            '5 Websites',
+            'Free SSL',
+            'Daily Backups',
+            'Free Domain'
+          ]
         },
         {
-          id: 'conversion-focused',
-          name: 'Conversion Focused',
-          description: 'High-converting design with prominent CTAs and affiliate link placement',
-          preview_image: 'https://images.unsplash.com/photo-1553484771-371a605b060b?w=800',
-          features: ['Sticky CTAs', 'Exit intent popups', 'Comparison widgets', 'Price tables', 'Urgency timers'],
-          best_for: ['Deals & coupons', 'Software reviews', 'Service comparisons'],
-          color_schemes: ['red', 'orange', 'gold', 'coral'],
-          recommended_plugins: ['yoast-seo', 'optinmonster', 'tablepress', 'countdown-timer']
-        },
-        {
-          id: 'content-magazine',
-          name: 'Content Magazine',
-          description: 'Magazine-style layout ideal for content-heavy affiliate sites',
-          preview_image: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800',
-          features: ['Grid layouts', 'Category highlights', 'Featured posts', 'Related content', 'Ad placements'],
-          best_for: ['Lifestyle', 'Travel', 'Food & recipes'],
-          color_schemes: ['pink', 'mint', 'lavender', 'peach'],
-          recommended_plugins: ['yoast-seo', 'ad-inserter', 'related-posts', 'social-sharing']
-        },
-        {
-          id: 'minimalist-clean',
-          name: 'Minimalist Clean',
-          description: 'Distraction-free design that keeps readers focused on content',
-          preview_image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800',
-          features: ['Clean typography', 'Whitespace focused', 'Fast performance', 'Easy navigation', 'Reading progress'],
-          best_for: ['Educational content', 'Tutorials', 'In-depth guides'],
-          color_schemes: ['black', 'gray', 'white', 'slate'],
-          recommended_plugins: ['yoast-seo', 'reading-progress-bar', 'syntax-highlighter', 'toc-plus']
+          id: 'professional',
+          name: 'Professional',
+          description: 'For high-traffic websites and e-commerce',
+          monthly_price: 19.99,
+          yearly_price: 199.99,
+          features: [
+            '50 GB Storage',
+            'Unlimited Bandwidth',
+            'Unlimited Websites',
+            'Free SSL',
+            'Daily Backups',
+            'Free Domain',
+            'Priority Support',
+            'CDN Included'
+          ]
         }
       ];
 
@@ -9660,992 +7515,139 @@ Return ONLY a JSON array of domain names without extensions, like:
         headers,
         body: JSON.stringify({
           success: true,
-          templates
+          plans
         })
       };
     }
 
-    // Generate site content based on niche (homepage, about, etc.)
-    if (path === '/api/site-builder/generate-content' && method === 'POST') {
-      const {
-        niche,
-        site_name,
-        template_id,
-        color_scheme,
-        target_audience,
-        tone = 'professional',
-        pages = ['homepage', 'about', 'contact', 'privacy', 'affiliate-disclosure']
-      } = body;
+    // Provision hosting (placeholder)
+    if (path === '/api/hosting/provision' && method === 'POST') {
+      const { plan_id, domain, billing_cycle } = body;
 
-      if (!niche || !site_name) {
+      if (!plan_id || !domain) {
         return {
           statusCode: 400,
           headers,
           body: JSON.stringify({
             success: false,
-            error: 'Niche and site name are required'
+            error: 'Plan ID and domain are required'
           })
         };
-      }
-
-      try {
-        const generatedContent = {};
-
-        // Generate content for each requested page
-        for (const page of pages) {
-          const prompt = generatePagePrompt(page, niche, site_name, target_audience, tone);
-
-          const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-              'Content-Type': 'application/json',
-              'HTTP-Referer': 'https://www.getseowizard.com',
-              'X-Title': 'SEO Wizard - Site Builder'
-            },
-            body: JSON.stringify({
-              model: 'anthropic/claude-3.5-sonnet',
-              messages: [{ role: 'user', content: prompt }],
-              temperature: 0.7,
-              max_tokens: 2000
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to generate ${page} content`);
-          }
-
-          const data = await response.json();
-          const content = data.choices[0].message.content;
-
-          // Parse JSON response
-          try {
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            generatedContent[page] = jsonMatch ? JSON.parse(jsonMatch[0]) : { raw: content };
-          } catch (e) {
-            generatedContent[page] = { raw: content };
-          }
-        }
-
-        // Generate site branding suggestions
-        const brandingPrompt = `Generate branding suggestions for an affiliate website about "${niche}" called "${site_name}".
-
-Return JSON:
-{
-  "tagline": "catchy tagline under 60 characters",
-  "value_proposition": "clear value prop for visitors",
-  "primary_color": "hex color code that fits the niche",
-  "secondary_color": "complementary hex color",
-  "accent_color": "accent hex color for CTAs",
-  "logo_concept": "brief description of logo idea",
-  "favicon_emoji": "single emoji that represents the site",
-  "tone_words": ["3-5 words describing the tone"],
-  "trust_elements": ["list of trust-building elements to include"]
-}`;
-
-        const brandingResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://www.getseowizard.com',
-            'X-Title': 'SEO Wizard - Branding'
-          },
-          body: JSON.stringify({
-            model: 'openai/gpt-4o-mini',
-            messages: [{ role: 'user', content: brandingPrompt }],
-            temperature: 0.8,
-            max_tokens: 500
-          })
-        });
-
-        let branding = {};
-        if (brandingResponse.ok) {
-          const brandingData = await brandingResponse.json();
-          const brandingContent = brandingData.choices[0].message.content;
-          try {
-            const jsonMatch = brandingContent.match(/\{[\s\S]*\}/);
-            branding = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
-          } catch (e) {
-            console.error('Failed to parse branding JSON');
-          }
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            site_name,
-            niche,
-            template_id,
-            branding,
-            pages: generatedContent
-          })
-        };
-
-      } catch (error) {
-        console.error('Site content generation error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Helper function to generate page-specific prompts
-    function generatePagePrompt(page, niche, siteName, targetAudience, tone) {
-      const audienceText = targetAudience ? `Target audience: ${targetAudience}` : '';
-
-      const prompts = {
-        homepage: `Create compelling homepage content for "${siteName}", an affiliate website about "${niche}".
-${audienceText}
-Tone: ${tone}
-
-Return JSON:
-{
-  "hero_headline": "powerful headline under 70 chars",
-  "hero_subheadline": "supporting text under 150 chars",
-  "hero_cta_text": "button text",
-  "value_props": [
-    {"icon": "emoji", "title": "short title", "description": "benefit description"}
-  ],
-  "intro_section": {
-    "headline": "section headline",
-    "content": "2-3 paragraphs introducing the site and its value"
-  },
-  "featured_categories": [
-    {"name": "category name", "description": "brief description", "icon": "emoji"}
-  ],
-  "social_proof_headline": "headline for testimonials section",
-  "cta_section": {
-    "headline": "compelling CTA headline",
-    "description": "supporting text",
-    "button_text": "CTA button text"
-  },
-  "seo_title": "SEO title under 60 chars",
-  "seo_description": "meta description under 160 chars"
-}`,
-
-        about: `Create an About page for "${siteName}", an affiliate website about "${niche}".
-${audienceText}
-Tone: ${tone}
-
-Return JSON:
-{
-  "headline": "page headline",
-  "intro": "opening paragraph that connects with readers",
-  "mission_statement": "clear mission statement",
-  "story": "2-3 paragraphs about why this site exists and who's behind it",
-  "what_we_do": [
-    {"title": "activity", "description": "how we help"}
-  ],
-  "values": [
-    {"title": "value name", "description": "what it means"}
-  ],
-  "affiliate_transparency": "honest statement about affiliate relationships",
-  "cta": {
-    "headline": "engagement CTA",
-    "description": "invite to explore",
-    "button_text": "button text"
-  },
-  "seo_title": "SEO title under 60 chars",
-  "seo_description": "meta description under 160 chars"
-}`,
-
-        contact: `Create a Contact page for "${siteName}", an affiliate website about "${niche}".
-${audienceText}
-Tone: ${tone}
-
-Return JSON:
-{
-  "headline": "welcoming headline",
-  "intro": "friendly intro paragraph",
-  "contact_reasons": [
-    {"title": "reason to contact", "description": "what they can expect"}
-  ],
-  "response_time": "expected response time message",
-  "form_intro": "text above contact form",
-  "alternative_contact": "additional ways to reach out",
-  "faq_preview": [
-    {"question": "common question", "answer": "brief answer"}
-  ],
-  "seo_title": "SEO title under 60 chars",
-  "seo_description": "meta description under 160 chars"
-}`,
-
-        privacy: `Create a Privacy Policy page for "${siteName}", an affiliate website about "${niche}".
-
-Return JSON:
-{
-  "headline": "Privacy Policy",
-  "last_updated": "placeholder for date",
-  "intro": "introduction explaining commitment to privacy",
-  "sections": [
-    {
-      "title": "section title",
-      "content": "section content"
-    }
-  ],
-  "contact_for_privacy": "how to contact about privacy concerns",
-  "seo_title": "Privacy Policy - ${siteName}",
-  "seo_description": "Privacy policy for ${siteName}"
-}
-
-Include sections for: Information Collection, Use of Information, Cookies, Third-Party Services, Data Security, User Rights, Policy Updates.`,
-
-        'affiliate-disclosure': `Create an Affiliate Disclosure page for "${siteName}", an affiliate website about "${niche}".
-
-Return JSON:
-{
-  "headline": "Affiliate Disclosure",
-  "intro": "transparent opening statement about affiliate relationships",
-  "how_it_works": "explanation of how affiliate links work",
-  "commitment_to_honesty": "statement about editorial integrity",
-  "programs_we_use": "general description of affiliate programs used",
-  "reader_benefit": "how this benefits readers",
-  "questions": "invitation to ask questions about affiliates",
-  "seo_title": "Affiliate Disclosure - ${siteName}",
-  "seo_description": "Learn about our affiliate relationships at ${siteName}"
-}`
-      };
-
-      return prompts[page] || prompts.homepage;
-    }
-
-    // Generate WordPress theme customization settings
-    if (path === '/api/site-builder/theme-settings' && method === 'POST') {
-      const { template_id, branding, niche } = body;
-
-      if (!template_id || !branding) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Template ID and branding are required'
-          })
-        };
-      }
-
-      // Generate theme customizer settings based on template and branding
-      const themeSettings = {
-        colors: {
-          primary: branding.primary_color || '#334155',
-          secondary: branding.secondary_color || '#64748b',
-          accent: branding.accent_color || '#3b82f6',
-          background: '#ffffff',
-          text: '#1e293b',
-          muted: '#94a3b8'
-        },
-        typography: {
-          heading_font: 'Inter',
-          body_font: 'Inter',
-          base_font_size: '16px',
-          heading_weight: '700',
-          body_weight: '400'
-        },
-        layout: {
-          container_width: '1200px',
-          sidebar_position: 'right',
-          sidebar_width: '300px'
-        },
-        header: {
-          style: 'standard',
-          sticky: true,
-          show_search: true,
-          show_cta_button: true,
-          cta_text: 'Get Started',
-          cta_url: '#'
-        },
-        footer: {
-          columns: 4,
-          show_social_icons: true,
-          show_newsletter: true,
-          copyright_text: `© ${new Date().getFullYear()} All rights reserved.`
-        },
-        blog: {
-          layout: 'grid',
-          posts_per_page: 12,
-          show_author: true,
-          show_date: true,
-          show_categories: true,
-          show_excerpt: true,
-          excerpt_length: 150
-        },
-        affiliate_elements: {
-          show_disclosure_banner: true,
-          disclosure_text: 'This site contains affiliate links. We may earn a commission at no extra cost to you.',
-          product_box_style: 'card',
-          comparison_table_style: 'striped',
-          cta_button_style: 'rounded',
-          price_display: true,
-          rating_display: true
-        }
-      };
-
-      // Template-specific adjustments
-      if (template_id === 'conversion-focused') {
-        themeSettings.affiliate_elements.show_sticky_cta = true;
-        themeSettings.affiliate_elements.exit_intent_popup = true;
-      } else if (template_id === 'authority-pro') {
-        themeSettings.blog.show_author_bio = true;
-        themeSettings.blog.show_expert_badge = true;
-      } else if (template_id === 'content-magazine') {
-        themeSettings.blog.layout = 'magazine';
-        themeSettings.layout.sidebar_position = 'none';
       }
 
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          success: true,
-          template_id,
-          theme_settings: themeSettings
+          success: false,
+          error: 'Hosting provisioning requires integration setup. Please contact support.',
+          plan: plan_id,
+          domain,
+          billing_cycle: billing_cycle || 'monthly',
+          next_steps: [
+            'Configure hosting provider API credentials',
+            'Process payment',
+            'Provision hosting account',
+            'Configure DNS settings'
+          ]
         })
       };
     }
 
-    // Generate essential pages HTML/blocks for WordPress
-    if (path === '/api/site-builder/generate-blocks' && method === 'POST') {
-      const { page_content, page_type, template_id } = body;
+    // ============================================================
+    // EMAIL HOSTING SERVICES
+    // ============================================================
 
-      if (!page_content || !page_type) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Page content and type are required'
-          })
-        };
-      }
-
-      try {
-        // Generate WordPress Gutenberg blocks based on content
-        let blocks = '';
-
-        if (page_type === 'homepage') {
-          blocks = generateHomepageBlocks(page_content, template_id);
-        } else if (page_type === 'about') {
-          blocks = generateAboutBlocks(page_content);
-        } else if (page_type === 'contact') {
-          blocks = generateContactBlocks(page_content);
-        } else {
-          blocks = generateGenericBlocks(page_content);
+    // Get email hosting plans
+    if (path === '/api/email/plans' && method === 'GET') {
+      const plans = [
+        {
+          id: 'basic',
+          name: 'Basic Email',
+          provider: 'google_workspace',
+          description: 'Professional email with 15GB storage',
+          monthly_price_per_user: 6.00,
+          features: [
+            'Professional email @yourdomain.com',
+            '15 GB storage per user',
+            'Gmail web & mobile apps',
+            'Video meetings (up to 100 participants)',
+            'Google Docs, Sheets, Slides'
+          ]
+        },
+        {
+          id: 'business',
+          name: 'Business Email',
+          provider: 'google_workspace',
+          description: 'Enhanced email with 2TB storage',
+          monthly_price_per_user: 12.00,
+          features: [
+            'Professional email @yourdomain.com',
+            '2 TB storage per user',
+            'Gmail web & mobile apps',
+            'Video meetings (up to 150 participants + recording)',
+            'Google Docs, Sheets, Slides',
+            'AppSheet Core (no-code development)'
+          ]
+        },
+        {
+          id: 'enterprise',
+          name: 'Enterprise Email',
+          provider: 'microsoft_365',
+          description: 'Microsoft 365 with full Office suite',
+          monthly_price_per_user: 12.50,
+          features: [
+            'Professional email @yourdomain.com',
+            '50 GB mailbox',
+            'Outlook desktop & mobile apps',
+            'Microsoft Teams',
+            'Word, Excel, PowerPoint (web & desktop)',
+            'OneDrive 1TB storage'
+          ]
         }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            page_type,
-            blocks,
-            html: blocks // WordPress can use this directly
-          })
-        };
-
-      } catch (error) {
-        console.error('Block generation error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message
-          })
-        };
-      }
-    }
-
-    // Helper functions for generating WordPress blocks
-    function generateHomepageBlocks(content, templateId) {
-      const c = content;
-      return `
-<!-- wp:cover {"dimRatio":50,"minHeight":500,"isDark":true,"align":"full"} -->
-<div class="wp-block-cover alignfull is-dark" style="min-height:500px">
-  <div class="wp-block-cover__inner-container">
-    <!-- wp:heading {"textAlign":"center","level":1,"style":{"typography":{"fontSize":"48px"}}} -->
-    <h1 class="has-text-align-center" style="font-size:48px">${c.hero_headline || 'Welcome to Our Site'}</h1>
-    <!-- /wp:heading -->
-    <!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"20px"}}} -->
-    <p class="has-text-align-center" style="font-size:20px">${c.hero_subheadline || ''}</p>
-    <!-- /wp:paragraph -->
-    <!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} -->
-    <div class="wp-block-buttons">
-      <!-- wp:button {"backgroundColor":"vivid-cyan-blue","style":{"border":{"radius":"8px"}}} -->
-      <div class="wp-block-button"><a class="wp-block-button__link has-vivid-cyan-blue-background-color has-background wp-element-button" style="border-radius:8px">${c.hero_cta_text || 'Get Started'}</a></div>
-      <!-- /wp:button -->
-    </div>
-    <!-- /wp:buttons -->
-  </div>
-</div>
-<!-- /wp:cover -->
-
-<!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"60px","bottom":"60px"}}}} -->
-<div class="wp-block-group alignwide" style="padding-top:60px;padding-bottom:60px">
-  ${c.intro_section ? `
-  <!-- wp:heading {"textAlign":"center"} -->
-  <h2 class="has-text-align-center">${c.intro_section.headline || ''}</h2>
-  <!-- /wp:heading -->
-  <!-- wp:paragraph {"align":"center"} -->
-  <p class="has-text-align-center">${c.intro_section.content || ''}</p>
-  <!-- /wp:paragraph -->
-  ` : ''}
-
-  ${c.value_props ? `
-  <!-- wp:columns {"align":"wide"} -->
-  <div class="wp-block-columns alignwide">
-    ${c.value_props.map(prop => `
-    <!-- wp:column -->
-    <div class="wp-block-column">
-      <!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"36px"}}} -->
-      <p class="has-text-align-center" style="font-size:36px">${prop.icon || '✓'}</p>
-      <!-- /wp:paragraph -->
-      <!-- wp:heading {"textAlign":"center","level":3} -->
-      <h3 class="has-text-align-center">${prop.title || ''}</h3>
-      <!-- /wp:heading -->
-      <!-- wp:paragraph {"align":"center"} -->
-      <p class="has-text-align-center">${prop.description || ''}</p>
-      <!-- /wp:paragraph -->
-    </div>
-    <!-- /wp:column -->
-    `).join('')}
-  </div>
-  <!-- /wp:columns -->
-  ` : ''}
-</div>
-<!-- /wp:group -->
-
-${c.cta_section ? `
-<!-- wp:group {"align":"full","backgroundColor":"light-gray","style":{"spacing":{"padding":{"top":"60px","bottom":"60px"}}}} -->
-<div class="wp-block-group alignfull has-light-gray-background-color has-background" style="padding-top:60px;padding-bottom:60px">
-  <!-- wp:heading {"textAlign":"center"} -->
-  <h2 class="has-text-align-center">${c.cta_section.headline || ''}</h2>
-  <!-- /wp:heading -->
-  <!-- wp:paragraph {"align":"center"} -->
-  <p class="has-text-align-center">${c.cta_section.description || ''}</p>
-  <!-- /wp:paragraph -->
-  <!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} -->
-  <div class="wp-block-buttons">
-    <!-- wp:button {"style":{"border":{"radius":"8px"}}} -->
-    <div class="wp-block-button"><a class="wp-block-button__link wp-element-button" style="border-radius:8px">${c.cta_section.button_text || 'Learn More'}</a></div>
-    <!-- /wp:button -->
-  </div>
-  <!-- /wp:buttons -->
-</div>
-<!-- /wp:group -->
-` : ''}`;
-    }
-
-    function generateAboutBlocks(content) {
-      const c = content;
-      return `
-<!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"40px","bottom":"40px"}}}} -->
-<div class="wp-block-group alignwide" style="padding-top:40px;padding-bottom:40px">
-  <!-- wp:heading {"level":1} -->
-  <h1>${c.headline || 'About Us'}</h1>
-  <!-- /wp:heading -->
-
-  <!-- wp:paragraph {"style":{"typography":{"fontSize":"18px"}}} -->
-  <p style="font-size:18px">${c.intro || ''}</p>
-  <!-- /wp:paragraph -->
-
-  ${c.mission_statement ? `
-  <!-- wp:quote {"style":{"typography":{"fontSize":"20px"}}} -->
-  <blockquote class="wp-block-quote" style="font-size:20px"><p>${c.mission_statement}</p></blockquote>
-  <!-- /wp:quote -->
-  ` : ''}
-
-  <!-- wp:heading {"level":2} -->
-  <h2>Our Story</h2>
-  <!-- /wp:heading -->
-
-  <!-- wp:paragraph -->
-  <p>${c.story || ''}</p>
-  <!-- /wp:paragraph -->
-
-  ${c.values && c.values.length > 0 ? `
-  <!-- wp:heading {"level":2} -->
-  <h2>Our Values</h2>
-  <!-- /wp:heading -->
-
-  <!-- wp:columns -->
-  <div class="wp-block-columns">
-    ${c.values.map(value => `
-    <!-- wp:column -->
-    <div class="wp-block-column">
-      <!-- wp:heading {"level":3} -->
-      <h3>${value.title || ''}</h3>
-      <!-- /wp:heading -->
-      <!-- wp:paragraph -->
-      <p>${value.description || ''}</p>
-      <!-- /wp:paragraph -->
-    </div>
-    <!-- /wp:column -->
-    `).join('')}
-  </div>
-  <!-- /wp:columns -->
-  ` : ''}
-
-  ${c.affiliate_transparency ? `
-  <!-- wp:group {"backgroundColor":"light-gray","style":{"spacing":{"padding":{"top":"20px","bottom":"20px","left":"20px","right":"20px"}}}} -->
-  <div class="wp-block-group has-light-gray-background-color has-background" style="padding:20px">
-    <!-- wp:heading {"level":3} -->
-    <h3>Transparency Note</h3>
-    <!-- /wp:heading -->
-    <!-- wp:paragraph -->
-    <p>${c.affiliate_transparency}</p>
-    <!-- /wp:paragraph -->
-  </div>
-  <!-- /wp:group -->
-  ` : ''}
-</div>
-<!-- /wp:group -->`;
-    }
-
-    function generateContactBlocks(content) {
-      const c = content;
-      return `
-<!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"40px","bottom":"40px"}}}} -->
-<div class="wp-block-group alignwide" style="padding-top:40px;padding-bottom:40px">
-  <!-- wp:heading {"level":1} -->
-  <h1>${c.headline || 'Contact Us'}</h1>
-  <!-- /wp:heading -->
-
-  <!-- wp:paragraph -->
-  <p>${c.intro || ''}</p>
-  <!-- /wp:paragraph -->
-
-  <!-- wp:columns -->
-  <div class="wp-block-columns">
-    <!-- wp:column {"width":"60%"} -->
-    <div class="wp-block-column" style="flex-basis:60%">
-      <!-- wp:heading {"level":2} -->
-      <h2>Send Us a Message</h2>
-      <!-- /wp:heading -->
-
-      <!-- wp:paragraph -->
-      <p>${c.form_intro || 'Fill out the form below and we\'ll get back to you.'}</p>
-      <!-- /wp:paragraph -->
-
-      <!-- wp:html -->
-      <form class="contact-form" action="#" method="post">
-        <p><label>Name<br><input type="text" name="name" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;"></label></p>
-        <p><label>Email<br><input type="email" name="email" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;"></label></p>
-        <p><label>Subject<br><input type="text" name="subject" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;"></label></p>
-        <p><label>Message<br><textarea name="message" rows="5" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;"></textarea></label></p>
-        <p><button type="submit" style="background:#334155;color:white;padding:12px 24px;border:none;border-radius:4px;cursor:pointer;">Send Message</button></p>
-      </form>
-      <!-- /wp:html -->
-
-      ${c.response_time ? `
-      <!-- wp:paragraph {"style":{"typography":{"fontSize":"14px"},"color":{"text":"#64748b"}}} -->
-      <p style="color:#64748b;font-size:14px">${c.response_time}</p>
-      <!-- /wp:paragraph -->
-      ` : ''}
-    </div>
-    <!-- /wp:column -->
-
-    <!-- wp:column {"width":"40%"} -->
-    <div class="wp-block-column" style="flex-basis:40%">
-      ${c.contact_reasons && c.contact_reasons.length > 0 ? `
-      <!-- wp:heading {"level":2} -->
-      <h2>Why Contact Us?</h2>
-      <!-- /wp:heading -->
-
-      ${c.contact_reasons.map(reason => `
-      <!-- wp:group {"style":{"spacing":{"padding":{"top":"15px","bottom":"15px"}},"border":{"bottom":{"color":"#e2e8f0","width":"1px"}}}} -->
-      <div class="wp-block-group" style="padding-top:15px;padding-bottom:15px;border-bottom:1px solid #e2e8f0">
-        <!-- wp:heading {"level":4} -->
-        <h4>${reason.title || ''}</h4>
-        <!-- /wp:heading -->
-        <!-- wp:paragraph {"style":{"typography":{"fontSize":"14px"}}} -->
-        <p style="font-size:14px">${reason.description || ''}</p>
-        <!-- /wp:paragraph -->
-      </div>
-      <!-- /wp:group -->
-      `).join('')}
-      ` : ''}
-    </div>
-    <!-- /wp:column -->
-  </div>
-  <!-- /wp:columns -->
-</div>
-<!-- /wp:group -->`;
-    }
-
-    function generateGenericBlocks(content) {
-      const c = content;
-      let blocks = '';
-
-      if (c.headline) {
-        blocks += `
-<!-- wp:heading {"level":1} -->
-<h1>${c.headline}</h1>
-<!-- /wp:heading -->`;
-      }
-
-      if (c.intro) {
-        blocks += `
-<!-- wp:paragraph -->
-<p>${c.intro}</p>
-<!-- /wp:paragraph -->`;
-      }
-
-      if (c.sections && Array.isArray(c.sections)) {
-        c.sections.forEach(section => {
-          blocks += `
-<!-- wp:heading {"level":2} -->
-<h2>${section.title || ''}</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>${section.content || ''}</p>
-<!-- /wp:paragraph -->`;
-        });
-      }
-
-      return blocks || '<!-- wp:paragraph --><p>Content coming soon.</p><!-- /wp:paragraph -->';
-    }
-
-    // Deploy complete WordPress site with generated content
-    if (path === '/api/site-builder/deploy' && method === 'POST') {
-      const {
-        wordpress_url,
-        wordpress_username,
-        wordpress_app_password,
-        site_name,
-        pages,
-        theme_settings,
-        branding
-      } = body;
-
-      if (!wordpress_url || !wordpress_username || !wordpress_app_password) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'WordPress credentials are required'
-          })
-        };
-      }
-
-      const results = {
-        pages_created: [],
-        settings_updated: [],
-        errors: []
-      };
-
-      try {
-        const auth = Buffer.from(`${wordpress_username}:${wordpress_app_password}`).toString('base64');
-        const wpHeaders = {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/json'
-        };
-
-        // Create/update pages
-        if (pages) {
-          for (const [pageType, pageContent] of Object.entries(pages)) {
-            try {
-              // Generate blocks for this page
-              let blocks = '';
-              if (pageType === 'homepage') {
-                blocks = generateHomepageBlocks(pageContent, 'affiliate-starter');
-              } else if (pageType === 'about') {
-                blocks = generateAboutBlocks(pageContent);
-              } else if (pageType === 'contact') {
-                blocks = generateContactBlocks(pageContent);
-              } else {
-                blocks = generateGenericBlocks(pageContent);
-              }
-
-              const pageData = {
-                title: pageContent.headline || pageType.charAt(0).toUpperCase() + pageType.slice(1),
-                content: blocks,
-                status: 'publish',
-                slug: pageType === 'homepage' ? 'home' : pageType
-              };
-
-              // Add SEO meta if available
-              if (pageContent.seo_title) {
-                pageData.yoast_meta = {
-                  title: pageContent.seo_title,
-                  description: pageContent.seo_description || ''
-                };
-              }
-
-              const response = await fetch(`${wordpress_url}/wp-json/wp/v2/pages`, {
-                method: 'POST',
-                headers: wpHeaders,
-                body: JSON.stringify(pageData)
-              });
-
-              if (response.ok) {
-                const data = await response.json();
-                results.pages_created.push({
-                  type: pageType,
-                  id: data.id,
-                  url: data.link
-                });
-              } else {
-                const errorText = await response.text();
-                results.errors.push({
-                  page: pageType,
-                  error: errorText
-                });
-              }
-            } catch (pageError) {
-              results.errors.push({
-                page: pageType,
-                error: pageError.message
-              });
-            }
-          }
-        }
-
-        // Set homepage as static page (if created)
-        const homePage = results.pages_created.find(p => p.type === 'homepage');
-        if (homePage) {
-          try {
-            // Try to update reading settings via options API
-            await fetch(`${wordpress_url}/wp-json/wp/v2/settings`, {
-              method: 'POST',
-              headers: wpHeaders,
-              body: JSON.stringify({
-                show_on_front: 'page',
-                page_on_front: homePage.id
-              })
-            });
-            results.settings_updated.push('homepage_set');
-          } catch (e) {
-            console.log('Could not set homepage:', e.message);
-          }
-        }
-
-        // Update site title
-        if (site_name) {
-          try {
-            await fetch(`${wordpress_url}/wp-json/wp/v2/settings`, {
-              method: 'POST',
-              headers: wpHeaders,
-              body: JSON.stringify({
-                title: site_name,
-                description: branding?.tagline || ''
-              })
-            });
-            results.settings_updated.push('site_title');
-          } catch (e) {
-            console.log('Could not update site title:', e.message);
-          }
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: results.errors.length === 0,
-            partial_success: results.errors.length > 0 && results.pages_created.length > 0,
-            results
-          })
-        };
-
-      } catch (error) {
-        console.error('Site deployment error:', error);
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: error.message,
-            partial_results: results
-          })
-        };
-      }
-    }
-
-    // Generate recommended plugins list with installation instructions
-    if (path === '/api/site-builder/recommended-plugins' && method === 'GET') {
-      const { template_id, niche } = queryParams;
-
-      const allPlugins = {
-        'yoast-seo': {
-          name: 'Yoast SEO',
-          slug: 'wordpress-seo',
-          description: 'Complete SEO solution for WordPress',
-          category: 'seo',
-          essential: true,
-          settings_guide: 'Configure focus keywords, meta descriptions, and XML sitemaps'
-        },
-        'affiliate-link-manager': {
-          name: 'ThirstyAffiliates',
-          slug: 'thirstyaffiliates',
-          description: 'Manage, cloak, and track affiliate links',
-          category: 'affiliate',
-          essential: true,
-          settings_guide: 'Add your affiliate links and create short branded URLs'
-        },
-        'tablepress': {
-          name: 'TablePress',
-          slug: 'tablepress',
-          description: 'Create responsive comparison tables',
-          category: 'content',
-          essential: true,
-          settings_guide: 'Use for product comparison tables with affiliate links'
-        },
-        'wpforms-lite': {
-          name: 'WPForms Lite',
-          slug: 'wpforms-lite',
-          description: 'Easy contact form builder',
-          category: 'forms',
-          essential: true,
-          settings_guide: 'Create contact forms for reader engagement'
-        },
-        'mailchimp-forms': {
-          name: 'MC4WP: Mailchimp for WordPress',
-          slug: 'mailchimp-for-wp',
-          description: 'Email newsletter signup forms',
-          category: 'email',
-          essential: false,
-          settings_guide: 'Connect Mailchimp and add signup forms to capture leads'
-        },
-        'ad-inserter': {
-          name: 'Ad Inserter',
-          slug: 'ad-inserter',
-          description: 'Insert ads and affiliate banners anywhere',
-          category: 'monetization',
-          essential: false,
-          settings_guide: 'Configure automatic ad placement in posts and pages'
-        },
-        'wp-rocket': {
-          name: 'WP Rocket',
-          slug: 'wp-rocket',
-          description: 'Premium caching for speed optimization',
-          category: 'performance',
-          essential: false,
-          premium: true,
-          settings_guide: 'Enable caching, lazy loading, and minification'
-        },
-        'rankmath': {
-          name: 'Rank Math SEO',
-          slug: 'seo-by-rank-math',
-          description: 'Alternative SEO plugin with advanced features',
-          category: 'seo',
-          essential: false,
-          settings_guide: 'Alternative to Yoast with more free features'
-        },
-        'schema-pro': {
-          name: 'Schema & Structured Data',
-          slug: 'schema-and-structured-data-for-wp',
-          description: 'Add rich snippets for better search visibility',
-          category: 'seo',
-          essential: false,
-          settings_guide: 'Add product, review, and FAQ schema to posts'
-        },
-        'social-sharing': {
-          name: 'Social Warfare',
-          slug: 'social-warfare',
-          description: 'Social sharing buttons that drive traffic',
-          category: 'social',
-          essential: false,
-          settings_guide: 'Add share buttons to increase social traffic'
-        }
-      };
-
-      // Select plugins based on template
-      const templatePlugins = {
-        'affiliate-starter': ['yoast-seo', 'affiliate-link-manager', 'tablepress', 'wpforms-lite'],
-        'authority-pro': ['yoast-seo', 'affiliate-link-manager', 'mailchimp-forms', 'schema-pro', 'wpforms-lite'],
-        'conversion-focused': ['yoast-seo', 'affiliate-link-manager', 'tablepress', 'ad-inserter', 'wpforms-lite'],
-        'content-magazine': ['yoast-seo', 'affiliate-link-manager', 'ad-inserter', 'social-sharing', 'wpforms-lite'],
-        'minimalist-clean': ['yoast-seo', 'affiliate-link-manager', 'wpforms-lite']
-      };
-
-      const selectedPluginIds = templatePlugins[template_id] || templatePlugins['affiliate-starter'];
-      const plugins = selectedPluginIds.map(id => ({
-        id,
-        ...allPlugins[id]
-      }));
+      ];
 
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
           success: true,
-          template_id,
-          plugins,
-          installation_guide: {
-            step1: 'Go to WordPress Admin > Plugins > Add New',
-            step2: 'Search for each plugin by name',
-            step3: 'Click "Install Now" then "Activate"',
-            step4: 'Configure each plugin following the settings guide'
-          }
+          plans
         })
       };
     }
 
-    // Generate complete site setup checklist
-    if (path === '/api/site-builder/setup-checklist' && method === 'GET') {
-      const checklist = {
-        pre_launch: [
-          { task: 'Register domain name', description: 'Choose and register your domain', priority: 'high' },
-          { task: 'Setup web hosting', description: 'Get reliable WordPress hosting', priority: 'high' },
-          { task: 'Install WordPress', description: 'Fresh WordPress installation', priority: 'high' },
-          { task: 'Install SSL certificate', description: 'Enable HTTPS for security', priority: 'high' },
-          { task: 'Choose and install theme', description: 'Select affiliate-optimized theme', priority: 'high' }
-        ],
-        content_setup: [
-          { task: 'Create homepage', description: 'Design compelling homepage with clear value prop', priority: 'high' },
-          { task: 'Create About page', description: 'Build trust with your story', priority: 'high' },
-          { task: 'Create Contact page', description: 'Make it easy for readers to reach you', priority: 'high' },
-          { task: 'Add Privacy Policy', description: 'Required for compliance', priority: 'high' },
-          { task: 'Add Affiliate Disclosure', description: 'FTC compliance requirement', priority: 'high' },
-          { task: 'Setup blog categories', description: 'Organize content by topic', priority: 'medium' },
-          { task: 'Create pillar content', description: 'Write 5-10 cornerstone articles', priority: 'high' }
-        ],
-        seo_setup: [
-          { task: 'Install SEO plugin', description: 'Yoast or Rank Math for SEO', priority: 'high' },
-          { task: 'Submit XML sitemap', description: 'Submit to Google Search Console', priority: 'high' },
-          { task: 'Setup Google Analytics', description: 'Track traffic and conversions', priority: 'high' },
-          { task: 'Configure meta titles/descriptions', description: 'Optimize all pages', priority: 'medium' },
-          { task: 'Add schema markup', description: 'Enable rich snippets', priority: 'medium' }
-        ],
-        monetization: [
-          { task: 'Apply to affiliate programs', description: 'Join relevant programs for your niche', priority: 'high' },
-          { task: 'Setup affiliate link manager', description: 'Install ThirstyAffiliates or similar', priority: 'high' },
-          { task: 'Create product comparison tables', description: 'Use TablePress for comparisons', priority: 'medium' },
-          { task: 'Add call-to-action buttons', description: 'Strategic CTA placement', priority: 'medium' },
-          { task: 'Setup email capture', description: 'Build email list for promotions', priority: 'medium' }
-        ],
-        performance: [
-          { task: 'Install caching plugin', description: 'WP Rocket or LiteSpeed Cache', priority: 'high' },
-          { task: 'Optimize images', description: 'Compress and lazy load images', priority: 'medium' },
-          { task: 'Enable CDN', description: 'Use Cloudflare or similar', priority: 'medium' },
-          { task: 'Test page speed', description: 'Check Google PageSpeed Insights', priority: 'medium' }
-        ],
-        post_launch: [
-          { task: 'Submit to search engines', description: 'Google, Bing index request', priority: 'high' },
-          { task: 'Setup social profiles', description: 'Create matching social accounts', priority: 'medium' },
-          { task: 'Create content calendar', description: 'Plan regular publishing schedule', priority: 'high' },
-          { task: 'Monitor rankings', description: 'Track keyword positions', priority: 'medium' },
-          { task: 'Build backlinks', description: 'Outreach for quality backlinks', priority: 'medium' }
-        ]
-      };
+    // Provision email hosting (placeholder)
+    if (path === '/api/email/provision' && method === 'POST') {
+      const { plan_id, domain, admin_email, num_users } = body;
+
+      if (!plan_id || !domain || !admin_email) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Plan ID, domain, and admin email are required'
+          })
+        };
+      }
 
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          success: true,
-          checklist,
-          total_tasks: Object.values(checklist).flat().length
+          success: false,
+          error: 'Email provisioning requires integration setup. Please contact support.',
+          plan: plan_id,
+          domain,
+          admin_email,
+          num_users: num_users || 1,
+          next_steps: [
+            'Configure email provider API credentials',
+            'Process payment',
+            'Create email subscription',
+            'Configure MX records'
+          ]
         })
       };
     }
@@ -10711,667 +7713,6 @@ ${c.cta_section ? `
       };
     }
 
-    // ============================================================
-    // CONTENT PIPELINE ENDPOINTS
-    // ============================================================
-
-    // DISCOVER KEYWORDS - Find keyword opportunities for a niche
-    if (path === '/api/discover-keywords' && method === 'POST') {
-      const { niche_keyword, count = 50, exclude_keywords = [] } = body;
-
-      if (!niche_keyword) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Niche keyword is required'
-          })
-        };
-      }
-
-      try {
-        console.log(`[DISCOVER KEYWORDS] Finding opportunities for: ${niche_keyword}`);
-        const startTime = Date.now();
-
-        // Get keyword suggestions with metrics from DataForSEO
-        const dataForSEOResult = await callDataForSEOAPI(niche_keyword, 2840, count);
-
-        // Score and rank keywords
-        const scoredKeywords = dataForSEOResult.data
-          .filter(item => !exclude_keywords.includes(item.keyword?.toLowerCase()))
-          .map(item => {
-            const searchVolume = item.keyword_info?.search_volume || 0;
-            const competition = item.keyword_info?.competition || 0;
-            const cpc = item.keyword_info?.cpc || 0;
-
-            // Calculate opportunity score
-            // High volume + low competition + high CPC = high opportunity
-            const volumeScore = Math.min(searchVolume / 1000, 30); // Max 30 points
-            const competitionScore = (1 - competition) * 25; // Max 25 points (lower competition = higher score)
-            const cpcScore = Math.min(cpc * 5, 25); // Max 25 points (higher CPC = buyer intent)
-            const lengthScore = item.keyword.split(' ').length >= 3 ? 20 : 10; // Long-tail bonus
-
-            const opportunityScore = Math.round(volumeScore + competitionScore + cpcScore + lengthScore);
-
-            return {
-              keyword: item.keyword,
-              searchVolume,
-              competition,
-              competitionLevel: item.keyword_info?.competition_level || 'UNKNOWN',
-              cpc: cpc.toFixed(2),
-              opportunityScore,
-              intent: determineIntent(item.keyword),
-              buyerIntent: cpc > 2 ? 'high' : cpc > 0.5 ? 'medium' : 'low'
-            };
-          })
-          .sort((a, b) => b.opportunityScore - a.opportunityScore);
-
-        const duration = Date.now() - startTime;
-        console.log(`[DISCOVER KEYWORDS] Found ${scoredKeywords.length} keywords in ${duration}ms`);
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            niche_keyword,
-            keywords: scoredKeywords,
-            count: scoredKeywords.length,
-            duration_ms: duration,
-            cost: dataForSEOResult.cost || 0
-          })
-        };
-
-      } catch (error) {
-        console.error('[DISCOVER KEYWORDS ERROR]', error);
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ success: false, error: error.message })
-        };
-      }
-    }
-
-    // GENERATE BATCH ARTICLES - Generate multiple articles with affiliate links and images
-    if (path === '/api/generate-batch-articles' && method === 'POST') {
-      const {
-        articles, // Array of { title, keyword, type, priority }
-        model_tier = 'premium',
-        word_count = 2000,
-        affiliate_program = null,
-        generate_images = true,
-        image_type = 'ai' // 'ai', 'stock', or 'none'
-      } = body;
-
-      if (!articles || !Array.isArray(articles) || articles.length === 0) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Articles array is required'
-          })
-        };
-      }
-
-      try {
-        console.log(`[BATCH GENERATION] Starting batch of ${articles.length} articles`);
-        const startTime = Date.now();
-        const results = [];
-
-        // Process articles sequentially to avoid rate limits
-        for (let i = 0; i < articles.length; i++) {
-          const article = articles[i];
-          console.log(`[BATCH ${i + 1}/${articles.length}] Generating: ${article.title}`);
-
-          try {
-            // Generate article content
-            const contentResult = await callContentGenerationAPI(
-              article.title,
-              word_count,
-              {
-                subTopics: [article.keyword],
-                metaKeywords: [article.keyword, article.title.toLowerCase()],
-                description: `Article about ${article.keyword} for affiliate marketing`,
-                creativityIndex: 0.7,
-                includeConclusion: true
-              }
-            );
-
-            // Generate image prompt if requested
-            let imageData = null;
-            if (generate_images && image_type === 'ai' && OPENAI_API_KEY) {
-              try {
-                // Create a contextual image prompt by analyzing the article
-                const imagePromptRequest = `Analyze this article and create a specific, detailed image prompt for a realistic featured image.
-
-Article Title: ${article.title}
-Article Content Preview: ${contentResult.content.substring(0, 1500)}
-
-Create a photorealistic image prompt that:
-1. Captures the main theme and subject matter of the article
-2. Uses natural lighting and professional composition
-3. Avoids text, logos, or watermarks
-4. Shows real people, objects, or scenes (not illustrations)
-5. Is appropriate as a blog featured image (landscape orientation)
-6. Looks like a high-quality stock photo, NOT AI-generated
-
-Return ONLY the image prompt, nothing else. The prompt should be 2-3 sentences describing the exact scene.`;
-
-                const promptResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    model: 'openai/gpt-4o-mini',
-                    messages: [{ role: 'user', content: imagePromptRequest }],
-                    temperature: 0.7,
-                    max_tokens: 200
-                  })
-                });
-
-                if (promptResponse.ok) {
-                  const promptData = await promptResponse.json();
-                  const imagePrompt = promptData.choices[0].message.content.trim();
-
-                  // Generate image with DALL-E 3
-                  const dalleResponse = await fetch('https://api.openai.com/v1/images/generations', {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                      model: 'dall-e-3',
-                      prompt: `Professional photograph, high-quality stock photo style: ${imagePrompt}. Photorealistic, natural lighting, no text overlays, suitable for blog featured image.`,
-                      n: 1,
-                      size: '1792x1024',
-                      quality: 'standard',
-                      style: 'natural' // Use natural style for more realistic images
-                    })
-                  });
-
-                  if (dalleResponse.ok) {
-                    const dalleData = await dalleResponse.json();
-                    imageData = {
-                      url: dalleData.data[0].url,
-                      prompt: imagePrompt,
-                      revised_prompt: dalleData.data[0].revised_prompt
-                    };
-                    console.log(`[BATCH ${i + 1}] Image generated successfully`);
-                  }
-                }
-              } catch (imgError) {
-                console.error(`[BATCH ${i + 1}] Image generation failed:`, imgError.message);
-              }
-            }
-
-            // Build affiliate link HTML if provided
-            let affiliateLinkHtml = '';
-            if (affiliate_program && affiliate_program.affiliate_link) {
-              affiliateLinkHtml = `<a href="${affiliate_program.affiliate_link}" target="_blank" rel="noopener sponsored">${affiliate_program.program_name}</a>`;
-            }
-
-            results.push({
-              index: i,
-              title: article.title,
-              keyword: article.keyword,
-              success: true,
-              content: contentResult.content,
-              wordCount: contentResult.content.split(/\s+/).length,
-              cost: contentResult.cost,
-              image: imageData,
-              affiliateLink: affiliateLinkHtml || null
-            });
-
-          } catch (articleError) {
-            console.error(`[BATCH ${i + 1}] Error:`, articleError.message);
-            results.push({
-              index: i,
-              title: article.title,
-              keyword: article.keyword,
-              success: false,
-              error: articleError.message
-            });
-          }
-        }
-
-        const duration = Date.now() - startTime;
-        const successCount = results.filter(r => r.success).length;
-        const totalCost = results.reduce((sum, r) => sum + (r.cost || 0), 0);
-
-        console.log(`[BATCH GENERATION COMPLETE] ${successCount}/${articles.length} articles in ${duration}ms`);
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            results,
-            summary: {
-              total: articles.length,
-              successful: successCount,
-              failed: articles.length - successCount,
-              totalCost: totalCost.toFixed(4),
-              duration_ms: duration
-            }
-          })
-        };
-
-      } catch (error) {
-        console.error('[BATCH GENERATION ERROR]', error);
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ success: false, error: error.message })
-        };
-      }
-    }
-
-    // GENERATE FEATURED IMAGE - Create AI image for an article
-    if (path === '/api/generate-featured-image' && method === 'POST') {
-      const { article_title, article_content, article_keyword } = body;
-
-      if (!article_title || !article_content) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Article title and content are required'
-          })
-        };
-      }
-
-      if (!OPENAI_API_KEY) {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'OpenAI API key not configured for image generation'
-          })
-        };
-      }
-
-      try {
-        console.log(`[FEATURED IMAGE] Generating for: ${article_title}`);
-        const startTime = Date.now();
-
-        // Step 1: Analyze article and create contextual image prompt
-        const analysisPrompt = `You are an expert visual content strategist. Analyze this article and create a specific, detailed prompt for generating a photorealistic featured image.
-
-ARTICLE TITLE: ${article_title}
-MAIN KEYWORD: ${article_keyword || 'not specified'}
-
-ARTICLE CONTENT (first 2000 chars):
-${article_content.substring(0, 2000)}
-
-Your task:
-1. Identify the MAIN SUBJECT of the article (person, product, concept, activity)
-2. Determine the EMOTIONAL TONE (professional, warm, exciting, calm)
-3. Suggest a SPECIFIC SCENE that captures the article's essence
-4. Consider what would make readers CLICK on this article
-
-Create a detailed image prompt that:
-- Describes a REAL, photographable scene (not abstract concepts)
-- Specifies lighting conditions (natural daylight, soft studio, golden hour)
-- Includes composition details (close-up, wide shot, rule of thirds)
-- Mentions specific visual elements that reinforce the article's message
-- Avoids: text, logos, watermarks, cartoon/illustration style
-- Looks like a high-quality editorial or stock photograph
-
-Return ONLY the image prompt (3-4 sentences), nothing else.`;
-
-        const promptResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://www.getseowizard.com',
-            'X-Title': 'SEO Wizard'
-          },
-          body: JSON.stringify({
-            model: 'openai/gpt-4o-mini',
-            messages: [{ role: 'user', content: analysisPrompt }],
-            temperature: 0.7,
-            max_tokens: 300
-          })
-        });
-
-        if (!promptResponse.ok) {
-          throw new Error(`Failed to generate image prompt: ${promptResponse.status}`);
-        }
-
-        const promptData = await promptResponse.json();
-        const imagePrompt = promptData.choices[0].message.content.trim();
-        console.log(`[FEATURED IMAGE] Generated prompt: ${imagePrompt.substring(0, 100)}...`);
-
-        // Step 2: Generate image with DALL-E 3
-        const dalleResponse = await fetch('https://api.openai.com/v1/images/generations', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'dall-e-3',
-            prompt: `Professional editorial photograph for a blog article. ${imagePrompt} Style: High-end stock photography, natural and authentic look, suitable for professional blog. No text, no watermarks, no artificial elements.`,
-            n: 1,
-            size: '1792x1024', // Landscape for featured image
-            quality: 'standard',
-            style: 'natural' // Natural style for more realistic output
-          })
-        });
-
-        if (!dalleResponse.ok) {
-          const errorData = await dalleResponse.json();
-          throw new Error(`DALL-E error: ${errorData.error?.message || 'Unknown error'}`);
-        }
-
-        const dalleData = await dalleResponse.json();
-        const duration = Date.now() - startTime;
-
-        console.log(`[FEATURED IMAGE] Generated in ${duration}ms`);
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            image: {
-              url: dalleData.data[0].url,
-              prompt: imagePrompt,
-              revised_prompt: dalleData.data[0].revised_prompt,
-              size: '1792x1024',
-              model: 'dall-e-3'
-            },
-            cost: 0.04, // DALL-E 3 standard pricing
-            duration_ms: duration
-          })
-        };
-
-      } catch (error) {
-        console.error('[FEATURED IMAGE ERROR]', error);
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ success: false, error: error.message })
-        };
-      }
-    }
-
-    // PIPELINE - Get next keyword for queue replenishment
-    if (path === '/api/pipeline/next-keyword' && method === 'POST') {
-      const {
-        niche_keyword,
-        exclude_keywords = [],
-        content_themes = [],
-        count = 1
-      } = body;
-
-      if (!niche_keyword) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Niche keyword is required'
-          })
-        };
-      }
-
-      try {
-        console.log(`[NEXT KEYWORD] Finding ${count} keyword(s) for: ${niche_keyword}`);
-        console.log(`[NEXT KEYWORD] Excluding ${exclude_keywords.length} already-used keywords`);
-        const startTime = Date.now();
-
-        // Get fresh keyword suggestions
-        const dataForSEOResult = await callDataForSEOAPI(niche_keyword, 2840, 50);
-
-        // Filter and score keywords
-        const candidates = dataForSEOResult.data
-          .filter(item => {
-            const kw = item.keyword?.toLowerCase();
-            // Exclude already-used keywords
-            if (exclude_keywords.some(ex => ex.toLowerCase() === kw)) return false;
-            // Must have some search volume
-            if ((item.keyword_info?.search_volume || 0) < 100) return false;
-            return true;
-          })
-          .map(item => {
-            const searchVolume = item.keyword_info?.search_volume || 0;
-            const competition = item.keyword_info?.competition || 0;
-            const cpc = item.keyword_info?.cpc || 0;
-
-            // Calculate opportunity score
-            const volumeScore = Math.min(searchVolume / 1000, 30);
-            const competitionScore = (1 - competition) * 25;
-            const cpcScore = Math.min(cpc * 5, 25);
-            const lengthScore = item.keyword.split(' ').length >= 3 ? 20 : 10;
-
-            // Calculate thematic relevance score
-            let relevanceScore = 0;
-            if (content_themes.length > 0) {
-              const kwLower = item.keyword.toLowerCase();
-              const matches = content_themes.filter(theme =>
-                kwLower.includes(theme.toLowerCase()) ||
-                theme.toLowerCase().includes(kwLower.split(' ')[0])
-              );
-              relevanceScore = Math.min(matches.length * 10, 20);
-            }
-
-            // Combined score: 70% opportunity, 30% relevance
-            const opportunityScore = volumeScore + competitionScore + cpcScore + lengthScore;
-            const combinedScore = Math.round((opportunityScore * 0.7) + (relevanceScore * 0.3 * 100 / 20));
-
-            return {
-              keyword: item.keyword,
-              searchVolume,
-              competition,
-              cpc: cpc.toFixed(2),
-              opportunityScore,
-              relevanceScore,
-              combinedScore,
-              intent: determineIntent(item.keyword)
-            };
-          })
-          .sort((a, b) => b.combinedScore - a.combinedScore);
-
-        const selectedKeywords = candidates.slice(0, count);
-        const duration = Date.now() - startTime;
-
-        console.log(`[NEXT KEYWORD] Selected: ${selectedKeywords.map(k => k.keyword).join(', ')}`);
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            keywords: selectedKeywords,
-            total_candidates: candidates.length,
-            duration_ms: duration
-          })
-        };
-
-      } catch (error) {
-        console.error('[NEXT KEYWORD ERROR]', error);
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ success: false, error: error.message })
-        };
-      }
-    }
-
-    // PIPELINE - Generate article for queue
-    if (path === '/api/pipeline/generate-article' && method === 'POST') {
-      const {
-        keyword,
-        title,
-        model_tier = 'premium',
-        word_count = 2000,
-        affiliate_program = null,
-        generate_image = true,
-        existing_articles = [] // For internal linking context
-      } = body;
-
-      if (!keyword) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            success: false,
-            error: 'Keyword is required'
-          })
-        };
-      }
-
-      try {
-        const articleTitle = title || `Complete Guide to ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`;
-        console.log(`[PIPELINE GENERATE] Creating article: ${articleTitle}`);
-        const startTime = Date.now();
-
-        // Build context from existing articles for internal linking
-        let existingContext = '';
-        if (existing_articles.length > 0) {
-          existingContext = `\n\nEXISTING ARTICLES ON THIS SITE (reference these where relevant):
-${existing_articles.slice(0, 10).map(a => `- "${a.title}" (${a.url || 'published'})`).join('\n')}
-
-Include 1-2 natural references to these existing articles where contextually appropriate.`;
-        }
-
-        // Generate article content
-        const contentResult = await callContentGenerationAPI(
-          articleTitle,
-          word_count,
-          {
-            subTopics: [keyword],
-            metaKeywords: [keyword],
-            description: `Comprehensive article about ${keyword}. Write in an engaging, authoritative style suitable for SEO.${existingContext}`,
-            creativityIndex: 0.7,
-            includeConclusion: true
-          }
-        );
-
-        // Generate image if requested
-        let imageData = null;
-        if (generate_image && OPENAI_API_KEY) {
-          try {
-            // Analyze article for image context
-            const analysisPrompt = `Analyze this article and create a photorealistic image prompt.
-
-TITLE: ${articleTitle}
-CONTENT: ${contentResult.content.substring(0, 1500)}
-
-Create a detailed prompt for a realistic, professional photograph that:
-1. Captures the main theme visually
-2. Uses natural lighting and composition
-3. Shows real people, objects, or scenes (not illustrations)
-4. Would work as a blog featured image
-5. Looks like high-quality editorial photography
-
-Return ONLY the prompt (2-3 sentences).`;
-
-            const promptResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                model: 'openai/gpt-4o-mini',
-                messages: [{ role: 'user', content: analysisPrompt }],
-                temperature: 0.7,
-                max_tokens: 200
-              })
-            });
-
-            if (promptResponse.ok) {
-              const promptData = await promptResponse.json();
-              const imagePrompt = promptData.choices[0].message.content.trim();
-
-              const dalleResponse = await fetch('https://api.openai.com/v1/images/generations', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  model: 'dall-e-3',
-                  prompt: `Professional photograph, editorial quality: ${imagePrompt}. Photorealistic, natural lighting, no text or watermarks.`,
-                  n: 1,
-                  size: '1792x1024',
-                  quality: 'standard',
-                  style: 'natural'
-                })
-              });
-
-              if (dalleResponse.ok) {
-                const dalleData = await dalleResponse.json();
-                imageData = {
-                  url: dalleData.data[0].url,
-                  prompt: imagePrompt,
-                  revised_prompt: dalleData.data[0].revised_prompt
-                };
-              }
-            }
-          } catch (imgError) {
-            console.error('[PIPELINE GENERATE] Image generation failed:', imgError.message);
-          }
-        }
-
-        // Insert affiliate links if provided
-        let finalContent = contentResult.content;
-        if (affiliate_program && affiliate_program.affiliate_link) {
-          // Insert affiliate link naturally at end of a relevant paragraph
-          const paragraphs = finalContent.split('\n\n');
-          if (paragraphs.length > 3) {
-            const insertIndex = Math.floor(paragraphs.length * 0.6); // Insert around 60% through
-            const linkText = `Learn more about ${affiliate_program.program_name}`;
-            const affiliateHtml = ` <a href="${affiliate_program.affiliate_link}" target="_blank" rel="noopener sponsored">${linkText}</a>.`;
-            paragraphs[insertIndex] = paragraphs[insertIndex] + affiliateHtml;
-            finalContent = paragraphs.join('\n\n');
-          }
-        }
-
-        const duration = Date.now() - startTime;
-        const actualWordCount = finalContent.split(/\s+/).length;
-
-        console.log(`[PIPELINE GENERATE] Complete in ${duration}ms - ${actualWordCount} words`);
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            success: true,
-            article: {
-              title: articleTitle,
-              keyword,
-              content: finalContent,
-              wordCount: actualWordCount,
-              image: imageData,
-              hasAffiliateLinks: !!affiliate_program,
-              modelTier: model_tier
-            },
-            cost: contentResult.cost + (imageData ? 0.04 : 0),
-            duration_ms: duration
-          })
-        };
-
-      } catch (error) {
-        console.error('[PIPELINE GENERATE ERROR]', error);
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ success: false, error: error.message })
-        };
-      }
-    }
-
     // Default 404
     return {
       statusCode: 404,
@@ -11412,12 +7753,7 @@ Return ONLY the prompt (2-3 sentences).`;
           'POST /api/hosting/provision',
           'GET /api/email/plans',
           'POST /api/email/provision',
-          'GET /api/static-pages',
-          'POST /api/discover-keywords',
-          'POST /api/generate-batch-articles',
-          'POST /api/generate-featured-image',
-          'POST /api/pipeline/next-keyword',
-          'POST /api/pipeline/generate-article'
+          'GET /api/static-pages'
         ]
       })
     };

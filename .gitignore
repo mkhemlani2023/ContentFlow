@@ -110,3 +110,6 @@ comprehensive-test.js
 **/*token*
 **/sk-*
 **/pk-*
+
+# Local Netlify folder
+.netlify

@@ -5,3 +5,11 @@ functions = "netlify/functions"
 
 [functions."api"]
 node_bundler = "esbuild"
+
+[functions."auto-publisher"]
+node_bundler = "esbuild"
+schedule = "@hourly"
+
+# Extend function timeout for batch operations
+[functions]
+timeout = 60
