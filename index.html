@@ -523,6 +523,45 @@
             #wizardFlow {
                 padding: 0 20px;
             }
+
+            /* Reduce header padding on tablets */
+            .header > div {
+                padding: 0 20px !important;
+            }
+
+            /* Smaller logo on tablets */
+            .header img {
+                height: 80px !important;
+            }
+
+            /* Compact navigation on tablets */
+            nav a {
+                font-size: 13px !important;
+                padding: 8px 12px !important;
+            }
+        }
+
+        @media (max-width: 900px) {
+            /* Hide desktop nav earlier, show mobile menu */
+            .header nav {
+                display: none !important;
+            }
+
+            .mobile-menu-btn {
+                display: block !important;
+            }
+
+            /* Ensure auth buttons are visible and accessible */
+            #guestSection {
+                display: flex !important;
+                flex-direction: row;
+                gap: 8px;
+            }
+
+            #guestSection button {
+                padding: 8px 16px !important;
+                font-size: 14px !important;
+            }
         }
 
         @media (max-width: 768px) {
@@ -533,54 +572,47 @@
             }
 
             .header {
-                padding: 10px 15px;
+                padding: 10px 15px !important;
             }
 
             .header > div {
-                padding: 0 15px !important;
+                padding: 0 10px !important;
+                max-width: 100% !important;
             }
 
             .header > div > div {
                 flex-wrap: wrap;
-                gap: 15px !important;
-                justify-content: center !important;
+                gap: 10px !important;
+                justify-content: space-between !important;
             }
 
             /* Reduce logo size on mobile */
             .header img {
-                height: 60px !important;
-                max-height: 60px;
+                height: 50px !important;
+                max-height: 50px;
             }
 
-            /* Stack navigation */
+            /* Hide desktop navigation completely */
             .header nav {
-                flex: 1 1 100%;
-                order: 3;
+                display: none !important;
             }
 
-            .header nav > div {
-                justify-content: center !important;
-                gap: 6px !important;
+            /* Show mobile menu button */
+            .mobile-menu-btn {
+                display: block !important;
             }
 
-            /* Smaller navigation links */
-            nav a {
-                font-size: 12px !important;
-                padding: 6px 10px !important;
-            }
-
-            /* Stack auth buttons */
+            /* Auth buttons - inline on mobile */
             #guestSection {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                width: 100%;
+                display: flex !important;
+                flex-direction: row;
+                gap: 6px;
             }
 
             #guestSection button {
                 margin-right: 0 !important;
-                width: 100%;
-                padding: 10px 16px !important;
+                padding: 8px 12px !important;
+                font-size: 13px !important;
             }
 
             .keyword-metrics-grid {
@@ -749,15 +781,36 @@
         @media (max-width: 480px) {
             /* Small mobile adjustments */
             .header {
-                padding: 10px 15px;
+                padding: 8px 10px !important;
+            }
+
+            .header > div {
+                padding: 0 5px !important;
+            }
+
+            .header > div > div {
+                gap: 8px !important;
+            }
+
+            /* Even smaller logo */
+            .header img {
+                height: 40px !important;
+                max-height: 40px !important;
             }
 
             nav {
-                display: none; /* Hide nav on mobile, show hamburger instead */
+                display: none !important; /* Hide nav on mobile, show hamburger instead */
             }
 
             .mobile-menu-btn {
-                display: block;
+                display: block !important;
+                padding: 8px !important;
+            }
+
+            /* Smaller auth buttons on very small screens */
+            #guestSection button {
+                padding: 6px 10px !important;
+                font-size: 12px !important;
             }
 
             button, .action-btn {
@@ -771,6 +824,17 @@
 
             h3 {
                 font-size: 16px;
+            }
+
+            /* Ensure modals are usable on small screens */
+            #authModal .modal-content,
+            .modal-content {
+                width: 95% !important;
+                max-width: 95% !important;
+                margin: 10px auto !important;
+                padding: 20px !important;
+                max-height: 90vh !important;
+                overflow-y: auto !important;
             }
         }
 
