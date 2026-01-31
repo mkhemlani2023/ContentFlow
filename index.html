@@ -836,6 +836,25 @@
                 max-height: 90vh !important;
                 overflow-y: auto !important;
             }
+
+            /* Auth modal specific mobile fixes */
+            #authModal {
+                padding: 10px !important;
+            }
+
+            #authModal .auth-modal-content {
+                padding: 25px 20px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            #authModal input {
+                padding: 14px 12px !important;
+            }
+
+            #authModal button {
+                padding: 14px !important;
+            }
         }
 
         /* ===================================
@@ -1271,8 +1290,8 @@
     </div>
 
     <!-- Authentication Modal -->
-    <div id="authModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 40px; border-radius: 12px; max-width: 450px; width: 90%; position: relative;">
+    <div id="authModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; overflow-y: auto;">
+        <div class="auth-modal-content" style="background: white; padding: 40px; border-radius: 12px; max-width: 450px; width: 100%; position: relative; margin: auto;">
             <button onclick="hideAuthModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">×</button>
 
             <!-- Login Form -->
