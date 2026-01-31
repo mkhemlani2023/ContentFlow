@@ -1,12 +1,120 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2026-01-29 (Domain Suggestion Troubleshooting)
-**Current Session:** Troubleshooting domain suggestion functionality in Niche Validator
+**Last Updated:** 2026-01-31 (ResellerClub Integration Testing)
+**Current Session:** Testing ResellerClub API integration for "Create a New Blog" functionality
 **Developer:** Mahesh + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2026-01-29 (Domain Suggestion Troubleshooting 🔧)
+## 🆕 LATEST SESSION - 2026-01-31 (ResellerClub Integration Testing 🧪)
+
+**SESSION OVERVIEW:** Deploying and testing ResellerClub integration for the "Create a New Blog" functionality in the Niche Validator module.
+
+### DEPLOYMENT COMPLETED
+
+**1. Fixed netlify.toml Syntax Error**
+- The `netlify.toml` had a configuration error preventing deployments
+- Error: `Configuration property functions.timeout must be an object`
+- Fixed by restructuring function configuration sections
+- Commit: `e1a38eb`
+
+**2. Production Deployment**
+- ResellerClub integration successfully deployed to https://getseowizard.com
+- All API endpoints now available in production
+- Commit `889c249` contains the full ResellerClub integration:
+  - Domain availability checking
+  - Domain registration
+  - Customer management
+  - Contact management
+  - Web hosting services
+  - Email hosting services
+  - Complete setup flow
+
+**3. Environment Variables Configured**
+- `RESELLERCLUB_RESELLER_ID` - Set (1313677)
+- `RESELLERCLUB_API_KEY` - Set
+- `RESELLERCLUB_SANDBOX` - Set to `true` (test mode)
+
+### CURRENT STATUS: ⏳ TESTING IN PROGRESS
+
+**Issue Discovered:**
+- ResellerClub API returns Cloudflare block page instead of JSON
+- Error: "Sorry, you have been blocked. You are unable to access httpapi.com"
+- Root cause: Server IP not whitelisted at Cloudflare level
+
+**Action Taken:**
+- IP address `157.245.127.106` (Digital Ocean droplet) added to ResellerClub whitelist
+- Whitelist propagation takes up to 30 minutes (includes Cloudflare level)
+- Waiting for activation before testing
+
+**Development Server:**
+- Running at: http://157.245.127.106:8888
+- `.env` file created with all credentials
+- Ready for testing once IP whitelist activates
+
+### RESELLERCLUB API ENDPOINTS ADDED
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/resellerclub/pricing` | Get domain/hosting pricing |
+| `/api/resellerclub/check-availability` | Check domain availability |
+| `/api/resellerclub/customer/create` | Create customer account |
+| `/api/resellerclub/customer/get` | Get customer details |
+| `/api/resellerclub/contact/create` | Create contact for registration |
+| `/api/resellerclub/domain/register` | Register a domain |
+| `/api/resellerclub/hosting/plans` | Get hosting plans |
+| `/api/resellerclub/hosting/order` | Order web hosting |
+| `/api/resellerclub/email/plans` | Get email hosting plans |
+| `/api/resellerclub/email/order` | Order email hosting |
+| `/api/resellerclub/complete-setup` | Full blog setup (domain + hosting + email) |
+
+### FRONTEND INTEGRATION
+
+**"Create Blog for This Niche" Flow (index.html):**
+1. User clicks "Create Blog for This Niche" in Niche Validator
+2. AI generates domain suggestions based on niche
+3. User selects a domain
+4. ResellerClub checks availability and pricing
+5. User completes purchase flow
+6. Domain, hosting, and email provisioned automatically
+
+**Error Handling:**
+- If ResellerClub not configured, shows friendly message with required env vars
+- Graceful fallback if API unavailable
+
+### DATABASE TABLES CREATED
+
+File: `create-resellerclub-tables.sql`
+- `resellerclub_customers` - Links users to ResellerClub accounts
+- `domain_orders` - Tracks domain registrations
+- `hosting_orders` - Tracks web hosting orders
+- `email_orders` - Tracks email hosting orders
+- `email_accounts` - Individual email accounts
+- `service_transactions` - Billing/transaction history
+
+**Status:** ⚠️ SQL migration needs to be run in Supabase
+
+### NEXT STEPS
+
+1. ⏳ Wait for IP whitelist to activate (~30 min from 17:30 UTC)
+2. 🧪 Test ResellerClub API on dev server
+3. 🧪 Test "Create Blog for This Niche" complete flow
+4. 📝 Run `create-resellerclub-tables.sql` in Supabase
+5. 🚀 Update status once testing complete
+
+### PRODUCTION CONSIDERATIONS
+
+**For Netlify (Dynamic IPs):**
+- Netlify Functions use dynamic IP addresses
+- Options for production:
+  1. Disable IP restrictions in ResellerClub (if allowed)
+  2. Use a proxy service with fixed IP
+  3. Contact ResellerClub about Netlify compatibility
+  4. Switch to production credentials (may have different restrictions)
+
+---
+
+## 🔄 PREVIOUS SESSION - 2026-01-29 (Domain Suggestion Troubleshooting 🔧)
 
 **SESSION OVERVIEW:** Investigated "Create Blog for This Niche" domain suggestion feature not working. User reported "Domain Generation Failed - Load failed" error.
 

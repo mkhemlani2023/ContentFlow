@@ -42,6 +42,16 @@ const RESELLERCLUB_BASE_URL = RESELLERCLUB_SANDBOX
   ? 'https://test.httpapi.com/api'
   : 'https://httpapi.com/api';
 
+// ResellerClub API fetch helper with browser-like headers to bypass Cloudflare Bot Fight Mode
+const resellerClubFetch = async (url, options = {}) => {
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/json',
+    ...options.headers
+  };
+  return fetch(url, { ...options, headers });
+};
+
 // Domain Authority and Backlink Estimation Functions
 const estimateDomainAuthority = (domain) => {
   // High authority domains (80-95 DA)
@@ -7318,7 +7328,7 @@ Return ONLY the JSON object, no markdown.`;
           params.append('tlds', tld);
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/available.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/domains/available.json?${params}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -7380,7 +7390,7 @@ Return ONLY the JSON object, no markdown.`;
           'reseller-id': RESELLERCLUB_RESELLER_ID
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/products/reseller-cost-price.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/products/reseller-cost-price.json?${params}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -7553,7 +7563,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'lang-pref': 'en'
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/customers/signup.json?${params}`, {
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/customers/signup.json?${params}`, {
           method: 'POST'
         });
 
@@ -7621,7 +7631,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'username': email
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/customers/details.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/customers/details.json?${params}`);
         const data = await response.json();
 
         if (data.status === 'ERROR' || data.error) {
@@ -7685,7 +7695,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'customer-id': customer_id
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/customers/details-by-id.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/customers/details-by-id.json?${params}`);
         const data = await response.json();
 
         if (data.status === 'ERROR' || data.error) {
@@ -7752,7 +7762,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'transaction-description': transaction_description || 'Funds added via SEO Wizard'
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/customers/add-funds.json?${params}`, {
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/customers/add-funds.json?${params}`, {
           method: 'POST'
         });
 
@@ -7852,7 +7862,7 @@ Return ONLY a JSON array of domain names without extensions, like:
         if (address_line_3) params.append('address-line-3', address_line_3);
         if (state) params.append('state', state);
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/contacts/add.json?${params}`, {
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/contacts/add.json?${params}`, {
           method: 'POST'
         });
 
@@ -7920,7 +7930,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'type': type
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/contacts/default.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/contacts/default.json?${params}`);
         const data = await response.json();
 
         return {
@@ -7982,7 +7992,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'page-no': page_no
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/contacts/search.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/contacts/search.json?${params}`);
         const data = await response.json();
 
         return {
@@ -8078,7 +8088,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           ns.forEach(nameserver => params.append('ns', nameserver));
         }
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/register.json?${params}`, {
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/domains/register.json?${params}`, {
           method: 'POST'
         });
 
@@ -8149,7 +8159,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'options': 'All'
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/details.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/domains/details.json?${params}`);
         const data = await response.json();
 
         if (data.status === 'ERROR' || data.error) {
@@ -8214,7 +8224,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'options': 'All'
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/details-by-name.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/domains/details-by-name.json?${params}`);
         const data = await response.json();
 
         if (data.status === 'ERROR' || data.error) {
@@ -8281,7 +8291,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'invoice-option': invoice_option
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/renew.json?${params}`, {
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/domains/renew.json?${params}`, {
           method: 'POST'
         });
 
@@ -8350,7 +8360,7 @@ Return ONLY a JSON array of domain names without extensions, like:
 
         ns.forEach(nameserver => params.append('ns', nameserver));
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/modify-ns.json?${params}`, {
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/domains/modify-ns.json?${params}`, {
           method: 'POST'
         });
 
@@ -8410,7 +8420,7 @@ Return ONLY a JSON array of domain names without extensions, like:
         if (customer_id) params.append('customer-id', customer_id);
         if (status) params.append('status', status);
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/domains/search.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/domains/search.json?${params}`);
         const data = await response.json();
 
         return {
@@ -8515,7 +8525,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'reseller-id': RESELLERCLUB_RESELLER_ID
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/products/reseller-cost-price.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/products/reseller-cost-price.json?${params}`);
         const data = await response.json();
 
         // Parse ResellerClub hosting plans
@@ -8614,7 +8624,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'autorenew': autorenew ? 'true' : 'false'
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/linuxus/add.json?${params}`, {
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/linuxus/add.json?${params}`, {
           method: 'POST'
         });
 
@@ -8684,7 +8694,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'order-id': order_id
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/details.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/details.json?${params}`);
         const data = await response.json();
 
         if (data.status === 'ERROR' || data.error) {
@@ -8741,7 +8751,7 @@ Return ONLY a JSON array of domain names without extensions, like:
         if (customer_id) params.append('customer-id', customer_id);
         if (status) params.append('status', status);
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/search.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/search.json?${params}`);
         const data = await response.json();
 
         return {
@@ -8845,7 +8855,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'reseller-id': RESELLERCLUB_RESELLER_ID
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/products/reseller-cost-price.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/products/reseller-cost-price.json?${params}`);
         const data = await response.json();
 
         // Parse email products
@@ -8947,7 +8957,7 @@ Return ONLY a JSON array of domain names without extensions, like:
         });
 
         // Use Titan Email API endpoint
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/add.json?${params}`, {
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/eelite/add.json?${params}`, {
           method: 'POST'
         });
 
@@ -9022,7 +9032,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'countrycode': country_code
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/user/add.json?${params}`, {
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/eelite/user/add.json?${params}`, {
           method: 'POST'
         });
 
@@ -9090,7 +9100,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'order-id': order_id
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/details.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/eelite/details.json?${params}`);
         const data = await response.json();
 
         if (data.status === 'ERROR' || data.error) {
@@ -9147,7 +9157,7 @@ Return ONLY a JSON array of domain names without extensions, like:
         if (customer_id) params.append('customer-id', customer_id);
         if (status) params.append('status', status);
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/search.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/eelite/search.json?${params}`);
         const data = await response.json();
 
         return {
@@ -9207,7 +9217,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'order-id': order_id
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/dns-records.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/eelite/dns-records.json?${params}`);
         const data = await response.json();
 
         if (data.status === 'ERROR' || data.error) {
@@ -9262,7 +9272,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'reseller-id': RESELLERCLUB_RESELLER_ID
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/products/reseller-cost-price.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/products/reseller-cost-price.json?${params}`);
         const data = await response.json();
 
         return {
@@ -9322,7 +9332,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'customer-id': customer_id
         });
 
-        const response = await fetch(`${RESELLERCLUB_BASE_URL}/billing/customer-balance.json?${params}`);
+        const response = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/billing/customer-balance.json?${params}`);
         const data = await response.json();
 
         return {
@@ -9426,7 +9436,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           'lang-pref': 'en'
         });
 
-        const customerResponse = await fetch(`${RESELLERCLUB_BASE_URL}/customers/signup.json?${customerParams}`, { method: 'POST' });
+        const customerResponse = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/customers/signup.json?${customerParams}`, { method: 'POST' });
         const customerData = await customerResponse.json();
 
         if (customerData.status === 'ERROR' || customerData.error) {
@@ -9436,7 +9446,7 @@ Return ONLY a JSON array of domain names without extensions, like:
             'api-key': RESELLERCLUB_API_KEY,
             'username': customer_email
           });
-          const existingResponse = await fetch(`${RESELLERCLUB_BASE_URL}/customers/details.json?${existingParams}`);
+          const existingResponse = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/customers/details.json?${existingParams}`);
           const existingData = await existingResponse.json();
 
           if (existingData && existingData.customerid) {
@@ -9471,7 +9481,7 @@ Return ONLY a JSON array of domain names without extensions, like:
         });
         if (state) contactParams.append('state', state);
 
-        const contactResponse = await fetch(`${RESELLERCLUB_BASE_URL}/contacts/add.json?${contactParams}`, { method: 'POST' });
+        const contactResponse = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/contacts/add.json?${contactParams}`, { method: 'POST' });
         const contactData = await contactResponse.json();
 
         if (contactData.status === 'ERROR' || contactData.error) {
@@ -9482,7 +9492,7 @@ Return ONLY a JSON array of domain names without extensions, like:
             'customer-id': results.customer.id,
             'type': 'Contact'
           });
-          const defaultResponse = await fetch(`${RESELLERCLUB_BASE_URL}/contacts/default.json?${defaultParams}`);
+          const defaultResponse = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/contacts/default.json?${defaultParams}`);
           const defaultData = await defaultResponse.json();
 
           if (defaultData && !defaultData.error) {
@@ -9514,7 +9524,7 @@ Return ONLY a JSON array of domain names without extensions, like:
           });
           domainParams.append('ns', 'ns2.resellerclub.com');
 
-          const domainResponse = await fetch(`${RESELLERCLUB_BASE_URL}/domains/register.json?${domainParams}`, { method: 'POST' });
+          const domainResponse = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/domains/register.json?${domainParams}`, { method: 'POST' });
           const domainData = await domainResponse.json();
 
           if (domainData.status === 'ERROR' || domainData.error) {
@@ -9538,7 +9548,7 @@ Return ONLY a JSON array of domain names without extensions, like:
             'autorenew': 'true'
           });
 
-          const hostingResponse = await fetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/linuxus/add.json?${hostingParams}`, { method: 'POST' });
+          const hostingResponse = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/multidomainhosting/linuxus/add.json?${hostingParams}`, { method: 'POST' });
           const hostingData = await hostingResponse.json();
 
           if (hostingData.status === 'ERROR' || hostingData.error) {
@@ -9561,7 +9571,7 @@ Return ONLY a JSON array of domain names without extensions, like:
             'invoice-option': 'NoInvoice'
           });
 
-          const emailResponse = await fetch(`${RESELLERCLUB_BASE_URL}/eelite/add.json?${emailParams}`, { method: 'POST' });
+          const emailResponse = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/eelite/add.json?${emailParams}`, { method: 'POST' });
           const emailData = await emailResponse.json();
 
           if (emailData.status === 'ERROR' || emailData.error) {
