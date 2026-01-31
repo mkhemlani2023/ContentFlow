@@ -5680,39 +5680,38 @@ Return ONLY valid JSON:
           ? `\n\nCRITICAL: Do NOT suggest any of these domains (already shown): ${exclude_domains.slice(0, 20).join(', ')}`
           : '';
 
-        // Generate a random 3-letter suffix to make domains more unique
-        const randomSuffix = () => {
-          const consonants = 'bcdfghjklmnpqrstvwxz';
-          const vowels = 'aeiou';
-          return consonants[Math.floor(Math.random() * consonants.length)] +
-                 vowels[Math.floor(Math.random() * vowels.length)] +
-                 consonants[Math.floor(Math.random() * consonants.length)];
+        // Generate random 2-char code for uniqueness
+        const randomCode = () => {
+          const chars = '23456789';
+          return chars[Math.floor(Math.random() * chars.length)] + chars[Math.floor(Math.random() * chars.length)];
         };
-        const suffix1 = randomSuffix();
-        const suffix2 = randomSuffix();
-        const suffix3 = randomSuffix();
+        const code1 = randomCode();
 
-        const domainPrompt = `Generate ${generateCount} HIGHLY UNIQUE .com domain names for a "${niche_keyword}" website.${exclusionNote}
+        // Extract main keyword for SEO
+        const mainKeyword = niche_keyword.replace(/\s+/g, '');
 
-CRITICAL: 99% of obvious domains are TAKEN. You must generate UNUSUAL combinations.
+        const domainPrompt = `Generate ${generateCount} SEO-OPTIMIZED .com domain names for "${niche_keyword}" affiliate website.${exclusionNote}
 
-STRATEGIES THAT WORK (domains likely available):
-1. Add random suffixes: ${niche_keyword.split(' ')[0]}${suffix1}.com, ${niche_keyword.split(' ')[0]}${suffix2}.com
-2. Phonetic misspellings: Peht, Kare, Shur, Kover (instead of Pet, Care, Sure, Cover)
-3. Blend 3 concepts: Related word + random syllable + suffix (ZenPawly, CoverMeowz, FurryVault)
-4. Made-up scientific: Peticus, Furrosa, Canivex, Pawlaris
-5. Reverse/rearrange: Instead of PetCare try CarePetz, InsuPaw, VetPetz
-6. Add unusual endings: -ium, -ora, -yx, -ex, -ova, -ix (Pawlium, Furora, Caninyx)
+GOAL: Domains must contain KEYWORDS (for SEO ranking) AND be AVAILABLE.
 
-EXAMPLES OF LIKELY AVAILABLE NAMES:
-- Paw${suffix1}.com, Fur${suffix2}.com, Pet${suffix3}.com
-- Canivault.com, Meowlix.com, Barkova.com, Petlaris.com
-- ZenPawz.com, FurVaultHQ.com, PetCareNex.com
+BEST SEO-FRIENDLY PATTERNS:
+1. Full keyword + suffix: ${mainKeyword}HQ.com, ${mainKeyword}Guide.com, ${mainKeyword}Tips.com, ${mainKeyword}Info.com
+2. Prefix + keyword: Get${mainKeyword}.com, My${mainKeyword}.com, The${mainKeyword}.com, Best${mainKeyword}.com
+3. Keyword + number: ${mainKeyword}${code1}.com, ${mainKeyword}101.com, ${mainKeyword}365.com, ${mainKeyword}Now.com
+4. Keyword + action: ${mainKeyword}Reviews.com, ${mainKeyword}Buying.com, ${mainKeyword}Compared.com
+5. Keyword variations: ${mainKeyword}Zone.com, ${mainKeyword}Central.com, ${mainKeyword}World.com
 
-AVOID (100% taken): Any 2-word combo like PetCare, FurShield, PawGuard, InsurePet, BestPets
+FOR "${niche_keyword}" - INCLUDE THE ACTUAL KEYWORDS for SEO value!
 
-Return ONLY a JSON array:
-[{"domain":"Example.com","reason":"Why unique","seo_score":75,"score_breakdown":{"keyword_relevance":30,"length":15,"brandability":18,"tld":10,"typability":8}}]`;
+GOOD EXAMPLES (keyword-rich, likely available):
+- ${mainKeyword}HQ.com, ${mainKeyword}Guide.com, ${mainKeyword}${code1}.com
+- Get${mainKeyword}.com, My${mainKeyword}Site.com, The${mainKeyword}Blog.com
+- ${mainKeyword}Reviews.com, ${mainKeyword}Facts.com, ${mainKeyword}Expert.com
+
+BAD (no keywords, won't rank): Aquavex.com, H2OZone.com, WaterNix.com
+
+Return ONLY a JSON array (12 domains with full keywords):
+[{"domain":"${mainKeyword}HQ.com","reason":"Contains full keyword + authority suffix","seo_score":88,"score_breakdown":{"keyword_relevance":40,"length":16,"brandability":18,"tld":10,"typability":9}}]`;
 
         // Add timeout to AI request (20 seconds max)
         const controller = new AbortController();
