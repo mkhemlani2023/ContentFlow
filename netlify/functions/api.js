@@ -5680,20 +5680,39 @@ Return ONLY valid JSON:
           ? `\n\nCRITICAL: Do NOT suggest any of these domains (already shown): ${exclude_domains.slice(0, 20).join(', ')}`
           : '';
 
-        const domainPrompt = `Generate ${generateCount} creative .com domain names for "${niche_keyword}" affiliate site.${exclusionNote}
+        // Generate a random 3-letter suffix to make domains more unique
+        const randomSuffix = () => {
+          const consonants = 'bcdfghjklmnpqrstvwxz';
+          const vowels = 'aeiou';
+          return consonants[Math.floor(Math.random() * consonants.length)] +
+                 vowels[Math.floor(Math.random() * vowels.length)] +
+                 consonants[Math.floor(Math.random() * consonants.length)];
+        };
+        const suffix1 = randomSuffix();
+        const suffix2 = randomSuffix();
+        const suffix3 = randomSuffix();
 
-BE CREATIVE - most obvious names are taken! Use these strategies:
-- Invented words: Petlio, Furrex, Pawzzy, Covrix
-- Unexpected combos: VelvetPaw, NeonTail, CosmicMutt
-- Unique suffixes: Pawsify, Insurify, Petzy, Coverix
-- Abstract: AnchorPet, ShieldedPaws, NestGuard
+        const domainPrompt = `Generate ${generateCount} HIGHLY UNIQUE .com domain names for a "${niche_keyword}" website.${exclusionNote}
 
-AVOID common patterns (already taken): PetCare, BestPet, PetPro, PetHub, PawShield, PetGuard
+CRITICAL: 99% of obvious domains are TAKEN. You must generate UNUSUAL combinations.
 
-Rules: .com only, no hyphens, no numbers, 6-14 chars, easy to spell.
+STRATEGIES THAT WORK (domains likely available):
+1. Add random suffixes: ${niche_keyword.split(' ')[0]}${suffix1}.com, ${niche_keyword.split(' ')[0]}${suffix2}.com
+2. Phonetic misspellings: Peht, Kare, Shur, Kover (instead of Pet, Care, Sure, Cover)
+3. Blend 3 concepts: Related word + random syllable + suffix (ZenPawly, CoverMeowz, FurryVault)
+4. Made-up scientific: Peticus, Furrosa, Canivex, Pawlaris
+5. Reverse/rearrange: Instead of PetCare try CarePetz, InsuPaw, VetPetz
+6. Add unusual endings: -ium, -ora, -yx, -ex, -ova, -ix (Pawlium, Furora, Caninyx)
 
-Return JSON array only:
-[{"domain":"Petlio.com","reason":"Invented brandable word","seo_score":82,"score_breakdown":{"keyword_relevance":32,"length":18,"brandability":18,"tld":10,"typability":9}}]`;
+EXAMPLES OF LIKELY AVAILABLE NAMES:
+- Paw${suffix1}.com, Fur${suffix2}.com, Pet${suffix3}.com
+- Canivault.com, Meowlix.com, Barkova.com, Petlaris.com
+- ZenPawz.com, FurVaultHQ.com, PetCareNex.com
+
+AVOID (100% taken): Any 2-word combo like PetCare, FurShield, PawGuard, InsurePet, BestPets
+
+Return ONLY a JSON array:
+[{"domain":"Example.com","reason":"Why unique","seo_score":75,"score_breakdown":{"keyword_relevance":30,"length":15,"brandability":18,"tld":10,"typability":8}}]`;
 
         // Add timeout to AI request (20 seconds max)
         const controller = new AbortController();
@@ -5710,8 +5729,8 @@ Return JSON array only:
           body: JSON.stringify({
             model: 'openai/gpt-4o-mini',
             messages: [{ role: 'user', content: domainPrompt }],
-            temperature: 0.9,
-            max_tokens: 800 // Reduced for faster response
+            temperature: 1.0, // Max creativity for unique domains
+            max_tokens: 1200
           }),
           signal: controller.signal
         });
