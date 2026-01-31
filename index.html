@@ -9393,106 +9393,451 @@
             }
         }
 
-        // Buy domain via ResellerClub - streamlined purchase flow
+        // Complete Site Setup Wizard - Domain + Hosting + WordPress + Legal Pages
         async function buyDomainViaResellerClub(domain) {
-            // Store the domain for the registration flow
-            window.currentBlogCreation = window.currentBlogCreation || {};
-            window.currentBlogCreation.selectedDomain = domain;
+            window.siteSetup = {
+                domain: domain,
+                niche: window.currentBlogCreation?.validation?.niche_keyword || 'affiliate marketing',
+                step: 1,
+                includeHosting: true,
+                hostingPlan: 'starter',
+                customerDetails: {}
+            };
+            showSiteSetupStep1();
+        }
 
-            // Show streamlined purchase modal (domain already verified as available)
+        function closeSiteSetupModal() {
+            const modal = document.getElementById('siteSetupModal');
+            if (modal) modal.remove();
+        }
+
+        // Step 1: Confirm Domain & Select Package
+        function showSiteSetupStep1() {
+            const { domain } = window.siteSetup;
             const modalHTML = `
-                <div id="purchaseDomainModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
-                    <div style="background: white; border-radius: 16px; max-width: 500px; width: 100%; box-shadow: 0 25px 50px rgba(0,0,0,0.3);">
-                        <div style="padding: 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="margin: 0; color: #1e293b; font-size: 20px;">🛒 Purchase Domain</h3>
-                            <button onclick="document.getElementById('purchaseDomainModal').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+                <div id="siteSetupModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+                    <div style="background: white; border-radius: 16px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.3);">
+                        <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 1;">
+                            <div>
+                                <h3 style="margin: 0; color: #1e293b; font-size: 18px;">🚀 Complete Site Setup</h3>
+                                <div style="color: #64748b; font-size: 13px; margin-top: 4px;">Step 1 of 4: Select Package</div>
+                            </div>
+                            <button onclick="closeSiteSetupModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
                         </div>
                         <div style="padding: 24px;">
-                            <!-- Domain Display -->
-                            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 24px; border-radius: 12px; text-align: center; margin-bottom: 24px;">
-                                <div style="color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 8px;">Your Domain</div>
-                                <div style="color: white; font-size: 28px; font-weight: 700;">${domain}</div>
-                                <div style="color: white; font-size: 14px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                                    <span style="display: inline-block; width: 8px; height: 8px; background: #86efac; border-radius: 50%;"></span>
-                                    Available for Registration
+                            <!-- Domain Banner -->
+                            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 24px;">
+                                <div style="color: rgba(255,255,255,0.8); font-size: 13px;">Your Domain</div>
+                                <div style="color: white; font-size: 24px; font-weight: 700;">${domain}</div>
+                                <div style="color: #86efac; font-size: 13px; margin-top: 4px;">✓ Available</div>
+                            </div>
+
+                            <!-- Package Selection -->
+                            <div style="margin-bottom: 24px;">
+                                <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 12px;">Select Your Package</label>
+
+                                <div onclick="selectHostingPlan('starter')" id="plan-starter" class="hosting-plan selected" style="background: #f0fdf4; border: 2px solid #10b981; padding: 16px; border-radius: 12px; cursor: pointer; margin-bottom: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <div style="font-weight: 600; color: #1e293b;">🌱 Starter Package</div>
+                                            <div style="color: #64748b; font-size: 13px; margin-top: 4px;">Domain + Hosting + WordPress</div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: 700; color: #10b981; font-size: 20px;">$17.98</div>
+                                            <div style="color: #64748b; font-size: 12px;">/first year</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div onclick="selectHostingPlan('pro')" id="plan-pro" class="hosting-plan" style="background: white; border: 2px solid #e2e8f0; padding: 16px; border-radius: 12px; cursor: pointer; margin-bottom: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <div style="font-weight: 600; color: #1e293b;">⭐ Pro Package <span style="background: #f59e0b; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">RECOMMENDED</span></div>
+                                            <div style="color: #64748b; font-size: 13px; margin-top: 4px;">Everything + Email + SSL + Legal Pages</div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: 700; color: #10b981; font-size: 20px;">$29.97</div>
+                                            <div style="color: #64748b; font-size: 12px;">/first year</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div onclick="selectHostingPlan('domain-only')" id="plan-domain-only" class="hosting-plan" style="background: white; border: 2px solid #e2e8f0; padding: 16px; border-radius: 12px; cursor: pointer;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <div style="font-weight: 600; color: #1e293b;">📝 Domain Only</div>
+                                            <div style="color: #64748b; font-size: 13px; margin-top: 4px;">Just register the domain</div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: 700; color: #10b981; font-size: 20px;">$12.99</div>
+                                            <div style="color: #64748b; font-size: 12px;">/year</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Pricing -->
-                            <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                    <span style="color: #64748b;">Domain Registration (1 year)</span>
-                                    <span style="color: #1e293b; font-weight: 600;">$12.99</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                    <span style="color: #64748b;">ICANN Fee</span>
-                                    <span style="color: #1e293b; font-weight: 600;">$0.18</span>
-                                </div>
-                                <div style="border-top: 2px solid #e2e8f0; padding-top: 12px; display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="color: #1e293b; font-weight: 700;">Total</span>
-                                    <span style="color: #10b981; font-weight: 700; font-size: 20px;">$13.17</span>
+                            <!-- What's Included -->
+                            <div id="packageDetails" style="background: #f8fafc; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
+                                <div style="font-weight: 600; color: #1e293b; margin-bottom: 12px;">Starter Package Includes:</div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #475569;">
+                                    <div>✅ Domain Registration</div>
+                                    <div>✅ Web Hosting (10GB)</div>
+                                    <div>✅ WordPress Installed</div>
+                                    <div>✅ Free SSL Certificate</div>
                                 </div>
                             </div>
 
                             <!-- Sandbox Notice -->
-                            <div style="background: #fef3c7; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 18px;">⚠️</span>
-                                <span style="color: #92400e; font-size: 13px;"><strong>Sandbox Mode:</strong> This is a test environment. No real charges will be made.</span>
+                            <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; color: #92400e;">
+                                ⚠️ <strong>Sandbox Mode:</strong> No real charges. Testing environment.
                             </div>
 
-                            <!-- Action Buttons -->
+                            <!-- Actions -->
                             <div style="display: flex; gap: 12px;">
-                                <button onclick="document.getElementById('purchaseDomainModal').remove()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;">
-                                    Cancel
-                                </button>
-                                <button onclick="processDomainPurchase('${domain}')" style="flex: 2; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
-                                    🚀 Complete Purchase
-                                </button>
+                                <button onclick="closeSiteSetupModal()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
+                                <button onclick="showSiteSetupStep2()" style="flex: 2; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">Continue →</button>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
+
+            // Remove existing modal if any
+            closeSiteSetupModal();
             document.body.insertAdjacentHTML('beforeend', modalHTML);
         }
 
-        // Process domain purchase
-        async function processDomainPurchase(domain) {
-            const modal = document.getElementById('purchaseDomainModal');
-            const content = modal.querySelector('div > div');
+        function selectHostingPlan(plan) {
+            window.siteSetup.hostingPlan = plan;
+            document.querySelectorAll('.hosting-plan').forEach(el => {
+                el.style.background = 'white';
+                el.style.borderColor = '#e2e8f0';
+            });
+            const selected = document.getElementById(`plan-${plan}`);
+            if (selected) {
+                selected.style.background = '#f0fdf4';
+                selected.style.borderColor = '#10b981';
+            }
 
-            // Show processing state
+            const details = document.getElementById('packageDetails');
+            if (plan === 'starter') {
+                details.innerHTML = `
+                    <div style="font-weight: 600; color: #1e293b; margin-bottom: 12px;">Starter Package Includes:</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #475569;">
+                        <div>✅ Domain Registration</div>
+                        <div>✅ Web Hosting (10GB)</div>
+                        <div>✅ WordPress Installed</div>
+                        <div>✅ Free SSL Certificate</div>
+                    </div>
+                `;
+            } else if (plan === 'pro') {
+                details.innerHTML = `
+                    <div style="font-weight: 600; color: #1e293b; margin-bottom: 12px;">Pro Package Includes:</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #475569;">
+                        <div>✅ Domain Registration</div>
+                        <div>✅ Web Hosting (25GB)</div>
+                        <div>✅ WordPress Installed</div>
+                        <div>✅ Free SSL Certificate</div>
+                        <div>✅ Professional Email</div>
+                        <div>✅ Daily Backups</div>
+                        <div>✅ Legal Pages (AI Generated)</div>
+                        <div>✅ GDPR Compliance Setup</div>
+                    </div>
+                `;
+            } else {
+                details.innerHTML = `
+                    <div style="font-weight: 600; color: #1e293b; margin-bottom: 12px;">Domain Only Includes:</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #475569;">
+                        <div>✅ Domain Registration</div>
+                        <div>✅ DNS Management</div>
+                        <div>❌ No Hosting</div>
+                        <div>❌ No WordPress</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Step 2: Account Details
+        function showSiteSetupStep2() {
+            const { domain, hostingPlan } = window.siteSetup;
+            const content = document.querySelector('#siteSetupModal > div');
+
             content.innerHTML = `
-                <div style="padding: 48px; text-align: center;">
-                    <div class="spinner" style="width: 48px; height: 48px; border-width: 4px; margin: 0 auto 20px;"></div>
-                    <h3 style="margin: 0 0 10px 0; color: #1e293b;">Processing Purchase</h3>
-                    <p style="color: #64748b; margin: 0;">Registering ${domain}...</p>
+                <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 1;">
+                    <div>
+                        <h3 style="margin: 0; color: #1e293b; font-size: 18px;">🚀 Complete Site Setup</h3>
+                        <div style="color: #64748b; font-size: 13px; margin-top: 4px;">Step 2 of 4: Account Details</div>
+                    </div>
+                    <button onclick="closeSiteSetupModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+                </div>
+                <div style="padding: 24px;">
+                    <div style="background: #eff6ff; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; color: #1e40af;">
+                        🌐 Setting up <strong>${domain}</strong> with ${hostingPlan === 'pro' ? 'Pro' : hostingPlan === 'starter' ? 'Starter' : 'Domain Only'} package
+                    </div>
+
+                    <div style="display: grid; gap: 16px;">
+                        <div>
+                            <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 14px;">Full Name *</label>
+                            <input type="text" id="setup-name" placeholder="John Doe" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 14px;">Email Address *</label>
+                            <input type="email" id="setup-email" placeholder="john@example.com" value="${currentUser?.email || ''}" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div>
+                                <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 14px;">Country *</label>
+                                <select id="setup-country" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                                    <option value="US">United States</option>
+                                    <option value="GB">United Kingdom</option>
+                                    <option value="CA">Canada</option>
+                                    <option value="AU">Australia</option>
+                                    <option value="DE">Germany</option>
+                                    <option value="FR">France</option>
+                                    <option value="IN">India</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 14px;">Phone *</label>
+                                <input type="tel" id="setup-phone" placeholder="+1 555 123 4567" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                            </div>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 14px;">Address *</label>
+                            <input type="text" id="setup-address" placeholder="123 Main Street" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+                            <div>
+                                <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 14px;">City *</label>
+                                <input type="text" id="setup-city" placeholder="New York" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 14px;">ZIP Code *</label>
+                                <input type="text" id="setup-zip" placeholder="10001" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 24px;">
+                        <button onclick="showSiteSetupStep1()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">← Back</button>
+                        <button onclick="showSiteSetupStep3()" style="flex: 2; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">Continue →</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Step 3: Review & Confirm
+        function showSiteSetupStep3() {
+            // Validate and save details
+            const name = document.getElementById('setup-name')?.value?.trim();
+            const email = document.getElementById('setup-email')?.value?.trim();
+            const country = document.getElementById('setup-country')?.value;
+            const phone = document.getElementById('setup-phone')?.value?.trim();
+            const address = document.getElementById('setup-address')?.value?.trim();
+            const city = document.getElementById('setup-city')?.value?.trim();
+            const zip = document.getElementById('setup-zip')?.value?.trim();
+
+            if (!name || !email || !phone || !address || !city || !zip) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            window.siteSetup.customerDetails = { name, email, country, phone, address, city, zip };
+
+            const { domain, hostingPlan } = window.siteSetup;
+            const prices = {
+                'domain-only': { total: 12.99, items: [{ name: 'Domain Registration (1 year)', price: 12.99 }] },
+                'starter': { total: 17.98, items: [{ name: 'Domain Registration (1 year)', price: 12.99 }, { name: 'Web Hosting (1 year)', price: 4.99 }] },
+                'pro': { total: 29.97, items: [{ name: 'Domain Registration (1 year)', price: 12.99 }, { name: 'Web Hosting Pro (1 year)', price: 9.99 }, { name: 'Professional Email (1 year)', price: 4.99 }, { name: 'Legal Pages Generation', price: 2.00 }] }
+            };
+            const pkg = prices[hostingPlan];
+
+            const content = document.querySelector('#siteSetupModal > div');
+            content.innerHTML = `
+                <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 1;">
+                    <div>
+                        <h3 style="margin: 0; color: #1e293b; font-size: 18px;">🚀 Complete Site Setup</h3>
+                        <div style="color: #64748b; font-size: 13px; margin-top: 4px;">Step 3 of 4: Review & Confirm</div>
+                    </div>
+                    <button onclick="closeSiteSetupModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+                </div>
+                <div style="padding: 24px;">
+                    <!-- Order Summary -->
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 16px;">Order Summary</div>
+                        <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
+                            <div style="font-weight: 600; color: #10b981; font-size: 18px; margin-bottom: 4px;">${domain}</div>
+                            <div style="color: #64748b; font-size: 13px;">${hostingPlan === 'pro' ? 'Pro' : hostingPlan === 'starter' ? 'Starter' : 'Domain Only'} Package</div>
+                        </div>
+                        ${pkg.items.map(item => `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                                <span style="color: #64748b;">${item.name}</span>
+                                <span style="color: #1e293b; font-weight: 500;">$${item.price.toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                        <div style="display: flex; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 2px solid #e2e8f0;">
+                            <span style="font-weight: 700; color: #1e293b;">Total</span>
+                            <span style="font-weight: 700; color: #10b981; font-size: 20px;">$${pkg.total.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    <!-- Account Details Summary -->
+                    <div style="background: white; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 12px;">Account Details</div>
+                        <div style="font-size: 14px; color: #64748b; line-height: 1.8;">
+                            <div><strong>${name}</strong></div>
+                            <div>${email}</div>
+                            <div>${address}, ${city} ${zip}</div>
+                            <div>${phone}</div>
+                        </div>
+                    </div>
+
+                    ${hostingPlan === 'pro' ? `
+                    <div style="background: #f0fdf4; border: 1px solid #86efac; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+                        <div style="font-weight: 600; color: #166534; margin-bottom: 8px;">📄 Legal Pages Included</div>
+                        <div style="font-size: 13px; color: #166534; display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+                            <div>✓ Privacy Policy</div>
+                            <div>✓ Terms of Service</div>
+                            <div>✓ Cookie Policy</div>
+                            <div>✓ GDPR Compliance</div>
+                            <div>✓ Affiliate Disclosure</div>
+                            <div>✓ Contact Page</div>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; color: #92400e;">
+                        ⚠️ <strong>Sandbox Mode:</strong> No real charges will be made.
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="showSiteSetupStep2()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">← Back</button>
+                        <button onclick="processSiteSetup()" style="flex: 2; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">🚀 Complete Setup</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Step 4: Process Setup
+        async function processSiteSetup() {
+            const { domain, hostingPlan, customerDetails, niche } = window.siteSetup;
+            const content = document.querySelector('#siteSetupModal > div');
+
+            const steps = [
+                { id: 'domain', label: 'Registering domain...', done: 'Domain registered' },
+                { id: 'hosting', label: 'Setting up hosting...', done: 'Hosting configured' },
+                { id: 'wordpress', label: 'Installing WordPress...', done: 'WordPress installed' },
+                { id: 'ssl', label: 'Configuring SSL...', done: 'SSL enabled' },
+            ];
+            if (hostingPlan === 'pro') {
+                steps.push({ id: 'legal', label: 'Generating legal pages...', done: 'Legal pages created' });
+            }
+
+            content.innerHTML = `
+                <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0;">
+                    <h3 style="margin: 0; color: #1e293b; font-size: 18px;">🚀 Setting Up Your Site</h3>
+                    <div style="color: #64748b; font-size: 13px; margin-top: 4px;">Step 4 of 4: Processing</div>
+                </div>
+                <div style="padding: 24px;">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="font-size: 48px; margin-bottom: 12px;">⚙️</div>
+                        <div style="font-weight: 600; color: #1e293b; font-size: 18px;">${domain}</div>
+                    </div>
+                    <div id="setupProgress" style="display: flex; flex-direction: column; gap: 12px;">
+                        ${steps.map((step, i) => `
+                            <div id="step-${step.id}" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 8px;">
+                                <div class="step-icon" style="width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #64748b;">${i + 1}</div>
+                                <div class="step-label" style="color: #64748b; font-size: 14px;">${step.label}</div>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             `;
 
-            try {
-                // TODO: Implement actual ResellerClub purchase flow
-                // For now, show success message after delay (sandbox mode)
-                await new Promise(resolve => setTimeout(resolve, 2000));
+            // Simulate setup process
+            for (let i = 0; i < steps.length; i++) {
+                const step = steps[i];
+                const stepEl = document.getElementById(`step-${step.id}`);
 
-                content.innerHTML = `
-                    <div style="padding: 48px; text-align: center;">
-                        <div style="font-size: 64px; margin-bottom: 20px;">🎉</div>
-                        <h3 style="margin: 0 0 10px 0; color: #1e293b;">Domain Registered!</h3>
-                        <p style="color: #64748b; margin: 0 0 24px 0;"><strong>${domain}</strong> is now yours (sandbox mode)</p>
-                        <button onclick="document.getElementById('purchaseDomainModal').remove()" style="background: #10b981; color: white; border: none; padding: 14px 32px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;">
-                            Continue
-                        </button>
+                // Mark as in progress
+                stepEl.style.background = '#eff6ff';
+                stepEl.querySelector('.step-icon').style.background = '#3b82f6';
+                stepEl.querySelector('.step-icon').style.color = 'white';
+                stepEl.querySelector('.step-icon').innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;border-color:white;border-top-color:transparent;"></div>';
+                stepEl.querySelector('.step-label').style.color = '#1e40af';
+
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                // Mark as complete
+                stepEl.style.background = '#f0fdf4';
+                stepEl.querySelector('.step-icon').style.background = '#10b981';
+                stepEl.querySelector('.step-icon').innerHTML = '✓';
+                stepEl.querySelector('.step-label').style.color = '#166534';
+                stepEl.querySelector('.step-label').textContent = step.done;
+            }
+
+            // Show success
+            await new Promise(resolve => setTimeout(resolve, 500));
+            showSiteSetupComplete();
+        }
+
+        // Setup Complete
+        function showSiteSetupComplete() {
+            const { domain, hostingPlan } = window.siteSetup;
+            const content = document.querySelector('#siteSetupModal > div');
+
+            content.innerHTML = `
+                <div style="padding: 48px 24px; text-align: center;">
+                    <div style="font-size: 72px; margin-bottom: 20px;">🎉</div>
+                    <h2 style="margin: 0 0 12px 0; color: #1e293b; font-size: 24px;">Site Setup Complete!</h2>
+                    <p style="color: #64748b; margin: 0 0 24px 0; font-size: 15px;">
+                        <strong>${domain}</strong> is now live and ready for content.
+                    </p>
+
+                    <div style="background: #f0fdf4; padding: 20px; border-radius: 12px; margin-bottom: 24px; text-align: left;">
+                        <div style="font-weight: 600; color: #166534; margin-bottom: 12px;">What's Ready:</div>
+                        <div style="display: grid; gap: 8px; font-size: 14px; color: #166534;">
+                            <div>✅ Domain: ${domain}</div>
+                            <div>✅ WordPress installed and configured</div>
+                            <div>✅ SSL certificate active (HTTPS)</div>
+                            ${hostingPlan === 'pro' ? `
+                            <div>✅ Professional email: admin@${domain}</div>
+                            <div>✅ Legal pages published</div>
+                            ` : ''}
+                        </div>
                     </div>
-                `;
-            } catch (error) {
-                content.innerHTML = `
-                    <div style="padding: 48px; text-align: center;">
-                        <div style="font-size: 64px; margin-bottom: 20px;">❌</div>
-                        <h3 style="margin: 0 0 10px 0; color: #991b1b;">Purchase Failed</h3>
-                        <p style="color: #64748b; margin: 0 0 24px 0;">${error.message}</p>
-                        <button onclick="document.getElementById('purchaseDomainModal').remove()" style="background: #334155; color: white; border: none; padding: 14px 32px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;">
-                            Close
+
+                    ${hostingPlan === 'pro' ? `
+                    <div style="background: #eff6ff; padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: left;">
+                        <div style="font-weight: 600; color: #1e40af; margin-bottom: 8px;">📄 Legal Pages Created:</div>
+                        <div style="font-size: 13px; color: #1e40af; display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+                            <div>• Privacy Policy</div>
+                            <div>• Terms of Service</div>
+                            <div>• Cookie Policy</div>
+                            <div>• Affiliate Disclosure</div>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div style="background: #fef3c7; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; color: #92400e;">
+                        ⚠️ <strong>Sandbox Mode:</strong> This was a test setup. No real site was created.
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="closeSiteSetupModal()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">Close</button>
+                        <button onclick="window.open('https://${domain}', '_blank'); closeSiteSetupModal();" style="flex: 2; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">Visit Site →</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Legacy function for compatibility
+        async function processDomainPurchase(domain) {
+            buyDomainViaResellerClub(domain);
+        }
+
+        // Placeholder for old modal close
                         </button>
                     </div>
                 `;
