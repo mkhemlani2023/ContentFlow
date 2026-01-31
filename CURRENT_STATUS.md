@@ -1,12 +1,66 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2026-01-31 (ResellerClub Integration Testing)
-**Current Session:** Testing ResellerClub API integration for "Create a New Blog" functionality
+**Last Updated:** 2026-01-31 (Domain Suggestions & ResellerClub Fix)
+**Current Session:** Fixed "Generate More" domain suggestions and verified ResellerClub API
 **Developer:** Mahesh + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2026-01-31 (ResellerClub Integration Testing 🧪)
+## 🆕 LATEST SESSION - 2026-01-31 (Domain Suggestions & ResellerClub Fix ✅)
+
+**SESSION OVERVIEW:** Fixed the "Generate More Suggestions" bug in Niche Validator and verified ResellerClub API is now working.
+
+### BUGS FIXED
+
+**1. "Generate More Suggestions" Not Returning New Domains**
+- **Problem:** Clicking "Generate More" returned the same domains again
+- **Root Cause:** Backend only asked AI to avoid excluded domains (via prompt), but didn't actually filter them from the response
+- **Fix:** Added backend filtering in `api.js` (line 5808-5813) to remove excluded domains from API response
+- **Result:** Users now get unique domain suggestions each time they click "Generate More"
+
+**Code Change (netlify/functions/api.js):**
+```javascript
+// Filter out excluded domains (already shown to user)
+if (exclude_domains.length > 0) {
+  const excludeSet = new Set(exclude_domains.map(d => d.toLowerCase()));
+  const beforeCount = allSuggestions.length;
+  allSuggestions = allSuggestions.filter(s => !excludeSet.has(s.domain.toLowerCase()));
+  console.log(`[DOMAIN RECOMMENDATION] Filtered out ${beforeCount - allSuggestions.length} previously shown domains`);
+}
+```
+
+**2. ResellerClub API Now Working ✅**
+- **Previous Issue:** API returned Cloudflare block page (IP not whitelisted)
+- **Status Now:** IP whitelist is ACTIVE - API working correctly
+- **Test Results:**
+  - Domain availability check: ✅ Working (`"status":"available"` / `"status":"regthroughothers"`)
+  - Pricing API: ✅ Working (`.com` = $16.19/year)
+- **"Buy Domain" Button:** Now connected to ResellerClub purchase flow (replaced Namecheap link)
+
+### UI IMPROVEMENTS
+
+**Progress Bar for "Generate More":**
+- Added animated progress bar with status messages
+- Shows percentage completion during domain generation
+- Better UX than simple spinner
+
+**Commit:** `72bc03f` - Fix domain suggestions: filter duplicates and integrate ResellerClub
+**Deployed:** https://getseowizard.com (LIVE)
+
+### CURRENT STATUS: ✅ READY FOR TESTING
+
+**Test the Flow:**
+1. Go to https://getseowizard.com
+2. Navigate to Niche Validator
+3. Validate a niche (e.g., "pet insurance")
+4. Click "Create Blog for This Niche"
+5. View domain suggestions
+6. Click "Generate More Suggestions" - should show NEW unique domains
+7. Click "🛒 Buy Domain" on any domain - should open ResellerClub purchase flow
+
+---
+
+## 🔄 PREVIOUS SESSION - 2026-01-31 (ResellerClub Integration Testing 🧪)
 
 **SESSION OVERVIEW:** Deploying and testing ResellerClub integration for the "Create a New Blog" functionality in the Niche Validator module.
 
@@ -35,7 +89,7 @@
 - `RESELLERCLUB_API_KEY` - Set
 - `RESELLERCLUB_SANDBOX` - Set to `true` (test mode)
 
-### CURRENT STATUS: ⏳ TESTING IN PROGRESS
+### IP WHITELIST ISSUE (RESOLVED)
 
 **Issue Discovered:**
 - ResellerClub API returns Cloudflare block page instead of JSON
@@ -44,8 +98,8 @@
 
 **Action Taken:**
 - IP address `157.245.127.106` (Digital Ocean droplet) added to ResellerClub whitelist
-- Whitelist propagation takes up to 30 minutes (includes Cloudflare level)
-- Waiting for activation before testing
+- Whitelist propagation took ~30 minutes
+- **Status:** ✅ NOW WORKING
 
 **Development Server:**
 - Running at: http://157.245.127.106:8888
