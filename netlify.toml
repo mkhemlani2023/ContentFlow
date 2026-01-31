@@ -3,13 +3,12 @@ command = "mkdir -p public && cp index.html public/ && cp *.js public/ && cp *.p
 publish = "public"
 functions = "netlify/functions"
 
-[functions."api"]
+[functions]
 node_bundler = "esbuild"
+
+[functions."api"]
+timeout = 60
 
 [functions."auto-publisher"]
-node_bundler = "esbuild"
 schedule = "@hourly"
-
-# Extend function timeout for batch operations
-[functions]
 timeout = 60
