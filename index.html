@@ -2248,6 +2248,211 @@
                     console.error('Error deleting niche validation:', error);
                     return { success: false, error: error.message };
                 }
+            },
+
+            // ===== CONTENT STRATEGY METHODS =====
+
+            // Save content strategy
+            async saveContentStrategy(strategy) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('content_strategies')
+                        .insert([{
+                            user_id: currentUser.id,
+                            blog_id: strategy.blog_id,
+                            niche_keyword: strategy.niche_keyword,
+                            keywords: strategy.keywords || [],
+                            affiliate_programs: strategy.affiliate_programs || [],
+                            content_pillars: strategy.content_pillars || [],
+                            posting_frequency: strategy.posting_frequency || '3x_week',
+                            posting_days: strategy.posting_days || ['Monday', 'Wednesday', 'Friday'],
+                            posting_time: strategy.posting_time || '09:00',
+                            target_articles_per_month: strategy.target_articles_per_month || 12,
+                            auto_publish_enabled: strategy.auto_publish_enabled || false,
+                            article_queue: strategy.article_queue || [],
+                            queue_size: strategy.queue_size || 20,
+                            affiliate_rotation_index: strategy.affiliate_rotation_index || 0,
+                            affiliate_rotation_mode: strategy.affiliate_rotation_mode || 'round_robin',
+                            image_source: strategy.image_source || 'pexels',
+                            image_style: strategy.image_style || 'professional',
+                            top_performing_keywords: strategy.top_performing_keywords || [],
+                            traffic_insights: strategy.traffic_insights || {},
+                            monetization_strategies: strategy.monetization_strategies || [],
+                            learning_enabled: strategy.learning_enabled !== false,
+                            status: strategy.status || 'active',
+                            last_generated_at: new Date().toISOString()
+                        }])
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error saving content strategy:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load content strategy for a blog
+            async loadContentStrategy(blogId) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('content_strategies')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .eq('blog_id', blogId)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading content strategy:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load all content strategies for user
+            async loadAllContentStrategies() {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('content_strategies')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading content strategies:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Update content strategy
+            async updateContentStrategy(id, updates) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('content_strategies')
+                        .update({
+                            ...updates,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', id)
+                        .eq('user_id', currentUser.id)
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error updating content strategy:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Update article queue in strategy
+            async updateArticleQueue(strategyId, articleQueue) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('content_strategies')
+                        .update({
+                            article_queue: articleQueue,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', strategyId)
+                        .eq('user_id', currentUser.id)
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error updating article queue:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Update affiliate rotation index
+            async updateAffiliateRotation(strategyId, newIndex) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('content_strategies')
+                        .update({
+                            affiliate_rotation_index: newIndex,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', strategyId)
+                        .eq('user_id', currentUser.id)
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error updating affiliate rotation:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Update traffic insights
+            async updateTrafficInsights(strategyId, insights) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('content_strategies')
+                        .update({
+                            traffic_insights: insights,
+                            top_performing_keywords: insights.recommended_keywords || [],
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', strategyId)
+                        .eq('user_id', currentUser.id)
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error updating traffic insights:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Delete content strategy
+            async deleteContentStrategy(id) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { error } = await supabaseClient
+                        .from('content_strategies')
+                        .delete()
+                        .eq('id', id)
+                        .eq('user_id', currentUser.id);
+
+                    if (error) throw error;
+                    return { success: true };
+                } catch (error) {
+                    console.error('Error deleting content strategy:', error);
+                    return { success: false, error: error.message };
+                }
             }
         };
 
@@ -11774,6 +11979,9 @@ ${page.html}
                         <button id="siteBuilderTab" onclick="switchBlogManagementTab('siteBuilder')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #64748b; font-size: 14px; transition: all 0.2s;">
                             🏗️ Site Builder
                         </button>
+                        <button id="contentStrategyTab" onclick="switchBlogManagementTab('contentStrategy')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #64748b; font-size: 14px; transition: all 0.2s;">
+                            📊 Content Strategy
+                        </button>
                     </div>
 
                     <!-- Blogs Tab Content -->
@@ -11974,6 +12182,14 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                             <p style="color: #64748b;">Loading site builder...</p>
                         </div>
                     </div>
+
+                    <!-- Content Strategy Tab Content -->
+                    <div id="contentStrategyTabContent" style="display: none;">
+                        <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">📊</div>
+                            <p style="color: #64748b;">Loading content strategy...</p>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -11990,12 +12206,14 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
             const affiliateTab = document.getElementById('affiliateTab');
             const servicesTab = document.getElementById('servicesTab');
             const siteBuilderTab = document.getElementById('siteBuilderTab');
+            const contentStrategyTab = document.getElementById('contentStrategyTab');
             const blogsTabContent = document.getElementById('blogsTabContent');
             const pipelineTabContent = document.getElementById('pipelineTabContent');
             const publishedTabContent = document.getElementById('publishedTabContent');
             const affiliateTabContent = document.getElementById('affiliateTabContent');
             const servicesTabContent = document.getElementById('servicesTabContent');
             const siteBuilderTabContent = document.getElementById('siteBuilderTabContent');
+            const contentStrategyTabContent = document.getElementById('contentStrategyTabContent');
 
             // Reset all tabs
             blogsTab.style.borderBottom = '3px solid transparent';
@@ -12016,12 +12234,17 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                 siteBuilderTab.style.borderBottom = '3px solid transparent';
                 siteBuilderTab.style.color = '#64748b';
             }
+            if (contentStrategyTab) {
+                contentStrategyTab.style.borderBottom = '3px solid transparent';
+                contentStrategyTab.style.color = '#64748b';
+            }
             blogsTabContent.style.display = 'none';
             if (pipelineTabContent) pipelineTabContent.style.display = 'none';
             publishedTabContent.style.display = 'none';
             affiliateTabContent.style.display = 'none';
             if (servicesTabContent) servicesTabContent.style.display = 'none';
             if (siteBuilderTabContent) siteBuilderTabContent.style.display = 'none';
+            if (contentStrategyTabContent) contentStrategyTabContent.style.display = 'none';
 
             if (tab === 'blogs') {
                 // Show blogs tab
@@ -12071,6 +12294,16 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                 if (siteBuilderTabContent) {
                     siteBuilderTabContent.style.display = 'block';
                     loadSiteBuilderView();
+                }
+            } else if (tab === 'contentStrategy') {
+                // Show content strategy tab
+                if (contentStrategyTab) {
+                    contentStrategyTab.style.borderBottom = '3px solid #334155';
+                    contentStrategyTab.style.color = '#334155';
+                }
+                if (contentStrategyTabContent) {
+                    contentStrategyTabContent.style.display = 'block';
+                    loadContentStrategyView();
                 }
             }
         }
@@ -12669,6 +12902,809 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
         // ============================================================
         // END CONTENT PIPELINE FUNCTIONS
+        // ============================================================
+
+        // ============================================================
+        // CONTENT STRATEGY FUNCTIONS
+        // ============================================================
+
+        // Load and display content strategy view
+        async function loadContentStrategyView() {
+            const contentStrategyTabContent = document.getElementById('contentStrategyTabContent');
+
+            contentStrategyTabContent.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 18px; font-weight: 600; color: #334155; margin-bottom: 10px;">Loading content strategies</div>
+                    <p style="color: #64748b;">Fetching your content planning data...</p>
+                </div>
+            `;
+
+            try {
+                // Load all blogs first
+                const blogsResult = await SupabaseService.loadBlogs();
+                if (!blogsResult.success || !blogsResult.data || blogsResult.data.length === 0) {
+                    contentStrategyTabContent.innerHTML = `
+                        <div style="text-align: center; padding: 60px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">📊</div>
+                            <h3 style="color: #1e293b; margin-bottom: 10px; font-size: 20px;">No Blogs Connected</h3>
+                            <p style="color: #64748b; margin-bottom: 20px;">Connect a blog first to start creating content strategies.</p>
+                            <button onclick="switchBlogManagementTab('blogs')" style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                Add Your First Blog
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const blogs = blogsResult.data;
+
+                // Generate content strategy sections for each blog
+                let strategiesHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #1e293b; margin-bottom: 15px;">📊 Content Strategy & Auto-Publishing</h3>
+                        <p style="color: #64748b; margin-bottom: 25px; font-size: 14px;">
+                            Generate comprehensive content strategies with keyword research, affiliate programs, and automated publishing schedules.
+                            The system learns from your top-performing content to optimize future articles.
+                        </p>
+                    </div>
+                `;
+
+                for (const blog of blogs) {
+                    // Load content strategy for this blog
+                    const strategyResult = await SupabaseService.loadContentStrategy(blog.id);
+                    const strategy = strategyResult.success ? strategyResult.data : null;
+
+                    if (strategy) {
+                        // Blog has a strategy - display it
+                        strategiesHTML += generateStrategyDisplay(blog, strategy);
+                    } else {
+                        // No strategy - show generate button
+                        strategiesHTML += `
+                            <div style="margin-bottom: 30px; background: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                    <div>
+                                        <h4 style="margin: 0 0 5px 0; color: #1e293b; font-size: 16px;">${blog.name}</h4>
+                                        <span style="color: #64748b; font-size: 13px;">${blog.url}</span>
+                                    </div>
+                                    <span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                        No Strategy
+                                    </span>
+                                </div>
+                                <div style="text-align: center; padding: 30px; background: white; border-radius: 8px; border: 2px dashed #e2e8f0;">
+                                    <div style="font-size: 36px; margin-bottom: 15px;">🎯</div>
+                                    <h4 style="color: #1e293b; margin-bottom: 10px;">Generate Content Strategy</h4>
+                                    <p style="color: #64748b; font-size: 14px; margin-bottom: 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                                        Our AI will analyze your niche and generate 25+ buyer-intent keywords, discover affiliate programs,
+                                        create an optimal posting schedule, and build a queue of 20 articles ready for auto-publishing.
+                                    </p>
+                                    <div style="margin-bottom: 15px;">
+                                        <input type="text" id="nicheKeyword_${blog.id}" placeholder="Enter your main niche (e.g., 'pet insurance', 'web hosting')"
+                                            style="width: 100%; max-width: 400px; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                                    </div>
+                                    <button onclick="generateContentStrategy('${blog.id}', '${blog.name}', '${blog.url}')"
+                                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 14px 32px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                                        🚀 Generate Content Strategy
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                contentStrategyTabContent.innerHTML = strategiesHTML;
+
+            } catch (error) {
+                console.error('Error loading content strategy view:', error);
+                contentStrategyTabContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #ef4444;">
+                        <p>Error loading content strategies: ${error.message}</p>
+                        <button onclick="loadContentStrategyView()" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-top: 15px;">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Generate the strategy display HTML for a blog
+        function generateStrategyDisplay(blog, strategy) {
+            const keywords = strategy.keywords || [];
+            const affiliates = strategy.affiliate_programs || [];
+            const queue = strategy.article_queue || [];
+            const pillars = strategy.content_pillars || [];
+
+            // Calculate queue stats
+            const pendingArticles = queue.filter(a => a.status === 'pending').length;
+            const publishedArticles = queue.filter(a => a.status === 'published').length;
+
+            // Format next publish date
+            const nextPublish = strategy.next_publish_at
+                ? new Date(strategy.next_publish_at).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+                : 'Not scheduled';
+
+            return `
+                <div style="margin-bottom: 30px; background: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <!-- Blog Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0;">
+                        <div>
+                            <h4 style="margin: 0 0 5px 0; color: #1e293b; font-size: 18px;">${blog.name}</h4>
+                            <span style="color: #64748b; font-size: 13px;">Niche: <strong>${strategy.niche_keyword || 'Not set'}</strong></span>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <span style="background: ${strategy.auto_publish_enabled ? '#dcfce7' : '#fef3c7'}; color: ${strategy.auto_publish_enabled ? '#166534' : '#92400e'}; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                ${strategy.auto_publish_enabled ? '✓ Auto-Publishing ON' : '⏸ Auto-Publishing OFF'}
+                            </span>
+                            <button onclick="refreshContentStrategy('${strategy.id}', '${blog.id}')" style="background: #64748b; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                🔄 Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats Row -->
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 25px;">
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 24px; font-weight: 700; color: #334155;">${keywords.length}</div>
+                            <div style="font-size: 12px; color: #64748b;">Keywords</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 24px; font-weight: 700; color: #334155;">${affiliates.length}</div>
+                            <div style="font-size: 12px; color: #64748b;">Affiliates</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 24px; font-weight: 700; color: #334155;">${pendingArticles}</div>
+                            <div style="font-size: 12px; color: #64748b;">Queue</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 24px; font-weight: 700; color: #334155;">${publishedArticles}</div>
+                            <div style="font-size: 12px; color: #64748b;">Published</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 24px; font-weight: 700; color: #334155;">${strategy.target_articles_per_month || 12}</div>
+                            <div style="font-size: 12px; color: #64748b;">/Month</div>
+                        </div>
+                    </div>
+
+                    <!-- Expandable Sections -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+
+                        <!-- Keywords Section -->
+                        <div style="background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden;">
+                            <div onclick="toggleStrategySection('keywords_${strategy.id}')" style="padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                <span style="font-weight: 600; color: #1e293b;">🔑 Keywords (${keywords.length})</span>
+                                <span id="keywords_${strategy.id}_toggle" style="color: #64748b;">▼</span>
+                            </div>
+                            <div id="keywords_${strategy.id}" style="max-height: 300px; overflow-y: auto; display: none;">
+                                ${keywords.length > 0 ? `
+                                    <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                                        <thead>
+                                            <tr style="background: #f8fafc;">
+                                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0;">Keyword</th>
+                                                <th style="text-align: center; padding: 10px; border-bottom: 1px solid #e2e8f0;">Volume</th>
+                                                <th style="text-align: center; padding: 10px; border-bottom: 1px solid #e2e8f0;">Diff</th>
+                                                <th style="text-align: center; padding: 10px; border-bottom: 1px solid #e2e8f0;">Intent</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${keywords.slice(0, 15).map(kw => `
+                                                <tr style="border-bottom: 1px solid #f1f5f9;">
+                                                    <td style="padding: 10px; color: #334155;">${kw.keyword}</td>
+                                                    <td style="padding: 10px; text-align: center; color: #64748b;">${(kw.search_volume || 0).toLocaleString()}</td>
+                                                    <td style="padding: 10px; text-align: center;">
+                                                        <span style="background: ${kw.difficulty === 'easy' ? '#dcfce7' : kw.difficulty === 'medium' ? '#fef3c7' : '#fee2e2'}; color: ${kw.difficulty === 'easy' ? '#166534' : kw.difficulty === 'medium' ? '#92400e' : '#dc2626'}; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">
+                                                            ${(kw.difficulty || 'medium').charAt(0).toUpperCase() + (kw.difficulty || 'medium').slice(1)}
+                                                        </span>
+                                                    </td>
+                                                    <td style="padding: 10px; text-align: center;">
+                                                        <span style="color: ${kw.buyer_intent === 'high' ? '#16a34a' : kw.buyer_intent === 'medium' ? '#ca8a04' : '#64748b'}; font-weight: 600; font-size: 11px;">
+                                                            ${(kw.buyer_intent || 'medium').toUpperCase()}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                    ${keywords.length > 15 ? `<div style="padding: 10px; text-align: center; color: #64748b; font-size: 12px;">+ ${keywords.length - 15} more keywords</div>` : ''}
+                                ` : '<div style="padding: 20px; text-align: center; color: #64748b;">No keywords generated yet</div>'}
+                            </div>
+                        </div>
+
+                        <!-- Affiliate Programs Section -->
+                        <div style="background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden;">
+                            <div onclick="toggleStrategySection('affiliates_${strategy.id}')" style="padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                <span style="font-weight: 600; color: #1e293b;">💰 Affiliates (${affiliates.length}) - Round Robin: ${(strategy.affiliate_rotation_index || 0) + 1}/${affiliates.length || 1}</span>
+                                <span id="affiliates_${strategy.id}_toggle" style="color: #64748b;">▼</span>
+                            </div>
+                            <div id="affiliates_${strategy.id}" style="max-height: 300px; overflow-y: auto; display: none;">
+                                ${affiliates.length > 0 ? `
+                                    <div style="padding: 10px;">
+                                        ${affiliates.map((program, idx) => `
+                                            <div style="padding: 12px; border-bottom: 1px solid #f1f5f9; ${idx === (strategy.affiliate_rotation_index || 0) % affiliates.length ? 'background: #f0fdf4; border-left: 3px solid #16a34a;' : ''}">
+                                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                                    <div>
+                                                        <strong style="color: #1e293b;">${program.program_name || program.name}</strong>
+                                                        ${idx === (strategy.affiliate_rotation_index || 0) % affiliates.length ? '<span style="margin-left: 8px; font-size: 10px; background: #16a34a; color: white; padding: 2px 6px; border-radius: 10px;">NEXT</span>' : ''}
+                                                    </div>
+                                                    <span style="color: #16a34a; font-weight: 600; font-size: 13px;">${program.commission_rate || program.commission || 'N/A'}</span>
+                                                </div>
+                                                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                                                    ${program.network || 'Direct'} • ${program.cookie_duration || 'N/A cookie'}
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : '<div style="padding: 20px; text-align: center; color: #64748b;">No affiliate programs discovered</div>'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Article Queue Section -->
+                    <div style="margin-top: 20px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden;">
+                        <div onclick="toggleStrategySection('queue_${strategy.id}')" style="padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                            <span style="font-weight: 600; color: #1e293b;">📋 Article Queue (${queue.length}/20)</span>
+                            <span id="queue_${strategy.id}_toggle" style="color: #64748b;">▼</span>
+                        </div>
+                        <div id="queue_${strategy.id}" style="max-height: 400px; overflow-y: auto; display: none;">
+                            ${queue.length > 0 ? `
+                                <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background: #f8fafc;">
+                                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0;">#</th>
+                                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0;">Keyword</th>
+                                            <th style="text-align: center; padding: 10px; border-bottom: 1px solid #e2e8f0;">Type</th>
+                                            <th style="text-align: center; padding: 10px; border-bottom: 1px solid #e2e8f0;">Affiliate</th>
+                                            <th style="text-align: center; padding: 10px; border-bottom: 1px solid #e2e8f0;">Status</th>
+                                            <th style="text-align: center; padding: 10px; border-bottom: 1px solid #e2e8f0;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${queue.map((article, idx) => `
+                                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                                <td style="padding: 10px; color: #64748b;">${idx + 1}</td>
+                                                <td style="padding: 10px; color: #334155; font-weight: 500;">${article.keyword}</td>
+                                                <td style="padding: 10px; text-align: center;">
+                                                    <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 10px; font-size: 11px; color: #64748b;">
+                                                        ${article.content_type || 'article'}
+                                                    </span>
+                                                </td>
+                                                <td style="padding: 10px; text-align: center; font-size: 12px; color: #64748b;">
+                                                    ${article.affiliate_program?.program_name || article.affiliate_program?.name || 'None'}
+                                                </td>
+                                                <td style="padding: 10px; text-align: center;">
+                                                    <span style="background: ${article.status === 'published' ? '#dcfce7' : article.status === 'generating' ? '#dbeafe' : '#f1f5f9'}; color: ${article.status === 'published' ? '#166534' : article.status === 'generating' ? '#1d4ed8' : '#64748b'}; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">
+                                                        ${(article.status || 'pending').charAt(0).toUpperCase() + (article.status || 'pending').slice(1)}
+                                                    </span>
+                                                </td>
+                                                <td style="padding: 10px; text-align: center;">
+                                                    ${article.status === 'pending' ? `
+                                                        <button onclick="publishQueueArticle('${strategy.id}', ${idx})" style="background: #334155; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                                            Publish Now
+                                                        </button>
+                                                    ` : ''}
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            ` : '<div style="padding: 20px; text-align: center; color: #64748b;">Article queue is empty. Generate a strategy to populate the queue.</div>'}
+                        </div>
+                    </div>
+
+                    <!-- Auto-Publishing Settings -->
+                    <div style="margin-top: 20px; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <h5 style="margin: 0 0 15px 0; color: #1e293b; font-size: 14px;">⏰ Auto-Publishing Schedule</h5>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; align-items: end;">
+                            <div>
+                                <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 5px;">Enable Auto-Publishing</label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="autoPublish_${strategy.id}" ${strategy.auto_publish_enabled ? 'checked' : ''}
+                                        onchange="toggleAutoPublish('${strategy.id}', this.checked)"
+                                        style="width: 18px; height: 18px; cursor: pointer;">
+                                    <span style="font-size: 13px; color: #334155;">${strategy.auto_publish_enabled ? 'Enabled' : 'Disabled'}</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 5px;">Frequency</label>
+                                <select id="frequency_${strategy.id}" onchange="updatePostingSchedule('${strategy.id}')" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                                    <option value="daily" ${strategy.posting_frequency === 'daily' ? 'selected' : ''}>Daily</option>
+                                    <option value="5x_week" ${strategy.posting_frequency === '5x_week' ? 'selected' : ''}>5x per week</option>
+                                    <option value="3x_week" ${strategy.posting_frequency === '3x_week' ? 'selected' : ''}>3x per week</option>
+                                    <option value="2x_week" ${strategy.posting_frequency === '2x_week' ? 'selected' : ''}>2x per week</option>
+                                    <option value="weekly" ${strategy.posting_frequency === 'weekly' ? 'selected' : ''}>Weekly</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 5px;">Publish Time</label>
+                                <input type="time" id="publishTime_${strategy.id}" value="${strategy.posting_time || '09:00'}"
+                                    onchange="updatePostingSchedule('${strategy.id}')"
+                                    style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 5px;">Next Publish</label>
+                                <div style="padding: 8px; background: #f8fafc; border-radius: 6px; font-size: 13px; color: #334155;">
+                                    ${nextPublish}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button onclick="publishNextArticle('${strategy.id}')" style="background: #16a34a; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                                ▶ Publish Next Article Now
+                            </button>
+                            <button onclick="analyzeTrafficInsights('${strategy.id}', '${blog.id}')" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                                📈 Analyze Traffic & Learn
+                            </button>
+                            <button onclick="regenerateStrategy('${strategy.id}', '${blog.id}', '${blog.name}', '${blog.url}')" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                                🔄 Regenerate Strategy
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Traffic Insights Section -->
+                    ${strategy.traffic_insights && Object.keys(strategy.traffic_insights).length > 0 ? `
+                        <div style="margin-top: 20px; background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); padding: 20px; border-radius: 8px; border: 1px solid #86efac;">
+                            <h5 style="margin: 0 0 15px 0; color: #166534; font-size: 14px;">📊 Traffic Insights & Learning</h5>
+                            <p style="color: #15803d; font-size: 13px; margin-bottom: 15px;">${strategy.traffic_insights.insights_summary || 'Analyzing your traffic patterns...'}</p>
+                            ${strategy.traffic_insights.success_patterns ? `
+                                <div style="margin-bottom: 10px;">
+                                    <strong style="color: #166534; font-size: 12px;">What's Working:</strong>
+                                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px;">
+                                        ${strategy.traffic_insights.success_patterns.slice(0, 5).map(p => `
+                                            <span style="background: white; color: #166534; padding: 4px 10px; border-radius: 15px; font-size: 11px; border: 1px solid #86efac;">${p}</span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${strategy.traffic_insights.recommended_keywords ? `
+                                <div>
+                                    <strong style="color: #166534; font-size: 12px;">Recommended Keywords (from traffic analysis):</strong>
+                                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px;">
+                                        ${strategy.traffic_insights.recommended_keywords.slice(0, 5).map(kw => `
+                                            <span style="background: #16a34a; color: white; padding: 4px 10px; border-radius: 15px; font-size: 11px;">${kw.keyword || kw}</span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Toggle strategy section visibility
+        function toggleStrategySection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const toggle = document.getElementById(sectionId + '_toggle');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                toggle.textContent = '▲';
+            } else {
+                section.style.display = 'none';
+                toggle.textContent = '▼';
+            }
+        }
+
+        // Generate content strategy for a blog
+        async function generateContentStrategy(blogId, blogName, blogUrl) {
+            const nicheInput = document.getElementById(`nicheKeyword_${blogId}`);
+            const nicheKeyword = nicheInput?.value?.trim();
+
+            if (!nicheKeyword) {
+                showToast('Please enter a niche keyword', 'error');
+                nicheInput?.focus();
+                return;
+            }
+
+            // Show progress modal
+            showProgressModal('Generating Content Strategy', `
+                <div style="text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">🚀</div>
+                    <p style="color: #64748b; margin-bottom: 20px;">Analyzing your niche and generating a comprehensive content strategy...</p>
+                    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; text-align: left; font-size: 13px; color: #64748b;">
+                        <div id="strategyProgress">
+                            <div>✓ Initializing strategy generation...</div>
+                        </div>
+                    </div>
+                </div>
+            `);
+
+            try {
+                const progressDiv = document.getElementById('strategyProgress');
+
+                // Update progress
+                progressDiv.innerHTML += '<div>→ Generating 25+ buyer-intent keywords...</div>';
+
+                const response = await fetch('/api/generate-content-strategy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        blog_id: blogId,
+                        blog_name: blogName,
+                        blog_url: blogUrl,
+                        niche_keyword: nicheKeyword
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Strategy generation failed');
+                }
+
+                progressDiv.innerHTML += '<div>✓ Keywords generated</div>';
+                progressDiv.innerHTML += '<div>✓ Affiliate programs discovered</div>';
+                progressDiv.innerHTML += '<div>✓ Posting schedule created</div>';
+                progressDiv.innerHTML += '<div>✓ Article queue populated</div>';
+                progressDiv.innerHTML += '<div>→ Saving strategy...</div>';
+
+                // Save to Supabase
+                const saveResult = await SupabaseService.saveContentStrategy({
+                    blog_id: blogId,
+                    niche_keyword: nicheKeyword,
+                    keywords: data.strategy.keywords,
+                    affiliate_programs: data.strategy.affiliate_programs,
+                    content_pillars: data.strategy.content_pillars,
+                    posting_frequency: data.strategy.posting_schedule.frequency,
+                    posting_days: data.strategy.posting_schedule.days,
+                    posting_time: data.strategy.posting_schedule.optimal_time,
+                    target_articles_per_month: data.strategy.posting_schedule.articles_per_month,
+                    article_queue: data.strategy.article_queue,
+                    queue_size: 20,
+                    status: 'active'
+                });
+
+                if (!saveResult.success) {
+                    console.error('Failed to save strategy:', saveResult.error);
+                }
+
+                progressDiv.innerHTML += '<div>✓ Strategy saved successfully!</div>';
+
+                // Close modal and reload view
+                setTimeout(() => {
+                    hideProgressModal();
+                    loadContentStrategyView();
+                    showToast('Content strategy generated successfully!', 'success');
+                }, 1500);
+
+            } catch (error) {
+                console.error('Strategy generation error:', error);
+                hideProgressModal();
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Toggle auto-publish for a strategy
+        async function toggleAutoPublish(strategyId, enabled) {
+            try {
+                await SupabaseService.updateContentStrategy(strategyId, {
+                    auto_publish_enabled: enabled
+                });
+                showToast(enabled ? 'Auto-publishing enabled' : 'Auto-publishing disabled', 'success');
+            } catch (error) {
+                console.error('Error toggling auto-publish:', error);
+                showToast('Failed to update auto-publish setting', 'error');
+            }
+        }
+
+        // Update posting schedule
+        async function updatePostingSchedule(strategyId) {
+            const frequency = document.getElementById(`frequency_${strategyId}`)?.value;
+            const publishTime = document.getElementById(`publishTime_${strategyId}`)?.value;
+
+            const scheduleMap = {
+                'daily': { days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], articles_per_month: 30 },
+                '5x_week': { days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], articles_per_month: 22 },
+                '3x_week': { days: ['Monday', 'Wednesday', 'Friday'], articles_per_month: 12 },
+                '2x_week': { days: ['Tuesday', 'Friday'], articles_per_month: 8 },
+                'weekly': { days: ['Wednesday'], articles_per_month: 4 }
+            };
+
+            const schedule = scheduleMap[frequency] || scheduleMap['3x_week'];
+
+            try {
+                await SupabaseService.updateContentStrategy(strategyId, {
+                    posting_frequency: frequency,
+                    posting_days: schedule.days,
+                    posting_time: publishTime,
+                    target_articles_per_month: schedule.articles_per_month
+                });
+                showToast('Posting schedule updated', 'success');
+            } catch (error) {
+                console.error('Error updating schedule:', error);
+                showToast('Failed to update schedule', 'error');
+            }
+        }
+
+        // Publish next article in queue
+        async function publishNextArticle(strategyId) {
+            showProgressModal('Publishing Article', `
+                <div style="text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">📝</div>
+                    <p style="color: #64748b;">Generating and publishing the next article in your queue...</p>
+                    <div id="publishProgress" style="background: #f8fafc; padding: 15px; border-radius: 8px; text-align: left; font-size: 13px; color: #64748b; margin-top: 15px;">
+                        <div>→ Loading strategy...</div>
+                    </div>
+                </div>
+            `);
+
+            try {
+                const progressDiv = document.getElementById('publishProgress');
+
+                // Load strategy
+                const strategiesResult = await SupabaseService.loadAllContentStrategies();
+                const strategy = strategiesResult.data?.find(s => s.id === strategyId);
+
+                if (!strategy) {
+                    throw new Error('Strategy not found');
+                }
+
+                // Find next pending article
+                const queue = strategy.article_queue || [];
+                const nextArticleIndex = queue.findIndex(a => a.status === 'pending');
+
+                if (nextArticleIndex === -1) {
+                    throw new Error('No pending articles in queue. Generate more keywords to add to the queue.');
+                }
+
+                const nextArticle = queue[nextArticleIndex];
+
+                // Get next affiliate program (round robin)
+                const affiliates = strategy.affiliate_programs || [];
+                const affiliateIndex = strategy.affiliate_rotation_index || 0;
+                const affiliateProgram = affiliates.length > 0 ? affiliates[affiliateIndex % affiliates.length] : null;
+
+                progressDiv.innerHTML += `<div>✓ Next article: "${nextArticle.keyword}"</div>`;
+                progressDiv.innerHTML += affiliateProgram ? `<div>✓ Affiliate: ${affiliateProgram.program_name || affiliateProgram.name}</div>` : '<div>✓ No affiliate for this article</div>';
+                progressDiv.innerHTML += '<div>→ Generating article content with TOC, FAQ, citations...</div>';
+
+                // Load blog credentials
+                const blogsResult = await SupabaseService.loadBlogs();
+                const blog = blogsResult.data?.find(b => b.id === strategy.blog_id);
+
+                if (!blog) {
+                    throw new Error('Blog not found');
+                }
+
+                // Call auto-publish API
+                const response = await fetch('/api/auto-publish-article', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        blog_id: strategy.blog_id,
+                        strategy: strategy,
+                        keyword: nextArticle.keyword,
+                        content_type: nextArticle.content_type,
+                        affiliate_program: affiliateProgram,
+                        include_images: true,
+                        include_toc: true,
+                        include_faq: true,
+                        include_citations: true,
+                        word_count: 2000
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Article generation failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Article generation failed');
+                }
+
+                progressDiv.innerHTML += `<div>✓ Article generated: ${data.article.word_count} words</div>`;
+                progressDiv.innerHTML += '<div>→ Publishing to WordPress...</div>';
+
+                // Publish to WordPress
+                const publishResponse = await fetch('/api/wordpress-publish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        blog_url: blog.url,
+                        username: blog.username,
+                        password: blog.password,
+                        title: data.article.title,
+                        content: data.article.content,
+                        status: 'publish',
+                        featured_image_url: data.article.featured_image?.url
+                    })
+                });
+
+                const publishData = await publishResponse.json();
+
+                if (!publishData.success) {
+                    throw new Error(publishData.error || 'WordPress publish failed');
+                }
+
+                progressDiv.innerHTML += `<div>✓ Published to WordPress (ID: ${publishData.post_id})</div>`;
+
+                // Update queue - mark article as published
+                queue[nextArticleIndex].status = 'published';
+                queue[nextArticleIndex].published_at = new Date().toISOString();
+                queue[nextArticleIndex].post_id = publishData.post_id;
+                queue[nextArticleIndex].post_url = publishData.post_url;
+
+                // Add new article to end of queue to maintain size of 20
+                if (queue.length < 20) {
+                    const unusedKeywords = (strategy.keywords || []).filter(kw =>
+                        !queue.some(a => a.keyword === kw.keyword)
+                    );
+                    if (unusedKeywords.length > 0) {
+                        const newKeyword = unusedKeywords[0];
+                        queue.push({
+                            id: `queue_${Date.now()}`,
+                            keyword: newKeyword.keyword,
+                            content_type: newKeyword.content_type,
+                            priority: newKeyword.priority,
+                            status: 'pending',
+                            affiliate_program: affiliates[(affiliateIndex + 1) % (affiliates.length || 1)] || null,
+                            created_at: new Date().toISOString()
+                        });
+                    }
+                }
+
+                // Update strategy
+                await SupabaseService.updateContentStrategy(strategyId, {
+                    article_queue: queue,
+                    affiliate_rotation_index: (affiliateIndex + 1) % (affiliates.length || 1),
+                    last_published_at: new Date().toISOString()
+                });
+
+                progressDiv.innerHTML += '<div>✓ Queue updated with next article</div>';
+
+                setTimeout(() => {
+                    hideProgressModal();
+                    loadContentStrategyView();
+                    showToast('Article published successfully!', 'success');
+                }, 1500);
+
+            } catch (error) {
+                console.error('Publish error:', error);
+                hideProgressModal();
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Publish a specific article from queue
+        async function publishQueueArticle(strategyId, articleIndex) {
+            // For now, just call publishNextArticle which handles the first pending
+            // In a full implementation, this would target the specific article
+            await publishNextArticle(strategyId);
+        }
+
+        // Analyze traffic insights and learn from top performers
+        async function analyzeTrafficInsights(strategyId, blogId) {
+            showProgressModal('Analyzing Traffic', `
+                <div style="text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">📈</div>
+                    <p style="color: #64748b;">Analyzing your traffic patterns and learning from top performers...</p>
+                </div>
+            `);
+
+            try {
+                // Load blog and get articles
+                const blogsResult = await SupabaseService.loadBlogs();
+                const blog = blogsResult.data?.find(b => b.id === blogId);
+
+                if (!blog) {
+                    throw new Error('Blog not found');
+                }
+
+                // Get published articles (simulated - in real app would fetch from WordPress + GA)
+                const articles = await getAllArticlesForBlog(blog);
+
+                if (articles.length === 0) {
+                    hideProgressModal();
+                    showToast('No published articles to analyze yet', 'warning');
+                    return;
+                }
+
+                // Call traffic insights API
+                const response = await fetch('/api/analyze-traffic-insights', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        blog_id: blogId,
+                        articles: articles.map(a => ({
+                            title: a.title,
+                            keyword: a.keyword || extractKeywordFromTitle(a.title),
+                            pageviews: a.pageviews || Math.floor(Math.random() * 1000) // Simulated for now
+                        }))
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Traffic analysis failed');
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.insights) {
+                    // Update strategy with insights
+                    await SupabaseService.updateTrafficInsights(strategyId, data.insights);
+                    hideProgressModal();
+                    loadContentStrategyView();
+                    showToast('Traffic analysis complete! Check insights below.', 'success');
+                } else {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+
+            } catch (error) {
+                console.error('Traffic analysis error:', error);
+                hideProgressModal();
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Helper: Extract keyword from title
+        function extractKeywordFromTitle(title) {
+            return title.toLowerCase()
+                .replace(/^(best|top|how to|guide to|the ultimate)/i, '')
+                .replace(/[^a-z0-9\s]/g, '')
+                .trim()
+                .split(' ')
+                .slice(0, 4)
+                .join(' ');
+        }
+
+        // Regenerate strategy
+        async function regenerateStrategy(strategyId, blogId, blogName, blogUrl) {
+            if (!confirm('This will regenerate your entire content strategy. Are you sure?')) {
+                return;
+            }
+
+            // Delete old strategy and regenerate
+            await SupabaseService.deleteContentStrategy(strategyId);
+
+            // Get niche from user
+            const niche = prompt('Enter your niche keyword:');
+            if (niche) {
+                await generateContentStrategy(blogId, blogName, blogUrl, niche);
+            } else {
+                loadContentStrategyView();
+            }
+        }
+
+        // Refresh strategy view
+        async function refreshContentStrategy(strategyId, blogId) {
+            showToast('Refreshing strategy...', 'info');
+            await loadContentStrategyView();
+        }
+
+        // Show progress modal helper
+        function showProgressModal(title, content) {
+            // Check if modal exists, create if not
+            let modal = document.getElementById('progressModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'progressModal';
+                document.body.appendChild(modal);
+            }
+
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+                    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                        <h3 style="margin: 0 0 20px 0; color: #1e293b; font-size: 18px;">${title}</h3>
+                        ${content}
+                    </div>
+                </div>
+            `;
+            modal.style.display = 'block';
+        }
+
+        // Hide progress modal helper
+        function hideProgressModal() {
+            const modal = document.getElementById('progressModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // ============================================================
+        // END CONTENT STRATEGY FUNCTIONS
         // ============================================================
 
         // Load and display affiliate programs

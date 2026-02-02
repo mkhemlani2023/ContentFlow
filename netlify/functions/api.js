@@ -9623,6 +9623,414 @@ Return ONLY a JSON array of domain names without extensions, like:
     }
 
     // ============================================================
+    // FULL AUTO SITE SETUP - Complete Automated Affiliate Site
+    // ============================================================
+
+    if (path === '/api/full-auto-setup' && method === 'POST') {
+      const {
+        // Site details
+        domain_name,
+        site_name,
+        niche,
+        // Customer details
+        customer_email,
+        customer_name,
+        customer_company,
+        address_line_1,
+        city,
+        state,
+        country,
+        zipcode,
+        phone_cc,
+        phone,
+        // WordPress credentials (for test - in production this would be auto-generated)
+        wordpress_url,
+        wordpress_username,
+        wordpress_password,
+        // Options
+        test_mode = true,
+        generate_legal_pages = true,
+        generate_content = true
+      } = body;
+
+      console.log('[FULL-AUTO] Starting full automated setup for:', domain_name);
+
+      const setupProgress = {
+        started_at: new Date().toISOString(),
+        domain_name,
+        site_name: site_name || domain_name.split('.')[0].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        niche,
+        steps: {},
+        errors: [],
+        wordpress_pages: [],
+        test_mode
+      };
+
+      try {
+        // ============================================
+        // STEP 1: Domain Registration (ResellerClub)
+        // ============================================
+        console.log('[FULL-AUTO] Step 1: Domain Registration');
+        setupProgress.steps.domain = { status: 'in_progress', started_at: new Date().toISOString() };
+
+        if (test_mode) {
+          // In test mode, simulate domain registration
+          setupProgress.steps.domain = {
+            status: 'completed',
+            simulated: true,
+            domain: domain_name,
+            message: 'Domain registration simulated (test mode)',
+            completed_at: new Date().toISOString()
+          };
+        } else if (RESELLERCLUB_RESELLER_ID && RESELLERCLUB_API_KEY) {
+          // Real domain registration via ResellerClub
+          try {
+            // First check availability
+            const checkParams = new URLSearchParams({
+              'auth-userid': RESELLERCLUB_RESELLER_ID,
+              'api-key': RESELLERCLUB_API_KEY,
+              'domain-name': domain_name.split('.')[0],
+              'tlds': domain_name.split('.').slice(1).join('.')
+            });
+
+            const availResponse = await resellerClubFetch(`${RESELLERCLUB_BASE_URL}/domains/available.json?${checkParams}`);
+            const availData = await availResponse.json();
+
+            const domainKey = Object.keys(availData)[0];
+            if (availData[domainKey]?.status === 'available') {
+              setupProgress.steps.domain = {
+                status: 'completed',
+                domain: domain_name,
+                available: true,
+                message: 'Domain available and ready for registration',
+                completed_at: new Date().toISOString()
+              };
+            } else {
+              setupProgress.steps.domain = {
+                status: 'warning',
+                domain: domain_name,
+                available: false,
+                message: 'Domain not available - proceeding with test setup',
+                completed_at: new Date().toISOString()
+              };
+            }
+          } catch (domainError) {
+            setupProgress.steps.domain = {
+              status: 'error',
+              error: domainError.message,
+              completed_at: new Date().toISOString()
+            };
+            setupProgress.errors.push({ step: 'domain', error: domainError.message });
+          }
+        }
+
+        // ============================================
+        // STEP 2: Generate Legal Pages
+        // ============================================
+        if (generate_legal_pages) {
+          console.log('[FULL-AUTO] Step 2: Generating Legal Pages');
+          setupProgress.steps.legal_pages = { status: 'in_progress', started_at: new Date().toISOString() };
+
+          const legalPageTypes = ['privacy-policy', 'terms-of-service', 'cookie-policy', 'affiliate-disclosure'];
+          const generatedPages = {};
+
+          for (const pageType of legalPageTypes) {
+            try {
+              const prompt = generateFullAutoLegalPrompt(pageType, {
+                domain_name,
+                site_name: setupProgress.site_name,
+                niche,
+                business_email: customer_email || `contact@${domain_name}`,
+                date: new Date().toISOString().split('T')[0]
+              });
+
+              const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                  'Content-Type': 'application/json',
+                  'HTTP-Referer': 'https://www.getseowizard.com',
+                  'X-Title': 'SEO Wizard - Full Auto Setup'
+                },
+                body: JSON.stringify({
+                  model: 'openai/gpt-4o-mini',
+                  messages: [{ role: 'user', content: prompt }],
+                  temperature: 0.3,
+                  max_tokens: 2500
+                })
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                const content = data.choices[0].message.content;
+                generatedPages[pageType] = {
+                  title: pageType.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                  content: content,
+                  generated_at: new Date().toISOString()
+                };
+              }
+            } catch (pageError) {
+              console.error(`[FULL-AUTO] Error generating ${pageType}:`, pageError.message);
+            }
+          }
+
+          setupProgress.steps.legal_pages = {
+            status: 'completed',
+            pages_generated: Object.keys(generatedPages).length,
+            pages: generatedPages,
+            completed_at: new Date().toISOString()
+          };
+        }
+
+        // ============================================
+        // STEP 3: Generate Site Content
+        // ============================================
+        if (generate_content) {
+          console.log('[FULL-AUTO] Step 3: Generating Site Content');
+          setupProgress.steps.content = { status: 'in_progress', started_at: new Date().toISOString() };
+
+          try {
+            const contentPrompt = `Generate homepage and about page content for "${setupProgress.site_name}", an affiliate website about "${niche || 'various products'}".
+
+Return JSON with this structure:
+{
+  "homepage": {
+    "title": "Homepage title",
+    "meta_description": "SEO meta description under 160 chars",
+    "hero_headline": "Main headline",
+    "hero_subheadline": "Supporting text",
+    "intro_paragraph": "2-3 sentences introducing the site",
+    "value_propositions": ["benefit 1", "benefit 2", "benefit 3"],
+    "cta_text": "Call to action button text"
+  },
+  "about": {
+    "title": "About Us",
+    "meta_description": "SEO meta description",
+    "headline": "About headline",
+    "story": "2-3 paragraphs about the site's mission and who's behind it",
+    "mission_statement": "One sentence mission"
+  }
+}`;
+
+            const contentResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://www.getseowizard.com',
+                'X-Title': 'SEO Wizard - Content Gen'
+              },
+              body: JSON.stringify({
+                model: 'openai/gpt-4o-mini',
+                messages: [{ role: 'user', content: contentPrompt }],
+                temperature: 0.7,
+                max_tokens: 1500
+              })
+            });
+
+            if (contentResponse.ok) {
+              const contentData = await contentResponse.json();
+              const contentText = contentData.choices[0].message.content;
+              const jsonMatch = contentText.match(/\{[\s\S]*\}/);
+              const siteContent = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+
+              setupProgress.steps.content = {
+                status: 'completed',
+                content: siteContent,
+                completed_at: new Date().toISOString()
+              };
+            }
+          } catch (contentError) {
+            setupProgress.steps.content = {
+              status: 'error',
+              error: contentError.message,
+              completed_at: new Date().toISOString()
+            };
+          }
+        }
+
+        // ============================================
+        // STEP 4: Publish to WordPress (if credentials provided)
+        // ============================================
+        if (wordpress_url && wordpress_username && wordpress_password) {
+          console.log('[FULL-AUTO] Step 4: Publishing to WordPress');
+          setupProgress.steps.wordpress = { status: 'in_progress', started_at: new Date().toISOString() };
+
+          try {
+            const auth = Buffer.from(`${wordpress_username}:${wordpress_password}`).toString('base64');
+            const wpHeaders = {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json'
+            };
+
+            // Test WordPress connection
+            const testResponse = await fetch(`${wordpress_url}/wp-json/wp/v2/posts?per_page=1`, {
+              headers: wpHeaders
+            });
+
+            if (!testResponse.ok) {
+              throw new Error('WordPress connection failed - check credentials');
+            }
+
+            const publishedPages = [];
+
+            // Publish legal pages
+            if (setupProgress.steps.legal_pages?.pages) {
+              for (const [pageType, pageData] of Object.entries(setupProgress.steps.legal_pages.pages)) {
+                try {
+                  const pageResponse = await fetch(`${wordpress_url}/wp-json/wp/v2/pages`, {
+                    method: 'POST',
+                    headers: wpHeaders,
+                    body: JSON.stringify({
+                      title: pageData.title,
+                      content: pageData.content,
+                      status: 'publish',
+                      slug: pageType
+                    })
+                  });
+
+                  if (pageResponse.ok) {
+                    const wpPage = await pageResponse.json();
+                    publishedPages.push({
+                      type: pageType,
+                      id: wpPage.id,
+                      url: wpPage.link,
+                      title: pageData.title
+                    });
+                  }
+                } catch (pubError) {
+                  console.error(`[FULL-AUTO] Error publishing ${pageType}:`, pubError.message);
+                }
+              }
+            }
+
+            // Publish About page
+            if (setupProgress.steps.content?.content?.about) {
+              try {
+                const aboutContent = setupProgress.steps.content.content.about;
+                const aboutResponse = await fetch(`${wordpress_url}/wp-json/wp/v2/pages`, {
+                  method: 'POST',
+                  headers: wpHeaders,
+                  body: JSON.stringify({
+                    title: aboutContent.title || 'About Us',
+                    content: `<h2>${aboutContent.headline}</h2>\n${aboutContent.story}\n<blockquote>${aboutContent.mission_statement}</blockquote>`,
+                    status: 'publish',
+                    slug: 'about'
+                  })
+                });
+
+                if (aboutResponse.ok) {
+                  const aboutPage = await aboutResponse.json();
+                  publishedPages.push({
+                    type: 'about',
+                    id: aboutPage.id,
+                    url: aboutPage.link,
+                    title: aboutContent.title
+                  });
+                }
+              } catch (aboutError) {
+                console.error('[FULL-AUTO] Error publishing about page:', aboutError.message);
+              }
+            }
+
+            setupProgress.steps.wordpress = {
+              status: 'completed',
+              wordpress_url,
+              pages_published: publishedPages.length,
+              pages: publishedPages,
+              completed_at: new Date().toISOString()
+            };
+            setupProgress.wordpress_pages = publishedPages;
+
+          } catch (wpError) {
+            setupProgress.steps.wordpress = {
+              status: 'error',
+              error: wpError.message,
+              completed_at: new Date().toISOString()
+            };
+            setupProgress.errors.push({ step: 'wordpress', error: wpError.message });
+          }
+        } else {
+          setupProgress.steps.wordpress = {
+            status: 'skipped',
+            message: 'No WordPress credentials provided - content generated but not published',
+            completed_at: new Date().toISOString()
+          };
+        }
+
+        // ============================================
+        // COMPLETE
+        // ============================================
+        setupProgress.completed_at = new Date().toISOString();
+        setupProgress.success = setupProgress.errors.length === 0;
+
+        console.log('[FULL-AUTO] Setup complete:', setupProgress.success ? 'SUCCESS' : 'WITH ERRORS');
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: setupProgress.success,
+            setup: setupProgress
+          })
+        };
+
+      } catch (error) {
+        console.error('[FULL-AUTO] Fatal error:', error);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: error.message,
+            partial_setup: setupProgress
+          })
+        };
+      }
+    }
+
+    // Helper function for full-auto legal page prompts
+    function generateFullAutoLegalPrompt(pageType, context) {
+      const { domain_name, site_name, niche, business_email, date } = context;
+
+      const prompts = {
+        'privacy-policy': `Write a Privacy Policy for "${site_name}" (${domain_name}), an affiliate website${niche ? ` about ${niche}` : ''}.
+Contact email: ${business_email}
+Effective date: ${date}
+
+Include sections for: Information Collection, Use of Information, Cookies & Tracking, Third-Party Services (Google Analytics, affiliate networks), Data Security, User Rights (GDPR/CCPA), Children's Privacy, Policy Updates, Contact Information.
+
+Write in professional but readable language. Output as HTML with proper h2 headings and paragraphs.`,
+
+        'terms-of-service': `Write Terms of Service for "${site_name}" (${domain_name}), an affiliate website${niche ? ` about ${niche}` : ''}.
+Contact email: ${business_email}
+Effective date: ${date}
+
+Include sections for: Agreement to Terms, Service Description (affiliate content site), Affiliate Disclosure, Intellectual Property, User Conduct, Disclaimers (not professional advice, third-party products), Limitation of Liability, External Links, Modifications, Governing Law, Contact Information.
+
+Write in professional language. Output as HTML with proper h2 headings and paragraphs.`,
+
+        'cookie-policy': `Write a Cookie Policy for "${site_name}" (${domain_name}), an affiliate website${niche ? ` about ${niche}` : ''}.
+Contact email: ${business_email}
+Effective date: ${date}
+
+Include sections for: What Cookies Are, How We Use Cookies, Types of Cookies (Essential, Analytics, Advertising, Affiliate Tracking), Third-Party Cookies (Google, affiliate networks like Amazon Associates), Managing Cookies, Cookie Duration, Updates to Policy, Contact Information.
+
+Write in clear language. Output as HTML with proper h2 headings and paragraphs.`,
+
+        'affiliate-disclosure': `Write an Affiliate Disclosure for "${site_name}" (${domain_name}), an affiliate website${niche ? ` about ${niche}` : ''}.
+Contact email: ${business_email}
+Effective date: ${date}
+
+This must be FTC compliant. Include: Clear statement about affiliate relationships, How affiliate links work, Programs we participate in (mention Amazon Associates specifically as required), Our commitment to honest reviews, How readers can identify affiliate links, Editorial independence statement, Contact information.
+
+Write in friendly, transparent language. Output as HTML with proper h2 headings and paragraphs.`
+      };
+
+      return prompts[pageType] || prompts['privacy-policy'];
+    }
+
+    // ============================================================
     // WORDPRESS SITE BUILDER - Automated Affiliate Site Generation
     // ============================================================
 
@@ -11939,6 +12347,642 @@ Return ONLY the prompt (2-3 sentences).`;
       }
     }
 
+    // ============================================
+    // CONTENT STRATEGY ENDPOINTS
+    // ============================================
+
+    // GENERATE CONTENT STRATEGY - Comprehensive content planning with keywords, affiliates, and scheduling
+    if (path === '/api/generate-content-strategy' && method === 'POST') {
+      const { blog_id, blog_name, blog_url, niche_keyword } = body;
+
+      if (!blog_id || !niche_keyword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Blog ID and niche keyword are required'
+          })
+        };
+      }
+
+      try {
+        console.log(`\n========== CONTENT STRATEGY GENERATION START ==========`);
+        console.log(`Blog: ${blog_name} (${blog_id})`);
+        console.log(`Niche: ${niche_keyword}`);
+        console.log(`Timestamp: ${new Date().toISOString()}`);
+
+        const startTime = Date.now();
+
+        // Step 1: Generate 25+ buyer-intent keywords using AI
+        console.log('[STEP 1] Generating buyer-intent keywords...');
+
+        const keywordPrompt = `You are an expert SEO strategist and affiliate marketing specialist.
+
+Analyze the niche: "${niche_keyword}"
+Blog URL: ${blog_url || 'New blog'}
+
+Generate 25 high-value keywords for this niche, categorized by intent:
+
+CATEGORIES TO COVER:
+1. **Buyer Intent (8-10 keywords)**: "best X", "X review", "X vs Y", "top 10 X"
+2. **Comparison Keywords (5-6 keywords)**: "X vs Y", "X comparison", "X alternatives"
+3. **How-To Keywords (5-6 keywords)**: "how to choose X", "X guide", "X tutorial"
+4. **Cost/Value Keywords (3-4 keywords)**: "X price", "X cost", "affordable X", "X deals"
+5. **Problem-Solution Keywords (3-4 keywords)**: "X problems", "X mistakes to avoid", "X tips"
+
+For each keyword, estimate:
+- search_volume: monthly searches (100-50000 typical range)
+- difficulty: "easy" (< 30 KD), "medium" (30-60 KD), "hard" (> 60 KD)
+- buyer_intent: "high", "medium", "low"
+- priority: 1-25 (1 = highest priority)
+- content_type: "review", "comparison", "guide", "listicle", "tutorial"
+
+Return ONLY valid JSON in this exact format:
+{
+  "keywords": [
+    {
+      "keyword": "best email marketing software",
+      "search_volume": 12000,
+      "difficulty": "medium",
+      "buyer_intent": "high",
+      "priority": 1,
+      "content_type": "listicle"
+    }
+  ],
+  "content_pillars": ["pillar topic 1", "pillar topic 2", "pillar topic 3"],
+  "recommended_posting_frequency": "3x_week"
+}`;
+
+        const keywordResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.getseowizard.com',
+            'X-Title': 'SEO Wizard - Content Strategy'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{ role: 'user', content: keywordPrompt }],
+            temperature: 0.7,
+            max_tokens: 2500
+          })
+        });
+
+        if (!keywordResponse.ok) {
+          throw new Error(`Keyword generation failed: ${keywordResponse.statusText}`);
+        }
+
+        const keywordData = await keywordResponse.json();
+        let keywordResult;
+        try {
+          const content = keywordData.choices[0].message.content;
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          keywordResult = JSON.parse(jsonMatch[0]);
+        } catch (parseError) {
+          console.error('Failed to parse keyword JSON, using fallback');
+          keywordResult = {
+            keywords: [
+              { keyword: `best ${niche_keyword}`, search_volume: 5000, difficulty: 'medium', buyer_intent: 'high', priority: 1, content_type: 'listicle' },
+              { keyword: `${niche_keyword} review`, search_volume: 3000, difficulty: 'easy', buyer_intent: 'high', priority: 2, content_type: 'review' },
+              { keyword: `${niche_keyword} comparison`, search_volume: 2500, difficulty: 'medium', buyer_intent: 'high', priority: 3, content_type: 'comparison' },
+              { keyword: `${niche_keyword} guide`, search_volume: 4000, difficulty: 'easy', buyer_intent: 'medium', priority: 4, content_type: 'guide' },
+              { keyword: `how to choose ${niche_keyword}`, search_volume: 2000, difficulty: 'easy', buyer_intent: 'medium', priority: 5, content_type: 'guide' }
+            ],
+            content_pillars: [niche_keyword, `${niche_keyword} reviews`, `${niche_keyword} guides`],
+            recommended_posting_frequency: '3x_week'
+          };
+        }
+
+        console.log(`Generated ${keywordResult.keywords.length} keywords`);
+
+        // Step 2: Discover affiliate programs for this niche
+        console.log('[STEP 2] Discovering affiliate programs...');
+
+        const affiliatePrompt = `You are an affiliate marketing expert. Find the best affiliate programs for the niche: "${niche_keyword}"
+
+List 5-8 real affiliate programs that are:
+1. Relevant to this niche
+2. Have good commission rates
+3. Are from reputable companies
+4. Have reasonable cookie durations
+
+Return ONLY valid JSON in this exact format:
+{
+  "programs": [
+    {
+      "program_name": "Program Name",
+      "company": "Company Name",
+      "commission_type": "percentage" or "flat",
+      "commission_rate": "20%" or "$50",
+      "cookie_duration": "30 days",
+      "network": "direct" or "ShareASale" or "CJ" or "Impact" etc,
+      "signup_url": "https://affiliate.example.com",
+      "product_types": ["type1", "type2"],
+      "min_payout": "$50",
+      "payment_methods": ["PayPal", "Bank Transfer"],
+      "banners_available": true,
+      "deep_linking": true,
+      "recommended_placement": "in-content" or "sidebar" or "comparison-table"
+    }
+  ]
+}`;
+
+        const affiliateResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.getseowizard.com',
+            'X-Title': 'SEO Wizard - Affiliate Discovery'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{ role: 'user', content: affiliatePrompt }],
+            temperature: 0.7,
+            max_tokens: 1500
+          })
+        });
+
+        let affiliatePrograms = [];
+        if (affiliateResponse.ok) {
+          const affiliateData = await affiliateResponse.json();
+          try {
+            const content = affiliateData.choices[0].message.content;
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            const parsed = JSON.parse(jsonMatch[0]);
+            affiliatePrograms = parsed.programs || [];
+          } catch (parseError) {
+            console.error('Failed to parse affiliate JSON');
+            affiliatePrograms = [];
+          }
+        }
+
+        console.log(`Discovered ${affiliatePrograms.length} affiliate programs`);
+
+        // Step 3: Fetch context-matched images from Pexels
+        console.log('[STEP 3] Fetching context-matched images...');
+
+        const topKeywords = keywordResult.keywords.slice(0, 5);
+        const imageResults = [];
+
+        for (const kw of topKeywords) {
+          try {
+            const searchQuery = kw.keyword.replace(/best |top |review|comparison/gi, '').trim();
+            const pexelsResponse = await fetch(`${PEXELS_BASE_URL}/search?query=${encodeURIComponent(searchQuery)}&per_page=4&orientation=landscape`, {
+              headers: {
+                'Authorization': PEXELS_API_KEY
+              }
+            });
+
+            if (pexelsResponse.ok) {
+              const pexelsData = await pexelsResponse.json();
+              imageResults.push({
+                keyword: kw.keyword,
+                images: (pexelsData.photos || []).map(photo => ({
+                  url: photo.src.large,
+                  thumbnail: photo.src.medium,
+                  alt: photo.alt || searchQuery,
+                  photographer: photo.photographer,
+                  source: 'pexels'
+                }))
+              });
+            }
+          } catch (imgError) {
+            console.error(`Image fetch error for ${kw.keyword}:`, imgError.message);
+          }
+        }
+
+        console.log(`Fetched images for ${imageResults.length} keywords`);
+
+        // Step 4: Generate recommended posting schedule
+        console.log('[STEP 4] Generating posting schedule...');
+
+        const frequency = keywordResult.recommended_posting_frequency || '3x_week';
+        const scheduleMap = {
+          'daily': { days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], articles_per_month: 30 },
+          '5x_week': { days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], articles_per_month: 22 },
+          '3x_week': { days: ['Monday', 'Wednesday', 'Friday'], articles_per_month: 12 },
+          '2x_week': { days: ['Tuesday', 'Friday'], articles_per_month: 8 },
+          'weekly': { days: ['Wednesday'], articles_per_month: 4 }
+        };
+
+        const schedule = scheduleMap[frequency] || scheduleMap['3x_week'];
+
+        // Step 5: Pre-generate article queue (20 articles)
+        console.log('[STEP 5] Generating article queue...');
+
+        const articleQueue = keywordResult.keywords.slice(0, 20).map((kw, index) => ({
+          id: `queue_${Date.now()}_${index}`,
+          keyword: kw.keyword,
+          content_type: kw.content_type,
+          priority: kw.priority,
+          status: 'pending',
+          scheduled_date: null,
+          affiliate_program: affiliatePrograms[index % affiliatePrograms.length] || null,
+          created_at: new Date().toISOString()
+        }));
+
+        const duration = Date.now() - startTime;
+
+        console.log(`========== CONTENT STRATEGY COMPLETE (${duration}ms) ==========\n`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            strategy: {
+              blog_id,
+              niche_keyword,
+              keywords: keywordResult.keywords,
+              content_pillars: keywordResult.content_pillars || [],
+              affiliate_programs: affiliatePrograms,
+              posting_schedule: {
+                frequency,
+                days: schedule.days,
+                optimal_time: '09:00',
+                articles_per_month: schedule.articles_per_month
+              },
+              image_suggestions: imageResults,
+              article_queue: articleQueue,
+              auto_publish_config: {
+                enabled: false,
+                next_publish_date: null,
+                queue_size: articleQueue.length
+              }
+            },
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[CONTENT STRATEGY ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // AUTO-PUBLISH ARTICLE - Generate and publish article with affiliate assets
+    if (path === '/api/auto-publish-article' && method === 'POST') {
+      const {
+        blog_id,
+        blog_credentials,
+        strategy,
+        keyword,
+        content_type,
+        affiliate_program,
+        include_images,
+        include_toc,
+        include_faq,
+        include_citations,
+        word_count = 2000
+      } = body;
+
+      if (!blog_id || !keyword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Blog ID and keyword are required'
+          })
+        };
+      }
+
+      try {
+        console.log(`\n========== AUTO-PUBLISH ARTICLE START ==========`);
+        console.log(`Keyword: ${keyword}`);
+        console.log(`Content Type: ${content_type || 'article'}`);
+        console.log(`Affiliate: ${affiliate_program?.program_name || 'None'}`);
+
+        const startTime = Date.now();
+
+        // Step 1: Generate comprehensive article with proper structure
+        console.log('[STEP 1] Generating article content...');
+
+        const articlePrompt = `You are an expert content writer specializing in SEO-optimized affiliate content.
+
+Write a comprehensive, well-structured article about: "${keyword}"
+
+REQUIRED STRUCTURE:
+1. **Title**: Compelling, SEO-optimized title (include the main keyword)
+
+2. **Table of Contents**: List all major sections
+
+3. **Introduction** (150-200 words):
+   - Hook the reader
+   - State the problem/need
+   - Preview what they'll learn
+
+4. **Main Sections** (${Math.floor(word_count / 300)} sections, 250-350 words each):
+   - Use H2 and H3 headings
+   - Include practical advice
+   - Add examples and data points
+   ${affiliate_program ? `- Naturally mention ${affiliate_program.program_name} where relevant` : ''}
+
+5. **FAQ Section** (5-7 questions):
+   - Common questions about ${keyword}
+   - Concise, helpful answers
+   - Include long-tail keywords
+
+6. **Conclusion** (100-150 words):
+   - Summarize key points
+   - Include call-to-action
+   ${affiliate_program ? `- Recommend ${affiliate_program.program_name}` : ''}
+
+7. **References/Sources** (3-5 citations):
+   - Cite authoritative sources
+   - Include publication dates
+   - Format: [Source Name] (Year) - Brief description
+
+REQUIREMENTS:
+- Total word count: ${word_count} words minimum
+- Use HTML formatting (h1, h2, h3, p, ul, ol, blockquote)
+- Include data, statistics, and specific examples
+- Write in a conversational but authoritative tone
+- Optimize for the keyword: "${keyword}"
+
+${affiliate_program ? `
+AFFILIATE INTEGRATION:
+- Program: ${affiliate_program.program_name}
+- Commission: ${affiliate_program.commission_rate}
+- Include disclosure at the top: "This article contains affiliate links. We may earn a commission at no extra cost to you."
+- Mention the product naturally 2-3 times
+- Include a clear CTA near the end
+` : ''}
+
+Return the article in clean HTML format, ready for WordPress publishing.`;
+
+        const articleResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.getseowizard.com',
+            'X-Title': 'SEO Wizard - Auto Publish'
+          },
+          body: JSON.stringify({
+            model: 'anthropic/claude-3.5-sonnet',
+            messages: [{ role: 'user', content: articlePrompt }],
+            temperature: 0.7,
+            max_tokens: 4000
+          })
+        });
+
+        if (!articleResponse.ok) {
+          throw new Error(`Article generation failed: ${articleResponse.statusText}`);
+        }
+
+        const articleData = await articleResponse.json();
+        let articleContent = articleData.choices[0].message.content;
+
+        // Extract title from content
+        const titleMatch = articleContent.match(/<h1[^>]*>(.*?)<\/h1>/i);
+        const articleTitle = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '') : keyword;
+
+        console.log(`Article generated: ${articleTitle}`);
+
+        // Step 2: Generate featured image
+        let featuredImage = null;
+        if (include_images && OPENAI_API_KEY) {
+          console.log('[STEP 2] Generating featured image...');
+
+          try {
+            const imagePromptResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: 'openai/gpt-4o-mini',
+                messages: [{
+                  role: 'user',
+                  content: `Create a photorealistic image prompt for a blog article titled "${articleTitle}".
+                           The image should be professional, suitable as a featured image, landscape orientation.
+                           Describe a specific, photographable scene. No text or logos.
+                           Return ONLY the image description, nothing else.`
+                }],
+                temperature: 0.7,
+                max_tokens: 150
+              })
+            });
+
+            if (imagePromptResponse.ok) {
+              const promptData = await imagePromptResponse.json();
+              const imagePrompt = promptData.choices[0].message.content.trim();
+
+              const dalleResponse = await fetch('https://api.openai.com/v1/images/generations', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  model: 'dall-e-3',
+                  prompt: `Professional blog featured image: ${imagePrompt}. Photorealistic, natural lighting, no text.`,
+                  n: 1,
+                  size: '1792x1024',
+                  quality: 'standard',
+                  style: 'natural'
+                })
+              });
+
+              if (dalleResponse.ok) {
+                const dalleData = await dalleResponse.json();
+                featuredImage = {
+                  url: dalleData.data[0].url,
+                  prompt: imagePrompt
+                };
+                console.log('Featured image generated');
+              }
+            }
+          } catch (imgError) {
+            console.error('Image generation failed:', imgError.message);
+          }
+        }
+
+        // Step 3: Insert affiliate assets if provided
+        if (affiliate_program) {
+          console.log('[STEP 3] Inserting affiliate assets...');
+
+          // Add affiliate disclosure at top
+          const disclosure = `<div class="affiliate-disclosure" style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 12px 16px; margin-bottom: 24px; font-size: 14px; color: #1e40af;">
+            <strong>Disclosure:</strong> This article contains affiliate links. If you make a purchase through these links, we may earn a commission at no additional cost to you.
+          </div>`;
+
+          articleContent = disclosure + articleContent;
+
+          // Add CTA box before conclusion
+          if (affiliate_program.signup_url) {
+            const ctaBox = `
+            <div class="affiliate-cta" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; border-radius: 12px; margin: 32px 0; text-align: center;">
+              <h3 style="color: white; margin-bottom: 12px;">Ready to Get Started with ${affiliate_program.program_name}?</h3>
+              <p style="margin-bottom: 16px; opacity: 0.9;">Join thousands of satisfied customers and start your journey today.</p>
+              <a href="${affiliate_program.signup_url}" target="_blank" rel="noopener sponsored" style="display: inline-block; background: white; color: #667eea; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; transition: transform 0.2s;">
+                Get Started Now &rarr;
+              </a>
+            </div>`;
+
+            // Insert before conclusion
+            const conclusionIndex = articleContent.toLowerCase().lastIndexOf('<h2');
+            if (conclusionIndex > 0) {
+              articleContent = articleContent.slice(0, conclusionIndex) + ctaBox + articleContent.slice(conclusionIndex);
+            } else {
+              articleContent += ctaBox;
+            }
+          }
+        }
+
+        const duration = Date.now() - startTime;
+        const actualWordCount = articleContent.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(w => w).length;
+
+        console.log(`========== AUTO-PUBLISH COMPLETE (${duration}ms) ==========\n`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            article: {
+              title: articleTitle,
+              keyword,
+              content: articleContent,
+              word_count: actualWordCount,
+              featured_image: featuredImage,
+              has_affiliate_links: !!affiliate_program,
+              has_toc: include_toc !== false,
+              has_faq: include_faq !== false,
+              has_citations: include_citations !== false,
+              content_type: content_type || 'article'
+            },
+            affiliate_program: affiliate_program ? {
+              name: affiliate_program.program_name,
+              commission: affiliate_program.commission_rate
+            } : null,
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[AUTO-PUBLISH ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // ANALYZE TRAFFIC INSIGHTS - Learn from top-performing articles
+    if (path === '/api/analyze-traffic-insights' && method === 'POST') {
+      const { blog_id, articles, traffic_data } = body;
+
+      if (!blog_id || !articles || articles.length === 0) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Blog ID and articles array are required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[TRAFFIC INSIGHTS] Analyzing ${articles.length} articles for blog ${blog_id}`);
+
+        // Sort articles by traffic/engagement
+        const sortedArticles = [...articles].sort((a, b) => (b.pageviews || 0) - (a.pageviews || 0));
+        const topPerformers = sortedArticles.slice(0, 10);
+        const lowPerformers = sortedArticles.slice(-5);
+
+        // Analyze patterns in top performers
+        const analysisPrompt = `You are a content analytics expert. Analyze these top-performing blog articles and identify patterns.
+
+TOP PERFORMING ARTICLES:
+${topPerformers.map(a => `- "${a.title}" (${a.pageviews || 0} views, ${a.keyword || 'unknown'} keyword)`).join('\n')}
+
+LOW PERFORMING ARTICLES:
+${lowPerformers.map(a => `- "${a.title}" (${a.pageviews || 0} views, ${a.keyword || 'unknown'} keyword)`).join('\n')}
+
+Analyze and return JSON with:
+1. Common patterns in successful articles (topics, formats, keywords)
+2. What to avoid based on low performers
+3. 10 new keyword suggestions based on what's working
+4. Recommended content types to focus on
+5. Monetization strategy suggestions
+
+Return ONLY valid JSON:
+{
+  "success_patterns": ["pattern1", "pattern2"],
+  "avoid_patterns": ["pattern1", "pattern2"],
+  "recommended_keywords": [
+    {"keyword": "keyword1", "reason": "why this will work"}
+  ],
+  "content_focus": ["content type 1", "content type 2"],
+  "monetization_suggestions": ["suggestion1", "suggestion2"],
+  "insights_summary": "Brief summary of findings"
+}`;
+
+        const analysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.getseowizard.com',
+            'X-Title': 'SEO Wizard - Traffic Insights'
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{ role: 'user', content: analysisPrompt }],
+            temperature: 0.7,
+            max_tokens: 1500
+          })
+        });
+
+        let insights = {};
+        if (analysisResponse.ok) {
+          const data = await analysisResponse.json();
+          try {
+            const content = data.choices[0].message.content;
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            insights = JSON.parse(jsonMatch[0]);
+          } catch (e) {
+            insights = { error: 'Failed to parse insights' };
+          }
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            insights,
+            top_performers: topPerformers.map(a => ({
+              title: a.title,
+              keyword: a.keyword,
+              pageviews: a.pageviews
+            })),
+            analyzed_at: new Date().toISOString()
+          })
+        };
+
+      } catch (error) {
+        console.error('[TRAFFIC INSIGHTS ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
@@ -11984,7 +13028,10 @@ Return ONLY the prompt (2-3 sentences).`;
           'POST /api/generate-batch-articles',
           'POST /api/generate-featured-image',
           'POST /api/pipeline/next-keyword',
-          'POST /api/pipeline/generate-article'
+          'POST /api/pipeline/generate-article',
+          'POST /api/generate-content-strategy',
+          'POST /api/auto-publish-article',
+          'POST /api/analyze-traffic-insights'
         ]
       })
     };
