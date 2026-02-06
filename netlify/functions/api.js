@@ -42,6 +42,41 @@ const RESELLERCLUB_BASE_URL = RESELLERCLUB_SANDBOX
   ? 'https://test.httpapi.com/api'
   : 'https://httpapi.com/api';
 
+// Supabase Configuration
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Supabase REST API helper for pipeline enhancement endpoints
+async function supabaseRequest(endpoint, method = 'GET', body = null) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    throw new Error('Supabase configuration missing');
+  }
+
+  const options = {
+    method,
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : 'return=representation'
+    }
+  };
+
+  if (body) {
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, options);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Supabase error: ${response.status} - ${errorText}`);
+  }
+
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
+
 // ResellerClub API fetch helper with browser-like headers to bypass Cloudflare Bot Fight Mode
 const resellerClubFetch = async (url, options = {}) => {
   const headers = {
@@ -133,6 +168,47 @@ const determineIntent = (keyword) => {
   if (navigational.some(word => lower.includes(word))) return 'Navigational';
 
   return 'Informational';
+};
+
+// Generate article title based on keyword and content type
+const generateArticleTitle = (keyword, contentType) => {
+  const capitalizedKeyword = keyword.split(' ').map(w =>
+    w.charAt(0).toUpperCase() + w.slice(1)
+  ).join(' ');
+
+  const titleTemplates = {
+    'review': `${capitalizedKeyword} Review: Everything You Need to Know`,
+    'comparison': `${capitalizedKeyword} Comparison: Which One Is Right for You?`,
+    'guide': `The Complete Guide to ${capitalizedKeyword}`,
+    'listicle': `Top 10 Best ${capitalizedKeyword} in ${new Date().getFullYear()}`,
+    'tutorial': `How to Master ${capitalizedKeyword}: Step-by-Step Tutorial`,
+    'default': `${capitalizedKeyword}: A Comprehensive Guide`
+  };
+
+  return titleTemplates[contentType] || titleTemplates['default'];
+};
+
+// Calculate opportunity score for a keyword object (used in content strategy)
+const calculateKeywordOpportunityScore = (keyword) => {
+  let score = 50; // Base score
+
+  // Boost for search volume
+  const volume = keyword.search_volume || 0;
+  if (volume > 10000) score += 25;
+  else if (volume > 5000) score += 20;
+  else if (volume > 1000) score += 15;
+  else if (volume > 500) score += 10;
+
+  // Boost for difficulty
+  if (keyword.difficulty === 'easy') score += 20;
+  else if (keyword.difficulty === 'medium') score += 10;
+
+  // Boost for buyer intent
+  if (keyword.buyer_intent === 'high') score += 15;
+  else if (keyword.buyer_intent === 'medium') score += 8;
+
+  // Cap at 100
+  return Math.min(score, 100);
 };
 
 // Article content analysis functions
@@ -12299,24 +12375,117 @@ Return ONLY the prompt (2-3 sentences).`;
           }
         }
 
-        // Insert affiliate links if provided
+        // Insert affiliate links if provided (enhanced with multiple insertion points)
         let finalContent = contentResult.content;
-        if (affiliate_program && affiliate_program.affiliate_link) {
-          // Insert affiliate link naturally at end of a relevant paragraph
+        let affiliateLinksInserted = 0;
+        const bannerPositions = body.banner_positions || ['after-intro', 'mid-article', 'before-conclusion'];
+        const affiliateLinkMin = body.affiliate_link_count_min || 2;
+        const affiliateLinkMax = body.affiliate_link_count_max || 3;
+
+        if (affiliate_program && (affiliate_program.affiliate_link || affiliate_program.link)) {
+          const affiliateLink = affiliate_program.affiliate_link || affiliate_program.link;
+          const programName = affiliate_program.program_name || affiliate_program.name || 'recommended solution';
+
+          // Enhanced affiliate link insertion with multiple placements
           const paragraphs = finalContent.split('\n\n');
-          if (paragraphs.length > 3) {
-            const insertIndex = Math.floor(paragraphs.length * 0.6); // Insert around 60% through
-            const linkText = `Learn more about ${affiliate_program.program_name}`;
-            const affiliateHtml = ` <a href="${affiliate_program.affiliate_link}" target="_blank" rel="noopener sponsored">${linkText}</a>.`;
-            paragraphs[insertIndex] = paragraphs[insertIndex] + affiliateHtml;
-            finalContent = paragraphs.join('\n\n');
+          const targetLinkCount = Math.min(affiliateLinkMax, Math.max(affiliateLinkMin, Math.floor(paragraphs.length / 4)));
+
+          // Calculate insertion points spread throughout the article
+          const insertionPoints = [];
+          for (let i = 0; i < targetLinkCount; i++) {
+            const point = Math.floor((paragraphs.length - 2) * (i + 1) / (targetLinkCount + 1)) + 1;
+            if (!insertionPoints.includes(point)) {
+              insertionPoints.push(point);
+            }
+          }
+
+          // Insert affiliate links at calculated points
+          const linkVariations = [
+            `<a href="${affiliateLink}" target="_blank" rel="noopener sponsored">Check out ${programName}</a>`,
+            `<a href="${affiliateLink}" target="_blank" rel="noopener sponsored">${programName}</a>`,
+            `<a href="${affiliateLink}" target="_blank" rel="noopener sponsored">Learn more about ${programName}</a>`
+          ];
+
+          insertionPoints.forEach((point, idx) => {
+            if (paragraphs[point] && !paragraphs[point].includes('href=')) {
+              const linkHtml = linkVariations[idx % linkVariations.length];
+              paragraphs[point] = paragraphs[point] + ` ${linkHtml}.`;
+              affiliateLinksInserted++;
+            }
+          });
+
+          finalContent = paragraphs.join('\n\n');
+
+          // Insert CTA banner boxes at configured positions
+          const createCtaBox = () => `
+<div class="affiliate-cta-box" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 2px solid #cbd5e1; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
+  <h4 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px;">Recommended: ${programName}</h4>
+  <p style="margin: 0 0 16px 0; color: #64748b; font-size: 14px;">${affiliate_program.description || affiliate_program.why_recommended || 'Top-rated solution for your needs'}</p>
+  <a href="${affiliateLink}" rel="sponsored nofollow" target="_blank" style="display: inline-block; background: #334155; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+    Learn More →
+  </a>
+</div>`;
+
+          const createInlineRec = () => `
+<p class="affiliate-recommendation" style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+  <strong>Our Pick:</strong> We recommend <a href="${affiliateLink}" rel="sponsored nofollow" target="_blank" style="color: #d97706; font-weight: 600;">${programName}</a> for best results.
+</p>`;
+
+          // Insert banners at configured positions
+          if (bannerPositions.includes('after-intro')) {
+            const firstPMatch = finalContent.match(/(<\/p>)/i);
+            if (firstPMatch) {
+              const insertPoint = finalContent.indexOf(firstPMatch[0]) + firstPMatch[0].length;
+              finalContent = finalContent.slice(0, insertPoint) + createCtaBox() + finalContent.slice(insertPoint);
+            }
+          }
+
+          if (bannerPositions.includes('mid-article')) {
+            const h2Matches = finalContent.match(/<h2[^>]*>.*?<\/h2>/gi) || [];
+            if (h2Matches.length >= 2) {
+              const midHeading = h2Matches[Math.floor(h2Matches.length / 2)];
+              const insertPoint = finalContent.indexOf(midHeading);
+              if (insertPoint > -1) {
+                finalContent = finalContent.slice(0, insertPoint) + createInlineRec() + finalContent.slice(insertPoint);
+              }
+            }
+          }
+
+          if (bannerPositions.includes('before-conclusion')) {
+            const conclusionMatch = finalContent.match(/<h2[^>]*>.*?(conclusion|summary|final thoughts|wrapping up).*?<\/h2>/i);
+            if (conclusionMatch) {
+              const insertPoint = finalContent.indexOf(conclusionMatch[0]);
+              if (insertPoint > -1) {
+                finalContent = finalContent.slice(0, insertPoint) + createCtaBox() + finalContent.slice(insertPoint);
+              }
+            }
+          }
+        }
+
+        // Insert internal links if provided
+        let internalLinksInserted = 0;
+        if (existing_articles && existing_articles.length > 0) {
+          const maxInternalLinks = 3;
+          for (const article of existing_articles.slice(0, maxInternalLinks)) {
+            if (article.url && article.title) {
+              // Find a natural place to insert the link
+              const titleWords = article.title.toLowerCase().split(' ').filter(w => w.length > 3);
+              for (const word of titleWords) {
+                const regex = new RegExp(`\\b(${word})\\b(?![^<]*>)`, 'i');
+                if (regex.test(finalContent) && internalLinksInserted < maxInternalLinks) {
+                  finalContent = finalContent.replace(regex, `<a href="${article.url}">$1</a>`);
+                  internalLinksInserted++;
+                  break;
+                }
+              }
+            }
           }
         }
 
         const duration = Date.now() - startTime;
         const actualWordCount = finalContent.split(/\s+/).length;
 
-        console.log(`[PIPELINE GENERATE] Complete in ${duration}ms - ${actualWordCount} words`);
+        console.log(`[PIPELINE GENERATE] Complete in ${duration}ms - ${actualWordCount} words, ${affiliateLinksInserted} affiliate links, ${internalLinksInserted} internal links`);
 
         return {
           statusCode: 200,
@@ -12329,7 +12498,10 @@ Return ONLY the prompt (2-3 sentences).`;
               content: finalContent,
               wordCount: actualWordCount,
               image: imageData,
-              hasAffiliateLinks: !!affiliate_program,
+              hasAffiliateLinks: affiliateLinksInserted > 0,
+              affiliateLinksCount: affiliateLinksInserted,
+              internalLinksCount: internalLinksInserted,
+              bannerPositions: bannerPositions,
               modelTier: model_tier
             },
             cost: contentResult.cost + (imageData ? 0.04 : 0),
@@ -12570,19 +12742,117 @@ Return ONLY valid JSON in this exact format:
 
         const schedule = scheduleMap[frequency] || scheduleMap['3x_week'];
 
-        // Step 5: Pre-generate article queue (20 articles)
-        console.log('[STEP 5] Generating article queue...');
+        // Step 5: Pre-generate article queue (20 articles) and save to database
+        console.log('[STEP 5] Generating article queue and saving to database...');
 
-        const articleQueue = keywordResult.keywords.slice(0, 20).map((kw, index) => ({
-          id: `queue_${Date.now()}_${index}`,
-          keyword: kw.keyword,
-          content_type: kw.content_type,
-          priority: kw.priority,
-          status: 'pending',
-          scheduled_date: null,
-          affiliate_program: affiliatePrograms[index % affiliatePrograms.length] || null,
-          created_at: new Date().toISOString()
+        // Assign unique IDs to affiliate programs for tracking
+        const affiliateProgramsWithIds = affiliatePrograms.map((prog, idx) => ({
+          ...prog,
+          id: `aff_${blog_id}_${idx}_${Date.now()}`,
+          blog_id: blog_id
         }));
+
+        // Calculate scheduled dates based on posting frequency
+        const getNextScheduledDate = (index) => {
+          const now = new Date();
+          const daysOfWeek = schedule.days.map(d =>
+            ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(d)
+          );
+
+          let scheduledDate = new Date(now);
+          let articlesScheduled = 0;
+
+          while (articlesScheduled <= index) {
+            scheduledDate.setDate(scheduledDate.getDate() + 1);
+            if (daysOfWeek.includes(scheduledDate.getDay())) {
+              articlesScheduled++;
+            }
+          }
+
+          scheduledDate.setHours(9, 0, 0, 0); // Default 9 AM
+          return scheduledDate.toISOString();
+        };
+
+        const articleQueue = keywordResult.keywords.slice(0, 20).map((kw, index) => {
+          const assignedAffiliate = affiliateProgramsWithIds.length > 0
+            ? affiliateProgramsWithIds[index % affiliateProgramsWithIds.length]
+            : null;
+
+          return {
+            id: `queue_${Date.now()}_${index}`,
+            keyword: kw.keyword,
+            title: generateArticleTitle(kw.keyword, kw.content_type),
+            content_type: kw.content_type,
+            priority: kw.priority,
+            status: 'pending',
+            scheduled_date: getNextScheduledDate(index),
+            affiliate_program: assignedAffiliate,
+            affiliate_program_id: assignedAffiliate?.id || null,
+            blog_id: blog_id,
+            opportunity_score: calculateKeywordOpportunityScore(kw),
+            generation_priority: 100 - kw.priority, // Higher priority = lower number in keywords
+            created_at: new Date().toISOString()
+          };
+        });
+
+        // Save articles to content_queue table in Supabase
+        console.log('[STEP 5b] Saving articles to content_queue...');
+        let savedToQueue = 0;
+
+        try {
+          for (const article of articleQueue) {
+            await supabaseRequest('content_queue', 'POST', {
+              blog_id: article.blog_id,
+              title: article.title,
+              target_keyword: article.keyword,
+              content_type: article.content_type,
+              status: article.status,
+              scheduled_date: article.scheduled_date,
+              affiliate_program_id: article.affiliate_program_id,
+              opportunity_score: article.opportunity_score,
+              generation_priority: article.generation_priority,
+              banner_config: {
+                positions: ['after-intro', 'mid-article', 'before-conclusion'],
+                affiliate_program: article.affiliate_program
+              },
+              internal_links: []
+            });
+            savedToQueue++;
+          }
+          console.log(`Saved ${savedToQueue} articles to content_queue`);
+        } catch (queueError) {
+          console.error('Error saving to content_queue:', queueError.message);
+          // Continue even if queue save fails - frontend can retry
+        }
+
+        // Initialize affiliate rotation for this blog
+        console.log('[STEP 5c] Initializing affiliate rotation...');
+        try {
+          // Check if rotation already exists
+          const existingRotation = await supabaseRequest(
+            `affiliate_rotation?blog_id=eq.${blog_id}`,
+            'GET'
+          );
+
+          if (!existingRotation || existingRotation.length === 0) {
+            await supabaseRequest('affiliate_rotation', 'POST', {
+              blog_id: blog_id,
+              rotation_index: 0,
+              program_ids: affiliateProgramsWithIds.map(p => p.id)
+            });
+            console.log('Affiliate rotation initialized');
+          } else {
+            // Update existing rotation with new program IDs
+            await supabaseRequest(
+              `affiliate_rotation?blog_id=eq.${blog_id}`,
+              'PATCH',
+              { program_ids: affiliateProgramsWithIds.map(p => p.id) }
+            );
+            console.log('Affiliate rotation updated');
+          }
+        } catch (rotationError) {
+          console.error('Error setting up affiliate rotation:', rotationError.message);
+        }
 
         const duration = Date.now() - startTime;
 
@@ -12598,7 +12868,7 @@ Return ONLY valid JSON in this exact format:
               niche_keyword,
               keywords: keywordResult.keywords,
               content_pillars: keywordResult.content_pillars || [],
-              affiliate_programs: affiliatePrograms,
+              affiliate_programs: affiliateProgramsWithIds,
               posting_schedule: {
                 frequency,
                 days: schedule.days,
@@ -12607,9 +12877,10 @@ Return ONLY valid JSON in this exact format:
               },
               image_suggestions: imageResults,
               article_queue: articleQueue,
+              articles_saved_to_queue: savedToQueue,
               auto_publish_config: {
                 enabled: false,
-                next_publish_date: null,
+                next_publish_date: articleQueue[0]?.scheduled_date || null,
                 queue_size: articleQueue.length
               }
             },
@@ -12983,6 +13254,755 @@ Return ONLY valid JSON:
       }
     }
 
+    // ============================================
+    // PIPELINE ENHANCEMENT ENDPOINTS
+    // ============================================
+
+    // PIPELINE - Check daily publishing limit
+    if (path === '/api/pipeline/check-daily-limit' && method === 'POST') {
+      const { blog_id } = body;
+
+      if (!blog_id) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Blog ID is required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[DAILY LIMIT] Checking limits for blog: ${blog_id}`);
+
+        // Get pipeline settings
+        const pipelineResult = await supabaseRequest(
+          `content_pipeline?blog_id=eq.${blog_id}&select=*`,
+          'GET'
+        );
+
+        if (!pipelineResult || pipelineResult.length === 0) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              error: 'Pipeline not found for this blog'
+            })
+          };
+        }
+
+        const pipeline = pipelineResult[0];
+        const today = new Date().toISOString().split('T')[0];
+        const maxPosts = pipeline.max_posts_per_day || 3;
+        let postsToday = pipeline.daily_posts_published || 0;
+
+        // Reset counter if new day
+        if (!pipeline.last_daily_reset || pipeline.last_daily_reset < today) {
+          await supabaseRequest(
+            `content_pipeline?blog_id=eq.${blog_id}`,
+            'PATCH',
+            { daily_posts_published: 0, last_daily_reset: today }
+          );
+          postsToday = 0;
+        }
+
+        const canPublish = postsToday < maxPosts;
+        const remainingSlots = maxPosts - postsToday;
+
+        // Calculate next available publish slot
+        const preferredTimes = pipeline.preferred_publish_times || ['09:00', '13:00', '17:00'];
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0, 5);
+        let nextSlot = null;
+
+        if (canPublish) {
+          // Find next available time slot today
+          for (let i = postsToday; i < preferredTimes.length && i < maxPosts; i++) {
+            if (preferredTimes[i] > currentTime) {
+              nextSlot = `${today}T${preferredTimes[i]}:00`;
+              break;
+            }
+          }
+        }
+
+        // If no slot today, use tomorrow's first slot
+        if (!nextSlot) {
+          const tomorrow = new Date(now);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowStr = tomorrow.toISOString().split('T')[0];
+          nextSlot = `${tomorrowStr}T${preferredTimes[0]}:00`;
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            canPublish,
+            postsToday,
+            maxPosts,
+            remainingSlots,
+            nextSlot,
+            preferredTimes
+          })
+        };
+
+      } catch (error) {
+        console.error('[DAILY LIMIT ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // PIPELINE - Replenish queue with new articles
+    if (path === '/api/pipeline/replenish-queue' && method === 'POST') {
+      const { blog_id, target_size = 20 } = body;
+
+      if (!blog_id) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Blog ID is required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[REPLENISH QUEUE] Starting for blog: ${blog_id}`);
+        const startTime = Date.now();
+
+        // Get current queue size
+        const queueResult = await supabaseRequest(
+          `content_queue?blog_id=eq.${blog_id}&status=in.(pending,scheduled)&select=id,target_keyword`,
+          'GET'
+        );
+        const currentSize = queueResult.length;
+
+        if (currentSize >= target_size) {
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              message: 'Queue is already at target size',
+              currentSize,
+              targetSize: target_size,
+              articlesToGenerate: 0
+            })
+          };
+        }
+
+        // Get pipeline settings
+        const pipelineResult = await supabaseRequest(
+          `content_pipeline?blog_id=eq.${blog_id}&select=*`,
+          'GET'
+        );
+
+        if (!pipelineResult || pipelineResult.length === 0) {
+          throw new Error('Pipeline not found');
+        }
+
+        const pipeline = pipelineResult[0];
+        const coveredKeywords = pipeline.covered_keywords || [];
+        const learningWeights = pipeline.learning_weights || {};
+        const articlesToGenerate = Math.min(target_size - currentSize, 5); // Max 5 at a time
+
+        console.log(`[REPLENISH QUEUE] Need ${articlesToGenerate} articles (current: ${currentSize}, target: ${target_size})`);
+
+        // Get next keywords using learning weights to prioritize
+        const nextKeywordsResponse = await fetch(`${process.env.URL || 'https://www.getseowizard.com'}/.netlify/functions/api/pipeline/next-keyword`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            niche_keyword: pipeline.niche_keyword,
+            exclude_keywords: [...coveredKeywords, ...queueResult.map(q => q.target_keyword)],
+            content_themes: learningWeights.preferred_topics || [],
+            count: articlesToGenerate
+          })
+        });
+
+        let keywords = [];
+        if (nextKeywordsResponse.ok) {
+          const keywordsData = await nextKeywordsResponse.json();
+          keywords = keywordsData.keywords || [];
+        }
+
+        // Apply learning weights to adjust priority
+        const scoredKeywords = keywords.map(kw => {
+          let adjustedScore = kw.combinedScore || 50;
+
+          // Boost based on learning weights
+          if (learningWeights.preferred_content_types) {
+            const intent = kw.intent || 'informational';
+            if (learningWeights.preferred_content_types.includes(intent)) {
+              adjustedScore += 10;
+            }
+          }
+
+          if (learningWeights.optimal_word_count_range) {
+            // Keywords with commercial intent tend to need longer content
+            if (kw.intent === 'commercial' || kw.intent === 'transactional') {
+              adjustedScore += 5;
+            }
+          }
+
+          return { ...kw, adjustedScore };
+        }).sort((a, b) => b.adjustedScore - a.adjustedScore);
+
+        // Add keywords to queue with affiliate rotation
+        const addedArticles = [];
+        for (const keyword of scoredKeywords.slice(0, articlesToGenerate)) {
+          // Get next affiliate program (round-robin)
+          let affiliateProgramId = null;
+          try {
+            const affiliateResponse = await fetch(`${process.env.URL || 'https://www.getseowizard.com'}/.netlify/functions/api/affiliate/next-program`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ blog_id })
+            });
+            if (affiliateResponse.ok) {
+              const affiliateData = await affiliateResponse.json();
+              affiliateProgramId = affiliateData.program?.id;
+            }
+          } catch (e) {
+            console.log('[REPLENISH QUEUE] Affiliate rotation failed, continuing without');
+          }
+
+          // Calculate scheduled date
+          const scheduledDate = new Date();
+          scheduledDate.setDate(scheduledDate.getDate() + addedArticles.length + 1);
+          const preferredTime = pipeline.preferred_publish_times?.[0] || '09:00';
+          scheduledDate.setHours(parseInt(preferredTime.split(':')[0]), parseInt(preferredTime.split(':')[1] || 0));
+
+          // Add to queue
+          const queueItem = {
+            blog_id,
+            title: `Complete Guide to ${keyword.keyword.charAt(0).toUpperCase() + keyword.keyword.slice(1)}`,
+            target_keyword: keyword.keyword,
+            status: 'pending',
+            scheduled_date: scheduledDate.toISOString(),
+            opportunity_score: keyword.opportunityScore || keyword.combinedScore,
+            affiliate_program_id: affiliateProgramId,
+            generation_priority: keyword.adjustedScore || 50,
+            banner_config: {
+              positions: pipeline.banner_positions || ['after-intro', 'mid-article', 'before-conclusion']
+            },
+            internal_links: []
+          };
+
+          await supabaseRequest('content_queue', 'POST', queueItem);
+          addedArticles.push(queueItem);
+        }
+
+        const duration = Date.now() - startTime;
+        console.log(`[REPLENISH QUEUE] Added ${addedArticles.length} articles in ${duration}ms`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            currentSize,
+            targetSize: target_size,
+            articlesAdded: addedArticles.length,
+            articles: addedArticles.map(a => ({ keyword: a.target_keyword, priority: a.generation_priority })),
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[REPLENISH QUEUE ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // AFFILIATE - Round-robin program selection
+    if (path === '/api/affiliate/next-program' && method === 'POST') {
+      const { blog_id } = body;
+
+      if (!blog_id) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Blog ID is required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[AFFILIATE ROTATION] Getting next program for blog: ${blog_id}`);
+
+        // Get content strategy with affiliate programs
+        const strategyResult = await supabaseRequest(
+          `content_strategies?blog_id=eq.${blog_id}&select=id,affiliate_programs`,
+          'GET'
+        );
+
+        if (!strategyResult || strategyResult.length === 0 || !strategyResult[0].affiliate_programs) {
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              program: null,
+              message: 'No affiliate programs configured'
+            })
+          };
+        }
+
+        const programs = strategyResult[0].affiliate_programs;
+        if (!Array.isArray(programs) || programs.length === 0) {
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              program: null,
+              message: 'No affiliate programs available'
+            })
+          };
+        }
+
+        // Get or create rotation state
+        let rotationResult = await supabaseRequest(
+          `affiliate_rotation?blog_id=eq.${blog_id}&select=*`,
+          'GET'
+        );
+
+        let rotationIndex = 0;
+        if (rotationResult && rotationResult.length > 0) {
+          rotationIndex = rotationResult[0].rotation_index || 0;
+        } else {
+          // Create rotation record
+          await supabaseRequest('affiliate_rotation', 'POST', {
+            blog_id,
+            rotation_index: 0,
+            program_ids: programs.map(p => p.id || p.program_name)
+          });
+        }
+
+        // Select program at current index
+        const selectedProgram = programs[rotationIndex % programs.length];
+
+        // Increment rotation index
+        const newIndex = (rotationIndex + 1) % programs.length;
+        await supabaseRequest(
+          `affiliate_rotation?blog_id=eq.${blog_id}`,
+          'PATCH',
+          { rotation_index: newIndex, last_rotated_at: new Date().toISOString() }
+        );
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            program: selectedProgram,
+            rotationIndex: rotationIndex,
+            nextIndex: newIndex,
+            totalPrograms: programs.length
+          })
+        };
+
+      } catch (error) {
+        console.error('[AFFILIATE ROTATION ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // CONTENT - Insert banners into article content
+    if (path === '/api/content/insert-banners' && method === 'POST') {
+      const { article_content, banner_config, affiliate_program } = body;
+
+      if (!article_content) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Article content is required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[BANNER INSERT] Processing content with ${banner_config?.positions?.length || 0} banner positions`);
+
+        const positions = banner_config?.positions || ['after-intro', 'mid-article', 'before-conclusion'];
+        let modifiedContent = article_content;
+        const insertedBanners = [];
+
+        // Banner HTML templates
+        const createCtaBox = (program) => {
+          if (!program) return '';
+          return `
+<div class="affiliate-cta-box" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 2px solid #cbd5e1; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
+  <h4 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px;">Recommended: ${program.program_name || program.name}</h4>
+  <p style="margin: 0 0 16px 0; color: #64748b; font-size: 14px;">${program.description || program.why_recommended || 'Top-rated solution for your needs'}</p>
+  <a href="${program.affiliate_link || program.link || '#'}" rel="sponsored nofollow" target="_blank" style="display: inline-block; background: #334155; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+    Learn More →
+  </a>
+</div>`;
+        };
+
+        const createInlineRecommendation = (program) => {
+          if (!program) return '';
+          return `
+<p class="affiliate-recommendation" style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+  <strong>Our Pick:</strong> We recommend <a href="${program.affiliate_link || program.link || '#'}" rel="sponsored nofollow" target="_blank" style="color: #d97706; font-weight: 600;">${program.program_name || program.name}</a> for ${program.use_case || program.best_for || 'best results'}.
+</p>`;
+        };
+
+        // Insert banners at configured positions
+        if (positions.includes('after-intro')) {
+          // Find first paragraph or introduction section
+          const firstParagraphMatch = modifiedContent.match(/(<p[^>]*>.*?<\/p>)/i);
+          if (firstParagraphMatch) {
+            const insertPoint = modifiedContent.indexOf(firstParagraphMatch[0]) + firstParagraphMatch[0].length;
+            const banner = createCtaBox(affiliate_program);
+            modifiedContent = modifiedContent.slice(0, insertPoint) + banner + modifiedContent.slice(insertPoint);
+            insertedBanners.push({ position: 'after-intro', type: 'cta-box' });
+          }
+        }
+
+        if (positions.includes('mid-article')) {
+          // Find all h2 headings and insert after the middle one
+          const h2Matches = modifiedContent.match(/<h2[^>]*>.*?<\/h2>/gi) || [];
+          if (h2Matches.length >= 2) {
+            const midIndex = Math.floor(h2Matches.length / 2);
+            const midHeading = h2Matches[midIndex];
+            const insertPoint = modifiedContent.indexOf(midHeading);
+            if (insertPoint > -1) {
+              const banner = createInlineRecommendation(affiliate_program);
+              modifiedContent = modifiedContent.slice(0, insertPoint) + banner + modifiedContent.slice(insertPoint);
+              insertedBanners.push({ position: 'mid-article', type: 'inline-recommendation' });
+            }
+          }
+        }
+
+        if (positions.includes('before-conclusion')) {
+          // Find conclusion heading
+          const conclusionMatch = modifiedContent.match(/<h2[^>]*>.*?(conclusion|summary|final thoughts|wrapping up).*?<\/h2>/i);
+          if (conclusionMatch) {
+            const insertPoint = modifiedContent.indexOf(conclusionMatch[0]);
+            if (insertPoint > -1) {
+              const banner = createCtaBox(affiliate_program);
+              modifiedContent = modifiedContent.slice(0, insertPoint) + banner + modifiedContent.slice(insertPoint);
+              insertedBanners.push({ position: 'before-conclusion', type: 'cta-box' });
+            }
+          }
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            content: modifiedContent,
+            insertedBanners,
+            originalLength: article_content.length,
+            modifiedLength: modifiedContent.length
+          })
+        };
+
+      } catch (error) {
+        console.error('[BANNER INSERT ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // INTERNAL LINKS - Analyze and suggest internal links
+    if (path === '/api/internal-links/analyze' && method === 'POST') {
+      const { blog_id, new_article_keyword, new_article_content } = body;
+
+      if (!blog_id || !new_article_keyword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Blog ID and new article keyword are required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[INTERNAL LINKS] Analyzing for blog: ${blog_id}, keyword: ${new_article_keyword}`);
+        const startTime = Date.now();
+
+        // Get published articles for this blog
+        const publishedResult = await supabaseRequest(
+          `publish_log?blog_id=eq.${blog_id}&select=*,generated_articles(id,title,keywords)&order=published_at.desc&limit=50`,
+          'GET'
+        );
+
+        if (!publishedResult || publishedResult.length === 0) {
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              relatedArticles: [],
+              message: 'No published articles found for internal linking'
+            })
+          };
+        }
+
+        // Extract keywords from new article content
+        const newKeywords = extractKeywordsFromContent(new_article_keyword, new_article_content || '');
+
+        // Calculate similarity scores for each published article
+        const scoredArticles = publishedResult
+          .filter(p => p.generated_articles)
+          .map(published => {
+            const article = published.generated_articles;
+            const articleKeywords = article.keywords || [];
+
+            // Calculate keyword overlap
+            const keywordOverlap = newKeywords.filter(nk =>
+              articleKeywords.some(ak =>
+                ak.toLowerCase().includes(nk.toLowerCase()) ||
+                nk.toLowerCase().includes(ak.toLowerCase())
+              )
+            ).length;
+
+            // Calculate title relevance
+            const titleWords = (article.title || '').toLowerCase().split(/\s+/);
+            const titleOverlap = newKeywords.filter(nk =>
+              titleWords.some(tw => tw.includes(nk.toLowerCase()) || nk.toLowerCase().includes(tw))
+            ).length;
+
+            // Combined similarity score
+            const similarity = (keywordOverlap * 0.6) + (titleOverlap * 0.4);
+
+            // Find best anchor text from matching keywords
+            const matchingKeywords = newKeywords.filter(nk =>
+              articleKeywords.some(ak => ak.toLowerCase().includes(nk.toLowerCase()))
+            );
+            const suggestedAnchor = matchingKeywords[0] || article.title?.split(' ').slice(0, 4).join(' ') || 'related article';
+
+            return {
+              article_id: article.id,
+              title: article.title,
+              url: published.wordpress_url,
+              wordpress_post_id: published.wordpress_post_id,
+              similarity,
+              keywordOverlap,
+              suggestedAnchor,
+              matchingKeywords
+            };
+          })
+          .filter(a => a.similarity > 0.2) // Minimum threshold
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, 5); // Top 5 related articles
+
+        const duration = Date.now() - startTime;
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            relatedArticles: scoredArticles,
+            newArticleKeywords: newKeywords.slice(0, 10),
+            analyzedArticles: publishedResult.length,
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[INTERNAL LINKS ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // LEARNING - Analyze article performance patterns
+    if (path === '/api/learning/analyze-performance' && method === 'POST') {
+      const { blog_id } = body;
+
+      if (!blog_id) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Blog ID is required'
+          })
+        };
+      }
+
+      try {
+        console.log(`[LEARNING] Analyzing performance for blog: ${blog_id}`);
+        const startTime = Date.now();
+
+        // Get article performance data
+        const performanceResult = await supabaseRequest(
+          `article_performance?blog_id=eq.${blog_id}&select=*&order=engagement_score.desc.nullslast`,
+          'GET'
+        );
+
+        if (!performanceResult || performanceResult.length < 10) {
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              message: 'Need at least 10 articles with performance data for analysis',
+              articlesAnalyzed: performanceResult?.length || 0,
+              patterns: null,
+              recommendations: ['Continue publishing to gather more performance data']
+            })
+          };
+        }
+
+        // Identify top 20% performers
+        const topCount = Math.max(Math.floor(performanceResult.length * 0.2), 2);
+        const topPerformers = performanceResult.slice(0, topCount);
+        const avgPerformers = performanceResult.slice(topCount, -topCount);
+        const lowPerformers = performanceResult.slice(-topCount);
+
+        // Extract patterns from top performers
+        const topWordCounts = topPerformers.map(a => a.word_count).filter(Boolean);
+        const topSectionCounts = topPerformers.map(a => a.section_count).filter(Boolean);
+        const topContentTypes = topPerformers.map(a => a.content_type).filter(Boolean);
+        const topAffiliateCounts = topPerformers.map(a => a.affiliate_links_count).filter(Boolean);
+
+        // Calculate averages and patterns
+        const avgWordCount = topWordCounts.length > 0
+          ? Math.round(topWordCounts.reduce((a, b) => a + b, 0) / topWordCounts.length)
+          : null;
+
+        const avgSectionCount = topSectionCounts.length > 0
+          ? Math.round(topSectionCounts.reduce((a, b) => a + b, 0) / topSectionCounts.length)
+          : null;
+
+        // Find most common content types in top performers
+        const contentTypeCounts = {};
+        topContentTypes.forEach(type => {
+          contentTypeCounts[type] = (contentTypeCounts[type] || 0) + 1;
+        });
+        const preferredContentTypes = Object.entries(contentTypeCounts)
+          .sort(([,a], [,b]) => b - a)
+          .slice(0, 3)
+          .map(([type]) => type);
+
+        // Calculate optimal affiliate link count
+        const avgAffiliateCount = topAffiliateCounts.length > 0
+          ? Math.round(topAffiliateCounts.reduce((a, b) => a + b, 0) / topAffiliateCounts.length)
+          : 2;
+
+        // Generate learning weights
+        const learningWeights = {
+          optimal_word_count_range: avgWordCount ? [avgWordCount - 300, avgWordCount + 300] : [1500, 2500],
+          optimal_section_count: avgSectionCount || 6,
+          preferred_content_types: preferredContentTypes,
+          optimal_affiliate_link_count: avgAffiliateCount,
+          analysis_date: new Date().toISOString(),
+          sample_size: performanceResult.length
+        };
+
+        // Generate recommendations
+        const recommendations = [];
+
+        if (avgWordCount) {
+          recommendations.push(`Aim for ${avgWordCount - 300} to ${avgWordCount + 300} words per article (top performers average ${avgWordCount})`);
+        }
+
+        if (avgSectionCount) {
+          recommendations.push(`Use approximately ${avgSectionCount} sections/headings per article`);
+        }
+
+        if (preferredContentTypes.length > 0) {
+          recommendations.push(`Focus on ${preferredContentTypes.join(', ')} content types which perform best`);
+        }
+
+        if (avgAffiliateCount) {
+          recommendations.push(`Include ${avgAffiliateCount} affiliate links per article for optimal conversions`);
+        }
+
+        // Extract top performing topics/keywords
+        const topKeywords = [];
+        topPerformers.forEach(a => {
+          if (a.keywords && Array.isArray(a.keywords)) {
+            topKeywords.push(...a.keywords.slice(0, 3));
+          }
+        });
+        const uniqueTopKeywords = [...new Set(topKeywords)].slice(0, 10);
+
+        if (uniqueTopKeywords.length > 0) {
+          recommendations.push(`Keywords associated with top content: ${uniqueTopKeywords.slice(0, 5).join(', ')}`);
+        }
+
+        // Update pipeline with learning weights
+        await supabaseRequest(
+          `content_pipeline?blog_id=eq.${blog_id}`,
+          'PATCH',
+          { learning_weights: learningWeights }
+        );
+
+        const duration = Date.now() - startTime;
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            patterns: {
+              topPerformersCount: topCount,
+              avgWordCount,
+              avgSectionCount,
+              preferredContentTypes,
+              optimalAffiliateCount: avgAffiliateCount,
+              topKeywords: uniqueTopKeywords
+            },
+            learningWeights,
+            recommendations,
+            articlesAnalyzed: performanceResult.length,
+            topPerformers: topPerformers.map(a => ({
+              title: a.title,
+              engagement_score: a.engagement_score,
+              views: a.views,
+              content_type: a.content_type
+            })),
+            duration_ms: duration
+          })
+        };
+
+      } catch (error) {
+        console.error('[LEARNING ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
     // Default 404
     return {
       statusCode: 404,
@@ -13029,6 +14049,12 @@ Return ONLY valid JSON:
           'POST /api/generate-featured-image',
           'POST /api/pipeline/next-keyword',
           'POST /api/pipeline/generate-article',
+          'POST /api/pipeline/check-daily-limit',
+          'POST /api/pipeline/replenish-queue',
+          'POST /api/affiliate/next-program',
+          'POST /api/content/insert-banners',
+          'POST /api/internal-links/analyze',
+          'POST /api/learning/analyze-performance',
           'POST /api/generate-content-strategy',
           'POST /api/auto-publish-article',
           'POST /api/analyze-traffic-insights'

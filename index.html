@@ -12716,6 +12716,13 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                                     <div style="font-size: 28px; font-weight: 700; color: #6366f1;">20</div>
                                     <div style="font-size: 12px; color: #64748b; font-weight: 600;">Target Queue</div>
                                 </div>
+                                <div id="dailyStats_${blog.id}" style="background: white; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; position: relative;">
+                                    <div style="font-size: 28px; font-weight: 700; color: #f59e0b;">0/3</div>
+                                    <div style="font-size: 12px; color: #64748b; font-weight: 600;">Posts Today</div>
+                                    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: #e2e8f0; border-radius: 0 0 8px 8px; overflow: hidden;">
+                                        <div class="daily-progress" style="width: 0%; height: 100%; background: linear-gradient(90deg, #f59e0b, #f97316); transition: width 0.3s ease;"></div>
+                                    </div>
+                                </div>
                                 <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0;">
                                     <div style="font-size: 16px; font-weight: 600; color: #334155;">3x/week</div>
                                     <div style="font-size: 12px; color: #64748b; font-weight: 600;">Schedule</div>
@@ -12801,6 +12808,37 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                         <button onclick="closeModal()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #64748b;">×</button>
                     </div>
 
+                    <!-- Daily Limit Settings -->
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-weight: 600; color: #334155; margin-bottom: 10px; display: block;">Max Posts Per Day:</label>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <input type="range" id="maxPostsPerDay" min="1" max="3" value="3"
+                                oninput="document.getElementById('maxPostsDisplay').textContent = this.value"
+                                style="flex: 1; height: 8px; cursor: pointer;">
+                            <span id="maxPostsDisplay" style="font-size: 18px; font-weight: 700; color: #334155; min-width: 30px; text-align: center;">3</span>
+                        </div>
+                        <p style="font-size: 12px; color: #64748b; margin-top: 5px;">Limits how many articles publish per day (recommended: 1-3)</p>
+                    </div>
+
+                    <!-- Preferred Publish Times -->
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-weight: 600; color: #334155; margin-bottom: 10px; display: block;">Preferred Publish Times:</label>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                            <div style="text-align: center;">
+                                <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 5px;">Morning</label>
+                                <input type="time" id="publishTimeMorning" value="09:00" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                            </div>
+                            <div style="text-align: center;">
+                                <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 5px;">Afternoon</label>
+                                <input type="time" id="publishTimeAfternoon" value="13:00" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                            </div>
+                            <div style="text-align: center;">
+                                <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 5px;">Evening</label>
+                                <input type="time" id="publishTimeEvening" value="17:00" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Target Queue Size -->
                     <div style="margin-bottom: 20px;">
                         <label style="font-weight: 600; color: #334155; margin-bottom: 10px; display: block;">Target Queue Size:</label>
@@ -12812,14 +12850,44 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                         </select>
                     </div>
 
-                    <!-- Publishing Schedule -->
+                    <!-- Affiliate Settings -->
                     <div style="margin-bottom: 20px;">
-                        <label style="font-weight: 600; color: #334155; margin-bottom: 10px; display: block;">Publishing Schedule:</label>
-                        <select id="pipelineSchedule" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                            <option value="daily">Daily (1 article/day)</option>
-                            <option value="3x_week" selected>3x per week (Mon, Wed, Fri)</option>
-                            <option value="weekly">Weekly (every Monday)</option>
+                        <label style="font-weight: 600; color: #334155; margin-bottom: 10px; display: block;">Affiliate Links Per Article:</label>
+                        <select id="affiliateLinkCount" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <option value="1-2">1-2 links (minimal)</option>
+                            <option value="2-3" selected>2-3 links (recommended)</option>
+                            <option value="3-4">3-4 links (aggressive)</option>
                         </select>
+                    </div>
+
+                    <!-- Banner Positions -->
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-weight: 600; color: #334155; margin-bottom: 10px; display: block;">Banner Positions:</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="bannerAfterIntro" checked style="width: 18px; height: 18px;">
+                                <span style="font-size: 14px; color: #334155;">After introduction</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="bannerMidArticle" checked style="width: 18px; height: 18px;">
+                                <span style="font-size: 14px; color: #334155;">Mid-article</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="bannerBeforeConclusion" checked style="width: 18px; height: 18px;">
+                                <span style="font-size: 14px; color: #334155;">Before conclusion</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Internal Linking -->
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="internalLinkingEnabled" checked style="width: 20px; height: 20px;">
+                            <div>
+                                <span style="font-weight: 600; color: #334155;">Enable Internal Linking</span>
+                                <p style="font-size: 12px; color: #64748b; margin: 2px 0 0 0;">Auto-link to related articles on your site</p>
+                            </div>
+                        </label>
                     </div>
 
                     <!-- Default Model Tier -->
@@ -12847,7 +12915,8 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                             <strong>What happens next:</strong><br>
                             1. Go to Niche Research and validate your niche<br>
                             2. Use "Generate & Schedule Articles" to create initial content<br>
-                            3. Pipeline will auto-publish and replenish your queue
+                            3. Pipeline will auto-publish and replenish your queue<br>
+                            4. System learns from top-performing content to optimize future articles
                         </div>
                     </div>
 
@@ -12867,19 +12936,72 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
         // Save pipeline settings
         async function savePipelineSettings(blogId) {
-            const queueSize = document.getElementById('pipelineQueueSize')?.value || 20;
-            const schedule = document.getElementById('pipelineSchedule')?.value || '3x_week';
+            const maxPostsPerDay = parseInt(document.getElementById('maxPostsPerDay')?.value) || 3;
+            const publishTimeMorning = document.getElementById('publishTimeMorning')?.value || '09:00';
+            const publishTimeAfternoon = document.getElementById('publishTimeAfternoon')?.value || '13:00';
+            const publishTimeEvening = document.getElementById('publishTimeEvening')?.value || '17:00';
+            const queueSize = parseInt(document.getElementById('pipelineQueueSize')?.value) || 20;
+            const affiliateLinkCount = document.getElementById('affiliateLinkCount')?.value || '2-3';
             const modelTier = document.getElementById('pipelineModelTier')?.value || 'premium';
             const imageType = document.getElementById('pipelineImageType')?.value || 'ai';
+            const internalLinkingEnabled = document.getElementById('internalLinkingEnabled')?.checked !== false;
+
+            // Get banner positions
+            const bannerPositions = [];
+            if (document.getElementById('bannerAfterIntro')?.checked) bannerPositions.push('after-intro');
+            if (document.getElementById('bannerMidArticle')?.checked) bannerPositions.push('mid-article');
+            if (document.getElementById('bannerBeforeConclusion')?.checked) bannerPositions.push('before-conclusion');
+
+            // Parse affiliate link count
+            const [minLinks, maxLinks] = affiliateLinkCount.split('-').map(Number);
 
             showToast('Saving pipeline settings...', 'info');
 
-            // For now, just show success - full implementation would save to Supabase
-            setTimeout(() => {
+            try {
+                // Save to Supabase content_pipeline table
+                const pipelineData = {
+                    blog_id: blogId,
+                    status: 'active',
+                    target_queue_size: queueSize,
+                    max_posts_per_day: maxPostsPerDay,
+                    daily_posts_published: 0,
+                    preferred_publish_times: [publishTimeMorning, publishTimeAfternoon, publishTimeEvening],
+                    banner_positions: bannerPositions,
+                    affiliate_link_count_min: minLinks || 2,
+                    affiliate_link_count_max: maxLinks || 3,
+                    internal_linking_enabled: internalLinkingEnabled,
+                    default_model_tier: modelTier,
+                    image_type: imageType,
+                    created_at: new Date().toISOString()
+                };
+
+                // Check if pipeline already exists
+                const existingPipeline = await SupabaseService.supabase
+                    .from('content_pipeline')
+                    .select('id')
+                    .eq('blog_id', blogId)
+                    .single();
+
+                if (existingPipeline.data) {
+                    // Update existing
+                    await SupabaseService.supabase
+                        .from('content_pipeline')
+                        .update(pipelineData)
+                        .eq('blog_id', blogId);
+                } else {
+                    // Insert new
+                    await SupabaseService.supabase
+                        .from('content_pipeline')
+                        .insert(pipelineData);
+                }
+
                 closeModal();
                 showToast('Content pipeline enabled! Go to Niche Research to generate content.', 'success');
                 loadContentPipelineView();
-            }, 1000);
+            } catch (error) {
+                console.error('Error saving pipeline settings:', error);
+                showToast('Failed to save settings: ' + error.message, 'error');
+            }
         }
 
         // Show pipeline settings modal
@@ -12887,16 +13009,405 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
             enablePipelineForBlog(blogId); // Reuse the same modal for now
         }
 
-        // Show queue for a specific blog
-        function showQueueForBlog(blogId) {
-            showToast('Queue view coming soon!', 'info');
+        // Show queue for a specific blog with enhanced management view
+        async function showQueueForBlog(blogId) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+
+            modalContent.innerHTML = `
+                <div style="padding: 30px; max-width: 900px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 25px;">
+                        <div>
+                            <h2 style="margin: 0 0 8px 0; color: #1e293b; font-size: 22px;">Content Queue</h2>
+                            <p style="color: #64748b; font-size: 14px; margin: 0;">Manage your scheduled and pending articles</p>
+                        </div>
+                        <button onclick="closeModal()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #64748b;">x</button>
+                    </div>
+                    <div id="queueTableContainer" style="text-align: center; padding: 40px;">
+                        <p style="color: #64748b;">Loading queue...</p>
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+
+            try {
+                // Load queue items
+                const queueResult = await SupabaseService.supabase
+                    .from('content_queue')
+                    .select('*')
+                    .eq('blog_id', blogId)
+                    .in('status', ['pending', 'scheduled'])
+                    .order('generation_priority', { ascending: false })
+                    .order('scheduled_date', { ascending: true });
+
+                const queue = queueResult.data || [];
+
+                // Load affiliate programs for display
+                const strategyResult = await SupabaseService.supabase
+                    .from('content_strategies')
+                    .select('affiliate_programs')
+                    .eq('blog_id', blogId)
+                    .single();
+
+                const affiliatePrograms = strategyResult.data?.affiliate_programs || [];
+
+                const container = document.getElementById('queueTableContainer');
+
+                if (queue.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">📭</div>
+                            <h4 style="color: #1e293b; margin-bottom: 10px;">Queue is Empty</h4>
+                            <p style="color: #64748b; margin-bottom: 20px;">Generate articles from Niche Research or use Replenish Queue.</p>
+                            <button onclick="replenishQueueUI('${blogId}')" style="background: #334155; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                Replenish to 20
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = renderQueueTable(queue, affiliatePrograms, blogId);
+
+            } catch (error) {
+                console.error('Error loading queue:', error);
+                document.getElementById('queueTableContainer').innerHTML = `
+                    <div style="color: #ef4444; padding: 20px;">Error loading queue: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Render queue management table
+        function renderQueueTable(queue, affiliatePrograms, blogId) {
+            const getAffiliateNameById = (id) => {
+                if (!id) return 'Auto';
+                const program = affiliatePrograms.find(p => p.id === id || p.program_name === id);
+                return program?.program_name || 'Auto';
+            };
+
+            const formatDate = (dateStr) => {
+                if (!dateStr) return 'Not scheduled';
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+            };
+
+            return \`
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                <th style="text-align: left; padding: 12px 10px; color: #334155; font-weight: 600;">Priority</th>
+                                <th style="text-align: left; padding: 12px 10px; color: #334155; font-weight: 600;">Keyword / Title</th>
+                                <th style="text-align: center; padding: 12px 10px; color: #334155; font-weight: 600;">Opp. Score</th>
+                                <th style="text-align: center; padding: 12px 10px; color: #334155; font-weight: 600;">Affiliate</th>
+                                <th style="text-align: center; padding: 12px 10px; color: #334155; font-weight: 600;">Scheduled</th>
+                                <th style="text-align: center; padding: 12px 10px; color: #334155; font-weight: 600;">Status</th>
+                                <th style="text-align: center; padding: 12px 10px; color: #334155; font-weight: 600;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            \${queue.map((item, index) => \`
+                                <tr style="border-bottom: 1px solid #f1f5f9;">
+                                    <td style="padding: 12px 10px;">
+                                        <span style="background: \${item.generation_priority >= 70 ? '#dcfce7' : item.generation_priority >= 40 ? '#fef3c7' : '#f1f5f9'}; color: \${item.generation_priority >= 70 ? '#166534' : item.generation_priority >= 40 ? '#92400e' : '#64748b'}; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">
+                                            \${item.generation_priority || 50}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 12px 10px;">
+                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 2px;">\${item.target_keyword || 'Pending'}</div>
+                                        <div style="font-size: 12px; color: #64748b;">\${(item.title || '').substring(0, 50)}\${(item.title || '').length > 50 ? '...' : ''}</div>
+                                    </td>
+                                    <td style="padding: 12px 10px; text-align: center;">
+                                        <span style="font-weight: 600; color: #334155;">\${item.opportunity_score ? item.opportunity_score.toFixed(1) : '-'}</span>
+                                    </td>
+                                    <td style="padding: 12px 10px; text-align: center;">
+                                        <span style="font-size: 12px; color: #64748b;">\${getAffiliateNameById(item.affiliate_program_id)}</span>
+                                    </td>
+                                    <td style="padding: 12px 10px; text-align: center;">
+                                        <span style="font-size: 12px; color: #64748b;">\${formatDate(item.scheduled_date)}</span>
+                                    </td>
+                                    <td style="padding: 12px 10px; text-align: center;">
+                                        <span style="background: \${item.status === 'scheduled' ? '#dbeafe' : '#f1f5f9'}; color: \${item.status === 'scheduled' ? '#1d4ed8' : '#64748b'}; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;">
+                                            \${item.status}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 12px 10px; text-align: center;">
+                                        <div style="display: flex; gap: 6px; justify-content: center;">
+                                            <button onclick="publishNowFromQueue('\${item.id}')" title="Publish Now" style="background: #10b981; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                                Publish
+                                            </button>
+                                            <button onclick="rescheduleQueueItem('\${item.id}')" title="Reschedule" style="background: #64748b; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                                Reschedule
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            \`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: center;">
+                    <button onclick="replenishQueueUI('\${blogId}')" style="background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        Replenish to 20
+                    </button>
+                    <button onclick="showLearningInsights('\${blogId}')" style="background: #6366f1; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        View Learning Insights
+                    </button>
+                </div>
+            \`;
+        }
+
+        // Replenish queue via UI
+        async function replenishQueueUI(blogId) {
+            showToast('Replenishing queue...', 'info');
+            try {
+                const response = await fetch('/api/pipeline/replenish-queue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blog_id: blogId, target_size: 20 })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showToast(\`Added \${data.articlesAdded} articles to queue!\`, 'success');
+                    showQueueForBlog(blogId); // Refresh view
+                } else {
+                    showToast('Failed to replenish: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Publish article immediately from queue
+        async function publishNowFromQueue(queueItemId) {
+            if (!confirm('Publish this article immediately?')) return;
+
+            showToast('Publishing article...', 'info');
+            try {
+                // Update status to scheduled with immediate time
+                await SupabaseService.supabase
+                    .from('content_queue')
+                    .update({
+                        status: 'scheduled',
+                        scheduled_date: new Date().toISOString()
+                    })
+                    .eq('id', queueItemId);
+
+                showToast('Article queued for immediate publishing!', 'success');
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Reschedule queue item
+        async function rescheduleQueueItem(queueItemId) {
+            const newDate = prompt('Enter new publish date (YYYY-MM-DD HH:MM):', new Date().toISOString().slice(0, 16).replace('T', ' '));
+            if (!newDate) return;
+
+            try {
+                const scheduledDate = new Date(newDate.replace(' ', 'T'));
+                if (isNaN(scheduledDate.getTime())) {
+                    showToast('Invalid date format', 'error');
+                    return;
+                }
+
+                await SupabaseService.supabase
+                    .from('content_queue')
+                    .update({
+                        scheduled_date: scheduledDate.toISOString(),
+                        status: 'scheduled'
+                    })
+                    .eq('id', queueItemId);
+
+                showToast('Article rescheduled!', 'success');
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Show learning insights panel
+        async function showLearningInsights(blogId) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+
+            modalContent.innerHTML = `
+                <div style="padding: 30px; max-width: 800px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 25px;">
+                        <div>
+                            <h2 style="margin: 0 0 8px 0; color: #1e293b; font-size: 22px;">Learning Insights</h2>
+                            <p style="color: #64748b; font-size: 14px; margin: 0;">AI-powered analysis of your content performance</p>
+                        </div>
+                        <button onclick="closeModal()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #64748b;">x</button>
+                    </div>
+                    <div id="learningInsightsContainer" style="text-align: center; padding: 40px;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">🔄</div>
+                        <p style="color: #64748b;">Analyzing your content performance...</p>
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+
+            try {
+                const response = await fetch('/api/learning/analyze-performance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blog_id: blogId })
+                });
+
+                const data = await response.json();
+                const container = document.getElementById('learningInsightsContainer');
+
+                if (!data.success || !data.patterns) {
+                    container.innerHTML = \`
+                        <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">📊</div>
+                            <h4 style="color: #1e293b; margin-bottom: 10px;">Not Enough Data</h4>
+                            <p style="color: #64748b; margin-bottom: 20px;">\${data.message || 'Need at least 10 published articles with performance data to generate insights.'}</p>
+                            <p style="color: #64748b; font-size: 13px;">Articles analyzed: \${data.articlesAnalyzed || 0}</p>
+                        </div>
+                    \`;
+                    return;
+                }
+
+                const patterns = data.patterns;
+                const recommendations = data.recommendations || [];
+
+                container.innerHTML = \`
+                    <div style="text-align: left;">
+                        <!-- Summary Stats -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                            <div style="background: #f8fafc; padding: 20px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 28px; font-weight: 700; color: #334155;">\${data.articlesAnalyzed}</div>
+                                <div style="font-size: 12px; color: #64748b;">Articles Analyzed</div>
+                            </div>
+                            <div style="background: #dcfce7; padding: 20px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 28px; font-weight: 700; color: #166534;">\${patterns.topPerformersCount}</div>
+                                <div style="font-size: 12px; color: #166534;">Top Performers</div>
+                            </div>
+                            <div style="background: #dbeafe; padding: 20px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 28px; font-weight: 700; color: #1d4ed8;">\${patterns.avgWordCount || '-'}</div>
+                                <div style="font-size: 12px; color: #1d4ed8;">Optimal Words</div>
+                            </div>
+                            <div style="background: #fef3c7; padding: 20px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 28px; font-weight: 700; color: #92400e;">\${patterns.avgSectionCount || '-'}</div>
+                                <div style="font-size: 12px; color: #92400e;">Optimal Sections</div>
+                            </div>
+                        </div>
+
+                        <!-- Recommended Content Types -->
+                        \${patterns.preferredContentTypes && patterns.preferredContentTypes.length > 0 ? \`
+                            <div style="margin-bottom: 25px;">
+                                <h4 style="color: #1e293b; margin-bottom: 12px; font-size: 16px;">Top Performing Content Types</h4>
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    \${patterns.preferredContentTypes.map(type => \`
+                                        <span style="background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                            \${type}
+                                        </span>
+                                    \`).join('')}
+                                </div>
+                            </div>
+                        \` : ''}
+
+                        <!-- Top Keywords -->
+                        \${patterns.topKeywords && patterns.topKeywords.length > 0 ? \`
+                            <div style="margin-bottom: 25px;">
+                                <h4 style="color: #1e293b; margin-bottom: 12px; font-size: 16px;">Winning Keywords/Topics</h4>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    \${patterns.topKeywords.slice(0, 8).map(kw => \`
+                                        <span style="background: #e0e7ff; color: #4338ca; padding: 6px 14px; border-radius: 15px; font-size: 12px; font-weight: 500;">
+                                            \${kw}
+                                        </span>
+                                    \`).join('')}
+                                </div>
+                            </div>
+                        \` : ''}
+
+                        <!-- Recommendations -->
+                        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 20px; border-radius: 12px; border: 1px solid #86efac;">
+                            <h4 style="color: #166534; margin: 0 0 15px 0; font-size: 16px;">AI Recommendations</h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #15803d; font-size: 14px; line-height: 1.8;">
+                                \${recommendations.map(rec => \`<li>\${rec}</li>\`).join('')}
+                            </ul>
+                        </div>
+
+                        <!-- Top Performers List -->
+                        \${data.topPerformers && data.topPerformers.length > 0 ? \`
+                            <div style="margin-top: 25px;">
+                                <h4 style="color: #1e293b; margin-bottom: 12px; font-size: 16px;">Your Top Performing Articles</h4>
+                                <div style="background: #f8fafc; border-radius: 8px; overflow: hidden;">
+                                    \${data.topPerformers.slice(0, 5).map((article, i) => \`
+                                        <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <span style="color: #64748b; font-weight: 600; margin-right: 10px;">#\${i + 1}</span>
+                                                <span style="color: #1e293b;">\${article.title || 'Untitled'}</span>
+                                            </div>
+                                            <div style="display: flex; gap: 15px;">
+                                                <span style="font-size: 12px; color: #64748b;">\${article.views || 0} views</span>
+                                                <span style="background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">
+                                                    \${article.engagement_score?.toFixed(1) || '-'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    \`).join('')}
+                                </div>
+                            </div>
+                        \` : ''}
+                    </div>
+                \`;
+
+            } catch (error) {
+                console.error('Error loading insights:', error);
+                document.getElementById('learningInsightsContainer').innerHTML = \`
+                    <div style="color: #ef4444; padding: 20px;">Error loading insights: \${error.message}</div>
+                \`;
+            }
+        }
+
+        // Load daily stats for a blog
+        async function loadDailyStats(blogId) {
+            try {
+                const response = await fetch('/api/pipeline/check-daily-limit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blog_id: blogId })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const statsDiv = document.getElementById(\`dailyStats_\${blogId}\`);
+                    if (statsDiv && data.success) {
+                        const percentage = (data.postsToday / data.maxPosts) * 100;
+                        statsDiv.innerHTML = \`
+                            <div style="font-size: 28px; font-weight: 700; color: #f59e0b;">\${data.postsToday}/\${data.maxPosts}</div>
+                            <div style="font-size: 12px; color: #64748b; font-weight: 600;">Posts Today</div>
+                            <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: #e2e8f0; border-radius: 0 0 8px 8px; overflow: hidden;">
+                                <div class="daily-progress" style="width: \${percentage}%; height: 100%; background: linear-gradient(90deg, #f59e0b, #f97316); transition: width 0.3s ease;"></div>
+                            </div>
+                        \`;
+                    }
+                }
+            } catch (error) {
+                console.log('Could not load daily stats:', error.message);
+            }
         }
 
         // Pause pipeline
-        function pausePipeline(blogId) {
+        async function pausePipeline(blogId) {
             if (confirm('Pause the content pipeline? Scheduled articles will not be published until you resume.')) {
-                showToast('Pipeline paused', 'info');
-                loadContentPipelineView();
+                try {
+                    await SupabaseService.supabase
+                        .from('content_pipeline')
+                        .update({ status: 'paused' })
+                        .eq('blog_id', blogId);
+
+                    showToast('Pipeline paused', 'info');
+                    loadContentPipelineView();
+                } catch (error) {
+                    showToast('Error: ' + error.message, 'error');
+                }
             }
         }
 

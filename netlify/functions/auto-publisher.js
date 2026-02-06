@@ -38,17 +38,73 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
   return response.json();
 }
 
-// Get articles due for publishing
+// Get articles due for publishing with daily limit enforcement
 async function getDueArticles() {
   const now = new Date().toISOString();
+  const today = new Date().toISOString().split('T')[0];
 
   // Get scheduled articles where scheduled_date <= now
   const articles = await supabaseRequest(
-    `content_queue?status=eq.scheduled&scheduled_date=lte.${now}&order=scheduled_date.asc&limit=10`,
+    `content_queue?status=eq.scheduled&scheduled_date=lte.${now}&order=scheduled_date.asc&limit=20`,
     'GET'
   );
 
-  return articles;
+  if (!articles || articles.length === 0) {
+    return [];
+  }
+
+  // Group articles by blog and check daily limits
+  const blogGroups = {};
+
+  for (const article of articles) {
+    const blogId = article.blog_id;
+
+    if (!blogGroups[blogId]) {
+      // Get pipeline settings for this blog
+      const pipeline = await getPipeline(blogId);
+
+      if (!pipeline) {
+        console.log(`[AUTO-PUBLISHER] No pipeline found for blog ${blogId}, skipping`);
+        continue;
+      }
+
+      const maxPostsPerDay = pipeline.max_posts_per_day || 3;
+      let dailyPostsPublished = pipeline.daily_posts_published || 0;
+
+      // Reset counter if new day
+      if (!pipeline.last_daily_reset || pipeline.last_daily_reset < today) {
+        console.log(`[AUTO-PUBLISHER] Resetting daily counter for blog ${blogId}`);
+        await supabaseRequest(
+          `content_pipeline?blog_id=eq.${blogId}`,
+          'PATCH',
+          { daily_posts_published: 0, last_daily_reset: today }
+        );
+        dailyPostsPublished = 0;
+      }
+
+      blogGroups[blogId] = {
+        pipeline,
+        maxPostsPerDay,
+        dailyPostsPublished,
+        remaining: maxPostsPerDay - dailyPostsPublished,
+        articles: []
+      };
+    }
+
+    // Only add article if blog has remaining slots
+    if (blogGroups[blogId].remaining > 0) {
+      blogGroups[blogId].articles.push(article);
+      blogGroups[blogId].remaining--;
+    } else {
+      console.log(`[AUTO-PUBLISHER] Daily limit reached for blog ${blogId}, skipping article: ${article.title}`);
+    }
+  }
+
+  // Flatten and return limited articles
+  const limitedArticles = Object.values(blogGroups).flatMap(g => g.articles);
+  console.log(`[AUTO-PUBLISHER] ${limitedArticles.length} articles within daily limits (from ${articles.length} due)`);
+
+  return limitedArticles;
 }
 
 // Publish article to WordPress
@@ -144,11 +200,11 @@ async function publishToWordPress(article, blog) {
   };
 }
 
-// Replenish queue for a blog
+// Replenish queue for a blog with enhanced keyword selection and learning weights
 async function replenishQueue(blogId, pipeline) {
   // Get current queue size
   const queueItems = await supabaseRequest(
-    `content_queue?blog_id=eq.${blogId}&status=in.(pending,scheduled)&select=id`,
+    `content_queue?blog_id=eq.${blogId}&status=in.(pending,scheduled)&select=id,target_keyword`,
     'GET'
   );
 
@@ -160,17 +216,202 @@ async function replenishQueue(blogId, pipeline) {
     return 0;
   }
 
-  const articlesToGenerate = targetSize - currentSize;
+  const articlesToGenerate = Math.min(targetSize - currentSize, 3); // Max 3 at a time for background task
   console.log(`[REPLENISH] Generating ${articlesToGenerate} articles for blog ${blogId}`);
 
   // Get covered keywords to exclude
   const coveredKeywords = pipeline.covered_keywords || [];
+  const queuedKeywords = queueItems.map(q => q.target_keyword).filter(Boolean);
+  const excludeKeywords = [...new Set([...coveredKeywords, ...queuedKeywords])];
 
-  // This would call the pipeline/generate-article endpoint
-  // For now, we'll just log - actual generation happens via API call from frontend
-  console.log(`[REPLENISH] Would generate ${articlesToGenerate} articles, excluding ${coveredKeywords.length} keywords`);
+  // Get learning weights for optimization
+  const learningWeights = pipeline.learning_weights || {};
 
-  return articlesToGenerate;
+  try {
+    // Call the replenish-queue API endpoint to handle keyword generation
+    const baseUrl = process.env.URL || 'https://www.getseowizard.com';
+    const response = await fetch(`${baseUrl}/.netlify/functions/api/pipeline/replenish-queue`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        blog_id: blogId,
+        target_size: targetSize
+      })
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`[REPLENISH] Added ${result.articlesAdded || 0} articles to queue for blog ${blogId}`);
+      return result.articlesAdded || 0;
+    } else {
+      console.error(`[REPLENISH] API call failed: ${response.status}`);
+      return 0;
+    }
+  } catch (error) {
+    console.error(`[REPLENISH] Error calling replenish API: ${error.message}`);
+
+    // Fallback: simple queue addition without full generation
+    console.log(`[REPLENISH] Falling back to simple queue placeholder for ${articlesToGenerate} articles`);
+
+    // Add placeholder queue items that will be generated later
+    const preferredTimes = pipeline.preferred_publish_times || ['09:00', '13:00', '17:00'];
+    let addedCount = 0;
+
+    for (let i = 0; i < articlesToGenerate; i++) {
+      const scheduledDate = new Date();
+      scheduledDate.setDate(scheduledDate.getDate() + Math.floor(i / preferredTimes.length) + 1);
+      const timeSlot = preferredTimes[i % preferredTimes.length];
+      scheduledDate.setHours(parseInt(timeSlot.split(':')[0]), parseInt(timeSlot.split(':')[1] || 0));
+
+      await supabaseRequest('content_queue', 'POST', {
+        blog_id: blogId,
+        title: `Pending Article ${i + 1}`,
+        target_keyword: null,
+        status: 'pending',
+        scheduled_date: scheduledDate.toISOString(),
+        generation_priority: 50 - i,
+        needs_generation: true
+      });
+      addedCount++;
+    }
+
+    return addedCount;
+  }
+}
+
+// Get next keywords for article generation
+async function getNextKeywords(nicheKeyword, excludeKeywords, count, learningWeights) {
+  try {
+    const baseUrl = process.env.URL || 'https://www.getseowizard.com';
+    const response = await fetch(`${baseUrl}/.netlify/functions/api/pipeline/next-keyword`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        niche_keyword: nicheKeyword,
+        exclude_keywords: excludeKeywords,
+        content_themes: learningWeights?.preferred_topics || [],
+        count
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.keywords || [];
+    }
+    return [];
+  } catch (error) {
+    console.error('[GET KEYWORDS] Error:', error.message);
+    return [];
+  }
+}
+
+// Get next affiliate program for round-robin rotation
+async function getNextAffiliateProgram(blogId) {
+  try {
+    const baseUrl = process.env.URL || 'https://www.getseowizard.com';
+    const response = await fetch(`${baseUrl}/.netlify/functions/api/affiliate/next-program`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blog_id: blogId })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.program || null;
+    }
+    return null;
+  } catch (error) {
+    console.error('[GET AFFILIATE] Error:', error.message);
+    return null;
+  }
+}
+
+// Generate article with enhancements (affiliate links, banners, internal links)
+async function generateArticleWithEnhancements(keyword, pipeline, affiliateProgram) {
+  try {
+    const baseUrl = process.env.URL || 'https://www.getseowizard.com';
+
+    // Get internal linking suggestions first
+    let internalLinks = [];
+    if (pipeline.internal_linking_enabled) {
+      const linksResponse = await fetch(`${baseUrl}/.netlify/functions/api/internal-links/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          blog_id: pipeline.blog_id,
+          new_article_keyword: keyword.keyword
+        })
+      });
+      if (linksResponse.ok) {
+        const linksData = await linksResponse.json();
+        internalLinks = linksData.relatedArticles || [];
+      }
+    }
+
+    // Generate article with affiliate and internal links context
+    const articleResponse = await fetch(`${baseUrl}/.netlify/functions/api/pipeline/generate-article`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        keyword: keyword.keyword,
+        model_tier: pipeline.default_model_tier || 'premium',
+        word_count: pipeline.learning_weights?.optimal_word_count_range?.[1] || 2000,
+        affiliate_program: affiliateProgram,
+        generate_image: pipeline.generate_images !== false,
+        existing_articles: internalLinks.map(l => ({ title: l.title, url: l.url }))
+      })
+    });
+
+    if (articleResponse.ok) {
+      const articleData = await articleResponse.json();
+      return {
+        ...articleData.article,
+        internalLinks
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('[GENERATE ARTICLE] Error:', error.message);
+    return null;
+  }
+}
+
+// Add article to queue
+async function addToQueue(blogId, article, keyword) {
+  const preferredTimes = ['09:00', '13:00', '17:00'];
+  const scheduledDate = new Date();
+  scheduledDate.setDate(scheduledDate.getDate() + 1);
+  scheduledDate.setHours(9, 0, 0, 0);
+
+  return supabaseRequest('content_queue', 'POST', {
+    blog_id: blogId,
+    title: article.title,
+    target_keyword: keyword.keyword,
+    status: 'pending',
+    scheduled_date: scheduledDate.toISOString(),
+    opportunity_score: keyword.opportunityScore || keyword.combinedScore,
+    generation_priority: keyword.adjustedScore || 50,
+    internal_links: article.internalLinks || [],
+    article_id: article.id
+  });
+}
+
+// Add keyword to covered keywords list
+async function addToCoveredKeywords(blogId, keyword) {
+  try {
+    const pipeline = await getPipeline(blogId);
+    const coveredKeywords = pipeline?.covered_keywords || [];
+    if (!coveredKeywords.includes(keyword)) {
+      coveredKeywords.push(keyword);
+      await supabaseRequest(
+        `content_pipeline?blog_id=eq.${blogId}`,
+        'PATCH',
+        { covered_keywords: coveredKeywords }
+      );
+    }
+  } catch (error) {
+    console.error('[ADD COVERED] Error:', error.message);
+  }
 }
 
 // Update article status in queue
@@ -264,10 +505,33 @@ export async function handler(event, context) {
           wordpress_url: wpResult.url
         });
 
+        // Increment daily publish counter and update pipeline stats
+        const pipeline = await getPipeline(article.blog_id);
+        if (pipeline) {
+          await supabaseRequest(
+            `content_pipeline?blog_id=eq.${article.blog_id}`,
+            'PATCH',
+            {
+              daily_posts_published: (pipeline.daily_posts_published || 0) + 1,
+              articles_published: (pipeline.articles_published || 0) + 1,
+              last_publish_at: new Date().toISOString()
+            }
+          );
+        }
+
+        // Log the publish for tracking
+        await supabaseRequest('publish_log', 'POST', {
+          blog_id: article.blog_id,
+          article_id: article.article_id,
+          queue_item_id: article.id,
+          wordpress_post_id: wpResult.post_id,
+          wordpress_url: wpResult.url,
+          publish_date: new Date().toISOString().split('T')[0]
+        });
+
         results.articles_published++;
 
-        // Trigger queue replenishment for this blog
-        const pipeline = await getPipeline(article.blog_id);
+        // Trigger queue replenishment for this blog (reuse pipeline from above)
         if (pipeline && pipeline.status === 'active') {
           const replenished = await replenishQueue(article.blog_id, pipeline);
           if (replenished > 0) {
