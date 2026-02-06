@@ -1,12 +1,71 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2026-02-02 (Pilot Site: HydrogenWaterHQ.com - Navigation Fixed)
-**Current Session:** Article prices fact-checked, navigation menus verified consistent across all pages
+**Last Updated:** 2026-02-06 (Link Niche Validation to Existing Blog Pipeline)
+**Current Session:** Added "Use with Existing Blog" flow to link pre-validated niche data to content strategy generation
 **Developer:** Mahesh + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2026-02-01 (Pilot Site: HydrogenWaterHQ.com 🚀)
+## 🆕 LATEST SESSION - 2026-02-06 (Niche-to-Blog Pipeline Link)
+
+**SESSION OVERVIEW:** Implemented the ability to link niche validation results directly to an existing blog's content pipeline, skipping redundant AI calls. Users can now go from niche research → existing blog content strategy in one flow.
+
+### WHAT WAS BUILT
+
+**Feature: "Use with Existing Blog" Pipeline Link**
+
+Users previously could only "Create a NEW Blog" after niche validation. Now they can link validated results (keywords, affiliates, articles, pillars) to any existing blog, with AI keyword/affiliate generation steps automatically skipped.
+
+### FILES CHANGED
+
+| File | Changes |
+|------|---------|
+| `netlify/functions/api.js` | Accept `pre_validated_*` params in `/api/generate-content-strategy`; skip AI calls when pre-validated data provided |
+| `index.html` | Store validation on `window`, add 2 new buttons, add 5 new functions |
+
+### BACKEND CHANGES (`netlify/functions/api.js`)
+- Expanded `/api/generate-content-strategy` to accept: `pre_validated_keywords`, `pre_validated_affiliates`, `pre_validated_articles`, `pre_validated_pillars`
+- **Step 1 (Keywords):** If `pre_validated_keywords` provided, transforms and uses them directly (maps `estimated_monthly_searches` → `search_volume`, infers `content_type`), skips OpenRouter AI call
+- **Step 2 (Affiliates):** If `pre_validated_affiliates` provided, transforms and uses them directly, skips OpenRouter AI call
+- **Step 5 (Article Queue):** If `pre_validated_articles` has titles, uses them instead of `generateArticleTitle()`
+- Steps 3 (Pexels images), 4 (schedule), 5b (DB save) remain unchanged
+
+### FRONTEND CHANGES (`index.html`)
+- `displayStandaloneValidationResults()`: Added `window._currentStandaloneValidation = validation;`
+- **New button in Standalone Niche Results:** "Use with Existing Blog" (purple gradient)
+- **New button in Affiliate Discovery:** "Generate Content Pipeline" (purple gradient)
+- **5 new functions:**
+  1. `useWithExistingBlog(validation)` — loads blogs, shows selector modal with pre-validated data summary
+  2. `executeUseWithExistingBlog()` — reads blog selection, calls shared helper
+  3. `_generatePipelineForBlog(blogId, blogName, blogUrl, validation)` — transforms data, POSTs to API, saves strategy, navigates to Content Strategy tab
+  4. `generatePipelineFromDiscovery(blogId)` — reads `currentNicheValidation`, loads blog, calls shared helper
+  5. `inferContentType(keyword)` — returns content type from keyword text
+
+### DATA FLOW
+```
+Standalone Niche Research:
+  "Use with Existing Blog" → useWithExistingBlog()
+    → blog selector modal → executeUseWithExistingBlog()
+    → _generatePipelineForBlog() → POST /api/generate-content-strategy (with pre_validated_*)
+    → Backend skips AI keyword + affiliate generation → Save → Navigate to Content Strategy
+
+Affiliate Discovery:
+  "Generate Content Pipeline" → generatePipelineFromDiscovery(blogId)
+    → _generatePipelineForBlog() → same API flow as above
+```
+
+### GIT COMMIT
+- `538a003` — "Link niche validation to existing blog content pipeline"
+- Branch: `main` (1 commit ahead of origin, not pushed)
+
+### NEXT STEPS
+- Push to origin when ready
+- Test end-to-end: validate niche → "Use with Existing Blog" → verify strategy appears in Content Strategy tab
+- Test Affiliate Discovery flow: Blog Management → Discover Programs → validate → "Generate Content Pipeline"
+
+---
+
+## PREVIOUS SESSION - 2026-02-02 (Pilot Site: HydrogenWaterHQ.com - Navigation Fixed)
 
 **SESSION OVERVIEW:** Created production pilot site to verify complete automation pipeline. Domain registered, WordPress configured, first article published, navigation cleaned up. Site is now ready for SEO Wizard integration to generate remaining 19 articles.
 
