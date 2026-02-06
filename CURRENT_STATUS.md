@@ -1,12 +1,67 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2026-02-06 (Link Niche Validation to Existing Blog Pipeline)
-**Current Session:** Added "Use with Existing Blog" flow to link pre-validated niche data to content strategy generation
+**Last Updated:** 2026-02-06 (Affiliate Program Agent)
+**Current Session:** Built 5-feature Affiliate Program Agent: rank programs, application profiles, apply flow, asset scraping, UTM tracking, click/conversion analytics
 **Developer:** Mahesh + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2026-02-06 (Niche-to-Blog Pipeline Link)
+## 🆕 LATEST SESSION - 2026-02-06 (Affiliate Program Agent)
+
+**SESSION OVERVIEW:** Implemented a comprehensive Affiliate Program Agent that automates the full affiliate lifecycle: rank programs with reputation scoring, store application profiles, guide applications, scrape creative assets, embed real assets in articles with UTM tracking, and track clicks/conversions with analytics.
+
+### WHAT WAS BUILT
+
+**Feature 1: Database Migration** (`supabase-migration-affiliate-agent.sql`)
+- 3 new tables: `affiliate_application_profile`, `affiliate_clicks`, `affiliate_assets`
+- RLS policies, indexes, public insert for click tracking
+
+**Feature 2: Application Profile & Apply Flow**
+- One-time profile form (business info, traffic, audience, content, payment, tax)
+- Apply flow: checks profile → shows copy-to-clipboard fields + signup URL → status tracking
+- Status dropdown: pending/applied/approved/active/rejected with auto-timestamps
+
+**Feature 3: Program Ranking with Product Reputation**
+- Scoring algorithm (0-120+ pts): commission/payout (0-30), cookie duration (0-25), network reputation (0-15), niche relevance (0-15), EPC (0-10), product reputation (0-20), payout ratio bonus (0-5)
+- Async product reputation enrichment via web search + AI analysis
+- Backend endpoint: `POST /api/affiliate/research-reputation` — searches reviews, analyzes with AI
+- Status dashboard with colored filter badges (pending/applied/approved/active/rejected)
+- Programs sorted by rank score, displayed with color-coded badges
+
+**Feature 4: UTM Click & Conversion Tracking**
+- UTM helpers: `generateUTMParams()`, `appendUTMToUrl()`, `generateAffiliateTrackingScript()`
+- Backend: `POST /api/affiliate/track-click` — logs clicks with IP hashing, updates affiliate_content stats
+- Backend: `GET /api/affiliate/postback` — conversion callback URL for affiliate networks
+- Analytics tab in program details: total clicks, conversions, conversion rate, revenue, daily breakdown table, per-article performance, postback URL with copy button
+- Auto-inject tracking `<script>` into generated articles
+
+**Feature 5: Asset Scraping & Library**
+- Backend: `POST /api/affiliate/fetch-assets` — fetches page HTML, AI extraction + regex fallback
+- Asset library UI in Links & Assets tab: grouped by type, thumbnails, delete buttons
+- Manual asset upload modal
+- Article generation uses stored banners in CTA boxes instead of generic gradient boxes
+
+### FILES CHANGED
+
+| File | Changes |
+|------|---------|
+| `supabase-migration-affiliate-agent.sql` | NEW — 3 tables with RLS, indexes |
+| `netlify/functions/api.js` | 4 new endpoints, modified generate-article + insert-banners |
+| `index.html` | 8 new SupabaseService methods, ~20 new functions, modified 4 existing functions |
+
+### NEW API ENDPOINTS
+- `POST /api/affiliate/track-click` — Log click/conversion events
+- `GET /api/affiliate/postback` — Conversion postback URL for networks
+- `POST /api/affiliate/fetch-assets` — Scrape assets from URL
+- `POST /api/affiliate/research-reputation` — Product reputation research
+
+### MODIFIED API ENDPOINTS
+- `POST /api/pipeline/generate-article` — UTM param append, stored banner assets, tracking script injection
+- `POST /api/content/insert-banners` — Uses stored banner assets and program banners in CTA boxes
+
+---
+
+## PREVIOUS SESSION - 2026-02-06 (Niche-to-Blog Pipeline Link)
 
 **SESSION OVERVIEW:** Implemented the ability to link niche validation results directly to an existing blog's content pipeline, skipping redundant AI calls. Users can now go from niche research → existing blog content strategy in one flow.
 

@@ -12383,8 +12383,28 @@ Return ONLY the prompt (2-3 sentences).`;
         const affiliateLinkMax = body.affiliate_link_count_max || 3;
 
         if (affiliate_program && (affiliate_program.affiliate_link || affiliate_program.link)) {
-          const affiliateLink = affiliate_program.affiliate_link || affiliate_program.link;
+          let affiliateLink = affiliate_program.affiliate_link || affiliate_program.link;
           const programName = affiliate_program.program_name || affiliate_program.name || 'recommended solution';
+
+          // Append UTM params from tracking_params or generate them
+          const trackingParams = affiliate_program.tracking_params || {};
+          const utmParams = {
+            utm_source: trackingParams.utm_source || 'blog',
+            utm_medium: 'affiliate',
+            utm_campaign: trackingParams.utm_campaign || (programName || 'program').toLowerCase().replace(/[^a-z0-9-_]/g, '-'),
+            utm_content: trackingParams.utm_content || (keyword || 'article').toLowerCase().replace(/[^a-z0-9-_]/g, '-')
+          };
+
+          // Append UTM to affiliate link
+          try {
+            const linkUrl = new URL(affiliateLink);
+            Object.entries(utmParams).forEach(([k, v]) => { if (v) linkUrl.searchParams.set(k, v); });
+            affiliateLink = linkUrl.toString();
+          } catch (e) {
+            // If URL parsing fails, manually append
+            const sep = affiliateLink.includes('?') ? '&' : '?';
+            affiliateLink += sep + Object.entries(utmParams).filter(([,v]) => v).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+          }
 
           // Enhanced affiliate link insertion with multiple placements
           const paragraphs = finalContent.split('\n\n');
@@ -12416,8 +12436,33 @@ Return ONLY the prompt (2-3 sentences).`;
 
           finalContent = paragraphs.join('\n\n');
 
-          // Insert CTA banner boxes at configured positions
-          const createCtaBox = () => `
+          // Try to load stored banner assets for this program
+          let storedBanners = [];
+          if (affiliate_program.id) {
+            try {
+              const assetResult = await supabaseRequest(
+                `affiliate_assets?program_id=eq.${affiliate_program.id}&asset_type=eq.banner&status=eq.active&select=asset_url,alt_text,dimensions&limit=3`,
+                'GET'
+              );
+              if (assetResult && assetResult.length > 0) {
+                storedBanners = assetResult;
+              }
+            } catch (assetErr) {
+              console.log('[PIPELINE GENERATE] Could not load stored banners:', assetErr.message);
+            }
+          }
+
+          // CTA box: use stored banner if available, otherwise generic gradient box
+          const createCtaBox = (bannerAsset) => {
+            if (bannerAsset && bannerAsset.asset_url) {
+              return `
+<div class="affiliate-cta-box" style="margin: 24px 0; text-align: center;">
+  <a href="${affiliateLink}" rel="sponsored nofollow" target="_blank">
+    <img src="${bannerAsset.asset_url}" alt="${bannerAsset.alt_text || programName + ' Banner'}" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #e2e8f0;">
+  </a>
+</div>`;
+            }
+            return `
 <div class="affiliate-cta-box" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 2px solid #cbd5e1; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
   <h4 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px;">Recommended: ${programName}</h4>
   <p style="margin: 0 0 16px 0; color: #64748b; font-size: 14px;">${affiliate_program.description || affiliate_program.why_recommended || 'Top-rated solution for your needs'}</p>
@@ -12425,18 +12470,20 @@ Return ONLY the prompt (2-3 sentences).`;
     Learn More →
   </a>
 </div>`;
+          };
 
           const createInlineRec = () => `
 <p class="affiliate-recommendation" style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
   <strong>Our Pick:</strong> We recommend <a href="${affiliateLink}" rel="sponsored nofollow" target="_blank" style="color: #d97706; font-weight: 600;">${programName}</a> for best results.
 </p>`;
 
-          // Insert banners at configured positions
+          // Insert banners at configured positions, using stored banner assets when available
+          let bannerIdx = 0;
           if (bannerPositions.includes('after-intro')) {
             const firstPMatch = finalContent.match(/(<\/p>)/i);
             if (firstPMatch) {
               const insertPoint = finalContent.indexOf(firstPMatch[0]) + firstPMatch[0].length;
-              finalContent = finalContent.slice(0, insertPoint) + createCtaBox() + finalContent.slice(insertPoint);
+              finalContent = finalContent.slice(0, insertPoint) + createCtaBox(storedBanners[bannerIdx++] || null) + finalContent.slice(insertPoint);
             }
           }
 
@@ -12456,10 +12503,36 @@ Return ONLY the prompt (2-3 sentences).`;
             if (conclusionMatch) {
               const insertPoint = finalContent.indexOf(conclusionMatch[0]);
               if (insertPoint > -1) {
-                finalContent = finalContent.slice(0, insertPoint) + createCtaBox() + finalContent.slice(insertPoint);
+                finalContent = finalContent.slice(0, insertPoint) + createCtaBox(storedBanners[bannerIdx++] || null) + finalContent.slice(insertPoint);
               }
             }
           }
+
+          // Append tracking script for click monitoring
+          const trackingScript = `
+<script>
+(function(){
+  var links = document.querySelectorAll('a[rel*="sponsored"]');
+  links.forEach(function(link){
+    link.addEventListener('click', function(){
+      try {
+        navigator.sendBeacon('/api/affiliate/track-click', JSON.stringify({
+          program_id: '${affiliate_program.id || ''}',
+          blog_id: '${affiliate_program.blog_id || ''}',
+          utm_source: '${utmParams.utm_source}',
+          utm_medium: 'affiliate',
+          utm_campaign: '${utmParams.utm_campaign}',
+          utm_content: '${utmParams.utm_content}',
+          referrer_url: window.location.href,
+          user_agent: navigator.userAgent,
+          event_type: 'click'
+        }));
+      } catch(e){}
+    });
+  });
+})();
+</script>`;
+          finalContent += trackingScript;
         }
 
         // Insert internal links if provided
@@ -13685,6 +13758,425 @@ Return ONLY valid JSON:
       }
     }
 
+    // AFFILIATE - Track clicks and conversions
+    if (path === '/api/affiliate/track-click' && method === 'POST') {
+      const {
+        program_id, article_id, blog_id, user_id,
+        utm_source, utm_medium, utm_campaign, utm_content,
+        referrer_url, user_agent, event_type = 'click',
+        conversion_value, order_id
+      } = body;
+
+      try {
+        // Hash the client IP for privacy
+        const clientIp = (event.headers || {})['x-forwarded-for'] || (event.headers || {})['client-ip'] || 'unknown';
+        const crypto = require('crypto');
+        const ipHash = crypto.createHash('sha256').update(clientIp + 'affiliate-salt').digest('hex');
+
+        // Insert click record
+        await supabaseRequest('affiliate_clicks', 'POST', {
+          program_id: program_id || null,
+          article_id: article_id || null,
+          blog_id: blog_id || null,
+          user_id: user_id || null,
+          utm_source: utm_source || null,
+          utm_medium: utm_medium || 'affiliate',
+          utm_campaign: utm_campaign || null,
+          utm_content: utm_content || null,
+          referrer_url: referrer_url || null,
+          user_agent: user_agent || null,
+          ip_hash: ipHash,
+          event_type: event_type,
+          conversion_value: conversion_value || null,
+          order_id: order_id || null
+        });
+
+        // Update affiliate_content stats if article_id exists
+        if (article_id) {
+          if (event_type === 'click') {
+            // Increment actual_clicks on affiliate_content
+            const existing = await supabaseRequest(
+              `affiliate_content?article_id=eq.${article_id}&select=id,actual_clicks`,
+              'GET'
+            );
+            if (existing && existing.length > 0) {
+              await supabaseRequest(
+                `affiliate_content?id=eq.${existing[0].id}`,
+                'PATCH',
+                { actual_clicks: (existing[0].actual_clicks || 0) + 1 }
+              );
+            }
+          } else if (event_type === 'conversion') {
+            const existing = await supabaseRequest(
+              `affiliate_content?article_id=eq.${article_id}&select=id,actual_conversions,actual_revenue`,
+              'GET'
+            );
+            if (existing && existing.length > 0) {
+              await supabaseRequest(
+                `affiliate_content?id=eq.${existing[0].id}`,
+                'PATCH',
+                {
+                  actual_conversions: (existing[0].actual_conversions || 0) + 1,
+                  actual_revenue: (parseFloat(existing[0].actual_revenue) || 0) + (parseFloat(conversion_value) || 0)
+                }
+              );
+            }
+          }
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ success: true })
+        };
+      } catch (error) {
+        console.error('[CLICK TRACK ERROR]', error);
+        return {
+          statusCode: 200, // Return 200 even on error to not break client
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // AFFILIATE - Postback URL for conversion tracking from affiliate networks
+    if (path === '/api/affiliate/postback' && method === 'GET') {
+      const params = event.queryStringParameters || {};
+      const { program_id, order_id, amount, status: convStatus } = params;
+
+      try {
+        if (program_id) {
+          const crypto = require('crypto');
+          const clientIp = (event.headers || {})['x-forwarded-for'] || 'unknown';
+          const ipHash = crypto.createHash('sha256').update(clientIp + 'affiliate-salt').digest('hex');
+
+          // Log conversion
+          await supabaseRequest('affiliate_clicks', 'POST', {
+            program_id: program_id,
+            event_type: 'conversion',
+            conversion_value: parseFloat(amount) || 0,
+            order_id: order_id || null,
+            ip_hash: ipHash,
+            utm_medium: 'affiliate',
+            utm_campaign: `postback-${convStatus || 'approved'}`
+          });
+
+          // Update affiliate_content stats
+          const contentRecords = await supabaseRequest(
+            `affiliate_content?affiliate_program_id=eq.${program_id}&select=id,actual_conversions,actual_revenue&limit=1`,
+            'GET'
+          );
+          if (contentRecords && contentRecords.length > 0) {
+            await supabaseRequest(
+              `affiliate_content?id=eq.${contentRecords[0].id}`,
+              'PATCH',
+              {
+                actual_conversions: (contentRecords[0].actual_conversions || 0) + 1,
+                actual_revenue: (parseFloat(contentRecords[0].actual_revenue) || 0) + (parseFloat(amount) || 0)
+              }
+            );
+          }
+        }
+
+        return {
+          statusCode: 200,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ success: true })
+        };
+      } catch (error) {
+        console.error('[POSTBACK ERROR]', error);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // AFFILIATE - Fetch/scrape assets from a URL
+    if (path === '/api/affiliate/fetch-assets' && method === 'POST') {
+      const { url, program_id, user_id } = body;
+
+      if (!url || !program_id) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ success: false, error: 'URL and program_id are required' })
+        };
+      }
+
+      try {
+        console.log(`[ASSET SCRAPE] Fetching: ${url}`);
+
+        // Fetch page HTML
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const pageResponse = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml'
+          },
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+
+        if (!pageResponse.ok) {
+          throw new Error(`Failed to fetch page: ${pageResponse.status}`);
+        }
+
+        const html = await pageResponse.text();
+        const assets = [];
+
+        // Method 1: AI extraction via GPT-4o-mini
+        if (OPENROUTER_API_KEY) {
+          try {
+            const extractionPrompt = `Extract affiliate marketing assets from this HTML page. Find:
+1. Banner image URLs (look for <img> tags with common banner sizes: 728x90, 300x250, 320x50, 160x600, etc.)
+2. Text links with promotional copy
+3. Coupon/discount codes (look for codes in ALL CAPS or with patterns like SAVE20, GET10OFF)
+4. Logo images
+5. Product images
+
+Return a JSON array of objects with these fields:
+- type: "banner" | "text_link" | "logo" | "coupon" | "product_image"
+- url: the image/link URL (make absolute using base: ${url})
+- dimensions: "WxH" if detectable
+- alt_text: alt text or description
+- coupon_code: the coupon code if type is "coupon"
+- offer_description: description of the offer
+
+Return ONLY valid JSON array, no markdown formatting.
+
+HTML (first 8000 chars):
+${html.substring(0, 8000)}`;
+
+            const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: 'openai/gpt-4o-mini',
+                messages: [{ role: 'user', content: extractionPrompt }],
+                temperature: 0.3,
+                max_tokens: 2000
+              })
+            });
+
+            if (aiResponse.ok) {
+              const aiData = await aiResponse.json();
+              const aiText = aiData.choices[0].message.content.trim();
+              try {
+                const cleanJson = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                const parsed = JSON.parse(cleanJson);
+                if (Array.isArray(parsed)) {
+                  parsed.forEach(item => {
+                    assets.push({
+                      asset_type: item.type || 'banner',
+                      asset_url: item.url || '',
+                      dimensions: item.dimensions || '',
+                      alt_text: item.alt_text || '',
+                      coupon_code: item.coupon_code || '',
+                      offer_description: item.offer_description || '',
+                      source: 'scraped'
+                    });
+                  });
+                }
+              } catch (parseErr) {
+                console.log('[ASSET SCRAPE] AI response parse error:', parseErr.message);
+              }
+            }
+          } catch (aiErr) {
+            console.log('[ASSET SCRAPE] AI extraction failed:', aiErr.message);
+          }
+        }
+
+        // Method 2: Regex fallback for banner-like images
+        const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*(?:width=["'](\d+)["'][^>]*height=["'](\d+)["']|height=["'](\d+)["'][^>]*width=["'](\d+)["'])[^>]*>/gi;
+        let match;
+        const bannerSizes = ['728x90', '300x250', '336x280', '320x50', '160x600', '320x100', '468x60', '250x250', '200x200'];
+
+        while ((match = imgRegex.exec(html)) !== null) {
+          const imgUrl = match[1];
+          const w = match[2] || match[5];
+          const h = match[3] || match[4];
+          const dims = `${w}x${h}`;
+
+          if (bannerSizes.includes(dims) || (parseInt(w) >= 200 && parseInt(h) >= 50)) {
+            // Make URL absolute
+            let absoluteUrl = imgUrl;
+            if (imgUrl.startsWith('/')) {
+              const baseUrl = new URL(url);
+              absoluteUrl = baseUrl.origin + imgUrl;
+            } else if (!imgUrl.startsWith('http')) {
+              absoluteUrl = new URL(imgUrl, url).toString();
+            }
+
+            // Check if not already found
+            if (!assets.find(a => a.asset_url === absoluteUrl)) {
+              assets.push({
+                asset_type: 'banner',
+                asset_url: absoluteUrl,
+                dimensions: dims,
+                alt_text: '',
+                source: 'scraped'
+              });
+            }
+          }
+        }
+
+        // Save assets to database
+        let savedCount = 0;
+        for (const asset of assets) {
+          try {
+            await supabaseRequest('affiliate_assets', 'POST', {
+              user_id: user_id,
+              program_id: program_id,
+              asset_type: asset.asset_type,
+              asset_url: asset.asset_url || null,
+              asset_html: asset.asset_html || null,
+              dimensions: asset.dimensions || null,
+              alt_text: asset.alt_text || null,
+              coupon_code: asset.coupon_code || null,
+              offer_description: asset.offer_description || null,
+              status: 'active',
+              source: asset.source || 'scraped'
+            });
+            savedCount++;
+          } catch (saveErr) {
+            console.log('[ASSET SCRAPE] Failed to save asset:', saveErr.message);
+          }
+        }
+
+        console.log(`[ASSET SCRAPE] Found ${assets.length}, saved ${savedCount}`);
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            assets_found: assets.length,
+            assets_saved: savedCount,
+            assets: assets
+          })
+        };
+
+      } catch (error) {
+        console.error('[ASSET SCRAPE ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
+    // AFFILIATE - Research product reputation for ranking
+    if (path === '/api/affiliate/research-reputation' && method === 'POST') {
+      const { program_name, company_url } = body;
+
+      if (!program_name) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ success: false, error: 'Program name is required' })
+        };
+      }
+
+      try {
+        console.log(`[REPUTATION] Researching: ${program_name}`);
+
+        // Use Serper to search for reviews
+        let searchResults = [];
+        if (SERPER_API_KEY) {
+          const searchQuery = `${program_name} reviews ratings trustpilot`;
+          const serperResponse = await fetch(`${SERPER_BASE_URL}/search`, {
+            method: 'POST',
+            headers: {
+              'X-API-KEY': SERPER_API_KEY,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ q: searchQuery, num: 8 })
+          });
+
+          if (serperResponse.ok) {
+            const serperData = await serperResponse.json();
+            searchResults = (serperData.organic || []).slice(0, 6);
+          }
+        }
+
+        // Use AI to analyze the search results and produce a reputation score
+        let reputationScore = 50; // Default middle score
+        let reputationSummary = 'Unable to determine reputation';
+        let reviewHighlights = [];
+
+        if (OPENROUTER_API_KEY && searchResults.length > 0) {
+          const snippets = searchResults.map(r => `${r.title}: ${r.snippet}`).join('\n');
+          const aiPrompt = `Based on these search results about "${program_name}", analyze the product/company reputation.
+
+Search Results:
+${snippets}
+
+Return a JSON object with:
+- "score": number 0-100 (0=terrible reputation, 50=average, 100=excellent)
+- "summary": 1-2 sentence summary of the reputation
+- "highlights": array of 2-3 key findings (strings)
+
+Consider: customer reviews, ratings, complaints, trust scores, how long the company has been around.
+Return ONLY valid JSON, no markdown.`;
+
+          const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'openai/gpt-4o-mini',
+              messages: [{ role: 'user', content: aiPrompt }],
+              temperature: 0.3,
+              max_tokens: 500
+            })
+          });
+
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            const aiText = aiData.choices[0].message.content.trim();
+            try {
+              const cleanJson = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+              const parsed = JSON.parse(cleanJson);
+              reputationScore = parsed.score || 50;
+              reputationSummary = parsed.summary || 'Analysis complete';
+              reviewHighlights = parsed.highlights || [];
+            } catch (e) {
+              console.log('[REPUTATION] AI parse error:', e.message);
+            }
+          }
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            program_name,
+            reputation_score: reputationScore,
+            reputation_summary: reputationSummary,
+            review_highlights: reviewHighlights,
+            sources: searchResults.map(r => ({ title: r.title, url: r.link }))
+          })
+        };
+      } catch (error) {
+        console.error('[REPUTATION ERROR]', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: error.message })
+        };
+      }
+    }
+
     // CONTENT - Insert banners into article content
     if (path === '/api/content/insert-banners' && method === 'POST') {
       const { article_content, banner_config, affiliate_program } = body;
@@ -13707,14 +14199,68 @@ Return ONLY valid JSON:
         let modifiedContent = article_content;
         const insertedBanners = [];
 
+        // Try to load stored banner assets if program has an ID
+        let storedBannerAssets = [];
+        if (affiliate_program && affiliate_program.id) {
+          try {
+            const assetResult = await supabaseRequest(
+              `affiliate_assets?program_id=eq.${affiliate_program.id}&asset_type=eq.banner&status=eq.active&select=asset_url,alt_text,dimensions&limit=3`,
+              'GET'
+            );
+            if (assetResult && assetResult.length > 0) {
+              storedBannerAssets = assetResult;
+            }
+          } catch (assetErr) {
+            console.log('[BANNER INSERT] Could not load stored banners:', assetErr.message);
+          }
+        }
+
+        // Also check program's banner_images array
+        let programBanners = [];
+        if (affiliate_program && affiliate_program.banner_images) {
+          try {
+            const parsed = typeof affiliate_program.banner_images === 'string'
+              ? JSON.parse(affiliate_program.banner_images) : affiliate_program.banner_images;
+            if (Array.isArray(parsed)) {
+              programBanners = parsed.filter(b => b.is_active !== false && b.url);
+            }
+          } catch (e) {}
+        }
+
         // Banner HTML templates
+        let bannerAssetIdx = 0;
         const createCtaBox = (program) => {
           if (!program) return '';
+          const affLink = program.affiliate_link || program.link || '#';
+
+          // Use stored asset banner if available
+          const storedBanner = storedBannerAssets[bannerAssetIdx] || null;
+          const progBanner = programBanners[bannerAssetIdx] || null;
+          bannerAssetIdx++;
+
+          if (storedBanner && storedBanner.asset_url) {
+            return `
+<div class="affiliate-cta-box" style="margin: 24px 0; text-align: center;">
+  <a href="${affLink}" rel="sponsored nofollow" target="_blank">
+    <img src="${storedBanner.asset_url}" alt="${storedBanner.alt_text || (program.program_name || program.name) + ' Banner'}" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #e2e8f0;">
+  </a>
+</div>`;
+          }
+
+          if (progBanner && progBanner.url) {
+            return `
+<div class="affiliate-cta-box" style="margin: 24px 0; text-align: center;">
+  <a href="${progBanner.affiliate_link || affLink}" rel="sponsored nofollow" target="_blank">
+    <img src="${progBanner.url}" alt="${progBanner.alt_text || (program.program_name || program.name) + ' Banner'}" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #e2e8f0;">
+  </a>
+</div>`;
+          }
+
           return `
 <div class="affiliate-cta-box" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 2px solid #cbd5e1; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
   <h4 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px;">Recommended: ${program.program_name || program.name}</h4>
   <p style="margin: 0 0 16px 0; color: #64748b; font-size: 14px;">${program.description || program.why_recommended || 'Top-rated solution for your needs'}</p>
-  <a href="${program.affiliate_link || program.link || '#'}" rel="sponsored nofollow" target="_blank" style="display: inline-block; background: #334155; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+  <a href="${affLink}" rel="sponsored nofollow" target="_blank" style="display: inline-block; background: #334155; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
     Learn More →
   </a>
 </div>`;
@@ -13730,18 +14276,16 @@ Return ONLY valid JSON:
 
         // Insert banners at configured positions
         if (positions.includes('after-intro')) {
-          // Find first paragraph or introduction section
           const firstParagraphMatch = modifiedContent.match(/(<p[^>]*>.*?<\/p>)/i);
           if (firstParagraphMatch) {
             const insertPoint = modifiedContent.indexOf(firstParagraphMatch[0]) + firstParagraphMatch[0].length;
             const banner = createCtaBox(affiliate_program);
             modifiedContent = modifiedContent.slice(0, insertPoint) + banner + modifiedContent.slice(insertPoint);
-            insertedBanners.push({ position: 'after-intro', type: 'cta-box' });
+            insertedBanners.push({ position: 'after-intro', type: storedBannerAssets.length > 0 ? 'stored-banner' : 'cta-box' });
           }
         }
 
         if (positions.includes('mid-article')) {
-          // Find all h2 headings and insert after the middle one
           const h2Matches = modifiedContent.match(/<h2[^>]*>.*?<\/h2>/gi) || [];
           if (h2Matches.length >= 2) {
             const midIndex = Math.floor(h2Matches.length / 2);
@@ -13756,14 +14300,13 @@ Return ONLY valid JSON:
         }
 
         if (positions.includes('before-conclusion')) {
-          // Find conclusion heading
           const conclusionMatch = modifiedContent.match(/<h2[^>]*>.*?(conclusion|summary|final thoughts|wrapping up).*?<\/h2>/i);
           if (conclusionMatch) {
             const insertPoint = modifiedContent.indexOf(conclusionMatch[0]);
             if (insertPoint > -1) {
               const banner = createCtaBox(affiliate_program);
               modifiedContent = modifiedContent.slice(0, insertPoint) + banner + modifiedContent.slice(insertPoint);
-              insertedBanners.push({ position: 'before-conclusion', type: 'cta-box' });
+              insertedBanners.push({ position: 'before-conclusion', type: storedBannerAssets.length > 0 ? 'stored-banner' : 'cta-box' });
             }
           }
         }

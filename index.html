@@ -2140,6 +2140,201 @@
                 }
             },
 
+            // Load affiliate application profile
+            async loadApplicationProfile() {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_application_profile')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .maybeSingle();
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading application profile:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Save/update affiliate application profile
+            async saveApplicationProfile(profile) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_application_profile')
+                        .upsert({
+                            user_id: currentUser.id,
+                            ...profile,
+                            updated_at: new Date().toISOString()
+                        }, { onConflict: 'user_id' })
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error saving application profile:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load affiliate clicks for a program
+            async loadAffiliateClicks(programId, days = 30) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const sinceDate = new Date();
+                    sinceDate.setDate(sinceDate.getDate() - days);
+
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_clicks')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .eq('program_id', programId)
+                        .gte('clicked_at', sinceDate.toISOString())
+                        .order('clicked_at', { ascending: false });
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading affiliate clicks:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load aggregated affiliate clicks (grouped by day + event_type)
+            async loadAffiliateClicksAggregated(programId) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_clicks')
+                        .select('clicked_at, event_type, conversion_value, article_id')
+                        .eq('user_id', currentUser.id)
+                        .eq('program_id', programId)
+                        .order('clicked_at', { ascending: true });
+
+                    if (error) throw error;
+
+                    // Aggregate by day
+                    const aggregated = {};
+                    (data || []).forEach(click => {
+                        const day = click.clicked_at.split('T')[0];
+                        if (!aggregated[day]) {
+                            aggregated[day] = { date: day, clicks: 0, conversions: 0, revenue: 0 };
+                        }
+                        if (click.event_type === 'click') {
+                            aggregated[day].clicks++;
+                        } else if (click.event_type === 'conversion') {
+                            aggregated[day].conversions++;
+                            aggregated[day].revenue += parseFloat(click.conversion_value || 0);
+                        }
+                    });
+
+                    return { success: true, data: Object.values(aggregated) };
+                } catch (error) {
+                    console.error('Error loading aggregated clicks:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load conversions by blog
+            async loadConversionsByBlog(blogId, days = 30) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const sinceDate = new Date();
+                    sinceDate.setDate(sinceDate.getDate() - days);
+
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_clicks')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .eq('blog_id', blogId)
+                        .eq('event_type', 'conversion')
+                        .gte('clicked_at', sinceDate.toISOString())
+                        .order('clicked_at', { ascending: false });
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading conversions:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Load affiliate assets for a program
+            async loadAffiliateAssets(programId) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_assets')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .eq('program_id', programId)
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    return { success: true, data };
+                } catch (error) {
+                    console.error('Error loading affiliate assets:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Save a new affiliate asset
+            async saveAffiliateAsset(asset) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('affiliate_assets')
+                        .insert([{
+                            user_id: currentUser.id,
+                            ...asset
+                        }])
+                        .select();
+
+                    if (error) throw error;
+                    return { success: true, data: data[0] };
+                } catch (error) {
+                    console.error('Error saving affiliate asset:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // Delete an affiliate asset
+            async deleteAffiliateAsset(assetId) {
+                if (!currentUser) {
+                    return { success: false, error: 'User not logged in' };
+                }
+                try {
+                    const { error } = await supabaseClient
+                        .from('affiliate_assets')
+                        .delete()
+                        .eq('id', assetId)
+                        .eq('user_id', currentUser.id);
+
+                    if (error) throw error;
+                    return { success: true };
+                } catch (error) {
+                    console.error('Error deleting affiliate asset:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
             // Save niche validation
             async saveNicheValidation(validation) {
                 if (!currentUser) {
@@ -14529,20 +14724,50 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
                 const blogs = blogsResult.data;
 
-                // Generate affiliate program sections for each blog
+                // Collect all programs for status dashboard
+                let allPrograms = [];
+                const blogProgramMap = {};
+
+                for (const blog of blogs) {
+                    const programsResult = await SupabaseService.loadAffiliatePrograms(blog.id);
+                    const programs = programsResult.success ? programsResult.data : [];
+                    blogProgramMap[blog.id] = programs;
+                    allPrograms = allPrograms.concat(programs);
+                }
+
+                // Status counts
+                const statusCounts = { pending: 0, applied: 0, approved: 0, active: 0, rejected: 0 };
+                allPrograms.forEach(p => {
+                    const s = p.signup_status || 'pending';
+                    if (statusCounts[s] !== undefined) statusCounts[s]++;
+                });
+
+                // Status dashboard header
                 let programsHTML = `
                     <div style="margin-bottom: 20px;">
                         <h3 style="color: #1e293b; margin-bottom: 15px;">🎯 Affiliate Program Management</h3>
-                        <p style="color: #64748b; margin-bottom: 25px; font-size: 14px;">
+                        <p style="color: #64748b; margin-bottom: 15px; font-size: 14px;">
                             Add affiliate programs to your blogs to generate revenue-optimized content that drives sales naturally.
                         </p>
+
+                        <!-- Status Dashboard -->
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+                            <button onclick="filterAffiliatePrograms('all')" class="affiliate-filter-btn" data-filter="all" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                All (${allPrograms.length})
+                            </button>
+                            ${statusCounts.pending > 0 ? `<button onclick="filterAffiliatePrograms('pending')" class="affiliate-filter-btn" data-filter="pending" style="background: #fef3c7; color: #92400e; border: 1px solid #fde047; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600;">Pending (${statusCounts.pending})</button>` : ''}
+                            ${statusCounts.applied > 0 ? `<button onclick="filterAffiliatePrograms('applied')" class="affiliate-filter-btn" data-filter="applied" style="background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600;">Applied (${statusCounts.applied})</button>` : ''}
+                            ${statusCounts.approved > 0 ? `<button onclick="filterAffiliatePrograms('approved')" class="affiliate-filter-btn" data-filter="approved" style="background: #d1fae5; color: #065f46; border: 1px solid #86efac; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600;">Approved (${statusCounts.approved})</button>` : ''}
+                            ${statusCounts.active > 0 ? `<button onclick="filterAffiliatePrograms('active')" class="affiliate-filter-btn" data-filter="active" style="background: #d1fae5; color: #065f46; border: 1px solid #86efac; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600;">Active (${statusCounts.active})</button>` : ''}
+                            ${statusCounts.rejected > 0 ? `<button onclick="filterAffiliatePrograms('rejected')" class="affiliate-filter-btn" data-filter="rejected" style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600;">Rejected (${statusCounts.rejected})</button>` : ''}
+                        </div>
                     </div>
                 `;
 
                 for (const blog of blogs) {
-                    // Load affiliate programs for this blog
-                    const programsResult = await SupabaseService.loadAffiliatePrograms(blog.id);
-                    const programs = programsResult.success ? programsResult.data : [];
+                    const programs = blogProgramMap[blog.id] || [];
+                    // Apply ranking
+                    const rankedPrograms = rankAffiliatePrograms(programs, blog.niche || blog.name);
 
                     programsHTML += `
                         <div style="margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
@@ -14561,15 +14786,15 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                                 </div>
                             </div>
 
-                            ${programs.length === 0 ? `
+                            ${rankedPrograms.length === 0 ? `
                                 <div style="background: white; padding: 40px; border-radius: 8px; text-align: center; border: 2px dashed #e2e8f0;">
                                     <div style="font-size: 36px; margin-bottom: 10px;">💸</div>
                                     <p style="color: #64748b; margin: 0;">No affiliate programs yet for this blog.</p>
                                     <p style="color: #94a3b8; font-size: 13px; margin-top: 8px;">Add programs like Viome or Seed to start generating revenue content.</p>
                                 </div>
                             ` : `
-                                <div style="display: flex; flex-direction: column; gap: 12px;">
-                                    ${programs.map(program => generateAffiliateProgramCard(program, blog)).join('')}
+                                <div class="affiliate-programs-list" style="display: flex; flex-direction: column; gap: 12px;">
+                                    ${rankedPrograms.map(program => `<div class="affiliate-program-card-wrapper" data-status="${program.signup_status || 'pending'}">${generateAffiliateProgramCard(program, blog)}</div>`).join('')}
                                 </div>
                             `}
                         </div>
@@ -14577,6 +14802,14 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                 }
 
                 affiliateTabContent.innerHTML = programsHTML;
+
+                // Async enrichment: fetch product reputation for top programs (non-blocking)
+                if (allPrograms.length > 0) {
+                    const blogNiche = blogs[0]?.niche || blogs[0]?.name || '';
+                    enrichProgramsWithReputation(allPrograms, blogNiche).catch(e =>
+                        console.log('Reputation enrichment failed:', e.message)
+                    );
+                }
 
             } catch (error) {
                 console.error('Error loading affiliate programs:', error);
@@ -14590,6 +14823,27 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                     </div>
                 `;
             }
+        }
+
+        // Filter affiliate programs by status
+        function filterAffiliatePrograms(status) {
+            const cards = document.querySelectorAll('.affiliate-program-card-wrapper');
+            cards.forEach(card => {
+                if (status === 'all' || card.dataset.status === status) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            // Update active filter button
+            document.querySelectorAll('.affiliate-filter-btn').forEach(btn => {
+                if (btn.dataset.filter === status) {
+                    btn.style.outline = '2px solid #334155';
+                    btn.style.outlineOffset = '2px';
+                } else {
+                    btn.style.outline = 'none';
+                }
+            });
         }
 
         // Load Services View (Domains, Hosting, Email)
@@ -15952,21 +16206,34 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
         // Generate affiliate program card
         function generateAffiliateProgramCard(program, blog) {
-            const statusBadge = program.signup_status === 'approved' || program.signup_status === 'active'
-                ? `<span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">✓ Active</span>`
-                : program.signup_status === 'pending'
-                ? `<span style="background: #f59e0b; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">⏱ Pending</span>`
-                : `<span style="background: #64748b; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">${program.signup_status}</span>`;
+            const statusColors = {
+                'approved': { bg: '#10b981', border: '#059669', label: '✓ Approved' },
+                'active': { bg: '#10b981', border: '#059669', label: '✓ Active' },
+                'applied': { bg: '#3b82f6', border: '#2563eb', label: '📤 Applied' },
+                'pending': { bg: '#f59e0b', border: '#d97706', label: '⏱ Pending' },
+                'rejected': { bg: '#ef4444', border: '#dc2626', label: '✗ Rejected' }
+            };
+            const st = statusColors[program.signup_status] || { bg: '#64748b', border: '#475569', label: program.signup_status || 'Unknown' };
+            const statusBadge = `<span style="background: ${st.bg}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">${st.label}</span>`;
+
+            // Ranking score badge
+            const rankScore = program._rankScore || 0;
+            const rankColor = rankScore >= 70 ? '#10b981' : rankScore >= 40 ? '#f59e0b' : '#ef4444';
+            const rankBadge = rankScore > 0 ? `<span data-program-score="${program.id}" style="background: ${rankColor}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;">${rankScore}/100</span>` : '';
+            const repDisplay = `<span data-program-rep="${program.id}"></span>`;
 
             const aiInsights = program.ai_summary ? JSON.parse(program.ai_summary) : null;
+            const borderColor = st.border || '#e2e8f0';
 
             return `
-                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 2px solid ${program.signup_status === 'approved' || program.signup_status === 'active' ? '#86efac' : program.signup_status === 'rejected' ? '#fecaca' : program.signup_status === 'applied' ? '#93c5fd' : '#e2e8f0'}; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
                                 <h5 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 600;">${program.program_name}</h5>
                                 ${statusBadge}
+                                ${rankBadge}
+                                ${repDisplay}
                             </div>
                             ${program.network ? `<p style="color: #64748b; font-size: 12px; margin: 0;">Network: ${program.network}</p>` : ''}
                         </div>
@@ -16004,8 +16271,11 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                     ` : ''}
 
                     <div style="display: flex; gap: 8px; margin-top: 12px;">
-                        <button onclick="deleteAffiliateProgram('${program.id}')" style="flex: 1; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
-                            🗑 Delete Program
+                        <button onclick="applyToAffiliateProgram('${program.id}')" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                            📋 Apply to Program
+                        </button>
+                        <button onclick="deleteAffiliateProgram('${program.id}')" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
+                            🗑 Delete
                         </button>
                     </div>
                     <div style="background: #eff6ff; padding: 10px; border-radius: 6px; margin-top: 10px; border: 1px solid #bfdbfe;">
@@ -17146,13 +17416,22 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                     }
                 });
 
+                // Auto-generate UTM tracking params
+                const programData = window.currentAffiliateProgram.data || {};
+                const trackingParams = generateUTMParams(
+                    programData.blog_slug || 'blog',
+                    programData.program_name || 'program',
+                    'article'
+                );
+
                 // Prepare update data
                 const updateData = {
                     affiliate_link_template: affiliateLink,
                     affiliate_id: affiliateId,
                     promotional_text: promoText,
                     disclosure_text: disclosure,
-                    banner_images: JSON.stringify(banners)
+                    banner_images: JSON.stringify(banners),
+                    tracking_params: trackingParams
                 };
 
                 // Update via Supabase
@@ -17175,6 +17454,668 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
             } catch (error) {
                 console.error('Error saving affiliate assets:', error);
                 showToast('Failed to save: ' + error.message, 'error');
+            }
+        }
+
+        // ============================================================
+        // AFFILIATE AGENT — Application Profile, Apply Flow, UTM, Ranking, Assets
+        // ============================================================
+
+        // Show application profile form modal
+        function showApplicationProfileForm(programId) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+
+            modalContent.innerHTML = `
+                <div style="padding: 30px; max-height: 85vh; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0; color: #1e293b;">Affiliate Application Profile</h2>
+                        <button onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">x</button>
+                    </div>
+                    <p style="color: #64748b; margin-bottom: 20px; font-size: 14px;">
+                        Fill this once — it's reused for all affiliate applications.
+                    </p>
+                    <div id="profileFormLoading" style="text-align: center; padding: 20px;">Loading profile...</div>
+                    <div id="profileFormFields" style="display: none;">
+                        <!-- Business Info -->
+                        <h4 style="color: #334155; margin: 0 0 12px 0; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">Business Info</h4>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Business / Website Name</label>
+                            <input type="text" id="profileBusinessName" placeholder="My Awesome Blog" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Website URL</label>
+                            <input type="url" id="profileWebsiteUrl" placeholder="https://example.com" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Niche Description</label>
+                            <textarea id="profileNicheDescription" rows="2" placeholder="What does your site cover?" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; resize: vertical;"></textarea>
+                        </div>
+
+                        <!-- Traffic & Audience -->
+                        <h4 style="color: #334155; margin: 16px 0 12px 0; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">Traffic & Audience</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Monthly Traffic Estimate</label>
+                                <select id="profileMonthlyTraffic" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                                    <option value="< 1000">&lt; 1,000</option>
+                                    <option value="1000-5000">1,000 - 5,000</option>
+                                    <option value="5000-10000">5,000 - 10,000</option>
+                                    <option value="10000-50000">10,000 - 50,000</option>
+                                    <option value="50000+">50,000+</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Primary Geo Region</label>
+                                <input type="text" id="profileAudienceGeo" placeholder="US, UK, Global..." style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Audience Demographics</label>
+                            <textarea id="profileAudienceDemographics" rows="2" placeholder="e.g., 25-45 year old health-conscious professionals" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; resize: vertical;"></textarea>
+                        </div>
+
+                        <!-- Content & Social -->
+                        <h4 style="color: #334155; margin: 16px 0 12px 0; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">Content & Social</h4>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Content Types (select all that apply)</label>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                ${['blog posts', 'reviews', 'comparisons', 'tutorials', 'videos', 'social media', 'email newsletter'].map(ct => `
+                                    <label style="display: flex; align-items: center; gap: 4px; background: #f8fafc; padding: 6px 10px; border-radius: 6px; font-size: 13px; cursor: pointer;">
+                                        <input type="checkbox" class="profileContentType" value="${ct}"> ${ct}
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Twitter/X</label>
+                                <input type="text" id="profileSocialTwitter" placeholder="@handle" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">YouTube</label>
+                                <input type="text" id="profileSocialYoutube" placeholder="Channel URL" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                            </div>
+                        </div>
+
+                        <!-- Payment -->
+                        <h4 style="color: #334155; margin: 16px 0 12px 0; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">Payment & Tax</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Preferred Payment</label>
+                                <select id="profilePaymentMethod" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                                    <option value="paypal">PayPal</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="check">Check</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">PayPal Email</label>
+                                <input type="email" id="profilePaypalEmail" placeholder="paypal@example.com" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #64748b; font-weight: 600; cursor: pointer;">
+                                    <input type="checkbox" id="profileIsUsBased" checked> US-Based?
+                                </label>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Tax ID Type</label>
+                                <select id="profileTaxIdType" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                                    <option value="ein">EIN</option>
+                                    <option value="ssn">SSN</option>
+                                    <option value="non_us">Non-US</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
+                            <button onclick="saveApplicationProfileData('${programId || ''}')" style="background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 14px 32px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;">
+                                Save Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+
+            // Load existing profile
+            loadAndFillApplicationProfile();
+        }
+
+        // Load and pre-fill profile data
+        async function loadAndFillApplicationProfile() {
+            const result = await SupabaseService.loadApplicationProfile();
+            document.getElementById('profileFormLoading').style.display = 'none';
+            document.getElementById('profileFormFields').style.display = 'block';
+
+            if (result.success && result.data) {
+                const p = result.data;
+                if (p.business_name) document.getElementById('profileBusinessName').value = p.business_name;
+                if (p.website_url) document.getElementById('profileWebsiteUrl').value = p.website_url;
+                if (p.niche_description) document.getElementById('profileNicheDescription').value = p.niche_description;
+                if (p.monthly_traffic_estimate) document.getElementById('profileMonthlyTraffic').value = p.monthly_traffic_estimate;
+                if (p.audience_geo) document.getElementById('profileAudienceGeo').value = p.audience_geo;
+                if (p.audience_demographics) document.getElementById('profileAudienceDemographics').value = p.audience_demographics;
+                if (p.preferred_payment_method) document.getElementById('profilePaymentMethod').value = p.preferred_payment_method;
+                if (p.paypal_email) document.getElementById('profilePaypalEmail').value = p.paypal_email;
+                if (p.is_us_based === false) document.getElementById('profileIsUsBased').checked = false;
+                if (p.tax_id_type) document.getElementById('profileTaxIdType').value = p.tax_id_type;
+                if (p.social_media_links) {
+                    if (p.social_media_links.twitter) document.getElementById('profileSocialTwitter').value = p.social_media_links.twitter;
+                    if (p.social_media_links.youtube) document.getElementById('profileSocialYoutube').value = p.social_media_links.youtube;
+                }
+                if (p.content_types && Array.isArray(p.content_types)) {
+                    document.querySelectorAll('.profileContentType').forEach(cb => {
+                        if (p.content_types.includes(cb.value)) cb.checked = true;
+                    });
+                }
+            }
+        }
+
+        // Save application profile data
+        async function saveApplicationProfileData(programId) {
+            const contentTypes = [];
+            document.querySelectorAll('.profileContentType:checked').forEach(cb => contentTypes.push(cb.value));
+
+            const profile = {
+                business_name: document.getElementById('profileBusinessName').value.trim(),
+                website_url: document.getElementById('profileWebsiteUrl').value.trim(),
+                niche_description: document.getElementById('profileNicheDescription').value.trim(),
+                monthly_traffic_estimate: document.getElementById('profileMonthlyTraffic').value,
+                audience_demographics: document.getElementById('profileAudienceDemographics').value.trim(),
+                audience_geo: document.getElementById('profileAudienceGeo').value.trim(),
+                content_types: contentTypes,
+                social_media_links: {
+                    twitter: document.getElementById('profileSocialTwitter').value.trim(),
+                    youtube: document.getElementById('profileSocialYoutube').value.trim()
+                },
+                preferred_payment_method: document.getElementById('profilePaymentMethod').value,
+                paypal_email: document.getElementById('profilePaypalEmail').value.trim(),
+                is_us_based: document.getElementById('profileIsUsBased').checked,
+                tax_id_type: document.getElementById('profileTaxIdType').value
+            };
+
+            const result = await SupabaseService.saveApplicationProfile(profile);
+            if (result.success) {
+                showToast('Application profile saved!', 'success');
+                if (programId) {
+                    closeModal();
+                    setTimeout(() => applyToAffiliateProgram(programId), 300);
+                }
+            } else {
+                showToast('Failed to save profile: ' + result.error, 'error');
+            }
+        }
+
+        // Apply to affiliate program
+        async function applyToAffiliateProgram(programId) {
+            // Check if profile exists
+            const profileResult = await SupabaseService.loadApplicationProfile();
+            if (!profileResult.success || !profileResult.data || !profileResult.data.business_name) {
+                showApplicationProfileForm(programId);
+                return;
+            }
+
+            // Load program data
+            const { data: programs, error } = await supabaseClient
+                .from('affiliate_programs')
+                .select('*')
+                .eq('id', programId)
+                .single();
+
+            if (error || !programs) {
+                showToast('Could not load program data', 'error');
+                return;
+            }
+
+            const program = programs;
+            const profile = profileResult.data;
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+
+            const copyBtn = (label, value) => `
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <span style="font-size: 13px; color: #64748b; min-width: 140px; font-weight: 600;">${label}:</span>
+                    <span style="flex: 1; font-size: 13px; color: #1e293b; background: #f8fafc; padding: 6px 10px; border-radius: 4px;">${value || 'Not set'}</span>
+                    <button onclick="navigator.clipboard.writeText('${(value || '').replace(/'/g, "\\'")}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500);"
+                        style="background: #e2e8f0; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Copy</button>
+                </div>`;
+
+            modalContent.innerHTML = `
+                <div style="padding: 30px; max-height: 85vh; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0; color: #1e293b;">Apply to ${program.program_name}</h2>
+                        <button onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">x</button>
+                    </div>
+
+                    <div style="background: #eff6ff; padding: 16px; border-radius: 10px; border: 1px solid #bfdbfe; margin-bottom: 20px;">
+                        <p style="color: #1e40af; font-size: 13px; margin: 0;">
+                            Copy your profile fields below into the application form. Click "Open Application Page" to go to the signup page.
+                        </p>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                        ${copyBtn('Business Name', profile.business_name)}
+                        ${copyBtn('Website', profile.website_url)}
+                        ${copyBtn('Niche', profile.niche_description)}
+                        ${copyBtn('Traffic', profile.monthly_traffic_estimate)}
+                        ${copyBtn('Audience', profile.audience_demographics)}
+                        ${copyBtn('Region', profile.audience_geo)}
+                        ${copyBtn('Content Types', (profile.content_types || []).join(', '))}
+                        ${copyBtn('Payment', profile.preferred_payment_method)}
+                        ${copyBtn('PayPal', profile.paypal_email)}
+                    </div>
+
+                    ${program.signup_url ? `
+                        <a href="${program.signup_url}" target="_blank" rel="noopener"
+                           onclick="updateProgramSignupStatus('${programId}', 'applied')"
+                           style="display: block; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; margin-bottom: 20px;">
+                            Open Application Page
+                        </a>
+                    ` : `
+                        <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                            <p style="color: #92400e; font-size: 13px; margin: 0;">No signup URL saved. Search for "${program.program_name} affiliate program" to find the application page.</p>
+                        </div>
+                    `}
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 8px; font-size: 13px; color: #64748b; font-weight: 600;">Application Status</label>
+                        <select id="applyStatusSelect" onchange="updateProgramSignupStatus('${programId}', this.value)"
+                            style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                            <option value="pending" ${program.signup_status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="applied" ${program.signup_status === 'applied' ? 'selected' : ''}>Applied</option>
+                            <option value="approved" ${program.signup_status === 'approved' ? 'selected' : ''}>Approved</option>
+                            <option value="active" ${program.signup_status === 'active' ? 'selected' : ''}>Active</option>
+                            <option value="rejected" ${program.signup_status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="showApplicationProfileForm('${programId}')" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                            Edit Profile
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+        }
+
+        // Update program signup status
+        async function updateProgramSignupStatus(programId, newStatus) {
+            const updateData = { signup_status: newStatus };
+            if (newStatus === 'applied') {
+                updateData.signup_date = new Date().toISOString();
+            } else if (newStatus === 'approved' || newStatus === 'active') {
+                updateData.approval_date = new Date().toISOString();
+            }
+
+            const result = await SupabaseService.updateAffiliateProgram(programId, updateData);
+            if (result.success) {
+                showToast(`Status updated to "${newStatus}"`, 'success');
+            } else {
+                showToast('Failed to update status: ' + result.error, 'error');
+            }
+        }
+
+        // ============================================================
+        // UTM Helpers & Tracking Script Generator
+        // ============================================================
+
+        // Generate UTM parameters
+        function generateUTMParams(blogSlug, programName, articleSlug) {
+            return {
+                utm_source: (blogSlug || 'blog').replace(/[^a-zA-Z0-9-_]/g, ''),
+                utm_medium: 'affiliate',
+                utm_campaign: (programName || 'program').toLowerCase().replace(/[^a-zA-Z0-9-_]/g, '-'),
+                utm_content: (articleSlug || 'article').replace(/[^a-zA-Z0-9-_]/g, '-')
+            };
+        }
+
+        // Append UTM params to URL
+        function appendUTMToUrl(baseUrl, utmParams) {
+            try {
+                const url = new URL(baseUrl);
+                Object.entries(utmParams).forEach(([key, value]) => {
+                    if (value) url.searchParams.set(key, value);
+                });
+                return url.toString();
+            } catch (e) {
+                // If URL parsing fails, do manual append
+                const separator = baseUrl.includes('?') ? '&' : '?';
+                const params = Object.entries(utmParams)
+                    .filter(([, v]) => v)
+                    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+                    .join('&');
+                return baseUrl + separator + params;
+            }
+        }
+
+        // Generate tracking script for articles
+        function generateAffiliateTrackingScript(programId, articleId, blogId, utmParams) {
+            return `<script>
+(function(){
+  var links = document.querySelectorAll('a[rel*="sponsored"]');
+  links.forEach(function(link){
+    link.addEventListener('click', function(e){
+      try {
+        navigator.sendBeacon('/api/affiliate/track-click', JSON.stringify({
+          program_id: '${programId}',
+          article_id: '${articleId || ''}',
+          blog_id: '${blogId || ''}',
+          utm_source: '${utmParams.utm_source || ''}',
+          utm_medium: 'affiliate',
+          utm_campaign: '${utmParams.utm_campaign || ''}',
+          utm_content: '${utmParams.utm_content || ''}',
+          referrer_url: window.location.href,
+          user_agent: navigator.userAgent,
+          event_type: 'click'
+        }));
+      } catch(err){}
+    });
+  });
+})();
+</script>`;
+        }
+
+        // ============================================================
+        // Ranking Algorithm
+        // ============================================================
+
+        // Rank affiliate programs with comprehensive scoring
+        // Applies instant local scoring, then optionally enriches with reputation research
+        function rankAffiliatePrograms(programs, blogNiche) {
+            const nicheKeywords = (blogNiche || '').toLowerCase().split(/[\s,]+/).filter(w => w.length > 2);
+
+            return programs.map(program => {
+                let score = 0;
+                const breakdown = {};
+
+                // Commission rate / payout per sale: 0-30 pts
+                const commissionStr = (program.commission_rate || '').toString();
+                const percentMatch = commissionStr.match(/([\d.]+)\s*%/);
+                const flatMatch = commissionStr.match(/\$\s*([\d.]+)/);
+                if (percentMatch) {
+                    // Higher percentage = more points (e.g., 40% => 20 pts)
+                    breakdown.commission = Math.min(30, parseFloat(percentMatch[1]) / 2);
+                } else if (flatMatch) {
+                    // Flat payout: $50 => 10 pts, $150 => 30 pts
+                    breakdown.commission = Math.min(30, parseFloat(flatMatch[1]) / 5);
+                } else {
+                    breakdown.commission = 5;
+                }
+                score += breakdown.commission;
+
+                // Cookie duration: 0-25 pts (increased weight per user request)
+                // Longer cookies = more opportunity to earn, very important for affiliates
+                const cookieStr = (program.cookie_duration || '').toString();
+                const cookieDays = parseInt(cookieStr) || 0;
+                breakdown.cookie = Math.min(25, cookieDays / 4);
+                score += breakdown.cookie;
+
+                // Network reputation: 0-15 pts
+                const network = (program.network || '').toLowerCase();
+                const networkScores = {
+                    'impact': 14, 'cj': 14, 'cj affiliate': 14, 'commission junction': 14,
+                    'shareasale': 13, 'awin': 13, 'rakuten': 13,
+                    'direct': 12, 'in-house': 12,
+                    'clickbank': 10, 'partnerstack': 11, 'refersion': 10
+                };
+                breakdown.network = networkScores[network] || 8;
+                score += breakdown.network;
+
+                // Niche relevance: 0-15 pts
+                const programText = `${program.program_name} ${program.category || ''} ${program.target_audience || ''} ${program.description || ''}`.toLowerCase();
+                const keywordOverlap = nicheKeywords.filter(kw => programText.includes(kw)).length;
+                breakdown.niche = Math.min(15, keywordOverlap * 7.5);
+                score += breakdown.niche;
+
+                // EPC if available: 0-10 pts
+                const epc = parseFloat(program.epc) || 0;
+                breakdown.epc = Math.min(10, epc * 3);
+                score += breakdown.epc;
+
+                // Product reputation (from cached research): 0-20 pts
+                // This gets filled in async by fetchProgramReputation()
+                const cachedReputation = program._reputationScore || 0;
+                breakdown.reputation = Math.min(20, cachedReputation / 5);
+                score += breakdown.reputation;
+
+                // Payout-to-effort ratio bonus: combines commission + cookie for relative value
+                // Programs with high commission AND long cookies get a bonus
+                const payoutEffort = (breakdown.commission / 30) * (breakdown.cookie / 25);
+                breakdown.payoutRatio = Math.round(payoutEffort * 5);
+                score += breakdown.payoutRatio;
+
+                program._rankScore = Math.round(score);
+                program._rankBreakdown = breakdown;
+                return program;
+            }).sort((a, b) => b._rankScore - a._rankScore);
+        }
+
+        // Fetch product reputation via web search (async enrichment)
+        async function fetchProgramReputation(program) {
+            try {
+                const response = await fetch('/api/affiliate/research-reputation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        program_name: program.program_name,
+                        company_url: program.company_url || ''
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    program._reputationScore = result.reputation_score;
+                    program._reputationSummary = result.reputation_summary;
+                    program._reviewHighlights = result.review_highlights;
+                    return result.reputation_score;
+                }
+            } catch (e) {
+                console.log('Reputation fetch failed for', program.program_name, e.message);
+            }
+            return 0;
+        }
+
+        // Enrich programs with reputation data (called after initial render)
+        async function enrichProgramsWithReputation(programs, blogNiche) {
+            // Fetch reputation for first 5 programs in parallel (to avoid rate limits)
+            const batch = programs.slice(0, 5);
+            await Promise.all(batch.map(p => fetchProgramReputation(p)));
+
+            // Re-rank with reputation data
+            const reranked = rankAffiliatePrograms(programs, blogNiche);
+
+            // Update displayed cards with new scores
+            reranked.forEach(program => {
+                const scoreEl = document.querySelector(`[data-program-score="${program.id}"]`);
+                if (scoreEl) {
+                    const rankColor = program._rankScore >= 70 ? '#10b981' : program._rankScore >= 40 ? '#f59e0b' : '#ef4444';
+                    scoreEl.style.background = rankColor;
+                    scoreEl.textContent = `${program._rankScore}/100`;
+                }
+                // Add reputation tooltip if available
+                if (program._reputationSummary) {
+                    const repEl = document.querySelector(`[data-program-rep="${program.id}"]`);
+                    if (repEl) {
+                        repEl.innerHTML = `<span style="font-size: 11px; color: #64748b;" title="${program._reputationSummary}">Rep: ${program._reputationScore}/100</span>`;
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // Asset Library Functions
+        // ============================================================
+
+        // Scrape assets for a program
+        async function scrapeAssetsForProgram(programId) {
+            const url = prompt('Enter the program\'s creative/assets page URL:');
+            if (!url) return;
+
+            showToast('Scraping assets...', 'info');
+
+            try {
+                const response = await fetch('/api/affiliate/fetch-assets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: url,
+                        program_id: programId,
+                        user_id: currentUser.id
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showToast(`Found ${result.assets_found} assets, saved ${result.assets_saved}`, 'success');
+                    loadAssetLibrary(programId);
+                } else {
+                    showToast('Failed to scrape: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Error scraping assets: ' + error.message, 'error');
+            }
+        }
+
+        // Load and render asset library
+        async function loadAssetLibrary(programId) {
+            const container = document.getElementById('assetLibraryContainer');
+            if (!container) return;
+
+            const result = await SupabaseService.loadAffiliateAssets(programId);
+            const assets = result.success ? (result.data || []) : [];
+
+            if (assets.length === 0) {
+                container.innerHTML = `<p style="color: #64748b; font-size: 13px; text-align: center; padding: 20px;">No assets found. Scrape from a URL or add manually.</p>`;
+                return;
+            }
+
+            // Group by type
+            const grouped = {};
+            assets.forEach(a => {
+                const type = a.asset_type || 'other';
+                if (!grouped[type]) grouped[type] = [];
+                grouped[type].push(a);
+            });
+
+            let html = '';
+            Object.entries(grouped).forEach(([type, items]) => {
+                html += `<h5 style="color: #334155; margin: 12px 0 8px 0; text-transform: capitalize;">${type.replace('_', ' ')}s (${items.length})</h5>`;
+                html += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">`;
+                items.forEach(asset => {
+                    html += `
+                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; position: relative;">
+                            ${asset.asset_url && (type === 'banner' || type === 'logo' || type === 'product_image')
+                                ? `<img src="${asset.asset_url}" alt="${asset.alt_text || type}" style="width: 100%; height: auto; border-radius: 4px; margin-bottom: 6px;" onerror="this.style.display='none'">`
+                                : ''}
+                            ${asset.coupon_code ? `<div style="background: #fef3c7; padding: 6px; border-radius: 4px; font-weight: 600; text-align: center; margin-bottom: 6px;">${asset.coupon_code}</div>` : ''}
+                            ${asset.offer_description ? `<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${asset.offer_description}</div>` : ''}
+                            ${asset.dimensions ? `<div style="font-size: 11px; color: #94a3b8;">${asset.dimensions}</div>` : ''}
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                                <span style="font-size: 11px; color: ${asset.status === 'active' ? '#10b981' : '#ef4444'}; font-weight: 600;">${asset.status}</span>
+                                <button onclick="deleteAsset('${asset.id}', '${programId}')" style="background: #fef2f2; color: #dc2626; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Delete an asset
+        async function deleteAsset(assetId, programId) {
+            const result = await SupabaseService.deleteAffiliateAsset(assetId);
+            if (result.success) {
+                showToast('Asset deleted', 'success');
+                loadAssetLibrary(programId);
+            } else {
+                showToast('Failed to delete: ' + result.error, 'error');
+            }
+        }
+
+        // Show manual asset upload modal
+        function showManualAssetUpload(programId) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+
+            modalContent.innerHTML = `
+                <div style="padding: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0; color: #1e293b;">Add Asset Manually</h2>
+                        <button onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">x</button>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Asset Type</label>
+                        <select id="manualAssetType" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                            <option value="banner">Banner</option>
+                            <option value="text_link">Text Link</option>
+                            <option value="logo">Logo</option>
+                            <option value="coupon">Coupon</option>
+                            <option value="product_image">Product Image</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Asset URL (image/link)</label>
+                        <input type="url" id="manualAssetUrl" placeholder="https://..." style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Embed HTML (optional)</label>
+                        <textarea id="manualAssetHtml" rows="3" placeholder="<a href='...'><img src='...'></a>" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; resize: vertical;"></textarea>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Dimensions</label>
+                            <input type="text" id="manualAssetDimensions" placeholder="728x90" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Coupon Code</label>
+                            <input type="text" id="manualAssetCoupon" placeholder="SAVE20" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Alt Text</label>
+                        <input type="text" id="manualAssetAlt" placeholder="Banner description" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #64748b; font-weight: 600;">Offer Description</label>
+                        <input type="text" id="manualAssetOffer" placeholder="Get 20% off your first order" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <button onclick="saveManualAsset('${programId}')" style="width: 100%; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px;">
+                        Save Asset
+                    </button>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        // Save manually added asset
+        async function saveManualAsset(programId) {
+            const asset = {
+                program_id: programId,
+                asset_type: document.getElementById('manualAssetType').value,
+                asset_url: document.getElementById('manualAssetUrl').value.trim(),
+                asset_html: document.getElementById('manualAssetHtml').value.trim(),
+                dimensions: document.getElementById('manualAssetDimensions').value.trim(),
+                alt_text: document.getElementById('manualAssetAlt').value.trim(),
+                coupon_code: document.getElementById('manualAssetCoupon').value.trim(),
+                offer_description: document.getElementById('manualAssetOffer').value.trim(),
+                status: 'active',
+                source: 'manual'
+            };
+
+            const result = await SupabaseService.saveAffiliateAsset(asset);
+            if (result.success) {
+                showToast('Asset saved!', 'success');
+                closeModal();
+                loadAssetLibrary(programId);
+            } else {
+                showToast('Failed to save: ' + result.error, 'error');
             }
         }
 
@@ -18283,6 +19224,9 @@ Return ONLY the JSON array, no other text.`;
                             <button id="articlesTab" onclick="switchAffiliateProgramTab('articles')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #64748b; font-size: 14px;">
                                 📄 Articles (${articles.length})
                             </button>
+                            <button id="analyticsTab" onclick="switchAffiliateProgramTab('analytics')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; cursor: pointer; font-weight: 600; color: #64748b; font-size: 14px;">
+                                📊 Analytics
+                            </button>
                         </div>
                     </div>
 
@@ -18300,6 +19244,11 @@ Return ONLY the JSON array, no other text.`;
                     <div id="articlesTabContent" style="display: none;">
                         ${generateArticlesTabContent(articles, program)}
                     </div>
+
+                    <!-- Analytics Tab -->
+                    <div id="analyticsTabContent" style="display: none;">
+                        <div id="analyticsTabInner" style="text-align: center; padding: 20px; color: #64748b;">Loading analytics...</div>
+                    </div>
                 </div>
             `;
 
@@ -18315,33 +19264,153 @@ Return ONLY the JSON array, no other text.`;
 
         // Switch between tabs in affiliate program modal
         function switchAffiliateProgramTab(tab) {
-            const detailsTab = document.getElementById('detailsTab');
-            const linksTab = document.getElementById('linksTab');
-            const articlesTab = document.getElementById('articlesTab');
-            const detailsContent = document.getElementById('detailsTabContent');
-            const linksContent = document.getElementById('linksTabContent');
-            const articlesContent = document.getElementById('articlesTabContent');
-
-            // Reset all tabs
-            [detailsTab, linksTab, articlesTab].forEach(t => {
-                t.style.borderBottom = '3px solid transparent';
-                t.style.color = '#64748b';
+            const tabs = ['details', 'links', 'articles', 'analytics'];
+            tabs.forEach(t => {
+                const tabBtn = document.getElementById(t + 'Tab');
+                const tabContent = document.getElementById(t + 'TabContent');
+                if (tabBtn) {
+                    tabBtn.style.borderBottom = t === tab ? '3px solid #10a37f' : '3px solid transparent';
+                    tabBtn.style.color = t === tab ? '#10a37f' : '#64748b';
+                }
+                if (tabContent) {
+                    tabContent.style.display = t === tab ? 'block' : 'none';
+                }
             });
-            [detailsContent, linksContent, articlesContent].forEach(c => c.style.display = 'none');
 
-            // Activate selected tab
-            if (tab === 'details') {
-                detailsTab.style.borderBottom = '3px solid #10a37f';
-                detailsTab.style.color = '#10a37f';
-                detailsContent.style.display = 'block';
-            } else if (tab === 'links') {
-                linksTab.style.borderBottom = '3px solid #10a37f';
-                linksTab.style.color = '#10a37f';
-                linksContent.style.display = 'block';
-            } else if (tab === 'articles') {
-                articlesTab.style.borderBottom = '3px solid #10a37f';
-                articlesTab.style.color = '#10a37f';
-                articlesContent.style.display = 'block';
+            // Load analytics data when tab is selected
+            if (tab === 'analytics' && window.currentAffiliateProgram) {
+                loadAnalyticsTab(window.currentAffiliateProgram.id, window.currentAffiliateProgram.blogId);
+            }
+        }
+
+        // Load analytics tab content
+        async function loadAnalyticsTab(programId, blogId) {
+            const container = document.getElementById('analyticsTabInner');
+            if (!container) return;
+
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748b;">Loading analytics...</div>';
+
+            try {
+                const [clicksResult, aggregatedResult] = await Promise.all([
+                    SupabaseService.loadAffiliateClicks(programId, 30),
+                    SupabaseService.loadAffiliateClicksAggregated(programId)
+                ]);
+
+                const clicks = clicksResult.success ? (clicksResult.data || []) : [];
+                const aggregated = aggregatedResult.success ? (aggregatedResult.data || []) : [];
+
+                const totalClicks = clicks.filter(c => c.event_type === 'click').length;
+                const totalConversions = clicks.filter(c => c.event_type === 'conversion').length;
+                const totalRevenue = clicks.filter(c => c.event_type === 'conversion').reduce((sum, c) => sum + parseFloat(c.conversion_value || 0), 0);
+                const conversionRate = totalClicks > 0 ? ((totalConversions / totalClicks) * 100).toFixed(1) : '0.0';
+
+                // Per-article breakdown
+                const articleBreakdown = {};
+                clicks.forEach(c => {
+                    const aid = c.article_id || 'unknown';
+                    if (!articleBreakdown[aid]) articleBreakdown[aid] = { clicks: 0, conversions: 0, revenue: 0 };
+                    if (c.event_type === 'click') articleBreakdown[aid].clicks++;
+                    else if (c.event_type === 'conversion') {
+                        articleBreakdown[aid].conversions++;
+                        articleBreakdown[aid].revenue += parseFloat(c.conversion_value || 0);
+                    }
+                });
+
+                // Postback URL
+                const postbackUrl = `https://getseowizard.com/api/affiliate/postback?program_id=${programId}&order_id={ORDER_ID}&amount={AMOUNT}&status=approved`;
+
+                container.innerHTML = `
+                    <!-- Summary Cards -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 25px;">
+                        <div style="background: #eff6ff; padding: 16px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #1e40af;">${totalClicks}</div>
+                            <div style="font-size: 12px; color: #3b82f6; font-weight: 600;">Total Clicks</div>
+                        </div>
+                        <div style="background: #f0fdf4; padding: 16px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #166534;">${totalConversions}</div>
+                            <div style="font-size: 12px; color: #10b981; font-weight: 600;">Conversions</div>
+                        </div>
+                        <div style="background: #fef3c7; padding: 16px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #92400e;">${conversionRate}%</div>
+                            <div style="font-size: 12px; color: #f59e0b; font-weight: 600;">Conv. Rate</div>
+                        </div>
+                        <div style="background: #fce7f3; padding: 16px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #9d174d;">$${totalRevenue.toFixed(2)}</div>
+                            <div style="font-size: 12px; color: #ec4899; font-weight: 600;">Revenue</div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Breakdown Table -->
+                    <div style="margin-bottom: 25px;">
+                        <h4 style="color: #334155; margin: 0 0 12px 0;">Daily Breakdown (Last 30 Days)</h4>
+                        ${aggregated.length > 0 ? `
+                            <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                                    <thead>
+                                        <tr style="background: #f8fafc; position: sticky; top: 0;">
+                                            <th style="padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0;">Date</th>
+                                            <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e2e8f0;">Clicks</th>
+                                            <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e2e8f0;">Conversions</th>
+                                            <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e2e8f0;">Revenue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${aggregated.map(d => `
+                                            <tr>
+                                                <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9;">${d.date}</td>
+                                                <td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #f1f5f9;">${d.clicks}</td>
+                                                <td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #f1f5f9; color: #10b981; font-weight: 600;">${d.conversions}</td>
+                                                <td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #f1f5f9;">$${d.revenue.toFixed(2)}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : '<p style="color: #94a3b8; font-size: 13px;">No click data yet. Clicks will appear here once articles with tracked links are published.</p>'}
+                    </div>
+
+                    <!-- Per-Article Breakdown -->
+                    ${Object.keys(articleBreakdown).length > 0 && Object.keys(articleBreakdown)[0] !== 'unknown' ? `
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="color: #334155; margin: 0 0 12px 0;">Per-Article Performance</h4>
+                            <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                                    <thead>
+                                        <tr style="background: #f8fafc;">
+                                            <th style="padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0;">Article ID</th>
+                                            <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e2e8f0;">Clicks</th>
+                                            <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e2e8f0;">Conversions</th>
+                                            <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e2e8f0;">Revenue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${Object.entries(articleBreakdown).map(([aid, data]) => `
+                                            <tr>
+                                                <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-family: monospace; font-size: 11px;">${aid.substring(0, 8)}...</td>
+                                                <td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #f1f5f9;">${data.clicks}</td>
+                                                <td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #f1f5f9; color: #10b981; font-weight: 600;">${data.conversions}</td>
+                                                <td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #f1f5f9;">$${data.revenue.toFixed(2)}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Postback URL -->
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <h4 style="color: #334155; margin: 0 0 8px 0; font-size: 14px;">Postback URL (for affiliate networks)</h4>
+                        <p style="color: #64748b; font-size: 12px; margin: 0 0 8px 0;">Give this URL to your affiliate network as a server-to-server postback callback:</p>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" readonly value="${postbackUrl}" style="flex: 1; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 11px; font-family: monospace; background: white;">
+                            <button onclick="navigator.clipboard.writeText('${postbackUrl}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500);"
+                                style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">Copy</button>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `<p style="color: #ef4444; text-align: center;">Error loading analytics: ${error.message}</p>`;
             }
         }
 
@@ -18465,11 +19534,35 @@ Return ONLY the JSON array, no other text.`;
                 </div>
 
                 <!-- Save Button -->
-                <div style="display: flex; gap: 12px; justify-content: center;">
+                <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 30px;">
                     <button onclick="saveAffiliateLinkAssets()" style="background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 14px 32px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
                         💾 Save Links & Assets
                     </button>
                 </div>
+
+                <!-- Asset Library -->
+                <div style="border-top: 2px solid #e2e8f0; padding-top: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 600;">Asset Library</h4>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="scrapeAssetsForProgram('${program.id}')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">
+                                🔍 Scrape Assets from URL
+                            </button>
+                            <button onclick="showManualAssetUpload('${program.id}')" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">
+                                + Add Manually
+                            </button>
+                        </div>
+                    </div>
+                    <div id="assetLibraryContainer" style="min-height: 60px;">
+                        <p style="color: #64748b; font-size: 13px; text-align: center; padding: 20px;">Loading assets...</p>
+                    </div>
+                </div>
+                <script>
+                    // Auto-load asset library when links tab is shown
+                    if (typeof loadAssetLibrary === 'function') {
+                        setTimeout(function() { loadAssetLibrary('${program.id}'); }, 100);
+                    }
+                </script>
             `;
         }
 
