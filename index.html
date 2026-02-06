@@ -7558,19 +7558,19 @@
                     </div>
 
                     <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                        <button id="editArticleBtn" onclick="enableArticleEditing('${article.title.replace(/'/g, "\\'")}', `${article.content.replace(/`/g, '\`').replace(/$/g, '\$')}`, '${article.seo.metaDescription.replace(/'/g, "\\'")}', ${JSON.stringify(article.seo.keywords).replace(/"/g, '&quot;')})"
+                        <button id="editArticleBtn" onclick="enableArticleEditing('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, '${article.seo.metaDescription.replace(/'/g, "\\'")}', ${JSON.stringify(article.seo.keywords).replace(/"/g, '&quot;')})"
                                 style="background: #475569; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             ✏️ Edit Article
                         </button>
-                        <button onclick="copyArticleToClipboard('${article.title.replace(/'/g, "\\'")}', `${article.content.replace(/`/g, '\`').replace(/$/g, '\$')}`)"
+                        <button onclick="copyArticleToClipboard('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
                                 style="background: #334155; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             📋 Copy Article
                         </button>
-                        <button onclick="downloadArticle('${article.title.replace(/'/g, "\\'")}', `${article.content.replace(/`/g, '\`').replace(/$/g, '\$')}`)"
+                        <button onclick="downloadArticle('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
                                 style="background: #334155; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             📥 Download
                         </button>
-                        <button onclick="publishArticle('${article.title.replace(/'/g, "\\'")}', `${article.content.replace(/`/g, '\`').replace(/$/g, '\$')}`)"
+                        <button onclick="publishArticle('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
                                 style="background: #16a34a; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             📤 Publish
                         </button>
@@ -22831,7 +22831,7 @@ Return ONLY the JSON array, no other text or markdown.`;
                     // Remove duplicate section title if it appears at the start of content
                     if (sectionTitle) {
                         // Escape special regex characters in the title
-                        const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\$&');
+                        const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
                         // Remove if title appears as plain text at start
                         const titlePattern = new RegExp(`^${escapedTitle}\\s*\\n`, 'i');
@@ -23019,7 +23019,7 @@ Return ONLY the JSON array, no other text or markdown.`;
                         console.log(`Checking section ${sectionIndex}: "${section.title}"`);
 
                         // Check if link already exists
-                        const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\$&')}\\)`, 'g');
+                        const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
                         const hasLink = linkPattern.test(section.content);
 
                         if (hasLink) {
@@ -23048,7 +23048,7 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                     // Add ONE subtle reference at end of conclusion (final mention)
                     console.log('Checking conclusion for affiliate link...');
-                    const conclusionLinkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\$&')}\\)`, 'g');
+                    const conclusionLinkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
                     const conclusionHasLink = conclusionLinkPattern.test(cleanConclusion);
 
                     if (!conclusionHasLink) {
@@ -24248,7 +24248,7 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                     // Remove duplicate section title if it appears at the start of content
                     if (sectionTitle) {
                         // Escape special regex characters in the title
-                        const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\$&');
+                        const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
                         // Remove if title appears as plain text at start
                         const titlePattern = new RegExp(`^${escapedTitle}\\s*\\n`, 'i');
@@ -24490,7 +24490,7 @@ Return ONLY the formatted references list, no intro text, no explanation.`;
                         console.log(`Checking section ${sectionIndex}: "${section.title}"`);
 
                         // Check if link already exists
-                        const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\$&')}\\)`, 'g');
+                        const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
                         const hasLink = linkPattern.test(section.content);
 
                         if (hasLink) {
@@ -24519,7 +24519,7 @@ Return ONLY the formatted references list, no intro text, no explanation.`;
 
                     // Add ONE subtle reference at end of conclusion (final mention)
                     console.log('Checking conclusion for affiliate link...');
-                    const conclusionLinkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\$&')}\\)`, 'g');
+                    const conclusionLinkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
                     const conclusionHasLink = conclusionLinkPattern.test(cleanConclusion);
 
                     if (!conclusionHasLink) {
@@ -25639,7 +25639,7 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
             let keywordCount = 0;
             let kdPercent = 0;
             if (keyword) {
-                const regex = new RegExp(keyword.replace(/[.*+?^${}()|\[\]\\]/g, '\$&'), 'gi');
+                const regex = new RegExp(keyword.replace(/[.*+?^${}()|\[\]\\]/g, '\\$&'), 'gi');
                 const matches = fullText.match(regex);
                 keywordCount = matches ? matches.length : 0;
                 kdPercent = (keywordCount / wordCount) * 100;
@@ -25774,7 +25774,7 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
             let keywordCount = 0;
             let keywordDensity = '0%';
             if (keyword) {
-                const regex = new RegExp(keyword.replace(/[.*+?^${}()|\[\]\\]/g, '\$&'), 'gi');
+                const regex = new RegExp(keyword.replace(/[.*+?^${}()|\[\]\\]/g, '\\$&'), 'gi');
                 const matches = fullText.match(regex);
                 keywordCount = matches ? matches.length : 0;
                 const kdPercent = ((keywordCount / wordCount) * 100).toFixed(2);

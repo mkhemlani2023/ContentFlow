@@ -18,11 +18,18 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"
   },
-  "keywords": ["content", "automation", "seo", "api", "serper"],
+  "keywords": [
+    "content",
+    "automation",
+    "seo",
+    "api",
+    "serper"
+  ],
   "author": "Content Flow Team",
   "license": "MIT",
-  "dependencies": {},
-  "devDependencies": {},
+  "devDependencies": {
+    "acorn": "^8.15.0"
+  },
   "engines": {
     "node": ">=18.0.0"
   }

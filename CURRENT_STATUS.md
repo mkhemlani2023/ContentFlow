@@ -1,12 +1,427 @@
 # ContentFlow - Current Development Status
 
-**Last Updated:** 2026-01-31 (AI-Powered Legal Pages Generation)
-**Current Session:** Implemented real AI legal page generation for Pro plan users
+**Last Updated:** 2026-02-02 (Pilot Site: HydrogenWaterHQ.com - Navigation Fixed)
+**Current Session:** Article prices fact-checked, navigation menus verified consistent across all pages
 **Developer:** Mahesh + Claude Code
 
 ---
 
-## 🆕 LATEST SESSION - 2026-01-31 (AI-Powered Legal Pages Generation 📄)
+## 🆕 LATEST SESSION - 2026-02-01 (Pilot Site: HydrogenWaterHQ.com 🚀)
+
+**SESSION OVERVIEW:** Created production pilot site to verify complete automation pipeline. Domain registered, WordPress configured, first article published, navigation cleaned up. Site is now ready for SEO Wizard integration to generate remaining 19 articles.
+
+### PILOT SITE DETAILS
+
+**Domain:** hydrogenwaterhq.com
+**Niche:** Hydrogen water (health/wellness affiliate niche)
+**Hosting:** SiteGround (existing account)
+**Status:** ✅ LIVE at https://hydrogenwaterhq.com
+
+### CONTENT PUBLISHED
+
+**Article 1: Best Hydrogen Water Bottles of 2026** ✅ PUBLISHED
+- **URL:** https://hydrogenwaterhq.com/best-hydrogen-water-bottles/
+- **Target Keyword:** "best hydrogen water bottle" (12,100 monthly searches)
+- **Word Count:** ~2,500 words
+- **Featured Image:** Water being poured with bubbles (Pexels, by Pixabay)
+- **Content Includes:**
+  - 7 product reviews (Echo Go+, LevelUp Way, PIURIFY Pro, H2 Life, Gosoit, Lourdes, IonBottles Pro)
+  - Pros/cons for each product
+  - Comparison table
+  - Buyer's guide
+  - FAQ section
+- **Post ID:** 17
+- **Image ID:** 20
+
+**Pages (5 total):**
+| ID | Page | Status |
+|----|------|--------|
+| 6 | Privacy Policy | ✅ Published |
+| 7 | Terms of Service | ✅ Published |
+| 8 | Affiliate Disclosure | ✅ Published (generalized, no specific programs) |
+| 9 | About | ✅ Published |
+| 10 | Blog | ✅ Published |
+
+**Cleanup Done:**
+- ❌ Sample Page (deleted)
+- ❌ Duplicate Privacy Policy draft (deleted)
+- ✅ Affiliate Disclosure updated to remove specific program names (now general)
+- ✅ Navigation block updated (removed Sample Page references)
+- ✅ Privacy Policy URL fixed (was `/privacy-policy-2/`, now `/privacy-policy/`)
+- ✅ Front page setting corrected (shows latest posts)
+- ✅ Footer menu links verified and corrected
+- ✅ Header navigation consistent across all pages (Home, Blog, About)
+- ✅ Article prices fact-checked and corrected
+
+**Theme Decision:**
+- Keeping **TwentyTwentyFive** (default WordPress theme) - clean, modern, works well
+- Custom `hydrogenwaterhq-theme` saved as backup in `/wp-content/themes/`
+
+**Current Site Structure:**
+```
+Header Nav: Home → Blog → About
+Footer Nav: Privacy Policy → Terms of Service → Affiliate Disclosure
+Homepage: Shows latest posts (currently 1 article)
+```
+
+### ACCOMPLISHMENTS
+
+**1. Domain Registration via ResellerClub API (Production)**
+- Switched from sandbox to production mode in `.env`
+- Successfully registered hydrogenwaterhq.com ($16.19/year)
+- Configured with SiteGround nameservers (ns1.siteground.net, ns2.siteground.net)
+- Contact created with Panama address for privacy
+
+**2. WordPress Theme Created (18 Files)**
+- Custom affiliate-focused theme: `hydrogenwaterhq-theme`
+- Key features:
+  - Product box shortcode `[product_box]`
+  - Pros/cons shortcode `[pros_cons]`
+  - Info box shortcode `[info_box]`
+  - Schema.org markup for SEO
+  - Affiliate link nofollow handling
+  - Responsive design for mobile
+
+**Theme Files Created:**
+- `style.css` - Main stylesheet with affiliate components
+- `functions.php` - Shortcodes, Schema markup, widget areas
+- `front-page.php` - Custom homepage with hero, categories, latest posts
+- `header.php`, `footer.php` - Theme structure
+- `index.php`, `single.php`, `page.php`, `archive.php` - Templates
+- `sidebar.php` - Widget sidebar
+- `comments.php` - Comment handling
+- `searchform.php`, `search.php`, `404.php` - Utility pages
+- `screenshot.png` - Theme preview
+- `.github/workflows/deploy.yml` - GitHub Actions deployment
+
+**3. SSH Deployment Setup**
+- Generated RSA 4096-bit key (SiteGround requires RSA, not ed25519)
+- Keys stored at `/root/.ssh/siteground_rsa`
+- Theme deployed via rsync over SSH
+- Theme path: `/home/u2449-zyao8d6ryjtr/www/hydrogenwaterhq.com/public_html/wp-content/themes/hydrogenwaterhq-theme`
+
+**4. WordPress Configuration via WP-CLI**
+- Site title: "Hydrogen Water HQ - Your Guide to Hydrogen Water"
+- Tagline: "Expert Reviews, Science-Backed Benefits & Buying Guides"
+- Pages created:
+  - Privacy Policy
+  - Terms of Service
+  - Affiliate Disclosure
+  - About
+  - Blog
+- Permalinks: `/%postname%/`
+- Timezone: UTC
+- Comments disabled by default
+
+**5. WordPress REST API Access**
+- Application Password created: `Eys8E9A0HS7ynRjxnS3SulL3`
+- Username: `admin`
+- Ready for automated content publishing
+
+**6. Affiliate Program Research**
+Identified best programs for hydrogen water niche:
+- **Echo Water** - Official Echo H2 bottles (8% commission)
+- **Water & Wellness** - H2 products (10-15% commission)
+- **Amazon Associates** - Wide selection (1-3% commission)
+
+### 20 ARTICLE TITLES (Keyword Research Based)
+
+Based on keyword analysis with search volumes and difficulty scores:
+
+**Product Reviews & Comparisons:**
+1. Best Hydrogen Water Bottles of 2026: Expert Reviews & Buyer's Guide [12,100 searches]
+2. Echo Hydrogen Water Bottle Review: Is It Worth the Premium Price? [4,400 searches]
+3. Portable Hydrogen Water Bottle Reviews: Top 7 Picks for On-the-Go [5,400 searches, LOW difficulty]
+4. Best Hydrogen Water Machine for Home Use: Complete Comparison [1,600 searches]
+5. Hydrogen Water Bottle vs Machine: Which One Should You Buy?
+
+**Educational/Informational:**
+6. Hydrogen Water Benefits: What Science Actually Says (2026 Research) [33,100 searches]
+7. How Does a Hydrogen Water Bottle Work? Complete Technology Explained [720 searches]
+8. 10 Proven Hydrogen Water Health Benefits Backed by Research
+9. Is Hydrogen Water Really Better? Breaking Down the Science
+
+**Buyer Intent/Commercial:**
+10. Cheapest Hydrogen Water Bottles That Actually Work (Budget Guide)
+11. Where to Buy Hydrogen Water Bottles: Best Retailers & Deals
+12. Hydrogen Water Bottle Amazon: Top-Rated Picks with Prime Shipping
+13. Best Hydrogen Water Bottle Under $100: Quality Meets Affordability
+
+**How-To/Guides:**
+14. How to Use a Hydrogen Water Bottle: Beginner's Complete Guide
+15. How to Clean Your Hydrogen Water Bottle (Step-by-Step Maintenance)
+16. How Long Does Hydrogen Stay in Water? Storage Tips & Best Practices
+
+**Comparison/Listicles:**
+17. 7 Best Hydrogen Water Generators for Athletes (Performance Review)
+18. Hydrogen Water Bottle Brands Compared: Which One Wins?
+19. Hydrogen Water vs Alkaline Water: Which Is Actually Healthier?
+20. Top 5 Hydrogen Water Bottles for Beginners (Easy to Use)
+
+### KEYWORD RESEARCH SUMMARY
+
+| Keyword | Monthly Searches | Difficulty |
+|---------|-----------------|------------|
+| hydrogen water bottle | 60,500 | Medium |
+| hydrogen water benefits | 33,100 | Medium |
+| best hydrogen water bottle | 12,100 | Medium |
+| hydrogen water machine | 9,900 | Medium |
+| portable hydrogen water bottle | 5,400 | LOW |
+| hydrogen water bottle reviews | 5,400 | Medium |
+| echo hydrogen water bottle | 4,400 | Medium |
+| best hydrogen water machine | 1,600 | Medium |
+| how does hydrogen water bottle work | 720 | LOW |
+
+### TECHNICAL DETAILS
+
+**SiteGround SSH Credentials:**
+- Hostname: ssh.hydrogenwaterhq.com
+- Username: u2449-zyao8d6ryjtr
+- Port: 18765
+
+**GitHub Actions (Attempted):**
+- Workflow file created at `.github/workflows/deploy.yml`
+- Base64-encoded private key for secrets
+- Issue: User on iPad couldn't copy key correctly
+- Workaround: Direct rsync deployment from server
+
+**File Locations (for reference):**
+- Workflow template: `/root/projects/ContentFlow/public/workflow-v2.txt`
+- Theme directory: `/root/projects/ContentFlow/hydrogenwaterhq-theme/`
+
+---
+
+## 📋 NEXT SESSION: COMPLETE WORKFLOW GUIDE
+
+### PHASE 1: AFFILIATE PROGRAM SETUP (Do First)
+
+Before generating content, sign up for affiliate programs to have links ready:
+
+| Program | URL | Commission | Priority |
+|---------|-----|------------|----------|
+| Amazon Associates | https://affiliate-program.amazon.com/ | 1-3% | HIGH |
+| Echo Water | https://www.echowater.com/ (contact page) | ~8% | HIGH |
+| Water & Wellness | https://www.waterandwellness.com/affiliate-program/ | 10-15% | MEDIUM |
+| ShareASale | https://www.shareasale.com/ (search for H2 products) | Varies | MEDIUM |
+
+**After signup, save affiliate IDs/links for use in content.**
+
+---
+
+### PHASE 2: ADD BLOG TO SEO WIZARD
+
+**Step-by-step to connect HydrogenWaterHQ to SEO Wizard:**
+
+1. Go to **https://getseowizard.com**
+2. Log in to your account
+3. Navigate to **Blog Management**
+4. Click **"Add New Blog"**
+5. Enter these credentials:
+
+| Field | Value |
+|-------|-------|
+| Blog Name | Hydrogen Water HQ |
+| WordPress URL | https://hydrogenwaterhq.com |
+| Username | admin |
+| Application Password | Eys8E9A0HS7ynRjxnS3SulL3 |
+
+6. Click **Save** and verify connection
+
+---
+
+### PHASE 3: GENERATE 20 ARTICLES VIA SEO WIZARD
+
+**Use SEO Wizard's AI content generation for each article:**
+
+#### Priority Order (by keyword opportunity):
+
+| # | Article Title | Searches | Difficulty | Type |
+|---|---------------|----------|------------|------|
+| 1 | ✅ Best Hydrogen Water Bottles of 2026 | 12,100 | Medium | DONE |
+| 2 | Hydrogen Water Benefits: What Science Says | 33,100 | Medium | Informational |
+| 3 | Portable Hydrogen Water Bottle Reviews | 5,400 | **LOW** | Review |
+| 4 | How Does a Hydrogen Water Bottle Work? | 720 | **LOW** | Educational |
+| 5 | Echo Hydrogen Water Bottle Review | 4,400 | Medium | Review |
+| 6 | Best Hydrogen Water Machine for Home | 1,600 | Medium | Review |
+| 7 | Hydrogen Water Bottle vs Machine | - | Medium | Comparison |
+| 8 | 10 Proven Hydrogen Water Health Benefits | - | Medium | Listicle |
+| 9 | Is Hydrogen Water Really Better? | - | Medium | Informational |
+| 10 | Cheapest Hydrogen Water Bottles That Work | - | Medium | Buyer Guide |
+| 11 | Best Hydrogen Water Bottle Under $100 | - | Medium | Buyer Guide |
+| 12 | How to Use a Hydrogen Water Bottle | - | **LOW** | How-To |
+| 13 | How to Clean Your Hydrogen Water Bottle | - | **LOW** | How-To |
+| 14 | Hydrogen Water vs Alkaline Water | - | Medium | Comparison |
+| 15 | 7 Best Hydrogen Water Generators for Athletes | - | Medium | Listicle |
+| 16 | Hydrogen Water Bottle Brands Compared | - | Medium | Comparison |
+| 17 | Top 5 Hydrogen Water Bottles for Beginners | - | Medium | Listicle |
+| 18 | Where to Buy Hydrogen Water Bottles | - | Medium | Buyer Guide |
+| 19 | How Long Does Hydrogen Stay in Water? | - | **LOW** | Educational |
+| 20 | Hydrogen Water Bottle Amazon Top Picks | - | Medium | Review |
+
+#### SEO Wizard Workflow Per Article:
+
+1. **Keyword Research**
+   - Enter target keyword in SEO Wizard
+   - Review search volume and competition
+   - Get related keywords for content
+
+2. **Generate Outline**
+   - Use SEO Wizard to create article structure
+   - Review H2/H3 headings
+   - Adjust sections as needed
+
+3. **Generate Full Article**
+   - Select article model (SEO Pro recommended)
+   - Generate 2,000-3,000 word article
+   - Review and edit if needed
+
+4. **Add Images**
+   - Use SEO Wizard image feature (Pexels integration)
+   - Add featured image
+   - Add 2-3 in-content images
+
+5. **Add Affiliate Links**
+   - Insert product recommendations with affiliate URLs
+   - Add call-to-action buttons
+   - Ensure proper disclosure
+
+6. **Publish to WordPress**
+   - Use SEO Wizard's direct publish feature
+   - Or use WP-CLI method (see commands below)
+   - Verify post is live
+
+---
+
+### PHASE 4: AFFILIATE LINK INTEGRATION
+
+**For each product review article, add:**
+
+```html
+<!-- Example affiliate product box -->
+<div class="product-recommendation">
+  <h4>Echo Go+ Hydrogen Water Bottle</h4>
+  <p>Our #1 Pick for 2026</p>
+  <a href="YOUR_AFFILIATE_LINK" rel="nofollow" target="_blank">
+    Check Price on Amazon →
+  </a>
+</div>
+```
+
+**Affiliate Link Placement Strategy:**
+- **Introduction:** 1 link to top-recommended product
+- **Each Product Review:** Direct affiliate link
+- **Comparison Tables:** Links in "Buy" column
+- **Conclusion:** 2-3 links to top picks
+- **Sidebar/Widget:** Featured product (future enhancement)
+
+---
+
+### PHASE 5: SEO & ANALYTICS SETUP
+
+After publishing 5+ articles:
+
+1. **Google Search Console**
+   - Go to https://search.google.com/search-console
+   - Add property: hydrogenwaterhq.com
+   - Verify via DNS or HTML file
+   - Submit sitemap: https://hydrogenwaterhq.com/sitemap.xml
+
+2. **Google Analytics 4**
+   - Create GA4 property
+   - Add tracking code to WordPress (via plugin or theme)
+   - Set up conversion tracking for affiliate clicks
+
+3. **Yoast SEO or RankMath**
+   - Install SEO plugin via WordPress admin
+   - Configure meta titles/descriptions
+   - Enable XML sitemap
+
+---
+
+### QUICK REFERENCE COMMANDS
+
+**SSH into WordPress:**
+```bash
+ssh -i /root/.ssh/siteground_rsa -p 18765 u2449-zyao8d6ryjtr@ssh.hydrogenwaterhq.com
+cd ~/www/hydrogenwaterhq.com/public_html
+```
+
+**Create new post:**
+```bash
+wp post create --post_title='Article Title' --post_status=publish --porcelain
+```
+
+**Update post content from file:**
+```bash
+CONTENT=$(cat article.html) && wp post update POST_ID --post_content="$CONTENT"
+```
+
+**Add featured image:**
+```bash
+wp media import image.jpg --title="Image Title" --porcelain
+wp post meta update POST_ID _thumbnail_id IMAGE_ID
+```
+
+**List all posts:**
+```bash
+wp post list --post_type=post --fields=ID,post_title,post_status
+```
+
+**Clear cache:**
+```bash
+wp cache flush
+```
+
+---
+
+### SUCCESS METRICS
+
+**Week 1 Goals:**
+- [ ] 5 articles published
+- [ ] Affiliate accounts approved
+- [ ] Google Search Console verified
+
+**Week 2 Goals:**
+- [ ] 10 articles published
+- [ ] First affiliate links added
+- [ ] Google Analytics installed
+
+**Month 1 Goals:**
+- [ ] All 20 articles published
+- [ ] Site indexed in Google
+- [ ] First organic traffic
+
+**Month 3 Goals:**
+- [ ] Ranking for low-competition keywords
+- [ ] First affiliate commissions
+- [ ] 500+ monthly visitors
+
+---
+
+### LESSONS LEARNED
+
+**Technical:**
+1. SiteGround requires RSA keys (ed25519 not accepted)
+2. iPad copy/paste unreliable for long base64 strings
+3. Direct rsync works as fallback to GitHub Actions
+4. WP-CLI over SSH enables full remote WordPress management
+5. Production ResellerClub API works after IP whitelist
+6. WordPress REST API Application Passwords need correct formatting
+7. WP-CLI content updates work best with shell variable assignment: `CONTENT=$(cat file) && wp post update ID --post_content="$CONTENT"`
+
+**Content:**
+8. TwentyTwentyFive theme works well for affiliate content - no need for custom theme
+9. Pexels API provides quality featured images for free
+10. Block-based navigation (wp_navigation) uses page-list by default - need to customize for specific pages
+
+**Workflow:**
+11. Manual article publishing via WP-CLI is reliable but time-consuming
+12. SEO Wizard integration will automate the content pipeline
+13. Affiliate Disclosure should be general (not program-specific) for flexibility
+
+---
+
+## 🔄 PREVIOUS SESSION - 2026-01-31 (AI-Powered Legal Pages Generation 📄)
 
 **SESSION OVERVIEW:** Implemented comprehensive AI-powered legal page generation for affiliate sites. Pro plan users now get real, customized legal pages generated by Claude 3.5 Sonnet.
 
