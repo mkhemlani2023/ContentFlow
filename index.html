@@ -7558,19 +7558,19 @@
                     </div>
 
                     <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                        <button id="editArticleBtn" onclick="enableArticleEditing('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, '${article.seo.metaDescription.replace(/'/g, "\\'")}', ${JSON.stringify(article.seo.keywords).replace(/"/g, '&quot;')})"
+                        <button id="editArticleBtn" onclick="enableArticleEditing('${article.title.replace(/'/g, "\\'")}', `${article.content.replace(/`/g, '\`').replace(/$/g, '\$')}`, '${article.seo.metaDescription.replace(/'/g, "\\'")}', ${JSON.stringify(article.seo.keywords).replace(/"/g, '&quot;')})"
                                 style="background: #475569; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             ✏️ Edit Article
                         </button>
-                        <button onclick="copyArticleToClipboard('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
+                        <button onclick="copyArticleToClipboard('${article.title.replace(/'/g, "\\'")}', `${article.content.replace(/`/g, '\`').replace(/$/g, '\$')}`)"
                                 style="background: #334155; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             📋 Copy Article
                         </button>
-                        <button onclick="downloadArticle('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
+                        <button onclick="downloadArticle('${article.title.replace(/'/g, "\\'")}', `${article.content.replace(/`/g, '\`').replace(/$/g, '\$')}`)"
                                 style="background: #334155; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             📥 Download
                         </button>
-                        <button onclick="publishArticle('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"
+                        <button onclick="publishArticle('${article.title.replace(/'/g, "\\'")}', `${article.content.replace(/`/g, '\`').replace(/$/g, '\$')}`)"
                                 style="background: #16a34a; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             📤 Publish
                         </button>
@@ -13092,7 +13092,7 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                 return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
             };
 
-            return \`
+            return `
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                         <thead>
@@ -13107,55 +13107,55 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                             </tr>
                         </thead>
                         <tbody>
-                            \${queue.map((item, index) => \`
+                            ${queue.map((item, index) => `
                                 <tr style="border-bottom: 1px solid #f1f5f9;">
                                     <td style="padding: 12px 10px;">
-                                        <span style="background: \${item.generation_priority >= 70 ? '#dcfce7' : item.generation_priority >= 40 ? '#fef3c7' : '#f1f5f9'}; color: \${item.generation_priority >= 70 ? '#166534' : item.generation_priority >= 40 ? '#92400e' : '#64748b'}; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">
-                                            \${item.generation_priority || 50}
+                                        <span style="background: ${item.generation_priority >= 70 ? '#dcfce7' : item.generation_priority >= 40 ? '#fef3c7' : '#f1f5f9'}; color: ${item.generation_priority >= 70 ? '#166534' : item.generation_priority >= 40 ? '#92400e' : '#64748b'}; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">
+                                            ${item.generation_priority || 50}
                                         </span>
                                     </td>
                                     <td style="padding: 12px 10px;">
-                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 2px;">\${item.target_keyword || 'Pending'}</div>
-                                        <div style="font-size: 12px; color: #64748b;">\${(item.title || '').substring(0, 50)}\${(item.title || '').length > 50 ? '...' : ''}</div>
+                                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 2px;">${item.target_keyword || 'Pending'}</div>
+                                        <div style="font-size: 12px; color: #64748b;">${(item.title || '').substring(0, 50)}${(item.title || '').length > 50 ? '...' : ''}</div>
                                     </td>
                                     <td style="padding: 12px 10px; text-align: center;">
-                                        <span style="font-weight: 600; color: #334155;">\${item.opportunity_score ? item.opportunity_score.toFixed(1) : '-'}</span>
+                                        <span style="font-weight: 600; color: #334155;">${item.opportunity_score ? item.opportunity_score.toFixed(1) : '-'}</span>
                                     </td>
                                     <td style="padding: 12px 10px; text-align: center;">
-                                        <span style="font-size: 12px; color: #64748b;">\${getAffiliateNameById(item.affiliate_program_id)}</span>
+                                        <span style="font-size: 12px; color: #64748b;">${getAffiliateNameById(item.affiliate_program_id)}</span>
                                     </td>
                                     <td style="padding: 12px 10px; text-align: center;">
-                                        <span style="font-size: 12px; color: #64748b;">\${formatDate(item.scheduled_date)}</span>
+                                        <span style="font-size: 12px; color: #64748b;">${formatDate(item.scheduled_date)}</span>
                                     </td>
                                     <td style="padding: 12px 10px; text-align: center;">
-                                        <span style="background: \${item.status === 'scheduled' ? '#dbeafe' : '#f1f5f9'}; color: \${item.status === 'scheduled' ? '#1d4ed8' : '#64748b'}; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;">
-                                            \${item.status}
+                                        <span style="background: ${item.status === 'scheduled' ? '#dbeafe' : '#f1f5f9'}; color: ${item.status === 'scheduled' ? '#1d4ed8' : '#64748b'}; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;">
+                                            ${item.status}
                                         </span>
                                     </td>
                                     <td style="padding: 12px 10px; text-align: center;">
                                         <div style="display: flex; gap: 6px; justify-content: center;">
-                                            <button onclick="publishNowFromQueue('\${item.id}')" title="Publish Now" style="background: #10b981; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                            <button onclick="publishNowFromQueue('${item.id}')" title="Publish Now" style="background: #10b981; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">
                                                 Publish
                                             </button>
-                                            <button onclick="rescheduleQueueItem('\${item.id}')" title="Reschedule" style="background: #64748b; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                            <button onclick="rescheduleQueueItem('${item.id}')" title="Reschedule" style="background: #64748b; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">
                                                 Reschedule
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
-                            \`).join('')}
+                            `).join('')}
                         </tbody>
                     </table>
                 </div>
                 <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: center;">
-                    <button onclick="replenishQueueUI('\${blogId}')" style="background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    <button onclick="replenishQueueUI('${blogId}')" style="background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                         Replenish to 20
                     </button>
-                    <button onclick="showLearningInsights('\${blogId}')" style="background: #6366f1; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    <button onclick="showLearningInsights('${blogId}')" style="background: #6366f1; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                         View Learning Insights
                     </button>
                 </div>
-            \`;
+            `;
         }
 
         // Replenish queue via UI
@@ -13170,7 +13170,7 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
                 const data = await response.json();
                 if (data.success) {
-                    showToast(\`Added \${data.articlesAdded} articles to queue!\`, 'success');
+                    showToast(`Added ${data.articlesAdded} articles to queue!`, 'success');
                     showQueueForBlog(blogId); // Refresh view
                 } else {
                     showToast('Failed to replenish: ' + (data.error || 'Unknown error'), 'error');
@@ -13261,108 +13261,108 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                 const container = document.getElementById('learningInsightsContainer');
 
                 if (!data.success || !data.patterns) {
-                    container.innerHTML = \`
+                    container.innerHTML = `
                         <div style="text-align: center; padding: 40px;">
                             <div style="font-size: 48px; margin-bottom: 15px;">📊</div>
                             <h4 style="color: #1e293b; margin-bottom: 10px;">Not Enough Data</h4>
-                            <p style="color: #64748b; margin-bottom: 20px;">\${data.message || 'Need at least 10 published articles with performance data to generate insights.'}</p>
-                            <p style="color: #64748b; font-size: 13px;">Articles analyzed: \${data.articlesAnalyzed || 0}</p>
+                            <p style="color: #64748b; margin-bottom: 20px;">${data.message || 'Need at least 10 published articles with performance data to generate insights.'}</p>
+                            <p style="color: #64748b; font-size: 13px;">Articles analyzed: ${data.articlesAnalyzed || 0}</p>
                         </div>
-                    \`;
+                    `;
                     return;
                 }
 
                 const patterns = data.patterns;
                 const recommendations = data.recommendations || [];
 
-                container.innerHTML = \`
+                container.innerHTML = `
                     <div style="text-align: left;">
                         <!-- Summary Stats -->
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px;">
                             <div style="background: #f8fafc; padding: 20px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 28px; font-weight: 700; color: #334155;">\${data.articlesAnalyzed}</div>
+                                <div style="font-size: 28px; font-weight: 700; color: #334155;">${data.articlesAnalyzed}</div>
                                 <div style="font-size: 12px; color: #64748b;">Articles Analyzed</div>
                             </div>
                             <div style="background: #dcfce7; padding: 20px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 28px; font-weight: 700; color: #166534;">\${patterns.topPerformersCount}</div>
+                                <div style="font-size: 28px; font-weight: 700; color: #166534;">${patterns.topPerformersCount}</div>
                                 <div style="font-size: 12px; color: #166534;">Top Performers</div>
                             </div>
                             <div style="background: #dbeafe; padding: 20px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 28px; font-weight: 700; color: #1d4ed8;">\${patterns.avgWordCount || '-'}</div>
+                                <div style="font-size: 28px; font-weight: 700; color: #1d4ed8;">${patterns.avgWordCount || '-'}</div>
                                 <div style="font-size: 12px; color: #1d4ed8;">Optimal Words</div>
                             </div>
                             <div style="background: #fef3c7; padding: 20px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 28px; font-weight: 700; color: #92400e;">\${patterns.avgSectionCount || '-'}</div>
+                                <div style="font-size: 28px; font-weight: 700; color: #92400e;">${patterns.avgSectionCount || '-'}</div>
                                 <div style="font-size: 12px; color: #92400e;">Optimal Sections</div>
                             </div>
                         </div>
 
                         <!-- Recommended Content Types -->
-                        \${patterns.preferredContentTypes && patterns.preferredContentTypes.length > 0 ? \`
+                        ${patterns.preferredContentTypes && patterns.preferredContentTypes.length > 0 ? `
                             <div style="margin-bottom: 25px;">
                                 <h4 style="color: #1e293b; margin-bottom: 12px; font-size: 16px;">Top Performing Content Types</h4>
                                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                    \${patterns.preferredContentTypes.map(type => \`
+                                    ${patterns.preferredContentTypes.map(type => `
                                         <span style="background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;">
-                                            \${type}
+                                            ${type}
                                         </span>
-                                    \`).join('')}
+                                    `).join('')}
                                 </div>
                             </div>
-                        \` : ''}
+                        ` : ''}
 
                         <!-- Top Keywords -->
-                        \${patterns.topKeywords && patterns.topKeywords.length > 0 ? \`
+                        ${patterns.topKeywords && patterns.topKeywords.length > 0 ? `
                             <div style="margin-bottom: 25px;">
                                 <h4 style="color: #1e293b; margin-bottom: 12px; font-size: 16px;">Winning Keywords/Topics</h4>
                                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                    \${patterns.topKeywords.slice(0, 8).map(kw => \`
+                                    ${patterns.topKeywords.slice(0, 8).map(kw => `
                                         <span style="background: #e0e7ff; color: #4338ca; padding: 6px 14px; border-radius: 15px; font-size: 12px; font-weight: 500;">
-                                            \${kw}
+                                            ${kw}
                                         </span>
-                                    \`).join('')}
+                                    `).join('')}
                                 </div>
                             </div>
-                        \` : ''}
+                        ` : ''}
 
                         <!-- Recommendations -->
                         <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 20px; border-radius: 12px; border: 1px solid #86efac;">
                             <h4 style="color: #166534; margin: 0 0 15px 0; font-size: 16px;">AI Recommendations</h4>
                             <ul style="margin: 0; padding-left: 20px; color: #15803d; font-size: 14px; line-height: 1.8;">
-                                \${recommendations.map(rec => \`<li>\${rec}</li>\`).join('')}
+                                ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
                             </ul>
                         </div>
 
                         <!-- Top Performers List -->
-                        \${data.topPerformers && data.topPerformers.length > 0 ? \`
+                        ${data.topPerformers && data.topPerformers.length > 0 ? `
                             <div style="margin-top: 25px;">
                                 <h4 style="color: #1e293b; margin-bottom: 12px; font-size: 16px;">Your Top Performing Articles</h4>
                                 <div style="background: #f8fafc; border-radius: 8px; overflow: hidden;">
-                                    \${data.topPerformers.slice(0, 5).map((article, i) => \`
+                                    ${data.topPerformers.slice(0, 5).map((article, i) => `
                                         <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
                                             <div>
-                                                <span style="color: #64748b; font-weight: 600; margin-right: 10px;">#\${i + 1}</span>
-                                                <span style="color: #1e293b;">\${article.title || 'Untitled'}</span>
+                                                <span style="color: #64748b; font-weight: 600; margin-right: 10px;">#${i + 1}</span>
+                                                <span style="color: #1e293b;">${article.title || 'Untitled'}</span>
                                             </div>
                                             <div style="display: flex; gap: 15px;">
-                                                <span style="font-size: 12px; color: #64748b;">\${article.views || 0} views</span>
+                                                <span style="font-size: 12px; color: #64748b;">${article.views || 0} views</span>
                                                 <span style="background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">
-                                                    \${article.engagement_score?.toFixed(1) || '-'}
+                                                    ${article.engagement_score?.toFixed(1) || '-'}
                                                 </span>
                                             </div>
                                         </div>
-                                    \`).join('')}
+                                    `).join('')}
                                 </div>
                             </div>
-                        \` : ''}
+                        ` : ''}
                     </div>
-                \`;
+                `;
 
             } catch (error) {
                 console.error('Error loading insights:', error);
-                document.getElementById('learningInsightsContainer').innerHTML = \`
-                    <div style="color: #ef4444; padding: 20px;">Error loading insights: \${error.message}</div>
-                \`;
+                document.getElementById('learningInsightsContainer').innerHTML = `
+                    <div style="color: #ef4444; padding: 20px;">Error loading insights: ${error.message}</div>
+                `;
             }
         }
 
@@ -13377,16 +13377,16 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
                 if (response.ok) {
                     const data = await response.json();
-                    const statsDiv = document.getElementById(\`dailyStats_\${blogId}\`);
+                    const statsDiv = document.getElementById(`dailyStats_${blogId}`);
                     if (statsDiv && data.success) {
                         const percentage = (data.postsToday / data.maxPosts) * 100;
-                        statsDiv.innerHTML = \`
-                            <div style="font-size: 28px; font-weight: 700; color: #f59e0b;">\${data.postsToday}/\${data.maxPosts}</div>
+                        statsDiv.innerHTML = `
+                            <div style="font-size: 28px; font-weight: 700; color: #f59e0b;">${data.postsToday}/${data.maxPosts}</div>
                             <div style="font-size: 12px; color: #64748b; font-weight: 600;">Posts Today</div>
                             <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: #e2e8f0; border-radius: 0 0 8px 8px; overflow: hidden;">
-                                <div class="daily-progress" style="width: \${percentage}%; height: 100%; background: linear-gradient(90deg, #f59e0b, #f97316); transition: width 0.3s ease;"></div>
+                                <div class="daily-progress" style="width: ${percentage}%; height: 100%; background: linear-gradient(90deg, #f59e0b, #f97316); transition: width 0.3s ease;"></div>
                             </div>
-                        \`;
+                        `;
                     }
                 }
             } catch (error) {
@@ -22831,7 +22831,7 @@ Return ONLY the JSON array, no other text or markdown.`;
                     // Remove duplicate section title if it appears at the start of content
                     if (sectionTitle) {
                         // Escape special regex characters in the title
-                        const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\$&');
 
                         // Remove if title appears as plain text at start
                         const titlePattern = new RegExp(`^${escapedTitle}\\s*\\n`, 'i');
@@ -23019,7 +23019,7 @@ Return ONLY the JSON array, no other text or markdown.`;
                         console.log(`Checking section ${sectionIndex}: "${section.title}"`);
 
                         // Check if link already exists
-                        const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
+                        const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\$&')}\\)`, 'g');
                         const hasLink = linkPattern.test(section.content);
 
                         if (hasLink) {
@@ -23048,7 +23048,7 @@ Return ONLY the JSON array, no other text or markdown.`;
 
                     // Add ONE subtle reference at end of conclusion (final mention)
                     console.log('Checking conclusion for affiliate link...');
-                    const conclusionLinkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
+                    const conclusionLinkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\$&')}\\)`, 'g');
                     const conclusionHasLink = conclusionLinkPattern.test(cleanConclusion);
 
                     if (!conclusionHasLink) {
@@ -24248,7 +24248,7 @@ IMPORTANT: Write detailed answers (40-50 words each). Return ONLY valid JSON arr
                     // Remove duplicate section title if it appears at the start of content
                     if (sectionTitle) {
                         // Escape special regex characters in the title
-                        const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\$&');
 
                         // Remove if title appears as plain text at start
                         const titlePattern = new RegExp(`^${escapedTitle}\\s*\\n`, 'i');
@@ -24490,7 +24490,7 @@ Return ONLY the formatted references list, no intro text, no explanation.`;
                         console.log(`Checking section ${sectionIndex}: "${section.title}"`);
 
                         // Check if link already exists
-                        const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
+                        const linkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\$&')}\\)`, 'g');
                         const hasLink = linkPattern.test(section.content);
 
                         if (hasLink) {
@@ -24519,7 +24519,7 @@ Return ONLY the formatted references list, no intro text, no explanation.`;
 
                     // Add ONE subtle reference at end of conclusion (final mention)
                     console.log('Checking conclusion for affiliate link...');
-                    const conclusionLinkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
+                    const conclusionLinkPattern = new RegExp(`\\[([^\\]]+)\\]\\(${linkText.replace(/[.*+?^${}()|[\]\\]/g, '\$&')}\\)`, 'g');
                     const conclusionHasLink = conclusionLinkPattern.test(cleanConclusion);
 
                     if (!conclusionHasLink) {
@@ -25639,7 +25639,7 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
             let keywordCount = 0;
             let kdPercent = 0;
             if (keyword) {
-                const regex = new RegExp(keyword.replace(/[.*+?^${}()|\[\]\\]/g, '\\$&'), 'gi');
+                const regex = new RegExp(keyword.replace(/[.*+?^${}()|\[\]\\]/g, '\$&'), 'gi');
                 const matches = fullText.match(regex);
                 keywordCount = matches ? matches.length : 0;
                 kdPercent = (keywordCount / wordCount) * 100;
@@ -25774,7 +25774,7 @@ Return ONLY a JSON array with ${images.length} objects, each containing: alt, ti
             let keywordCount = 0;
             let keywordDensity = '0%';
             if (keyword) {
-                const regex = new RegExp(keyword.replace(/[.*+?^${}()|\[\]\\]/g, '\\$&'), 'gi');
+                const regex = new RegExp(keyword.replace(/[.*+?^${}()|\[\]\\]/g, '\$&'), 'gi');
                 const matches = fullText.match(regex);
                 keywordCount = matches ? matches.length : 0;
                 const kdPercent = ((keywordCount / wordCount) * 100).toFixed(2);
