@@ -12525,7 +12525,7 @@ Return ONLY the prompt (2-3 sentences).`;
 
     // GENERATE CONTENT STRATEGY - Comprehensive content planning with keywords, affiliates, and scheduling
     if (path === '/api/generate-content-strategy' && method === 'POST') {
-      const { blog_id, blog_name, blog_url, niche_keyword } = body;
+      const { blog_id, blog_name, blog_url, niche_keyword, pre_validated_keywords, pre_validated_affiliates, pre_validated_articles, pre_validated_pillars } = body;
 
       if (!blog_id || !niche_keyword) {
         return {
@@ -12546,10 +12546,37 @@ Return ONLY the prompt (2-3 sentences).`;
 
         const startTime = Date.now();
 
-        // Step 1: Generate 25+ buyer-intent keywords using AI
+        // Step 1: Generate 25+ buyer-intent keywords using AI (or use pre-validated data)
         console.log('[STEP 1] Generating buyer-intent keywords...');
 
-        const keywordPrompt = `You are an expert SEO strategist and affiliate marketing specialist.
+        let keywordResult;
+
+        if (pre_validated_keywords && pre_validated_keywords.length > 0) {
+          // Use pre-validated keywords from niche research — skip AI call
+          console.log(`[STEP 1] Using ${pre_validated_keywords.length} pre-validated keywords (AI step skipped)`);
+          const inferContentType = (keyword) => {
+            const kw = keyword.toLowerCase();
+            if (kw.includes('review') || kw.includes('rating')) return 'review';
+            if (kw.includes('vs') || kw.includes('comparison') || kw.includes('alternative')) return 'comparison';
+            if (kw.includes('how to') || kw.includes('guide') || kw.includes('tutorial')) return 'guide';
+            if (kw.includes('best') || kw.includes('top')) return 'listicle';
+            return 'guide';
+          };
+          keywordResult = {
+            keywords: pre_validated_keywords.map((kw, idx) => ({
+              keyword: kw.keyword,
+              search_volume: kw.search_volume || kw.estimated_monthly_searches || 1000,
+              difficulty: kw.difficulty || 'medium',
+              buyer_intent: kw.buyer_intent || 'medium',
+              priority: idx + 1,
+              content_type: kw.content_type || inferContentType(kw.keyword)
+            })),
+            content_pillars: pre_validated_pillars || [niche_keyword, `${niche_keyword} reviews`, `${niche_keyword} guides`],
+            recommended_posting_frequency: '3x_week'
+          };
+        } else {
+          // Original AI-powered keyword generation
+          const keywordPrompt = `You are an expert SEO strategist and affiliate marketing specialist.
 
 Analyze the niche: "${niche_keyword}"
 Blog URL: ${blog_url || 'New blog'}
@@ -12586,53 +12613,75 @@ Return ONLY valid JSON in this exact format:
   "recommended_posting_frequency": "3x_week"
 }`;
 
-        const keywordResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://www.getseowizard.com',
-            'X-Title': 'SEO Wizard - Content Strategy'
-          },
-          body: JSON.stringify({
-            model: 'openai/gpt-4o-mini',
-            messages: [{ role: 'user', content: keywordPrompt }],
-            temperature: 0.7,
-            max_tokens: 2500
-          })
-        });
+          const keywordResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://www.getseowizard.com',
+              'X-Title': 'SEO Wizard - Content Strategy'
+            },
+            body: JSON.stringify({
+              model: 'openai/gpt-4o-mini',
+              messages: [{ role: 'user', content: keywordPrompt }],
+              temperature: 0.7,
+              max_tokens: 2500
+            })
+          });
 
-        if (!keywordResponse.ok) {
-          throw new Error(`Keyword generation failed: ${keywordResponse.statusText}`);
-        }
+          if (!keywordResponse.ok) {
+            throw new Error(`Keyword generation failed: ${keywordResponse.statusText}`);
+          }
 
-        const keywordData = await keywordResponse.json();
-        let keywordResult;
-        try {
-          const content = keywordData.choices[0].message.content;
-          const jsonMatch = content.match(/\{[\s\S]*\}/);
-          keywordResult = JSON.parse(jsonMatch[0]);
-        } catch (parseError) {
-          console.error('Failed to parse keyword JSON, using fallback');
-          keywordResult = {
-            keywords: [
-              { keyword: `best ${niche_keyword}`, search_volume: 5000, difficulty: 'medium', buyer_intent: 'high', priority: 1, content_type: 'listicle' },
-              { keyword: `${niche_keyword} review`, search_volume: 3000, difficulty: 'easy', buyer_intent: 'high', priority: 2, content_type: 'review' },
-              { keyword: `${niche_keyword} comparison`, search_volume: 2500, difficulty: 'medium', buyer_intent: 'high', priority: 3, content_type: 'comparison' },
-              { keyword: `${niche_keyword} guide`, search_volume: 4000, difficulty: 'easy', buyer_intent: 'medium', priority: 4, content_type: 'guide' },
-              { keyword: `how to choose ${niche_keyword}`, search_volume: 2000, difficulty: 'easy', buyer_intent: 'medium', priority: 5, content_type: 'guide' }
-            ],
-            content_pillars: [niche_keyword, `${niche_keyword} reviews`, `${niche_keyword} guides`],
-            recommended_posting_frequency: '3x_week'
-          };
+          const keywordData = await keywordResponse.json();
+          try {
+            const content = keywordData.choices[0].message.content;
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            keywordResult = JSON.parse(jsonMatch[0]);
+          } catch (parseError) {
+            console.error('Failed to parse keyword JSON, using fallback');
+            keywordResult = {
+              keywords: [
+                { keyword: `best ${niche_keyword}`, search_volume: 5000, difficulty: 'medium', buyer_intent: 'high', priority: 1, content_type: 'listicle' },
+                { keyword: `${niche_keyword} review`, search_volume: 3000, difficulty: 'easy', buyer_intent: 'high', priority: 2, content_type: 'review' },
+                { keyword: `${niche_keyword} comparison`, search_volume: 2500, difficulty: 'medium', buyer_intent: 'high', priority: 3, content_type: 'comparison' },
+                { keyword: `${niche_keyword} guide`, search_volume: 4000, difficulty: 'easy', buyer_intent: 'medium', priority: 4, content_type: 'guide' },
+                { keyword: `how to choose ${niche_keyword}`, search_volume: 2000, difficulty: 'easy', buyer_intent: 'medium', priority: 5, content_type: 'guide' }
+              ],
+              content_pillars: [niche_keyword, `${niche_keyword} reviews`, `${niche_keyword} guides`],
+              recommended_posting_frequency: '3x_week'
+            };
+          }
         }
 
         console.log(`Generated ${keywordResult.keywords.length} keywords`);
 
-        // Step 2: Discover affiliate programs for this niche
+        // Step 2: Discover affiliate programs for this niche (or use pre-validated data)
         console.log('[STEP 2] Discovering affiliate programs...');
 
-        const affiliatePrompt = `You are an affiliate marketing expert. Find the best affiliate programs for the niche: "${niche_keyword}"
+        let affiliatePrograms = [];
+
+        if (pre_validated_affiliates && pre_validated_affiliates.length > 0) {
+          // Use pre-validated affiliate programs — skip AI call
+          console.log(`[STEP 2] Using ${pre_validated_affiliates.length} pre-validated affiliate programs (AI step skipped)`);
+          affiliatePrograms = pre_validated_affiliates.map(prog => ({
+            program_name: prog.program_name,
+            company: prog.company || prog.program_name,
+            commission_type: prog.commission_type || 'percentage',
+            commission_rate: prog.commission_rate || prog.commission_structure || 'Varies',
+            cookie_duration: (prog.cookie_duration ? prog.cookie_duration + ' days' : '30 days'),
+            network: prog.network || 'direct',
+            signup_url: prog.signup_url || '',
+            product_types: prog.product_types || [],
+            min_payout: prog.min_payout || '$50',
+            payment_methods: prog.payment_methods || ['PayPal', 'Bank Transfer'],
+            banners_available: prog.banners_available !== undefined ? prog.banners_available : true,
+            deep_linking: prog.deep_linking !== undefined ? prog.deep_linking : true,
+            recommended_placement: prog.recommended_placement || 'in-content'
+          }));
+        } else {
+          // Original AI-powered affiliate discovery
+          const affiliatePrompt = `You are an affiliate marketing expert. Find the best affiliate programs for the niche: "${niche_keyword}"
 
 List 5-8 real affiliate programs that are:
 1. Relevant to this niche
@@ -12661,33 +12710,33 @@ Return ONLY valid JSON in this exact format:
   ]
 }`;
 
-        const affiliateResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://www.getseowizard.com',
-            'X-Title': 'SEO Wizard - Affiliate Discovery'
-          },
-          body: JSON.stringify({
-            model: 'openai/gpt-4o-mini',
-            messages: [{ role: 'user', content: affiliatePrompt }],
-            temperature: 0.7,
-            max_tokens: 1500
-          })
-        });
+          const affiliateResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://www.getseowizard.com',
+              'X-Title': 'SEO Wizard - Affiliate Discovery'
+            },
+            body: JSON.stringify({
+              model: 'openai/gpt-4o-mini',
+              messages: [{ role: 'user', content: affiliatePrompt }],
+              temperature: 0.7,
+              max_tokens: 1500
+            })
+          });
 
-        let affiliatePrograms = [];
-        if (affiliateResponse.ok) {
-          const affiliateData = await affiliateResponse.json();
-          try {
-            const content = affiliateData.choices[0].message.content;
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            const parsed = JSON.parse(jsonMatch[0]);
-            affiliatePrograms = parsed.programs || [];
-          } catch (parseError) {
-            console.error('Failed to parse affiliate JSON');
-            affiliatePrograms = [];
+          if (affiliateResponse.ok) {
+            const affiliateData = await affiliateResponse.json();
+            try {
+              const content = affiliateData.choices[0].message.content;
+              const jsonMatch = content.match(/\{[\s\S]*\}/);
+              const parsed = JSON.parse(jsonMatch[0]);
+              affiliatePrograms = parsed.programs || [];
+            } catch (parseError) {
+              console.error('Failed to parse affiliate JSON');
+              affiliatePrograms = [];
+            }
           }
         }
 
@@ -12773,6 +12822,15 @@ Return ONLY valid JSON in this exact format:
           return scheduledDate.toISOString();
         };
 
+        // Build a lookup of pre-validated article titles if available
+        const preValidatedTitleMap = {};
+        if (pre_validated_articles && pre_validated_articles.length > 0) {
+          pre_validated_articles.forEach((article, idx) => {
+            preValidatedTitleMap[idx] = article.title;
+          });
+          console.log(`[STEP 5] Using ${pre_validated_articles.length} pre-validated article titles`);
+        }
+
         const articleQueue = keywordResult.keywords.slice(0, 20).map((kw, index) => {
           const assignedAffiliate = affiliateProgramsWithIds.length > 0
             ? affiliateProgramsWithIds[index % affiliateProgramsWithIds.length]
@@ -12781,7 +12839,7 @@ Return ONLY valid JSON in this exact format:
           return {
             id: `queue_${Date.now()}_${index}`,
             keyword: kw.keyword,
-            title: generateArticleTitle(kw.keyword, kw.content_type),
+            title: preValidatedTitleMap[index] || generateArticleTitle(kw.keyword, kw.content_type),
             content_type: kw.content_type,
             priority: kw.priority,
             status: 'pending',

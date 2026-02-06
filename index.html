@@ -11251,6 +11251,9 @@ ${page.html}
 
         // Display standalone validation results (for dedicated niche research page)
         function displayStandaloneValidationResults(validation) {
+            // Store validation on window for use by "Use with Existing Blog" flow
+            window._currentStandaloneValidation = validation;
+
             const resultsDiv = document.getElementById('nicheResearchResults');
 
             // Pre-filter competitor domains to get accurate count for metrics
@@ -11697,6 +11700,9 @@ ${page.html}
                         <button onclick='startBlogCreationFlow(${JSON.stringify(validation).replace(/'/g, "&apos;")})' style="flex: 1; min-width: 180px; background: linear-gradient(135deg, #10a37f 0%, #0d8768 100%); color: white; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(16, 163, 127, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 163, 127, 0.3)'">
                             ${validation.score >= 60 ? '✅ Create Blog for This Niche' : '📝 Create Blog Anyway'}
                         </button>
+                        <button onclick="useWithExistingBlog(window._currentStandaloneValidation)" style="flex: 1; min-width: 180px; background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; border: none; padding: 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(124, 58, 237, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(124, 58, 237, 0.3)'">
+                            🚀 Use with Existing Blog
+                        </button>
                     </div>
                 </div>
             `;
@@ -11887,6 +11893,281 @@ ${page.html}
 
         // Load validation history - Real implementation is at line ~8298
         // Stub removed - was overwriting the actual implementation
+
+        // ============================================================
+        // USE WITH EXISTING BLOG / PIPELINE GENERATION FUNCTIONS
+        // ============================================================
+
+        // 5a. Show blog selector modal to link validated niche to an existing blog
+        async function useWithExistingBlog(validation) {
+            if (!validation) {
+                showToast('No validation data available. Please validate a niche first.', 'error');
+                return;
+            }
+
+            window._pendingValidationForBlog = validation;
+
+            try {
+                const blogsResult = await SupabaseService.loadBlogs();
+
+                if (!blogsResult.success || !blogsResult.data || blogsResult.data.length === 0) {
+                    showModal(`
+                        <div style="max-width: 500px; margin: 0 auto; text-align: center; padding: 40px;">
+                            <div style="font-size: 64px; margin-bottom: 20px;">📝</div>
+                            <h2 style="margin: 0 0 15px 0; color: #1e293b;">No Blogs Found</h2>
+                            <p style="color: #64748b; margin-bottom: 30px;">You need to add a blog first before you can generate a content pipeline. Go to Blog Management to add one.</p>
+                            <button onclick="closeModal()" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                OK
+                            </button>
+                        </div>
+                    `);
+                    return;
+                }
+
+                const blogs = blogsResult.data;
+                const kwCount = validation.keyword_opportunities?.length || 0;
+                const affCount = validation.affiliate_programs?.recommended_programs?.length || 0;
+                const articleCount = validation.content_strategy?.first_20_articles?.length || 0;
+                const pillarCount = validation.content_strategy?.content_pillars?.length || 0;
+
+                const blogOptions = blogs.map(b =>
+                    `<option value="${b.id}" data-name="${(b.name || b.blog_name || '').replace(/"/g, '&quot;')}" data-url="${(b.url || b.blog_url || '').replace(/"/g, '&quot;')}">${b.name || b.blog_name || 'Unnamed Blog'} ${b.url || b.blog_url ? '(' + (b.url || b.blog_url) + ')' : ''}</option>`
+                ).join('');
+
+                showModal(`
+                    <div style="max-width: 550px; margin: 0 auto; padding: 30px;">
+                        <div style="text-align: center; margin-bottom: 25px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">🚀</div>
+                            <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 22px;">Use with Existing Blog</h2>
+                            <p style="color: #64748b; font-size: 14px; margin: 0;">Link your validated niche data directly to an existing blog's content pipeline.</p>
+                        </div>
+
+                        <!-- Validated Data Summary -->
+                        <div style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); padding: 18px; border-radius: 10px; border: 1px solid #c4b5fd; margin-bottom: 20px;">
+                            <div style="font-weight: 600; color: #5b21b6; margin-bottom: 10px; font-size: 14px;">Pre-Validated Data (AI steps will be skipped):</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+                                <div style="color: #6d28d9;">📊 ${kwCount} Keywords</div>
+                                <div style="color: #6d28d9;">💰 ${affCount} Affiliate Programs</div>
+                                <div style="color: #6d28d9;">📝 ${articleCount} Article Titles</div>
+                                <div style="color: #6d28d9;">🏛️ ${pillarCount} Content Pillars</div>
+                            </div>
+                        </div>
+
+                        <!-- Blog Selector -->
+                        <div style="margin-bottom: 25px;">
+                            <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 8px; font-size: 14px;">Select Blog:</label>
+                            <select id="existingBlogSelector" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; color: #1e293b; background: white; cursor: pointer;" onchange="this.style.borderColor='#7c3aed'">
+                                ${blogOptions}
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 12px;">
+                            <button onclick="closeModal()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                                Cancel
+                            </button>
+                            <button onclick="executeUseWithExistingBlog()" style="flex: 2; background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);">
+                                🚀 Generate Content Pipeline
+                            </button>
+                        </div>
+                    </div>
+                `);
+
+            } catch (error) {
+                console.error('Error loading blogs:', error);
+                showToast('Failed to load blogs. Please try again.', 'error');
+            }
+        }
+
+        // 5b. Execute the "Use with Existing Blog" flow after blog selection
+        function executeUseWithExistingBlog() {
+            const select = document.getElementById('existingBlogSelector');
+            if (!select || !select.value) {
+                showToast('Please select a blog', 'error');
+                return;
+            }
+
+            const blogId = select.value;
+            const selectedOption = select.options[select.selectedIndex];
+            const blogName = selectedOption.getAttribute('data-name') || 'Blog';
+            const blogUrl = selectedOption.getAttribute('data-url') || '';
+            const validation = window._pendingValidationForBlog;
+
+            if (!validation) {
+                showToast('Validation data not found. Please try again.', 'error');
+                return;
+            }
+
+            closeModal();
+            _generatePipelineForBlog(blogId, blogName, blogUrl, validation);
+        }
+
+        // 5c. Shared helper: Transform validation data and generate pipeline for a blog
+        async function _generatePipelineForBlog(blogId, blogName, blogUrl, validation) {
+            // Transform validation data shapes to match API expectations
+            const preValidatedKeywords = (validation.keyword_opportunities || []).map(kw => ({
+                keyword: kw.keyword,
+                search_volume: kw.estimated_monthly_searches || 1000,
+                difficulty: kw.difficulty || 'medium',
+                buyer_intent: kw.buyer_intent || 'medium',
+                content_type: inferContentType(kw.keyword)
+            }));
+
+            const preValidatedAffiliates = (validation.affiliate_programs?.recommended_programs || []).map(prog => ({
+                program_name: prog.program_name,
+                company: prog.company || prog.program_name,
+                commission_type: prog.commission_type || 'percentage',
+                commission_rate: prog.commission_rate || prog.commission_structure || 'Varies',
+                cookie_duration: prog.cookie_duration || 30,
+                network: prog.network || 'direct',
+                signup_url: prog.signup_url || '',
+                product_types: prog.product_types || [],
+                recommended_placement: prog.recommended_placement || 'in-content'
+            }));
+
+            const preValidatedArticles = (validation.content_strategy?.first_20_articles || []).map(article => ({
+                title: article.title,
+                type: article.type || 'guide',
+                priority: article.priority || 'medium'
+            }));
+
+            const preValidatedPillars = validation.content_strategy?.content_pillars || [];
+
+            const nicheKeyword = validation.niche || validation.keyword || 'general';
+
+            // Show progress modal
+            showProgressModal('Generating Content Pipeline', `
+                <div style="text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">🚀</div>
+                    <p style="color: #64748b; margin-bottom: 20px;">Generating content pipeline for <strong>${blogName}</strong> using pre-validated niche data...</p>
+                    <div style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #6d28d9;">
+                        Using ${preValidatedKeywords.length} pre-validated keywords & ${preValidatedAffiliates.length} affiliate programs (AI steps skipped)
+                    </div>
+                    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; text-align: left; font-size: 13px; color: #64748b;">
+                        <div id="strategyProgress">
+                            <div>✓ Pre-validated keywords loaded (AI step skipped)</div>
+                            <div>✓ Pre-validated affiliates loaded (AI step skipped)</div>
+                            <div>→ Fetching images & generating schedule...</div>
+                        </div>
+                    </div>
+                </div>
+            `);
+
+            try {
+                const response = await fetch('/api/generate-content-strategy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        blog_id: blogId,
+                        blog_name: blogName,
+                        blog_url: blogUrl,
+                        niche_keyword: nicheKeyword,
+                        pre_validated_keywords: preValidatedKeywords,
+                        pre_validated_affiliates: preValidatedAffiliates,
+                        pre_validated_articles: preValidatedArticles,
+                        pre_validated_pillars: preValidatedPillars
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Strategy generation failed');
+                }
+
+                const progressDiv = document.getElementById('strategyProgress');
+                if (progressDiv) {
+                    progressDiv.innerHTML += '<div>✓ Images fetched</div>';
+                    progressDiv.innerHTML += '<div>✓ Posting schedule created</div>';
+                    progressDiv.innerHTML += '<div>✓ Article queue populated</div>';
+                    progressDiv.innerHTML += '<div>→ Saving strategy...</div>';
+                }
+
+                // Save to Supabase (same pattern as generateContentStrategy)
+                const saveResult = await SupabaseService.saveContentStrategy({
+                    blog_id: blogId,
+                    niche_keyword: nicheKeyword,
+                    keywords: data.strategy.keywords,
+                    affiliate_programs: data.strategy.affiliate_programs,
+                    content_pillars: data.strategy.content_pillars,
+                    posting_frequency: data.strategy.posting_schedule.frequency,
+                    posting_days: data.strategy.posting_schedule.days,
+                    posting_time: data.strategy.posting_schedule.optimal_time,
+                    target_articles_per_month: data.strategy.posting_schedule.articles_per_month,
+                    article_queue: data.strategy.article_queue,
+                    queue_size: 20,
+                    status: 'active'
+                });
+
+                if (!saveResult.success) {
+                    console.error('Failed to save strategy:', saveResult.error);
+                }
+
+                if (progressDiv) {
+                    progressDiv.innerHTML += '<div>✓ Strategy saved successfully!</div>';
+                }
+
+                // Navigate to Blog Management → Content Strategy tab
+                setTimeout(() => {
+                    hideProgressModal();
+                    showBlogManagement();
+                    // Small delay to let blog management render, then load content strategy
+                    setTimeout(() => {
+                        loadContentStrategyView();
+                        showToast('Content pipeline generated successfully from pre-validated data!', 'success');
+                    }, 500);
+                }, 1500);
+
+            } catch (error) {
+                console.error('Pipeline generation error:', error);
+                hideProgressModal();
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // 5d. Generate pipeline from Affiliate Discovery flow
+        async function generatePipelineFromDiscovery(blogId) {
+            const validation = currentNicheValidation;
+
+            if (!validation) {
+                showToast('No validation data available. Please validate a niche first.', 'error');
+                return;
+            }
+
+            try {
+                const blogsResult = await SupabaseService.loadBlogs();
+                const blogs = blogsResult.success ? blogsResult.data : [];
+                const blog = blogs.find(b => b.id === blogId);
+
+                const blogName = blog?.name || blog?.blog_name || 'Blog';
+                const blogUrl = blog?.url || blog?.blog_url || '';
+
+                closeModal();
+                _generatePipelineForBlog(blogId, blogName, blogUrl, validation);
+
+            } catch (error) {
+                console.error('Error loading blog info:', error);
+                showToast('Failed to load blog information. Please try again.', 'error');
+            }
+        }
+
+        // 5e. Infer content type from keyword text
+        function inferContentType(keyword) {
+            const kw = keyword.toLowerCase();
+            if (kw.includes('review') || kw.includes('rating')) return 'review';
+            if (kw.includes('vs') || kw.includes('comparison') || kw.includes('alternative')) return 'comparison';
+            if (kw.includes('how to') || kw.includes('guide') || kw.includes('tutorial')) return 'guide';
+            if (kw.includes('best') || kw.includes('top')) return 'listicle';
+            return 'guide';
+        }
+
+        // ============================================================
+        // END USE WITH EXISTING BLOG / PIPELINE GENERATION FUNCTIONS
+        // ============================================================
 
         // Blog Management System
         function showBlogManagement() {
@@ -16238,12 +16519,15 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                     </div>
 
                     <!-- Action Buttons -->
-                    <div style="display: flex; gap: 10px;">
-                        <button onclick="closeModal()" style="flex: 1; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="closeModal()" style="flex: 1; min-width: 140px; background: #f1f5f9; color: #334155; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">
                             Try Different Niche
                         </button>
-                        <button onclick="showProgramsAfterValidation('${keyword}', '${blogId}')" style="flex: 2; background: linear-gradient(135deg, ${scoreColor} 0%, ${scoreColor}dd 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px ${scoreColor}40;">
+                        <button onclick="showProgramsAfterValidation('${keyword}', '${blogId}')" style="flex: 2; min-width: 180px; background: linear-gradient(135deg, ${scoreColor} 0%, ${scoreColor}dd 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px ${scoreColor}40;">
                             ${validation.score >= 60 ? '✓ View Affiliate Programs' : '⚠️ View Programs Anyway'}
+                        </button>
+                        <button onclick="generatePipelineFromDiscovery('${blogId}')" style="flex: 2; min-width: 180px; background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            🚀 Generate Content Pipeline
                         </button>
                     </div>
                 </div>
