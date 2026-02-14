@@ -16272,12 +16272,19 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
                     <div style="display: flex; gap: 8px; margin-top: 12px;">
                         ${program.signup_status === 'active' || program.signup_status === 'approved' ? `
-                        <button onclick="showAffiliateProgramDetails('${program.id}')" style="flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                            ✓ Manage Program
+                        <button onclick="generateAffiliateContent('${program.id}', '${program.blog_id}')" style="flex: 1; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                            ✍️ Generate Content
+                        </button>
+                        <button onclick="viewAffiliateDetails('${program.id}')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                            ⚙️ Manage
                         </button>
                         ` : program.signup_status === 'applied' ? `
-                        <button onclick="showAffiliateProgramDetails('${program.id}')" style="flex: 1; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                        <button onclick="viewAffiliateDetails('${program.id}')" style="flex: 1; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                             📤 Application Pending
+                        </button>
+                        ` : program.signup_status === 'rejected' ? `
+                        <button onclick="applyToAffiliateProgram('${program.id}')" style="flex: 1; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                            ✗ Rejected — Re-Apply
                         </button>
                         ` : `
                         <button onclick="applyToAffiliateProgram('${program.id}')" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
