@@ -16271,9 +16271,19 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                     ` : ''}
 
                     <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        ${program.signup_status === 'active' || program.signup_status === 'approved' ? `
+                        <button onclick="showAffiliateProgramDetails('${program.id}')" style="flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                            ✓ Manage Program
+                        </button>
+                        ` : program.signup_status === 'applied' ? `
+                        <button onclick="showAffiliateProgramDetails('${program.id}')" style="flex: 1; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                            📤 Application Pending
+                        </button>
+                        ` : `
                         <button onclick="applyToAffiliateProgram('${program.id}')" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                             📋 Apply to Program
                         </button>
+                        `}
                         <button onclick="deleteAffiliateProgram('${program.id}')" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
                             🗑 Delete
                         </button>
