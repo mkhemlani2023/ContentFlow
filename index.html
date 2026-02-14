@@ -858,6 +858,190 @@
         }
 
         /* ===================================
+           MOBILE RESPONSIVE - AFFILIATE SECTION
+           =================================== */
+        @media (max-width: 768px) {
+            /* Affiliate section header: stack blog name and buttons */
+            .affiliate-section-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px !important;
+            }
+
+            /* Affiliate header buttons container - full width */
+            .affiliate-header-buttons {
+                width: 100% !important;
+                flex-wrap: wrap !important;
+            }
+
+            .affiliate-header-buttons button {
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
+                text-align: center !important;
+            }
+
+            /* Affiliate card header: stack name area + View Details */
+            .affiliate-card-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+
+            /* Name + badges row - allow wrapping */
+            .affiliate-card-badges {
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+            }
+
+            /* View Details button - full width on mobile */
+            .affiliate-view-details-btn {
+                width: 100% !important;
+                text-align: center !important;
+            }
+
+            /* Card action buttons: stack vertically */
+            .affiliate-card-actions {
+                flex-direction: column !important;
+            }
+
+            .affiliate-card-actions button {
+                width: 100% !important;
+                text-align: center !important;
+            }
+
+            /* Affiliate card grid details - single column */
+            .affiliate-program-card-wrapper > div > div[style*="display: grid"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Section container padding */
+            div[style*="padding: 20px"][style*="border-radius: 12px"] {
+                padding: 12px !important;
+            }
+
+            /* Modal full screen on mobile */
+            .modal-content,
+            #modal .modal-content,
+            #modal-content {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                overflow-y: auto !important;
+            }
+
+            /* Wizard flow steps - full width */
+            .wizard-step,
+            #wizardFlow > div {
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            /* Competitor analysis cards */
+            .competitor-card,
+            div[style*="display: grid"][style*="grid-template-columns: repeat"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Keyword research result cards - proper spacing */
+            .keyword-card,
+            .result-card {
+                padding: 12px !important;
+            }
+
+            /* Tab navigation - scrollable on mobile */
+            div[style*="display: flex"][style*="border-bottom"] {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                flex-wrap: nowrap !important;
+                scrollbar-width: none !important;
+            }
+            div[style*="display: flex"][style*="border-bottom"]::-webkit-scrollbar {
+                display: none !important;
+            }
+
+            /* Tab buttons - no shrink */
+            div[style*="display: flex"][style*="border-bottom"] > button,
+            div[style*="display: flex"][style*="border-bottom"] > div {
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+            }
+
+            /* Queue table - horizontal scroll */
+            .queue-table-wrapper,
+            div[style*="overflow-x"] {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
+
+            /* Form layouts inside modals */
+            .modal-content input,
+            .modal-content select,
+            .modal-content textarea {
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Niche validation cards */
+            div[style*="display: grid"][style*="grid-template-columns: repeat(3"] {
+                grid-template-columns: 1fr !important;
+            }
+            div[style*="display: grid"][style*="grid-template-columns: repeat(4"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+
+            /* Content strategy section */
+            .strategy-card,
+            div[style*="display: grid"][style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Buttons in inline flex rows - wrap */
+            div[style*="display: flex"][style*="gap"] {
+                flex-wrap: wrap !important;
+            }
+
+            /* Profile/settings modal */
+            #profileModal .modal-content {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Extra small: affiliate buttons stack fully */
+            .affiliate-header-buttons {
+                flex-direction: column !important;
+            }
+
+            .affiliate-header-buttons button {
+                width: 100% !important;
+            }
+
+            /* Card program name - smaller */
+            .affiliate-program-card-wrapper h5 {
+                font-size: 14px !important;
+            }
+
+            /* Even smaller grid stats */
+            div[style*="display: grid"][style*="grid-template-columns: repeat(4"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Wizard flow padding */
+            #wizardFlow {
+                padding: 0 8px !important;
+            }
+
+            /* Discovery modal program list */
+            .discovery-program-card {
+                padding: 10px !important;
+            }
+        }
+
+        /* ===================================
            SPINNER ANIMATION
            =================================== */
         .spinner {
@@ -14771,12 +14955,12 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
                     programsHTML += `
                         <div style="margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div class="affiliate-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                 <div>
                                     <h4 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 600;">${blog.name}</h4>
                                     <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">${programs.length} affiliate program${programs.length !== 1 ? 's' : ''}</p>
                                 </div>
-                                <div style="display: flex; gap: 10px;">
+                                <div class="affiliate-header-buttons" style="display: flex; gap: 10px;">
                                     <button onclick="showProgramDiscovery('${blog.id}', '${blog.name.replace(/'/g, "\\'")}')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'">
                                         🔍 Discover Programs
                                     </button>
@@ -16227,9 +16411,9 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
 
             return `
                 <div style="background: white; padding: 16px; border-radius: 8px; border: 2px solid ${program.signup_status === 'approved' || program.signup_status === 'active' ? '#86efac' : program.signup_status === 'rejected' ? '#fecaca' : program.signup_status === 'applied' ? '#93c5fd' : '#e2e8f0'}; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                    <div class="affiliate-card-header" style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div class="affiliate-card-badges" style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
                                 <h5 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 600;">${program.program_name}</h5>
                                 ${statusBadge}
                                 ${rankBadge}
@@ -16237,7 +16421,7 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                             </div>
                             ${program.network ? `<p style="color: #64748b; font-size: 12px; margin: 0;">Network: ${program.network}</p>` : ''}
                         </div>
-                        <button onclick="viewAffiliateDetails('${program.id}')" style="background: #f1f5f9; color: #334155; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                        <button class="affiliate-view-details-btn" onclick="viewAffiliateDetails('${program.id}')" style="background: #f1f5f9; color: #334155; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; flex-shrink: 0;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
                             View Details
                         </button>
                     </div>
@@ -16270,7 +16454,7 @@ Example: <meta name='impact-site-verification' value='22720da9-91b8-4304-8433-d2
                         </div>
                     ` : ''}
 
-                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <div class="affiliate-card-actions" style="display: flex; gap: 8px; margin-top: 12px;">
                         ${program.signup_status === 'active' || program.signup_status === 'approved' ? `
                         <button onclick="generateAffiliateContent('${program.id}', '${program.blog_id}')" style="flex: 1; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                             ✍️ Generate Content
